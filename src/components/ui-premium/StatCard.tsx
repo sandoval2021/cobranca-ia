@@ -27,24 +27,29 @@ export function StatCard({
     info: "bg-info-soft text-info",
   };
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-card transition-shadow hover:shadow-pop">
+    <div className="flex flex-col rounded-xl border border-border bg-card p-3 shadow-card transition-shadow hover:shadow-pop md:p-4">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          {Icon && (
-            <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", accentMap[accent])}>
-              <Icon className="h-4 w-4" />
-            </div>
-          )}
-          <span className="truncate text-sm text-muted-foreground">{label}</span>
-        </div>
+        {Icon && (
+          <div
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-lg md:h-9 md:w-9",
+              accentMap[accent]
+            )}
+          >
+            <Icon className="h-4 w-4" />
+          </div>
+        )}
         {hint && <HelpTip text={hint} />}
       </div>
-      <div className="mt-3 flex items-end justify-between gap-2">
-        <p className="text-2xl font-semibold tracking-tight md:text-3xl">{value}</p>
+      <p className="mt-2 text-[11px] leading-tight text-muted-foreground md:text-sm">
+        {label}
+      </p>
+      <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <p className="text-xl font-semibold tracking-tight md:text-2xl">{value}</p>
         {trend && (
           <span
             className={cn(
-              "rounded-full px-2 py-0.5 text-xs font-medium",
+              "rounded-full px-1.5 py-0.5 text-[10px] font-medium md:text-xs",
               trend.up ? "bg-success-soft text-success" : "bg-danger-soft text-danger"
             )}
           >
