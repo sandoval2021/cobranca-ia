@@ -9,12 +9,60 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WhatsappRouteImport } from './routes/whatsapp'
+import { Route as VencimentosRouteImport } from './routes/vencimentos'
+import { Route as ServidoresRouteImport } from './routes/servidores'
+import { Route as ResultadosRouteImport } from './routes/resultados'
+import { Route as PagamentosRouteImport } from './routes/pagamentos'
+import { Route as CobrancasRouteImport } from './routes/cobrancas'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as AssistenteRouteImport } from './routes/assistente'
+import { Route as AplicativosRouteImport } from './routes/aplicativos'
 import { Route as IndexRouteImport } from './routes/index'
 
+const WhatsappRoute = WhatsappRouteImport.update({
+  id: '/whatsapp',
+  path: '/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VencimentosRoute = VencimentosRouteImport.update({
+  id: '/vencimentos',
+  path: '/vencimentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServidoresRoute = ServidoresRouteImport.update({
+  id: '/servidores',
+  path: '/servidores',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResultadosRoute = ResultadosRouteImport.update({
+  id: '/resultados',
+  path: '/resultados',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagamentosRoute = PagamentosRouteImport.update({
+  id: '/pagamentos',
+  path: '/pagamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CobrancasRoute = CobrancasRouteImport.update({
+  id: '/cobrancas',
+  path: '/cobrancas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientesRoute = ClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistenteRoute = AssistenteRouteImport.update({
+  id: '/assistente',
+  path: '/assistente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AplicativosRoute = AplicativosRouteImport.update({
+  id: '/aplicativos',
+  path: '/aplicativos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -25,37 +73,156 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/aplicativos': typeof AplicativosRoute
+  '/assistente': typeof AssistenteRoute
   '/clientes': typeof ClientesRoute
+  '/cobrancas': typeof CobrancasRoute
+  '/pagamentos': typeof PagamentosRoute
+  '/resultados': typeof ResultadosRoute
+  '/servidores': typeof ServidoresRoute
+  '/vencimentos': typeof VencimentosRoute
+  '/whatsapp': typeof WhatsappRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/aplicativos': typeof AplicativosRoute
+  '/assistente': typeof AssistenteRoute
   '/clientes': typeof ClientesRoute
+  '/cobrancas': typeof CobrancasRoute
+  '/pagamentos': typeof PagamentosRoute
+  '/resultados': typeof ResultadosRoute
+  '/servidores': typeof ServidoresRoute
+  '/vencimentos': typeof VencimentosRoute
+  '/whatsapp': typeof WhatsappRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/aplicativos': typeof AplicativosRoute
+  '/assistente': typeof AssistenteRoute
   '/clientes': typeof ClientesRoute
+  '/cobrancas': typeof CobrancasRoute
+  '/pagamentos': typeof PagamentosRoute
+  '/resultados': typeof ResultadosRoute
+  '/servidores': typeof ServidoresRoute
+  '/vencimentos': typeof VencimentosRoute
+  '/whatsapp': typeof WhatsappRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clientes'
+  fullPaths:
+    | '/'
+    | '/aplicativos'
+    | '/assistente'
+    | '/clientes'
+    | '/cobrancas'
+    | '/pagamentos'
+    | '/resultados'
+    | '/servidores'
+    | '/vencimentos'
+    | '/whatsapp'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clientes'
-  id: '__root__' | '/' | '/clientes'
+  to:
+    | '/'
+    | '/aplicativos'
+    | '/assistente'
+    | '/clientes'
+    | '/cobrancas'
+    | '/pagamentos'
+    | '/resultados'
+    | '/servidores'
+    | '/vencimentos'
+    | '/whatsapp'
+  id:
+    | '__root__'
+    | '/'
+    | '/aplicativos'
+    | '/assistente'
+    | '/clientes'
+    | '/cobrancas'
+    | '/pagamentos'
+    | '/resultados'
+    | '/servidores'
+    | '/vencimentos'
+    | '/whatsapp'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AplicativosRoute: typeof AplicativosRoute
+  AssistenteRoute: typeof AssistenteRoute
   ClientesRoute: typeof ClientesRoute
+  CobrancasRoute: typeof CobrancasRoute
+  PagamentosRoute: typeof PagamentosRoute
+  ResultadosRoute: typeof ResultadosRoute
+  ServidoresRoute: typeof ServidoresRoute
+  VencimentosRoute: typeof VencimentosRoute
+  WhatsappRoute: typeof WhatsappRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/whatsapp': {
+      id: '/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/whatsapp'
+      preLoaderRoute: typeof WhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vencimentos': {
+      id: '/vencimentos'
+      path: '/vencimentos'
+      fullPath: '/vencimentos'
+      preLoaderRoute: typeof VencimentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/servidores': {
+      id: '/servidores'
+      path: '/servidores'
+      fullPath: '/servidores'
+      preLoaderRoute: typeof ServidoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resultados': {
+      id: '/resultados'
+      path: '/resultados'
+      fullPath: '/resultados'
+      preLoaderRoute: typeof ResultadosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pagamentos': {
+      id: '/pagamentos'
+      path: '/pagamentos'
+      fullPath: '/pagamentos'
+      preLoaderRoute: typeof PagamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cobrancas': {
+      id: '/cobrancas'
+      path: '/cobrancas'
+      fullPath: '/cobrancas'
+      preLoaderRoute: typeof CobrancasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clientes': {
       id: '/clientes'
       path: '/clientes'
       fullPath: '/clientes'
       preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistente': {
+      id: '/assistente'
+      path: '/assistente'
+      fullPath: '/assistente'
+      preLoaderRoute: typeof AssistenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aplicativos': {
+      id: '/aplicativos'
+      path: '/aplicativos'
+      fullPath: '/aplicativos'
+      preLoaderRoute: typeof AplicativosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -70,7 +237,15 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AplicativosRoute: AplicativosRoute,
+  AssistenteRoute: AssistenteRoute,
   ClientesRoute: ClientesRoute,
+  CobrancasRoute: CobrancasRoute,
+  PagamentosRoute: PagamentosRoute,
+  ResultadosRoute: ResultadosRoute,
+  ServidoresRoute: ServidoresRoute,
+  VencimentosRoute: VencimentosRoute,
+  WhatsappRoute: WhatsappRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
