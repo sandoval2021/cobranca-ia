@@ -19,6 +19,11 @@ import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as AssistenteRouteImport } from './routes/assistente'
 import { Route as AplicativosRouteImport } from './routes/aplicativos'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminReceitaRouteImport } from './routes/admin/receita'
+import { Route as AdminFilasRouteImport } from './routes/admin/filas'
+import { Route as AdminFalhasRouteImport } from './routes/admin/falhas'
+import { Route as AdminEmpresasRouteImport } from './routes/admin/empresas'
 
 const WhatsappRoute = WhatsappRouteImport.update({
   id: '/whatsapp',
@@ -70,6 +75,31 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminReceitaRoute = AdminReceitaRouteImport.update({
+  id: '/admin/receita',
+  path: '/admin/receita',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminFilasRoute = AdminFilasRouteImport.update({
+  id: '/admin/filas',
+  path: '/admin/filas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminFalhasRoute = AdminFalhasRouteImport.update({
+  id: '/admin/falhas',
+  path: '/admin/falhas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminEmpresasRoute = AdminEmpresasRouteImport.update({
+  id: '/admin/empresas',
+  path: '/admin/empresas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +112,11 @@ export interface FileRoutesByFullPath {
   '/servidores': typeof ServidoresRoute
   '/vencimentos': typeof VencimentosRoute
   '/whatsapp': typeof WhatsappRoute
+  '/admin/empresas': typeof AdminEmpresasRoute
+  '/admin/falhas': typeof AdminFalhasRoute
+  '/admin/filas': typeof AdminFilasRoute
+  '/admin/receita': typeof AdminReceitaRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +129,11 @@ export interface FileRoutesByTo {
   '/servidores': typeof ServidoresRoute
   '/vencimentos': typeof VencimentosRoute
   '/whatsapp': typeof WhatsappRoute
+  '/admin/empresas': typeof AdminEmpresasRoute
+  '/admin/falhas': typeof AdminFalhasRoute
+  '/admin/filas': typeof AdminFilasRoute
+  '/admin/receita': typeof AdminReceitaRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +147,11 @@ export interface FileRoutesById {
   '/servidores': typeof ServidoresRoute
   '/vencimentos': typeof VencimentosRoute
   '/whatsapp': typeof WhatsappRoute
+  '/admin/empresas': typeof AdminEmpresasRoute
+  '/admin/falhas': typeof AdminFalhasRoute
+  '/admin/filas': typeof AdminFilasRoute
+  '/admin/receita': typeof AdminReceitaRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +166,11 @@ export interface FileRouteTypes {
     | '/servidores'
     | '/vencimentos'
     | '/whatsapp'
+    | '/admin/empresas'
+    | '/admin/falhas'
+    | '/admin/filas'
+    | '/admin/receita'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +183,11 @@ export interface FileRouteTypes {
     | '/servidores'
     | '/vencimentos'
     | '/whatsapp'
+    | '/admin/empresas'
+    | '/admin/falhas'
+    | '/admin/filas'
+    | '/admin/receita'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -145,6 +200,11 @@ export interface FileRouteTypes {
     | '/servidores'
     | '/vencimentos'
     | '/whatsapp'
+    | '/admin/empresas'
+    | '/admin/falhas'
+    | '/admin/filas'
+    | '/admin/receita'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +218,11 @@ export interface RootRouteChildren {
   ServidoresRoute: typeof ServidoresRoute
   VencimentosRoute: typeof VencimentosRoute
   WhatsappRoute: typeof WhatsappRoute
+  AdminEmpresasRoute: typeof AdminEmpresasRoute
+  AdminFalhasRoute: typeof AdminFalhasRoute
+  AdminFilasRoute: typeof AdminFilasRoute
+  AdminReceitaRoute: typeof AdminReceitaRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -232,6 +297,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/receita': {
+      id: '/admin/receita'
+      path: '/admin/receita'
+      fullPath: '/admin/receita'
+      preLoaderRoute: typeof AdminReceitaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/filas': {
+      id: '/admin/filas'
+      path: '/admin/filas'
+      fullPath: '/admin/filas'
+      preLoaderRoute: typeof AdminFilasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/falhas': {
+      id: '/admin/falhas'
+      path: '/admin/falhas'
+      fullPath: '/admin/falhas'
+      preLoaderRoute: typeof AdminFalhasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/empresas': {
+      id: '/admin/empresas'
+      path: '/admin/empresas'
+      fullPath: '/admin/empresas'
+      preLoaderRoute: typeof AdminEmpresasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -246,6 +346,11 @@ const rootRouteChildren: RootRouteChildren = {
   ServidoresRoute: ServidoresRoute,
   VencimentosRoute: VencimentosRoute,
   WhatsappRoute: WhatsappRoute,
+  AdminEmpresasRoute: AdminEmpresasRoute,
+  AdminFalhasRoute: AdminFalhasRoute,
+  AdminFilasRoute: AdminFilasRoute,
+  AdminReceitaRoute: AdminReceitaRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
