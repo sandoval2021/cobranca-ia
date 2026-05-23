@@ -1,0 +1,15 @@
+{
+  "name": "Painel — gestão simples e premium",
+  "short_name": "Painel",
+  "description": "Painel premium para gerenciar clientes, cobranças e mensagens.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f7fb",
+  "theme_color": "#6750e3",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
