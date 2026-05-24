@@ -500,6 +500,7 @@ function CustomerSheet({
     }
     toast.success("Cliente reativado com sucesso.");
     onChanged();
+    reloadTimeline();
     // refresh details inline
     setDetails({ status: "loading" });
     const { data } = await supabase.rpc("get_customer_details_admin", {
