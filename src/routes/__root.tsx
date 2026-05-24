@@ -132,7 +132,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppShell />
+      <AuthGateApp />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
   );
