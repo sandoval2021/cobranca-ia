@@ -483,6 +483,7 @@ function CustomerSheet({
     }
     toast.success("Cliente arquivado com sucesso.");
     onChanged();
+    reloadTimeline();
     onClose();
   };
 
