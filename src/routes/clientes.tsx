@@ -12,7 +12,18 @@ import {
   MessageSquare,
   Receipt,
   Save,
+  History,
+  UserCog,
+  UserCheck,
+  UserX,
+  FilePlus2,
+  FileEdit,
+  CheckCircle2,
+  AlertTriangle,
+  Ban,
+  Clock,
 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
