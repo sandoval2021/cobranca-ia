@@ -89,6 +89,12 @@ function ImportarClientesPage() {
     }
   }, [companies, companyId]);
 
+  // Reset selection on user change
+  useEffect(() => {
+    setCompanyId(null);
+    setResult(null);
+  }, [user?.id]);
+
   const counts = useMemo(() => {
     const c = { valid: 0, duplicate: 0, invalid: 0 };
     rows?.forEach((r) => {
