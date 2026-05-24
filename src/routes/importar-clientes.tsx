@@ -319,9 +319,9 @@ function ImportarClientesPage() {
         ? "Selecione uma empresa."
         : !rows || rows.length === 0
           ? "Envie um arquivo com pelo menos 1 cliente válido."
-          : counts.valid === 0 && counts.invalid > 0
+          : counts.new + counts.existing === 0 && counts.error > 0
             ? "Revise os erros antes de continuar."
-            : counts.valid === 0
+            : counts.new + counts.existing === 0
               ? "Envie um arquivo com pelo menos 1 cliente válido."
               : null;
 
