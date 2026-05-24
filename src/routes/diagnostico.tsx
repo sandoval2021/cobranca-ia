@@ -62,6 +62,7 @@ function ui(s: CheckStatus) {
 }
 
 function DiagnosticoPage() {
+  const { isAuthenticated, user } = useAuth();
   const [conn, setConn] = useState<Check>({ label: "Conexão Supabase", status: "loading" });
   const [checks, setChecks] = useState<Check[]>(
     TABLES.map((t) => ({ label: t, status: "loading" })),
@@ -81,12 +82,13 @@ function DiagnosticoPage() {
       setConn({
         label: "Conexão Supabase",
         status: "ok",
-        detail: "URL e chave presentes",
+        detail: isAuthenticated ? `Sessão: ${user?.email ?? "ok"}` : "URL e chave presentes",
       });
-      const results = await Promise.all(TABLES.map(runCheck));
+      setChecks(TABLES.map((t) => ({ label: t, status: "loading" })));
+      const results = await Promise.all(TABLES.map((t) => runCheck(t, isAuthenticated)));
       setChecks(results);
     })();
-  }, []);
+  }, [isAuthenticated, user?.id]);
 
   const connectedCount = checks.filter((c) => c.status === "ok").length;
   const allDone = checks.every((c) => c.status !== "loading");
