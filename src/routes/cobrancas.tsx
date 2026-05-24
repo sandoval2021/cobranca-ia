@@ -523,6 +523,7 @@ function ChargeCard({
   const [busy, setBusy] = useState<null | "paid" | "overdue" | "cancel">(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [showGenerate, setShowGenerate] = useState(false);
+  const [showAnalyze, setShowAnalyze] = useState(false);
 
   const callRpc = async (fn: string, success: string, kindBusy: "paid" | "overdue" | "cancel") => {
     if (!supabase) return;
