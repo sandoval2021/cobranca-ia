@@ -1017,6 +1017,18 @@ const EVENT_META: Record<
     icon: Ban,
     tone: "bg-muted text-muted-foreground",
   },
+  ai_simulated: {
+    title: "IA simulada",
+    text: "Sugestão de IA simulada criada.",
+    icon: MessageSquare,
+    tone: "bg-primary/10 text-primary",
+  },
+  message_simulated: {
+    title: "Mensagem simulada",
+    text: "Mensagem de cobrança simulada criada.",
+    icon: MessageSquare,
+    tone: "bg-info-soft text-info",
+  },
 };
 
 function eventMeta(type: string) {
