@@ -7,6 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { friendlyAuthError } from "@/lib/use-auth";
+import { flags } from "@/lib/flags";
+
+const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
+const hasKey = Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY);
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -107,6 +111,24 @@ export function LoginPage() {
               )}
             </Button>
           </form>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-border bg-card/60 p-3 text-[11px]">
+          <p className="mb-2 font-semibold text-muted-foreground">Diagnóstico</p>
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <dt className="text-muted-foreground">Supabase URL</dt>
+            <dd className={hasUrl ? "text-success font-medium" : "text-destructive font-medium"}>{hasUrl ? "Sim" : "Não"}</dd>
+            <dt className="text-muted-foreground">Supabase anon key</dt>
+            <dd className={hasKey ? "text-success font-medium" : "text-destructive font-medium"}>{hasKey ? "Sim" : "Não"}</dd>
+            <dt className="text-muted-foreground">Ambiente</dt>
+            <dd className="font-medium">{flags.appEnv}</dd>
+            <dt className="text-muted-foreground">Pagamentos reais</dt>
+            <dd className="font-medium">{flags.allowRealPayments ? "Liberado" : "Bloqueado"}</dd>
+            <dt className="text-muted-foreground">WhatsApp real</dt>
+            <dd className="font-medium">{flags.allowRealWhatsapp ? "Liberado" : "Bloqueado"}</dd>
+            <dt className="text-muted-foreground">IA real</dt>
+            <dd className="font-medium">{flags.allowRealAi ? "Liberada" : "Bloqueada"}</dd>
+          </dl>
         </div>
 
         <p className="mt-4 text-center text-[11px] text-muted-foreground">

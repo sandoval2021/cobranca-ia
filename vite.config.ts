@@ -6,21 +6,44 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-// @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
+// Map Lovable Cloud secrets (without VITE_ prefix) to VITE_* frontend env vars.
+// Falls back to VITE_*-prefixed env if already provided that way.
+const env = process.env;
+const pick = (...keys: string[]) => {
+  for (const k of keys) {
+    const v = env[k];
+    if (v !== undefined && v !== "") return v;
+  }
+  return "";
+};
+
 export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
   vite: {
     define: {
-      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(process.env.URL_SUPABASE ?? ""),
-      "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ""),
-      "import.meta.env.VITE_APP_ENV": JSON.stringify(process.env.APP_ENV ?? "staging"),
-      "import.meta.env.VITE_STAGING_MODE": JSON.stringify(process.env.STAGING_MODE ?? "true"),
-      "import.meta.env.VITE_ALLOW_REAL_PAYMENTS": JSON.stringify(process.env.ALLOW_REAL_PAYMENTS ?? "false"),
-      "import.meta.env.VITE_ALLOW_REAL_WHATSAPP": JSON.stringify(process.env.ALLOW_REAL_WHATSAPP ?? "false"),
-      "import.meta.env.VITE_ALLOW_REAL_AI": JSON.stringify(process.env.ALLOW_REAL_AI ?? "false"),
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
+        pick("URL_SUPABASE", "VITE_SUPABASE_URL", "SUPABASE_URL"),
+      ),
+      "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(
+        pick("SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"),
+      ),
+      "import.meta.env.VITE_APP_ENV": JSON.stringify(
+        pick("APP_ENV", "VITE_APP_ENV") || "staging",
+      ),
+      "import.meta.env.VITE_STAGING_MODE": JSON.stringify(
+        pick("STAGING_MODE", "VITE_STAGING_MODE") || "true",
+      ),
+      "import.meta.env.VITE_ALLOW_REAL_PAYMENTS": JSON.stringify(
+        pick("ALLOW_REAL_PAYMENTS", "VITE_ALLOW_REAL_PAYMENTS") || "false",
+      ),
+      "import.meta.env.VITE_ALLOW_REAL_WHATSAPP": JSON.stringify(
+        pick("ALLOW_REAL_WHATSAPP", "VITE_ALLOW_REAL_WHATSAPP") || "false",
+      ),
+      "import.meta.env.VITE_ALLOW_REAL_AI": JSON.stringify(
+        pick("ALLOW_REAL_AI", "VITE_ALLOW_REAL_AI") || "false",
+      ),
     },
   },
 });
