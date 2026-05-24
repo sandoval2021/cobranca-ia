@@ -331,6 +331,7 @@ function ImportarClientesPage() {
           errored: counts.error,
         });
         toast.success("Importação concluída.");
+        setLookupBump((n) => n + 1);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro inesperado.";
