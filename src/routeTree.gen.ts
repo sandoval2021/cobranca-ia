@@ -9,45 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WhatsappRouteImport } from './routes/whatsapp'
-import { Route as VencimentosRouteImport } from './routes/vencimentos'
-import { Route as ServidoresRouteImport } from './routes/servidores'
-import { Route as ResultadosRouteImport } from './routes/resultados'
-import { Route as PagamentosRouteImport } from './routes/pagamentos'
+import { Route as MensagensRouteImport } from './routes/mensagens'
+import { Route as IaRouteImport } from './routes/ia'
+import { Route as EmpresasRouteImport } from './routes/empresas'
+import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
+import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as CobrancasRouteImport } from './routes/cobrancas'
 import { Route as ClientesRouteImport } from './routes/clientes'
-import { Route as AssistenteRouteImport } from './routes/assistente'
-import { Route as AplicativosRouteImport } from './routes/aplicativos'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as AdminReceitaRouteImport } from './routes/admin/receita'
-import { Route as AdminFilasRouteImport } from './routes/admin/filas'
-import { Route as AdminFalhasRouteImport } from './routes/admin/falhas'
-import { Route as AdminEmpresasRouteImport } from './routes/admin/empresas'
 
-const WhatsappRoute = WhatsappRouteImport.update({
-  id: '/whatsapp',
-  path: '/whatsapp',
+const MensagensRoute = MensagensRouteImport.update({
+  id: '/mensagens',
+  path: '/mensagens',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VencimentosRoute = VencimentosRouteImport.update({
-  id: '/vencimentos',
-  path: '/vencimentos',
+const IaRoute = IaRouteImport.update({
+  id: '/ia',
+  path: '/ia',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ServidoresRoute = ServidoresRouteImport.update({
-  id: '/servidores',
-  path: '/servidores',
+const EmpresasRoute = EmpresasRouteImport.update({
+  id: '/empresas',
+  path: '/empresas',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResultadosRoute = ResultadosRouteImport.update({
-  id: '/resultados',
-  path: '/resultados',
+const DiagnosticoRoute = DiagnosticoRouteImport.update({
+  id: '/diagnostico',
+  path: '/diagnostico',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PagamentosRoute = PagamentosRouteImport.update({
-  id: '/pagamentos',
-  path: '/pagamentos',
+const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CobrancasRoute = CobrancasRouteImport.update({
@@ -60,206 +53,122 @@ const ClientesRoute = ClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AssistenteRoute = AssistenteRouteImport.update({
-  id: '/assistente',
-  path: '/assistente',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AplicativosRoute = AplicativosRouteImport.update({
-  id: '/aplicativos',
-  path: '/aplicativos',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminReceitaRoute = AdminReceitaRouteImport.update({
-  id: '/admin/receita',
-  path: '/admin/receita',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminFilasRoute = AdminFilasRouteImport.update({
-  id: '/admin/filas',
-  path: '/admin/filas',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminFalhasRoute = AdminFalhasRouteImport.update({
-  id: '/admin/falhas',
-  path: '/admin/falhas',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminEmpresasRoute = AdminEmpresasRouteImport.update({
-  id: '/admin/empresas',
-  path: '/admin/empresas',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/aplicativos': typeof AplicativosRoute
-  '/assistente': typeof AssistenteRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
-  '/pagamentos': typeof PagamentosRoute
-  '/resultados': typeof ResultadosRoute
-  '/servidores': typeof ServidoresRoute
-  '/vencimentos': typeof VencimentosRoute
-  '/whatsapp': typeof WhatsappRoute
-  '/admin/empresas': typeof AdminEmpresasRoute
-  '/admin/falhas': typeof AdminFalhasRoute
-  '/admin/filas': typeof AdminFilasRoute
-  '/admin/receita': typeof AdminReceitaRoute
-  '/admin/': typeof AdminIndexRoute
+  '/configuracoes': typeof ConfiguracoesRoute
+  '/diagnostico': typeof DiagnosticoRoute
+  '/empresas': typeof EmpresasRoute
+  '/ia': typeof IaRoute
+  '/mensagens': typeof MensagensRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/aplicativos': typeof AplicativosRoute
-  '/assistente': typeof AssistenteRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
-  '/pagamentos': typeof PagamentosRoute
-  '/resultados': typeof ResultadosRoute
-  '/servidores': typeof ServidoresRoute
-  '/vencimentos': typeof VencimentosRoute
-  '/whatsapp': typeof WhatsappRoute
-  '/admin/empresas': typeof AdminEmpresasRoute
-  '/admin/falhas': typeof AdminFalhasRoute
-  '/admin/filas': typeof AdminFilasRoute
-  '/admin/receita': typeof AdminReceitaRoute
-  '/admin': typeof AdminIndexRoute
+  '/configuracoes': typeof ConfiguracoesRoute
+  '/diagnostico': typeof DiagnosticoRoute
+  '/empresas': typeof EmpresasRoute
+  '/ia': typeof IaRoute
+  '/mensagens': typeof MensagensRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/aplicativos': typeof AplicativosRoute
-  '/assistente': typeof AssistenteRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
-  '/pagamentos': typeof PagamentosRoute
-  '/resultados': typeof ResultadosRoute
-  '/servidores': typeof ServidoresRoute
-  '/vencimentos': typeof VencimentosRoute
-  '/whatsapp': typeof WhatsappRoute
-  '/admin/empresas': typeof AdminEmpresasRoute
-  '/admin/falhas': typeof AdminFalhasRoute
-  '/admin/filas': typeof AdminFilasRoute
-  '/admin/receita': typeof AdminReceitaRoute
-  '/admin/': typeof AdminIndexRoute
+  '/configuracoes': typeof ConfiguracoesRoute
+  '/diagnostico': typeof DiagnosticoRoute
+  '/empresas': typeof EmpresasRoute
+  '/ia': typeof IaRoute
+  '/mensagens': typeof MensagensRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/aplicativos'
-    | '/assistente'
     | '/clientes'
     | '/cobrancas'
-    | '/pagamentos'
-    | '/resultados'
-    | '/servidores'
-    | '/vencimentos'
-    | '/whatsapp'
-    | '/admin/empresas'
-    | '/admin/falhas'
-    | '/admin/filas'
-    | '/admin/receita'
-    | '/admin/'
+    | '/configuracoes'
+    | '/diagnostico'
+    | '/empresas'
+    | '/ia'
+    | '/mensagens'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/aplicativos'
-    | '/assistente'
     | '/clientes'
     | '/cobrancas'
-    | '/pagamentos'
-    | '/resultados'
-    | '/servidores'
-    | '/vencimentos'
-    | '/whatsapp'
-    | '/admin/empresas'
-    | '/admin/falhas'
-    | '/admin/filas'
-    | '/admin/receita'
-    | '/admin'
+    | '/configuracoes'
+    | '/diagnostico'
+    | '/empresas'
+    | '/ia'
+    | '/mensagens'
   id:
     | '__root__'
     | '/'
-    | '/aplicativos'
-    | '/assistente'
     | '/clientes'
     | '/cobrancas'
-    | '/pagamentos'
-    | '/resultados'
-    | '/servidores'
-    | '/vencimentos'
-    | '/whatsapp'
-    | '/admin/empresas'
-    | '/admin/falhas'
-    | '/admin/filas'
-    | '/admin/receita'
-    | '/admin/'
+    | '/configuracoes'
+    | '/diagnostico'
+    | '/empresas'
+    | '/ia'
+    | '/mensagens'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AplicativosRoute: typeof AplicativosRoute
-  AssistenteRoute: typeof AssistenteRoute
   ClientesRoute: typeof ClientesRoute
   CobrancasRoute: typeof CobrancasRoute
-  PagamentosRoute: typeof PagamentosRoute
-  ResultadosRoute: typeof ResultadosRoute
-  ServidoresRoute: typeof ServidoresRoute
-  VencimentosRoute: typeof VencimentosRoute
-  WhatsappRoute: typeof WhatsappRoute
-  AdminEmpresasRoute: typeof AdminEmpresasRoute
-  AdminFalhasRoute: typeof AdminFalhasRoute
-  AdminFilasRoute: typeof AdminFilasRoute
-  AdminReceitaRoute: typeof AdminReceitaRoute
-  AdminIndexRoute: typeof AdminIndexRoute
+  ConfiguracoesRoute: typeof ConfiguracoesRoute
+  DiagnosticoRoute: typeof DiagnosticoRoute
+  EmpresasRoute: typeof EmpresasRoute
+  IaRoute: typeof IaRoute
+  MensagensRoute: typeof MensagensRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/whatsapp': {
-      id: '/whatsapp'
-      path: '/whatsapp'
-      fullPath: '/whatsapp'
-      preLoaderRoute: typeof WhatsappRouteImport
+    '/mensagens': {
+      id: '/mensagens'
+      path: '/mensagens'
+      fullPath: '/mensagens'
+      preLoaderRoute: typeof MensagensRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/vencimentos': {
-      id: '/vencimentos'
-      path: '/vencimentos'
-      fullPath: '/vencimentos'
-      preLoaderRoute: typeof VencimentosRouteImport
+    '/ia': {
+      id: '/ia'
+      path: '/ia'
+      fullPath: '/ia'
+      preLoaderRoute: typeof IaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/servidores': {
-      id: '/servidores'
-      path: '/servidores'
-      fullPath: '/servidores'
-      preLoaderRoute: typeof ServidoresRouteImport
+    '/empresas': {
+      id: '/empresas'
+      path: '/empresas'
+      fullPath: '/empresas'
+      preLoaderRoute: typeof EmpresasRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/resultados': {
-      id: '/resultados'
-      path: '/resultados'
-      fullPath: '/resultados'
-      preLoaderRoute: typeof ResultadosRouteImport
+    '/diagnostico': {
+      id: '/diagnostico'
+      path: '/diagnostico'
+      fullPath: '/diagnostico'
+      preLoaderRoute: typeof DiagnosticoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pagamentos': {
-      id: '/pagamentos'
-      path: '/pagamentos'
-      fullPath: '/pagamentos'
-      preLoaderRoute: typeof PagamentosRouteImport
+    '/configuracoes': {
+      id: '/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof ConfiguracoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cobrancas': {
@@ -276,20 +185,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/assistente': {
-      id: '/assistente'
-      path: '/assistente'
-      fullPath: '/assistente'
-      preLoaderRoute: typeof AssistenteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/aplicativos': {
-      id: '/aplicativos'
-      path: '/aplicativos'
-      fullPath: '/aplicativos'
-      preLoaderRoute: typeof AplicativosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -297,61 +192,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/receita': {
-      id: '/admin/receita'
-      path: '/admin/receita'
-      fullPath: '/admin/receita'
-      preLoaderRoute: typeof AdminReceitaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/filas': {
-      id: '/admin/filas'
-      path: '/admin/filas'
-      fullPath: '/admin/filas'
-      preLoaderRoute: typeof AdminFilasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/falhas': {
-      id: '/admin/falhas'
-      path: '/admin/falhas'
-      fullPath: '/admin/falhas'
-      preLoaderRoute: typeof AdminFalhasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/empresas': {
-      id: '/admin/empresas'
-      path: '/admin/empresas'
-      fullPath: '/admin/empresas'
-      preLoaderRoute: typeof AdminEmpresasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AplicativosRoute: AplicativosRoute,
-  AssistenteRoute: AssistenteRoute,
   ClientesRoute: ClientesRoute,
   CobrancasRoute: CobrancasRoute,
-  PagamentosRoute: PagamentosRoute,
-  ResultadosRoute: ResultadosRoute,
-  ServidoresRoute: ServidoresRoute,
-  VencimentosRoute: VencimentosRoute,
-  WhatsappRoute: WhatsappRoute,
-  AdminEmpresasRoute: AdminEmpresasRoute,
-  AdminFalhasRoute: AdminFalhasRoute,
-  AdminFilasRoute: AdminFilasRoute,
-  AdminReceitaRoute: AdminReceitaRoute,
-  AdminIndexRoute: AdminIndexRoute,
+  ConfiguracoesRoute: ConfiguracoesRoute,
+  DiagnosticoRoute: DiagnosticoRoute,
+  EmpresasRoute: EmpresasRoute,
+  IaRoute: IaRoute,
+  MensagensRoute: MensagensRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
