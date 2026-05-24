@@ -543,7 +543,7 @@ function ChargeCard({
             </span>
           </div>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {phone ?? "Sem contato"}
+            {phone ?? (charge.customer_id ? (customer ? "Sem WhatsApp cadastrado" : "—") : "—")}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
             <span>
