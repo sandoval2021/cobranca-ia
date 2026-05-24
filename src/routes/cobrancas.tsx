@@ -633,6 +633,19 @@ function ChargeCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <GenerateMessageDialog
+        open={showGenerate}
+        onClose={() => setShowGenerate(false)}
+        chargeId={charge.id}
+        customerName={who}
+        whatsappPretty={phone}
+        amountBRL={charge.amount_cents != null ? fmtBRL(charge.amount_cents) : null}
+        dueDatePretty={charge.due_date ? fmtDate(charge.due_date) : null}
+        statusPretty={chargeLabel(charge.status)}
+        statusClassName={chargeClass(charge.status)}
+        onSaved={onChanged}
+      />
     </div>
   );
 }
