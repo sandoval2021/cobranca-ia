@@ -578,6 +578,14 @@ function ChargeCard({
         >
           <Sparkles className="h-3.5 w-3.5" /> Gerar mensagem
         </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowAnalyze(true)}
+          className="gap-1.5"
+        >
+          <Brain className="h-3.5 w-3.5" /> Analisar com IA
+        </Button>
         {kind !== "paga" && kind !== "cancelada" && (
           <Button
             size="sm"
