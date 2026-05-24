@@ -374,14 +374,12 @@ function CollectionRulesBlock() {
           ? "Você não tem permissão para alterar estas regras."
           : "Não foi possível salvar as regras agora.",
       );
+      const e = error as { message?: string; details?: string; hint?: string; code?: string };
       const parts = [
-        error.message && `mensagem: ${error.message}`,
-        // @ts-expect-error supabase PostgrestError fields
-        error.details && `detalhe: ${error.details}`,
-        // @ts-expect-error
-        error.hint && `dica: ${error.hint}`,
-        // @ts-expect-error
-        error.code && `código: ${error.code}`,
+        e.message && `mensagem: ${e.message}`,
+        e.details && `detalhe: ${e.details}`,
+        e.hint && `dica: ${e.hint}`,
+        e.code && `código: ${e.code}`,
       ].filter(Boolean) as string[];
       if (flags.appEnv !== "production" && parts.length) {
         setSaveTechDetail(parts.join(" · "));
