@@ -48,7 +48,10 @@ export function useSupabaseList<T = Record<string, unknown>>(
   return state;
 }
 
-export function useSupabaseCount(table: string) {
+export function useSupabaseCount(
+  table: string,
+  options?: { deps?: ReadonlyArray<unknown> },
+) {
   const [state, setState] = useState<
     | { status: "loading" }
     | { status: "not_configured" }
@@ -62,6 +65,7 @@ export function useSupabaseCount(table: string) {
       setState({ status: "not_configured" });
       return;
     }
+    setState({ status: "loading" });
     (async () => {
       const { count, error } = await supabase
         .from(table)
@@ -76,7 +80,8 @@ export function useSupabaseCount(table: string) {
     return () => {
       alive = false;
     };
-  }, [table]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, ...(options?.deps ?? [])]);
 
   return state;
 }
