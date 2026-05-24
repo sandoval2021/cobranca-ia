@@ -610,7 +610,15 @@ function CollectionRulesBlock() {
           <div className="sticky bottom-2 z-10 -mx-1 flex flex-col gap-2 rounded-xl border border-border bg-card/95 p-3 shadow-card backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 text-xs">
               {saveErr ? (
-                <span className="text-danger">{saveErr}</span>
+                <div className="space-y-1">
+                  <span className="text-danger">{saveErr}</span>
+                  {saveTechDetail && (
+                    <details className="text-[11px] text-muted-foreground">
+                      <summary className="cursor-pointer">Detalhe técnico (staging)</summary>
+                      <p className="mt-1 break-all">{saveTechDetail}</p>
+                    </details>
+                  )}
+                </div>
               ) : savedAt ? (
                 <span className="inline-flex items-center gap-1 text-success">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Regras de cobrança salvas com sucesso.
