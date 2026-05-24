@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { SimulatedMessagesPanel } from "@/components/messages/simulated-messages";
+import { AISuggestionsPanel } from "@/components/ai/ai-analysis";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
@@ -658,10 +659,11 @@ function DetailView({
 
   return (
     <Tabs defaultValue="dados" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="dados" className="text-xs">Dados</TabsTrigger>
         <TabsTrigger value="cobrancas" className="text-xs">Cobranças</TabsTrigger>
         <TabsTrigger value="mensagens" className="text-xs">Mensagens</TabsTrigger>
+        <TabsTrigger value="ia" className="text-xs">IA</TabsTrigger>
         <TabsTrigger value="historico" className="text-xs">Histórico</TabsTrigger>
       </TabsList>
 
@@ -772,6 +774,15 @@ function DetailView({
             reloadKey={timelineBump}
           />
         </div>
+      </TabsContent>
+
+      <TabsContent value="ia" className="mt-4">
+        <AISuggestionsPanel
+          customerId={customer.id}
+          chargeId={null}
+          reloadKey={timelineBump}
+          title="Sugestões de IA simulada"
+        />
       </TabsContent>
 
       <TabsContent value="historico" className="mt-4">
@@ -1005,6 +1016,18 @@ const EVENT_META: Record<
     text: "Cobrança cancelada sem apagar histórico.",
     icon: Ban,
     tone: "bg-muted text-muted-foreground",
+  },
+  ai_simulated: {
+    title: "IA simulada",
+    text: "Sugestão de IA simulada criada.",
+    icon: MessageSquare,
+    tone: "bg-primary/10 text-primary",
+  },
+  message_simulated: {
+    title: "Mensagem simulada",
+    text: "Mensagem de cobrança simulada criada.",
+    icon: MessageSquare,
+    tone: "bg-info-soft text-info",
   },
 };
 
