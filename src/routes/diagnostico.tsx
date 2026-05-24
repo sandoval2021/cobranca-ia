@@ -127,9 +127,7 @@ function DiagnosticoPage() {
         </dl>
         {!supabaseConfigured && (
           <p className="mt-3 rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning">
-            Para conectar, defina <code>SUPABASE_URL</code> e{" "}
-            <code>SUPABASE_ANON_KEY</code> nas variáveis do projeto e
-            republique o app.
+            Conexão não configurada. Verifique as variáveis do Supabase no ambiente do Lovable e republique o app.
           </p>
         )}
       </div>
