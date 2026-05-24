@@ -110,6 +110,12 @@ function DiagnosticoPage() {
         <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <SummaryRow label="Supabase configurado" value={supabaseConfigured ? "Sim" : "Não"} ok={supabaseConfigured} />
           <SummaryRow label="Ambiente" value={flags.appEnv} ok />
+          <SummaryRow
+            label="Sessão"
+            value={isAuthenticated ? (user?.email ?? "Logado") : "Não logado"}
+            ok={isAuthenticated}
+            invertOkColor
+          />
           <SummaryRow label="Pagamentos reais" value={flags.allowRealPayments ? "Liberado" : "Bloqueado"} ok={!flags.allowRealPayments} invertOkColor />
           <SummaryRow label="WhatsApp real" value={flags.allowRealWhatsapp ? "Liberado" : "Bloqueado"} ok={!flags.allowRealWhatsapp} invertOkColor />
           <SummaryRow label="IA real" value={flags.allowRealAi ? "Liberada" : "Bloqueada"} ok={!flags.allowRealAi} invertOkColor />
