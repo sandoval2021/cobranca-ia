@@ -115,6 +115,62 @@ export async function extractPdfText(file: File): Promise<string> {
   return lines.join("\n");
 }
 
+// ---------- Field cleaners ----------
+
+// Remove pipes, repeated separators, leftover phone fragments and codes from a name.
+export function cleanCustomerName(
+  raw: string | null | undefined,
+  fallbackCode?: string | null,
+): string | null {
+  if (!raw) return friendlyFallback(fallbackCode);
+  let s = String(raw);
+  // strip pipes and bullets and stray punctuation
+  s = s.replace(/[|¦•·]+/g, " ");
+  // remove "+55" fragments and country code mentions
+  s = s.replace(/\+?\s*55\b/g, " ");
+  // remove header words that may leak in
+  s = s.replace(/\b(C[óo]d(?:igo)?(?:\.?\s*cliente)?|Cliente|WhatsApp|Whats)\b/gi, " ");
+  // remove standalone numbers/phone fragments (DDD, etc)
+  s = s.replace(/\(\s*\d{1,3}\s*\)?/g, " ");
+  s = s.replace(/\b\d{2,}\b/g, " ");
+  // collapse separators like "/", "-", commas at edges
+  s = s.replace(/[\/\-,;]{2,}/g, " ");
+  // squash whitespace
+  s = s.replace(/\s+/g, " ").trim();
+  // strip leading/trailing junk punctuation
+  s = s.replace(/^[\s\-\/.,;:]+|[\s\-\/.,;:]+$/g, "");
+  if (!s || s.length < 2) return friendlyFallback(fallbackCode);
+  // if what's left is just digits/punct, fallback
+  if (!/[A-Za-zÀ-ÿ]/.test(s)) return friendlyFallback(fallbackCode);
+  return s;
+}
+
+function friendlyFallback(code?: string | null): string {
+  const c = (code ?? "").toString().trim();
+  return c ? `Cliente importado ${c}` : "Cliente importado";
+}
+
+export function cleanServiceName(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let s = String(raw);
+  s = s.replace(/[|¦•·]+/g, " ");
+  s = s.replace(/\s+/g, " ").trim();
+  s = s.replace(/^[\s\-\/.,;:]+|[\s\-\/.,;:]+$/g, "");
+  return s || null;
+}
+
+export function cleanSituation(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = String(raw).replace(/[^A-Za-zÀ-ÿ]/g, "").toLowerCase();
+  if (!s) return null;
+  if (s.startsWith("ativ")) return "Ativo";
+  if (s.startsWith("expir") || s.startsWith("venc")) return "Expirado";
+  if (s.startsWith("cancel")) return "Cancelado";
+  if (s.startsWith("inativ")) return "Inativo";
+  if (s.startsWith("pend")) return "Pendente";
+  return String(raw).trim() || null;
+}
+
 // ---------- Row parsing from extracted text ----------
 
 // Look for lines containing a phone-ish number; split heuristically.
@@ -124,7 +180,7 @@ export function parseRowsFromText(text: string): RawRow[] {
   const lines = text.split(/\r?\n/);
 
   // Phone regex: BR formats with parens/spaces/dashes or just 10-13 digits
-  const phoneRe = /(\(?\d{2}\)?\s?9?\d{4}[-\s]?\d{4}|\+?\d{12,14})/;
+  const phoneRe = /(\+?\s*55\s*)?(\(?\d{2}\)?\s?9?\d{4}[-\s]?\d{4}|\+?\d{12,14})/;
   const moneyRe = /R?\$?\s*\d{1,3}(?:\.\d{3})*,\d{2}|R?\$?\s*\d+[.,]\d{2}/;
   const dateRe = /\d{2}\/\d{2}\/\d{4}(?:\s+\d{1,2}:\d{2})?/;
   const situationRe = /\b(Ativo|Expirado|Vencido|Cancelado|Inativo|Pendente)\b/i;
@@ -132,6 +188,10 @@ export function parseRowsFromText(text: string): RawRow[] {
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) continue;
+    // skip obvious header lines
+    if (/^(C[óo]digo|Cliente|WhatsApp|Servi[çc]o|Valor|Data|Situa)/i.test(line) && !phoneRe.test(line)) {
+      continue;
+    }
     const phoneMatch = line.match(phoneRe);
     if (!phoneMatch) continue;
 
@@ -147,7 +207,8 @@ export function parseRowsFromText(text: string): RawRow[] {
       .trim();
 
     // before usually: [code] [cust_code] [name...]
-    const beforeTokens = before.split(/\s+/);
+    // strip pipes from the "before" segment for clean tokenization
+    const beforeTokens = before.replace(/[|¦•·]+/g, " ").split(/\s+/).filter(Boolean);
     let external_code: string | null = null;
     let external_customer_code: string | null = null;
     const nameParts: string[] = [];
@@ -160,28 +221,33 @@ export function parseRowsFromText(text: string): RawRow[] {
         nameParts.push(t);
       }
     }
-    const customer_name = nameParts.join(" ").trim() || null;
+    const rawName = nameParts.join(" ").trim() || null;
+    const customer_name = cleanCustomerName(
+      rawName,
+      external_customer_code ?? external_code,
+    );
 
     // after usually: [service...] [valor] [data] [situacao]
     let afterClean = after;
     if (sitMatch) afterClean = afterClean.replace(sitMatch[0], "").trim();
     if (dateMatch) afterClean = afterClean.replace(dateMatch[0], "").trim();
     if (moneyMatch) afterClean = afterClean.replace(moneyMatch[0], "").trim();
-    const service_name = afterClean.replace(/\s+/g, " ").trim() || null;
+    const service_name = cleanServiceName(afterClean);
 
     rows.push({
       external_code,
       external_customer_code,
       customer_name,
-      whatsapp_raw: phoneMatch[0],
+      whatsapp_raw: phoneMatch[0].trim(),
       service_name,
       amount_raw: moneyMatch?.[0] ?? null,
       expires_raw: dateMatch?.[0] ?? null,
-      situation: sitMatch?.[0] ?? null,
+      situation: cleanSituation(sitMatch?.[0] ?? null),
     });
   }
   return rows;
 }
+
 
 // ---------- Validation + de-dup ----------
 
@@ -197,7 +263,7 @@ export function validateRows(rows: RawRow[]): ValidatedRow[] {
     if (r.amount_raw && amount_cents === null) errors.push("Valor inválido");
     const expires_at = normalizeDate(r.expires_raw);
     if (r.expires_raw && !expires_at) errors.push("Data inválida");
-    if (!r.customer_name) errors.push("Nome ausente");
+    // customer_name nunca é nulo (fallback amigável aplicado no parser)
 
     let status: "valid" | "invalid" | "duplicate" = errors.length ? "invalid" : "valid";
     if (status === "valid" && whatsapp_e164) {

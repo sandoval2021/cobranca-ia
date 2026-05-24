@@ -239,15 +239,22 @@ function ImportarClientesPage() {
     }
   }
 
-  const canConfirm =
-    isAuthenticated &&
-    !!companyId &&
-    counts.valid > 0 &&
-    !confirming &&
-    flags.appEnv === "staging" &&
-    !flags.allowRealPayments &&
-    !flags.allowRealWhatsapp &&
-    !flags.allowRealAi;
+  const disabledReason: string | null = !isAuthenticated
+    ? "Entre com uma conta autorizada para importar."
+    : flags.appEnv !== "staging"
+      ? "A importação só funciona no ambiente de testes."
+      : !companyId
+        ? "Selecione uma empresa."
+        : !rows || rows.length === 0
+          ? "Envie um arquivo com pelo menos 1 cliente válido."
+          : counts.valid === 0 && counts.invalid > 0
+            ? "Revise os erros antes de continuar."
+            : counts.valid === 0
+              ? "Envie um arquivo com pelo menos 1 cliente válido."
+              : null;
+
+  const canConfirm = disabledReason === null && !confirming;
+
 
   return (
     <PageContainer>
@@ -402,60 +409,114 @@ function ImportarClientesPage() {
             </div>
           </div>
 
-          <div className="-mx-4 overflow-x-auto px-4">
-            <table className="w-full min-w-[720px] text-xs">
-              <thead className="text-muted-foreground">
-                <tr className="border-b">
-                  <th className="p-2 text-left font-medium">Status</th>
-                  <th className="p-2 text-left font-medium">Cliente</th>
-                  <th className="p-2 text-left font-medium">WhatsApp</th>
-                  <th className="p-2 text-left font-medium">Normalizado</th>
-                  <th className="p-2 text-left font-medium">Serviço</th>
-                  <th className="p-2 text-right font-medium">Valor</th>
-                  <th className="p-2 text-left font-medium">Expira</th>
-                  <th className="p-2 text-left font-medium">Situação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, i) => (
-                  <tr key={i} className="border-b last:border-0">
-                    <td className="p-2">
-                      <StatusPill status={r.status} errors={r.errors} />
-                    </td>
-                    <td className="p-2">
-                      <div className="font-medium">
-                        {r.customer_name ?? "—"}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {r.external_code ?? ""}{" "}
-                        {r.external_customer_code
-                          ? `/ ${r.external_customer_code}`
-                          : ""}
-                      </div>
-                    </td>
-                    <td className="p-2">{r.whatsapp_raw ?? "—"}</td>
-                    <td className="p-2 font-mono text-[11px]">
-                      {r.whatsapp_e164 ?? "—"}
-                    </td>
-                    <td className="p-2">{r.service_name ?? "—"}</td>
-                    <td className="p-2 text-right">
-                      {r.amount_cents != null
-                        ? (r.amount_cents / 100).toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          })
-                        : "—"}
-                    </td>
-                    <td className="p-2">
-                      {r.expires_at
-                        ? new Date(r.expires_at).toLocaleDateString("pt-BR")
-                        : r.expires_raw ?? "—"}
-                    </td>
-                    <td className="p-2">{r.situation ?? "—"}</td>
+          {/* Mobile: cards */}
+          <div className="space-y-2 sm:hidden">
+            {rows.map((r, i) => (
+              <div
+                key={i}
+                className="rounded-xl border bg-card/50 p-3 text-xs"
+              >
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <StatusPill status={r.status} errors={r.errors} />
+                  <span className="text-[10px] text-muted-foreground">
+                    {r.external_code ?? ""}
+                    {r.external_customer_code ? ` / ${r.external_customer_code}` : ""}
+                  </span>
+                </div>
+                <p className="truncate text-sm font-semibold">
+                  {r.customer_name ?? "—"}
+                </p>
+                <dl className="mt-2 grid grid-cols-[88px_1fr] gap-x-2 gap-y-1">
+                  <dt className="text-muted-foreground">WhatsApp</dt>
+                  <dd className="min-w-0 truncate">
+                    {r.whatsapp_raw ?? "—"}
+                    {r.whatsapp_e164 && (
+                      <span className="block font-mono text-[10px] text-muted-foreground">
+                        {r.whatsapp_e164}
+                      </span>
+                    )}
+                  </dd>
+                  <dt className="text-muted-foreground">Serviço</dt>
+                  <dd className="min-w-0 truncate">{r.service_name ?? "—"}</dd>
+                  <dt className="text-muted-foreground">Valor</dt>
+                  <dd>
+                    {r.amount_cents != null
+                      ? (r.amount_cents / 100).toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        })
+                      : "—"}
+                  </dd>
+                  <dt className="text-muted-foreground">Expira</dt>
+                  <dd>
+                    {r.expires_at
+                      ? new Date(r.expires_at).toLocaleDateString("pt-BR")
+                      : r.expires_raw ?? "—"}
+                  </dd>
+                  <dt className="text-muted-foreground">Situação</dt>
+                  <dd>{r.situation ?? "—"}</dd>
+                </dl>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden sm:block">
+            <div className="-mx-4 overflow-x-auto px-4">
+              <table className="w-full min-w-[720px] text-xs">
+                <thead className="text-muted-foreground">
+                  <tr className="border-b">
+                    <th className="p-2 text-left font-medium">Status</th>
+                    <th className="p-2 text-left font-medium">Cliente</th>
+                    <th className="p-2 text-left font-medium">WhatsApp</th>
+                    <th className="p-2 text-left font-medium">Normalizado</th>
+                    <th className="p-2 text-left font-medium">Serviço</th>
+                    <th className="p-2 text-right font-medium">Valor</th>
+                    <th className="p-2 text-left font-medium">Expira</th>
+                    <th className="p-2 text-left font-medium">Situação</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => (
+                    <tr key={i} className="border-b last:border-0">
+                      <td className="p-2">
+                        <StatusPill status={r.status} errors={r.errors} />
+                      </td>
+                      <td className="p-2">
+                        <div className="font-medium">
+                          {r.customer_name ?? "—"}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {r.external_code ?? ""}{" "}
+                          {r.external_customer_code
+                            ? `/ ${r.external_customer_code}`
+                            : ""}
+                        </div>
+                      </td>
+                      <td className="p-2">{r.whatsapp_raw ?? "—"}</td>
+                      <td className="p-2 font-mono text-[11px]">
+                        {r.whatsapp_e164 ?? "—"}
+                      </td>
+                      <td className="p-2">{r.service_name ?? "—"}</td>
+                      <td className="p-2 text-right">
+                        {r.amount_cents != null
+                          ? (r.amount_cents / 100).toLocaleString("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            })
+                          : "—"}
+                      </td>
+                      <td className="p-2">
+                        {r.expires_at
+                          ? new Date(r.expires_at).toLocaleDateString("pt-BR")
+                          : r.expires_raw ?? "—"}
+                      </td>
+                      <td className="p-2">{r.situation ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -463,22 +524,30 @@ function ImportarClientesPage() {
               {counts.valid} clientes válidos, {counts.duplicate} duplicados,{" "}
               {counts.invalid} com erro.
             </p>
-            <Button
-              size="lg"
-              onClick={onConfirm}
-              disabled={!canConfirm}
-              className="w-full sm:w-auto"
-            >
-              {confirming ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Importando…
-                </>
-              ) : (
-                <>Confirmar importação</>
+            <div className="flex flex-col items-stretch gap-1 sm:items-end">
+              <Button
+                size="lg"
+                onClick={onConfirm}
+                disabled={!canConfirm}
+                className="w-full sm:w-auto"
+              >
+                {confirming ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Importando…
+                  </>
+                ) : (
+                  <>Confirmar importação</>
+                )}
+              </Button>
+              {disabledReason && (
+                <p className="text-[11px] text-muted-foreground sm:text-right">
+                  {disabledReason}
+                </p>
               )}
-            </Button>
+            </div>
           </div>
+
         </Card>
       )}
 
