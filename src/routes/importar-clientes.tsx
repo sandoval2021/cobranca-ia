@@ -603,8 +603,9 @@ function ImportarClientesPage() {
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
-              {counts.valid} clientes válidos, {counts.duplicate} duplicados,{" "}
-              {counts.invalid} com erro.
+              {counts.new} novos, {counts.existing} já cadastrados (serão atualizados),{" "}
+              {counts.duplicate_file} duplicados no arquivo, {counts.error} com erro.
+              {" "}Clientes já cadastrados serão atualizados, não duplicados.
             </p>
             <div className="flex flex-col items-stretch gap-1 sm:items-end">
               <Button
