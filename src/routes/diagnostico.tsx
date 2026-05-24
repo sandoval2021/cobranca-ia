@@ -23,7 +23,7 @@ type Check = { label: string; status: CheckStatus; detail?: string };
 
 const TABLES = ["companies", "customers", "customer_charges", "messages", "ai_messages"];
 
-async function runCheck(table: string): Promise<Check> {
+async function runCheck(table: string, isAuthed: boolean): Promise<Check> {
   if (!supabaseConfigured || !supabase) return { label: table, status: "not_configured" };
   const { count, error } = await supabase
     .from(table)
@@ -31,6 +31,9 @@ async function runCheck(table: string): Promise<Check> {
   if (error) {
     const m = friendlyError(error.message);
     const denied = /permiss/i.test(m);
+    if (denied && !isAuthed) {
+      return { label: table, status: "protected", detail: "Faça login para acessar" };
+    }
     return { label: table, status: denied ? "denied" : "error", detail: m };
   }
   if (!count || count === 0) return { label: table, status: "empty" };
@@ -45,12 +48,16 @@ function ui(s: CheckStatus) {
       return { icon: CheckCircle2, color: "text-success", text: "Conectado" };
     case "empty":
       return { icon: MinusCircle, color: "text-warning", text: "Sem dados demo" };
+    case "protected":
+      return { icon: MinusCircle, color: "text-muted-foreground", text: "Protegido — faça login" };
     case "denied":
       return { icon: AlertCircle, color: "text-danger", text: "Permissão bloqueada" };
     case "not_configured":
       return { icon: AlertCircle, color: "text-danger", text: "Conexão não configurada" };
     case "error":
       return { icon: AlertCircle, color: "text-danger", text: "Erro de configuração" };
+    default:
+      return { icon: AlertCircle, color: "text-danger", text: "Desconhecido" };
   }
 }
 
