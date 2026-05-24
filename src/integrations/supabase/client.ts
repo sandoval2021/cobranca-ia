@@ -18,7 +18,7 @@ export const supabase: SupabaseClient | null = supabaseConfigured
 export function getSupabase(): SupabaseClient {
   if (!supabase) {
     throw new Error(
-      "Conexão não configurada. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.",
+      "Conexão não configurada. Defina SUPABASE_URL e SUPABASE_ANON_KEY.",
     );
   }
   return supabase;

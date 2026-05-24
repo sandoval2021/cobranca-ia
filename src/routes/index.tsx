@@ -61,8 +61,8 @@ function Dashboard() {
 
       {!supabaseConfigured && (
         <div className="mb-3 rounded-xl border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          Conexão não configurada. Defina <code>VITE_SUPABASE_URL</code> e{" "}
-          <code>VITE_SUPABASE_ANON_KEY</code> para ver os dados.
+          Conexão não configurada. Defina <code>SUPABASE_URL</code> e{" "}
+          <code>SUPABASE_ANON_KEY</code> para ver os dados.
         </div>
       )}
 

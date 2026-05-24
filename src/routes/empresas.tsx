@@ -37,7 +37,7 @@ function EmpresasPage() {
         </div>
       )}
       {state.status === "not_configured" && (
-        <EmptyState icon={Building2} title="Conexão não configurada" description="Defina as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY." />
+        <EmptyState icon={Building2} title="Conexão não configurada" description="Defina as variáveis SUPABASE_URL e SUPABASE_ANON_KEY." />
       )}
       {state.status === "error" && (
         <EmptyState icon={Building2} title="Não foi possível carregar" description={state.message} />
