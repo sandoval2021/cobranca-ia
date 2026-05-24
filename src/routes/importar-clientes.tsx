@@ -662,17 +662,27 @@ function ImportarClientesPage() {
             </p>
           )}
           {!result.message && (
-            <p className="mb-3 rounded-lg border border-emerald-300/50 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-700/50 dark:bg-emerald-950/40 dark:text-emerald-100">
-              {(result.imported ?? 0) > 0
-                ? "Novos clientes importados com sucesso."
-                : (result.updated ?? 0) > 0
-                  ? "Clientes atualizados com sucesso. Nenhum cliente duplicado foi criado."
-                  : "Importação concluída sem alterações."}
-              {" "}
-              <span className="opacity-80">
+            <div className="mb-3 space-y-1 rounded-lg border border-emerald-300/50 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-700/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+              {(result.imported ?? 0) > 0 && (
+                <p>{result.imported} novos clientes foram importados.</p>
+              )}
+              {(result.updated ?? 0) > 0 && (
+                <p>
+                  {result.updated} clientes já existiam e foram atualizados. Nenhum cliente duplicado foi criado.
+                </p>
+              )}
+              {(result.duplicated ?? 0) > 0 && (
+                <p>
+                  {result.duplicated} linhas duplicadas no arquivo foram ignoradas.
+                </p>
+              )}
+              {(result.imported ?? 0) === 0 && (result.updated ?? 0) === 0 && (
+                <p>Importação concluída sem alterações.</p>
+              )}
+              <p className="opacity-80">
                 Se o cliente já existia, o sistema atualiza os dados em vez de duplicar.
-              </span>
-            </p>
+              </p>
+            </div>
           )}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <ResultCard label="Importados" value={result.imported ?? 0} />
