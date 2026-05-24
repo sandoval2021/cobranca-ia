@@ -509,7 +509,9 @@ function ChargeCard({
   onChanged: () => void;
 }) {
   const kind = classifyCharge(charge.status);
-  const who = customer?.name ?? (charge.customer_id ? "Cliente não encontrado" : "Sem cliente");
+  const who = charge.customer_id
+    ? customer?.name ?? "Cliente não encontrado"
+    : "Cobrança sem cliente vinculado";
   const phone = prettyPhone(customer?.whatsapp);
   const [busy, setBusy] = useState<null | "paid" | "overdue" | "cancel">(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
