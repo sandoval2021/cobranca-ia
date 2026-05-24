@@ -34,10 +34,13 @@ import { useAuth } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 import {
   extractPdfText,
+  normalizeWhatsApp,
   parseRowsFromText,
   validateRows,
   type ValidatedRow,
 } from "@/lib/import-parse";
+
+type RowKind = "new" | "existing" | "duplicate_file" | "error";
 
 export const Route = createFileRoute("/importar-clientes")({
   component: ImportarClientesPage,
@@ -75,6 +78,8 @@ function ImportarClientesPage() {
     errored?: number;
     message?: string;
   } | null>(null);
+  const [existingMap, setExistingMap] = useState<Record<string, { name?: string }>>({});
+  const [lookupLoading, setLookupLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   // Auto-select single company
@@ -93,15 +98,82 @@ function ImportarClientesPage() {
   useEffect(() => {
     setCompanyId(null);
     setResult(null);
+    setExistingMap({});
   }, [user?.id]);
 
+  // Lookup existing customers by WhatsApp for the selected company
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      setExistingMap({});
+      if (!supabase || !supabaseConfigured) return;
+      if (!isAuthenticated || !companyId || !rows || rows.length === 0) return;
+      const e164s = Array.from(
+        new Set(rows.map((r) => r.whatsapp_e164).filter((x): x is string => !!x)),
+      );
+      if (e164s.length === 0) return;
+      setLookupLoading(true);
+      try {
+        // Defensive: customers may store WhatsApp in different columns.
+        // Fetch a wide projection scoped to the company and normalize client-side.
+        const { data, error } = await supabase
+          .from("customers")
+          .select("id,name,nome,full_name,phone,telefone,whatsapp,whatsapp_e164")
+          .eq("company_id", companyId)
+          .limit(2000);
+        if (error || !data) return;
+        const map: Record<string, { name?: string }> = {};
+        const want = new Set(e164s);
+        for (const c of data as Array<Record<string, unknown>>) {
+          const candidates = [
+            c.whatsapp_e164,
+            c.whatsapp,
+            c.phone,
+            c.telefone,
+          ];
+          for (const cand of candidates) {
+            if (typeof cand !== "string") continue;
+            const norm = normalizeWhatsApp(cand);
+            if (norm && want.has(norm) && !map[norm]) {
+              const name =
+                (typeof c.name === "string" && c.name) ||
+                (typeof c.nome === "string" && c.nome) ||
+                (typeof c.full_name === "string" && c.full_name) ||
+                undefined;
+              map[norm] = { name: name || undefined };
+              break;
+            }
+          }
+        }
+        if (!cancelled) setExistingMap(map);
+      } catch {
+        /* silent — preview still works without enrichment */
+      } finally {
+        if (!cancelled) setLookupLoading(false);
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [rows, companyId, isAuthenticated]);
+
+  const rowKind = (r: ValidatedRow): RowKind => {
+    if (r.status === "invalid") return "error";
+    if (r.status === "duplicate") return "duplicate_file";
+    if (r.whatsapp_e164 && existingMap[r.whatsapp_e164]) return "existing";
+    return "new";
+  };
+
   const counts = useMemo(() => {
-    const c = { valid: 0, duplicate: 0, invalid: 0 };
+    const c = { new: 0, existing: 0, duplicate_file: 0, error: 0 };
     rows?.forEach((r) => {
-      c[r.status]++;
+      c[rowKind(r)]++;
     });
     return c;
-  }, [rows]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, existingMap]);
+
 
   async function onFile(file: File) {
     setParseError(null);
@@ -217,17 +289,17 @@ function ImportarClientesPage() {
         toast.error(friendly);
         setResult({
           message: friendly,
-          duplicated: counts.duplicate,
-          errored: counts.invalid,
+          duplicated: counts.duplicate_file,
+          errored: counts.error,
         });
       } else {
         const r = (data ?? {}) as Record<string, number>;
         setResult({
-          imported: r.imported ?? validas.length,
+          imported: r.imported ?? 0,
           updated: r.updated ?? 0,
           charges: r.charges ?? 0,
-          duplicated: counts.duplicate,
-          errored: counts.invalid,
+          duplicated: counts.duplicate_file,
+          errored: counts.error,
         });
         toast.success("Importação concluída.");
       }
@@ -247,9 +319,9 @@ function ImportarClientesPage() {
         ? "Selecione uma empresa."
         : !rows || rows.length === 0
           ? "Envie um arquivo com pelo menos 1 cliente válido."
-          : counts.valid === 0 && counts.invalid > 0
+          : counts.new + counts.existing === 0 && counts.error > 0
             ? "Revise os erros antes de continuar."
-            : counts.valid === 0
+            : counts.new + counts.existing === 0
               ? "Envie um arquivo com pelo menos 1 cliente válido."
               : null;
 
@@ -391,23 +463,33 @@ function ImportarClientesPage() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-medium">Prévia</span>
-              <HelpTip text="Confira os dados extraídos. Só linhas válidas serão cadastradas." />
+              <HelpTip text="“Já cadastrado” significa que o WhatsApp já existe nesta empresa e será atualizado, não duplicado." />
+              {lookupLoading && (
+                <span className="text-[10px] text-muted-foreground">
+                  verificando cadastrados…
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5 text-xs">
               <Badge variant="secondary" className="gap-1">
                 <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                {counts.valid} válidos
+                {counts.new} novos
               </Badge>
               <Badge variant="secondary" className="gap-1">
-                <CopyIcon className="h-3 w-3 text-amber-600" />
-                {counts.duplicate} duplicados
+                <CheckCircle2 className="h-3 w-3 text-amber-600" />
+                {counts.existing} já cadastrados
+              </Badge>
+              <Badge variant="secondary" className="gap-1">
+                <CopyIcon className="h-3 w-3 text-orange-600" />
+                {counts.duplicate_file} duplicados no arquivo
               </Badge>
               <Badge variant="secondary" className="gap-1">
                 <XCircle className="h-3 w-3 text-destructive" />
-                {counts.invalid} com erro
+                {counts.error} com erro
               </Badge>
             </div>
           </div>
+
 
           {/* Mobile: cards */}
           <div className="space-y-2 sm:hidden">
@@ -417,7 +499,7 @@ function ImportarClientesPage() {
                 className="rounded-xl border bg-card/50 p-3 text-xs"
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <StatusPill status={r.status} errors={r.errors} />
+                  <KindPill kind={rowKind(r)} errors={r.errors} />
                   <span className="text-[10px] text-muted-foreground">
                     {r.external_code ?? ""}
                     {r.external_customer_code ? ` / ${r.external_customer_code}` : ""}
@@ -426,6 +508,15 @@ function ImportarClientesPage() {
                 <p className="truncate text-sm font-semibold">
                   {r.customer_name ?? "—"}
                 </p>
+                {rowKind(r) === "existing" && r.whatsapp_e164 && (
+                  <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
+                    Já existe como:{" "}
+                    <span className="font-medium">
+                      {existingMap[r.whatsapp_e164]?.name ?? "cliente cadastrado"}
+                    </span>
+                    . Será atualizado.
+                  </p>
+                )}
                 <dl className="mt-2 grid grid-cols-[88px_1fr] gap-x-2 gap-y-1">
                   <dt className="text-muted-foreground">WhatsApp</dt>
                   <dd className="min-w-0 truncate">
@@ -480,7 +571,7 @@ function ImportarClientesPage() {
                   {rows.map((r, i) => (
                     <tr key={i} className="border-b last:border-0">
                       <td className="p-2">
-                        <StatusPill status={r.status} errors={r.errors} />
+                        <KindPill kind={rowKind(r)} errors={r.errors} />
                       </td>
                       <td className="p-2">
                         <div className="font-medium">
@@ -491,6 +582,12 @@ function ImportarClientesPage() {
                           {r.external_customer_code
                             ? `/ ${r.external_customer_code}`
                             : ""}
+                          {rowKind(r) === "existing" && r.whatsapp_e164 && (
+                            <span className="ml-1 text-amber-700 dark:text-amber-300">
+                              · já existe como{" "}
+                              {existingMap[r.whatsapp_e164]?.name ?? "cliente cadastrado"}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="p-2">{r.whatsapp_raw ?? "—"}</td>
@@ -521,8 +618,9 @@ function ImportarClientesPage() {
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
-              {counts.valid} clientes válidos, {counts.duplicate} duplicados,{" "}
-              {counts.invalid} com erro.
+              {counts.new} novos, {counts.existing} já cadastrados (serão atualizados),{" "}
+              {counts.duplicate_file} duplicados no arquivo, {counts.error} com erro.
+              {" "}Clientes já cadastrados serão atualizados, não duplicados.
             </p>
             <div className="flex flex-col items-stretch gap-1 sm:items-end">
               <Button
@@ -564,17 +662,27 @@ function ImportarClientesPage() {
             </p>
           )}
           {!result.message && (
-            <p className="mb-3 rounded-lg border border-emerald-300/50 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-700/50 dark:bg-emerald-950/40 dark:text-emerald-100">
-              {(result.imported ?? 0) > 0
-                ? "Novos clientes importados com sucesso."
-                : (result.updated ?? 0) > 0
-                  ? "Clientes atualizados com sucesso. Nenhum cliente duplicado foi criado."
-                  : "Importação concluída sem alterações."}
-              {" "}
-              <span className="opacity-80">
+            <div className="mb-3 space-y-1 rounded-lg border border-emerald-300/50 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-700/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+              {(result.imported ?? 0) > 0 && (
+                <p>{result.imported} novos clientes foram importados.</p>
+              )}
+              {(result.updated ?? 0) > 0 && (
+                <p>
+                  {result.updated} clientes já existiam e foram atualizados. Nenhum cliente duplicado foi criado.
+                </p>
+              )}
+              {(result.duplicated ?? 0) > 0 && (
+                <p>
+                  {result.duplicated} linhas duplicadas no arquivo foram ignoradas.
+                </p>
+              )}
+              {(result.imported ?? 0) === 0 && (result.updated ?? 0) === 0 && (
+                <p>Importação concluída sem alterações.</p>
+              )}
+              <p className="opacity-80">
                 Se o cliente já existia, o sistema atualiza os dados em vez de duplicar.
-              </span>
-            </p>
+              </p>
+            </div>
           )}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <ResultCard label="Importados" value={result.imported ?? 0} />
@@ -598,25 +706,32 @@ function ImportarClientesPage() {
   );
 }
 
-function StatusPill({
-  status,
+function KindPill({
+  kind,
   errors,
 }: {
-  status: "valid" | "invalid" | "duplicate";
+  kind: RowKind;
   errors: string[];
 }) {
-  if (status === "valid")
+  if (kind === "new")
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
         <CheckCircle2 className="h-3 w-3" />
-        Válido
+        Novo · será importado
       </span>
     );
-  if (status === "duplicate")
+  if (kind === "existing")
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+        <CheckCircle2 className="h-3 w-3" />
+        Já cadastrado · será atualizado
+      </span>
+    );
+  if (kind === "duplicate_file")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
         <CopyIcon className="h-3 w-3" />
-        Duplicado
+        Duplicado no arquivo
       </span>
     );
   return (
