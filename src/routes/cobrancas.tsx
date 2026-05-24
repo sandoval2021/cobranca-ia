@@ -657,6 +657,20 @@ function ChargeCard({
         statusClassName={chargeClass(charge.status)}
         onSaved={onChanged}
       />
+
+      <AnalyzeWithAIDialog
+        open={showAnalyze}
+        onClose={() => setShowAnalyze(false)}
+        chargeId={charge.id}
+        customerName={who}
+        whatsappPretty={phone}
+        amountBRL={charge.amount_cents != null ? fmtBRL(charge.amount_cents) : null}
+        dueDatePretty={charge.due_date ? fmtDate(charge.due_date) : null}
+        statusPretty={chargeLabel(charge.status)}
+        statusClassName={chargeClass(charge.status)}
+        onSaved={onChanged}
+        onMessageCreated={onChanged}
+      />
     </div>
   );
 }
