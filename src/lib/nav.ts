@@ -7,6 +7,7 @@ import {
   Sparkles,
   Settings,
   Activity,
+  Upload,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
