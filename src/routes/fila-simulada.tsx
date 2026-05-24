@@ -400,21 +400,23 @@ function FilaSimuladaPage() {
     if (!supabase || !companyId) return;
     setQueueLoading(true);
     setQueueErr(null);
-    const { data, error } = await supabase.rpc("get_collection_simulation_queue_admin", {
+    const payload = {
       p_company_id: companyId,
       p_status: statusFilter === "all" ? null : statusFilter,
       p_customer_id: null,
       p_charge_id: null,
       p_limit: 200,
       p_offset: 0,
-    });
+    };
+    const { data, error } = await supabase.rpc("get_collection_simulation_queue_admin", payload);
     setQueueLoading(false);
     if (error) {
       setQueueErr(friendly(error.message, "load"));
+      if (IS_STAGING) console.warn("[fila-simulada] load error", techDetail(error, payload));
       return;
     }
-    const arr = Array.isArray(data) ? (data as Row[]) : data ? [data as Row] : [];
-    setQueue(arr.map(normalizeItem));
+    stagingLog("get_collection_simulation_queue_admin", data);
+    setQueue(extractRows(data).map(normalizeItem));
   };
 
   useEffect(() => {
@@ -428,52 +430,65 @@ function FilaSimuladaPage() {
     setPreviewLoading(true);
     setPreviewErr(null);
     setPreview(null);
-    const { data, error } = await supabase.rpc("preview_collection_simulation_queue_admin", {
+    const payload = {
       p_company_id: companyId,
       p_from_date: fromDate,
       p_to_date: toDate,
       p_limit: 100,
-    });
+    };
+    const { data, error } = await supabase.rpc("preview_collection_simulation_queue_admin", payload);
     setPreviewLoading(false);
     if (error) {
       setPreviewErr(friendly(error.message, "preview"));
+      if (IS_STAGING) console.warn("[fila-simulada] preview error", techDetail(error, payload));
       return;
     }
-    const arr = Array.isArray(data) ? (data as Row[]) : data ? [data as Row] : [];
-    setPreview(arr.map(normalizeItem));
+    stagingLog("preview_collection_simulation_queue_admin", data);
+    setPreview(extractRows(data).map(normalizeItem));
   };
 
   // rebuild
   const doRebuild = async () => {
     if (!supabase || !companyId) return;
     setRebuilding(true);
-    const { error } = await supabase.rpc("rebuild_collection_simulation_queue_admin", {
+    const payload = {
       p_company_id: companyId,
       p_from_date: fromDate,
       p_to_date: toDate,
       p_limit: 200,
-    });
+    };
+    const { data, error } = await supabase.rpc("rebuild_collection_simulation_queue_admin", payload);
     setRebuilding(false);
     setConfirmRebuild(false);
     if (error) {
-      toast.error(friendly(error.message, "rebuild"));
+      toast.error(friendly(error.message, "rebuild"), {
+        description: IS_STAGING ? techDetail(error, payload) : undefined,
+      });
       return;
     }
+    stagingLog("rebuild_collection_simulation_queue_admin", data);
     toast.success("Fila simulada reconstruída com sucesso.");
     await loadQueue();
   };
 
   // per-item actions
-  const callAction = async (id: string, action: "approve_simulation" | "skip" | "cancel") => {
+  const callAction = async (
+    id: string | null,
+    action: "approve_simulation" | "skip" | "cancel",
+  ) => {
     if (!supabase) return;
+    if (!isUuid(id)) {
+      toast.error("Este item da fila está sem identificação. Atualize a lista e tente novamente.");
+      return;
+    }
+    const payload = { p_queue_item_id: id, p_action: action };
     setBusyId(id);
-    const { error } = await supabase.rpc("update_collection_queue_item_admin", {
-      p_queue_item_id: id,
-      p_action: action,
-    });
+    const { error } = await supabase.rpc("update_collection_queue_item_admin", payload);
     setBusyId(null);
     if (error) {
-      toast.error(friendly(error.message, "action"));
+      toast.error(friendly(error.message, "action"), {
+        description: IS_STAGING ? techDetail(error, payload) : undefined,
+      });
       return;
     }
     if (action === "approve_simulation") toast.success("Item aprovado para simulação.");
@@ -482,15 +497,20 @@ function FilaSimuladaPage() {
     await loadQueue();
   };
 
-  const createMessage = async (id: string) => {
+  const createMessage = async (id: string | null) => {
     if (!supabase) return;
+    if (!isUuid(id)) {
+      toast.error("Este item da fila está sem identificação. Atualize a lista e tente novamente.");
+      return;
+    }
+    const payload = { p_queue_item_id: id };
     setBusyId(id);
-    const { error } = await supabase.rpc("create_simulated_message_from_queue_admin", {
-      p_queue_item_id: id,
-    });
+    const { error } = await supabase.rpc("create_simulated_message_from_queue_admin", payload);
     setBusyId(null);
     if (error) {
-      toast.error(friendly(error.message, "create"));
+      toast.error(friendly(error.message, "create"), {
+        description: IS_STAGING ? techDetail(error, payload) : undefined,
+      });
       return;
     }
     toast.success("Mensagem simulada criada com sucesso.");
@@ -504,7 +524,7 @@ function FilaSimuladaPage() {
     return queue.filter((it) => {
       if (filter !== "all" && it.status !== filter) return false;
       if (!q) return true;
-      const name = it.customerName.toLowerCase();
+      const name = (it.customerName ?? "").toLowerCase();
       const phone = (it.whatsapp ?? "").replace(/\D+/g, "");
       return name.includes(q) || (qd && phone.includes(qd));
     });
