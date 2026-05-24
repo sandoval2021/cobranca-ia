@@ -433,6 +433,8 @@ function CustomerSheet({
   const [mode, setMode] = useState<Mode>("view");
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [busy, setBusy] = useState<null | "save" | "archive" | "reactivate">(null);
+  const [timelineBump, setTimelineBump] = useState(0);
+  const reloadTimeline = () => setTimelineBump((n) => n + 1);
 
   useEffect(() => {
     if (!open || !customer) return;
