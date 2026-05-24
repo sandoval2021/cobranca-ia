@@ -264,7 +264,7 @@ function CobrancasPage() {
       for (const cols of selectFallbacks) {
         const res = await supabase!.from("customers").select(cols).limit(500);
         if (!res.error) {
-          customersData = (res.data ?? []) as Row[];
+          customersData = (res.data ?? []) as unknown as Row[];
           break;
         }
         console.warn("[cobrancas] customers select falhou:", cols, res.error.message);
@@ -280,7 +280,7 @@ function CobrancasPage() {
             .select(cols)
             .in("id", missing);
           if (!res.error) {
-            customersData = customersData.concat((res.data ?? []) as Row[]);
+            customersData = customersData.concat((res.data ?? []) as unknown as Row[]);
             break;
           }
           console.warn("[cobrancas] customers .in() falhou:", cols, res.error.message);
