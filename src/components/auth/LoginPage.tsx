@@ -113,6 +113,24 @@ export function LoginPage() {
           </form>
         </div>
 
+        <div className="mt-4 rounded-xl border border-border bg-card/60 p-3 text-[11px]">
+          <p className="mb-2 font-semibold text-muted-foreground">Diagnóstico</p>
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <dt className="text-muted-foreground">Supabase URL</dt>
+            <dd className={hasUrl ? "text-success font-medium" : "text-destructive font-medium"}>{hasUrl ? "Sim" : "Não"}</dd>
+            <dt className="text-muted-foreground">Supabase anon key</dt>
+            <dd className={hasKey ? "text-success font-medium" : "text-destructive font-medium"}>{hasKey ? "Sim" : "Não"}</dd>
+            <dt className="text-muted-foreground">Ambiente</dt>
+            <dd className="font-medium">{flags.appEnv}</dd>
+            <dt className="text-muted-foreground">Pagamentos reais</dt>
+            <dd className="font-medium">{flags.allowRealPayments ? "Liberado" : "Bloqueado"}</dd>
+            <dt className="text-muted-foreground">WhatsApp real</dt>
+            <dd className="font-medium">{flags.allowRealWhatsapp ? "Liberado" : "Bloqueado"}</dd>
+            <dt className="text-muted-foreground">IA real</dt>
+            <dd className="font-medium">{flags.allowRealAi ? "Liberada" : "Bloqueada"}</dd>
+          </dl>
+        </div>
+
         <p className="mt-4 text-center text-[11px] text-muted-foreground">
           Ambiente de testes — sem cobrança, WhatsApp ou IA reais.
         </p>
