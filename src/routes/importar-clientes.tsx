@@ -34,10 +34,13 @@ import { useAuth } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 import {
   extractPdfText,
+  normalizeWhatsApp,
   parseRowsFromText,
   validateRows,
   type ValidatedRow,
 } from "@/lib/import-parse";
+
+type RowKind = "new" | "existing" | "duplicate_file" | "error";
 
 export const Route = createFileRoute("/importar-clientes")({
   component: ImportarClientesPage,
