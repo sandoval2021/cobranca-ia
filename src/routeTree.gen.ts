@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MensagensRouteImport } from './routes/mensagens'
+import { Route as ImportarClientesRouteImport } from './routes/importar-clientes'
 import { Route as IaRouteImport } from './routes/ia'
 import { Route as EmpresasRouteImport } from './routes/empresas'
 import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
@@ -21,6 +22,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const MensagensRoute = MensagensRouteImport.update({
   id: '/mensagens',
   path: '/mensagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImportarClientesRoute = ImportarClientesRouteImport.update({
+  id: '/importar-clientes',
+  path: '/importar-clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IaRoute = IaRouteImport.update({
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/diagnostico': typeof DiagnosticoRoute
   '/empresas': typeof EmpresasRoute
   '/ia': typeof IaRoute
+  '/importar-clientes': typeof ImportarClientesRoute
   '/mensagens': typeof MensagensRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/diagnostico': typeof DiagnosticoRoute
   '/empresas': typeof EmpresasRoute
   '/ia': typeof IaRoute
+  '/importar-clientes': typeof ImportarClientesRoute
   '/mensagens': typeof MensagensRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/diagnostico': typeof DiagnosticoRoute
   '/empresas': typeof EmpresasRoute
   '/ia': typeof IaRoute
+  '/importar-clientes': typeof ImportarClientesRoute
   '/mensagens': typeof MensagensRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/diagnostico'
     | '/empresas'
     | '/ia'
+    | '/importar-clientes'
     | '/mensagens'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/diagnostico'
     | '/empresas'
     | '/ia'
+    | '/importar-clientes'
     | '/mensagens'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/diagnostico'
     | '/empresas'
     | '/ia'
+    | '/importar-clientes'
     | '/mensagens'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   DiagnosticoRoute: typeof DiagnosticoRoute
   EmpresasRoute: typeof EmpresasRoute
   IaRoute: typeof IaRoute
+  ImportarClientesRoute: typeof ImportarClientesRoute
   MensagensRoute: typeof MensagensRoute
 }
 
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/mensagens'
       fullPath: '/mensagens'
       preLoaderRoute: typeof MensagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/importar-clientes': {
+      id: '/importar-clientes'
+      path: '/importar-clientes'
+      fullPath: '/importar-clientes'
+      preLoaderRoute: typeof ImportarClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ia': {
@@ -203,8 +223,19 @@ const rootRouteChildren: RootRouteChildren = {
   DiagnosticoRoute: DiagnosticoRoute,
   EmpresasRoute: EmpresasRoute,
   IaRoute: IaRoute,
+  ImportarClientesRoute: ImportarClientesRoute,
   MensagensRoute: MensagensRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
