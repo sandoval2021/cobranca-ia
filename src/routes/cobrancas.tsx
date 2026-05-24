@@ -13,7 +13,12 @@ import {
   RefreshCw,
   Loader2,
   Save,
+  Sparkles,
 } from "lucide-react";
+import {
+  GenerateMessageDialog,
+  SimulatedMessagesPanel,
+} from "@/components/messages/simulated-messages";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
@@ -515,6 +520,7 @@ function ChargeCard({
   const phone = prettyPhone(customer?.whatsapp);
   const [busy, setBusy] = useState<null | "paid" | "overdue" | "cancel">(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [showGenerate, setShowGenerate] = useState(false);
 
   const callRpc = async (fn: string, success: string, kindBusy: "paid" | "overdue" | "cancel") => {
     if (!supabase) return;
@@ -560,6 +566,14 @@ function ChargeCard({
       <div className="mt-3 flex flex-wrap justify-end gap-2">
         <Button size="sm" variant="outline" onClick={onOpen} className="gap-1.5">
           <Eye className="h-3.5 w-3.5" /> Detalhes
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowGenerate(true)}
+          className="gap-1.5"
+        >
+          <Sparkles className="h-3.5 w-3.5" /> Gerar mensagem
         </Button>
         {kind !== "paga" && kind !== "cancelada" && (
           <Button
@@ -619,6 +633,19 @@ function ChargeCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <GenerateMessageDialog
+        open={showGenerate}
+        onClose={() => setShowGenerate(false)}
+        chargeId={charge.id}
+        customerName={who}
+        whatsappPretty={phone}
+        amountBRL={charge.amount_cents != null ? fmtBRL(charge.amount_cents) : null}
+        dueDatePretty={charge.due_date ? fmtDate(charge.due_date) : null}
+        statusPretty={chargeLabel(charge.status)}
+        statusClassName={chargeClass(charge.status)}
+        onSaved={onChanged}
+      />
     </div>
   );
 }
@@ -648,6 +675,8 @@ function ChargeSheet({
   const [due, setDue] = useState("");
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showGenerate, setShowGenerate] = useState(false);
+  const [simBump, setSimBump] = useState(0);
 
   useEffect(() => {
     if (!open || !charge) return;
@@ -835,7 +864,43 @@ function ChargeSheet({
               )}
             </>
           )}
+
+          {/* Mensagens simuladas + ação */}
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Mensagens
+            </h3>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowGenerate(true)}
+              className="h-8 gap-1.5"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Gerar mensagem
+            </Button>
+          </div>
+          <SimulatedMessagesPanel
+            customerId={charge.customer_id}
+            chargeId={charge.id}
+            reloadKey={simBump}
+          />
         </div>
+
+        <GenerateMessageDialog
+          open={showGenerate}
+          onClose={() => setShowGenerate(false)}
+          chargeId={charge.id}
+          customerName={who}
+          whatsappPretty={phone}
+          amountBRL={charge.amount_cents != null ? fmtBRL(charge.amount_cents) : null}
+          dueDatePretty={charge.due_date ? fmtDate(charge.due_date) : null}
+          statusPretty={chargeLabel(charge.status)}
+          statusClassName={chargeClass(charge.status)}
+          onSaved={() => {
+            setSimBump((n) => n + 1);
+            onChanged();
+          }}
+        />
       </SheetContent>
     </Sheet>
   );

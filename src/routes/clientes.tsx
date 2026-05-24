@@ -51,6 +51,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { SimulatedMessagesPanel } from "@/components/messages/simulated-messages";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
@@ -763,6 +764,14 @@ function DetailView({
             ))}
           </ul>
         )}
+
+        <div className="mt-4">
+          <SimulatedMessagesPanel
+            customerId={customer.id}
+            chargeId={null}
+            reloadKey={timelineBump}
+          />
+        </div>
       </TabsContent>
 
       <TabsContent value="historico" className="mt-4">
