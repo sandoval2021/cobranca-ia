@@ -690,25 +690,32 @@ function ImportarClientesPage() {
   );
 }
 
-function StatusPill({
-  status,
+function KindPill({
+  kind,
   errors,
 }: {
-  status: "valid" | "invalid" | "duplicate";
+  kind: RowKind;
   errors: string[];
 }) {
-  if (status === "valid")
+  if (kind === "new")
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
         <CheckCircle2 className="h-3 w-3" />
-        Válido
+        Novo · será importado
       </span>
     );
-  if (status === "duplicate")
+  if (kind === "existing")
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+        <CheckCircle2 className="h-3 w-3" />
+        Já cadastrado · será atualizado
+      </span>
+    );
+  if (kind === "duplicate_file")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">
         <CopyIcon className="h-3 w-3" />
-        Duplicado
+        Duplicado no arquivo
       </span>
     );
   return (
