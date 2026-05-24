@@ -463,23 +463,33 @@ function ImportarClientesPage() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-medium">Prévia</span>
-              <HelpTip text="Confira os dados extraídos. Só linhas válidas serão cadastradas." />
+              <HelpTip text="“Já cadastrado” significa que o WhatsApp já existe nesta empresa e será atualizado, não duplicado." />
+              {lookupLoading && (
+                <span className="text-[10px] text-muted-foreground">
+                  verificando cadastrados…
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5 text-xs">
               <Badge variant="secondary" className="gap-1">
                 <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                {counts.valid} válidos
+                {counts.new} novos
               </Badge>
               <Badge variant="secondary" className="gap-1">
-                <CopyIcon className="h-3 w-3 text-amber-600" />
-                {counts.duplicate} duplicados
+                <CheckCircle2 className="h-3 w-3 text-amber-600" />
+                {counts.existing} já cadastrados
+              </Badge>
+              <Badge variant="secondary" className="gap-1">
+                <CopyIcon className="h-3 w-3 text-orange-600" />
+                {counts.duplicate_file} duplicados no arquivo
               </Badge>
               <Badge variant="secondary" className="gap-1">
                 <XCircle className="h-3 w-3 text-destructive" />
-                {counts.invalid} com erro
+                {counts.error} com erro
               </Badge>
             </div>
           </div>
+
 
           {/* Mobile: cards */}
           <div className="space-y-2 sm:hidden">
