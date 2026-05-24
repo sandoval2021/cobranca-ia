@@ -14,6 +14,11 @@ import { Route as VencimentosRouteImport } from './routes/vencimentos'
 import { Route as ServidoresRouteImport } from './routes/servidores'
 import { Route as ResultadosRouteImport } from './routes/resultados'
 import { Route as PagamentosRouteImport } from './routes/pagamentos'
+import { Route as MensagensRouteImport } from './routes/mensagens'
+import { Route as IaRouteImport } from './routes/ia'
+import { Route as EmpresasRouteImport } from './routes/empresas'
+import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
+import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as CobrancasRouteImport } from './routes/cobrancas'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as AssistenteRouteImport } from './routes/assistente'
@@ -48,6 +53,31 @@ const ResultadosRoute = ResultadosRouteImport.update({
 const PagamentosRoute = PagamentosRouteImport.update({
   id: '/pagamentos',
   path: '/pagamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MensagensRoute = MensagensRouteImport.update({
+  id: '/mensagens',
+  path: '/mensagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IaRoute = IaRouteImport.update({
+  id: '/ia',
+  path: '/ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresasRoute = EmpresasRouteImport.update({
+  id: '/empresas',
+  path: '/empresas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnosticoRoute = DiagnosticoRouteImport.update({
+  id: '/diagnostico',
+  path: '/diagnostico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CobrancasRoute = CobrancasRouteImport.update({
@@ -107,6 +137,11 @@ export interface FileRoutesByFullPath {
   '/assistente': typeof AssistenteRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
+  '/configuracoes': typeof ConfiguracoesRoute
+  '/diagnostico': typeof DiagnosticoRoute
+  '/empresas': typeof EmpresasRoute
+  '/ia': typeof IaRoute
+  '/mensagens': typeof MensagensRoute
   '/pagamentos': typeof PagamentosRoute
   '/resultados': typeof ResultadosRoute
   '/servidores': typeof ServidoresRoute
@@ -124,6 +159,11 @@ export interface FileRoutesByTo {
   '/assistente': typeof AssistenteRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
+  '/configuracoes': typeof ConfiguracoesRoute
+  '/diagnostico': typeof DiagnosticoRoute
+  '/empresas': typeof EmpresasRoute
+  '/ia': typeof IaRoute
+  '/mensagens': typeof MensagensRoute
   '/pagamentos': typeof PagamentosRoute
   '/resultados': typeof ResultadosRoute
   '/servidores': typeof ServidoresRoute
@@ -142,6 +182,11 @@ export interface FileRoutesById {
   '/assistente': typeof AssistenteRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
+  '/configuracoes': typeof ConfiguracoesRoute
+  '/diagnostico': typeof DiagnosticoRoute
+  '/empresas': typeof EmpresasRoute
+  '/ia': typeof IaRoute
+  '/mensagens': typeof MensagensRoute
   '/pagamentos': typeof PagamentosRoute
   '/resultados': typeof ResultadosRoute
   '/servidores': typeof ServidoresRoute
@@ -161,6 +206,11 @@ export interface FileRouteTypes {
     | '/assistente'
     | '/clientes'
     | '/cobrancas'
+    | '/configuracoes'
+    | '/diagnostico'
+    | '/empresas'
+    | '/ia'
+    | '/mensagens'
     | '/pagamentos'
     | '/resultados'
     | '/servidores'
@@ -178,6 +228,11 @@ export interface FileRouteTypes {
     | '/assistente'
     | '/clientes'
     | '/cobrancas'
+    | '/configuracoes'
+    | '/diagnostico'
+    | '/empresas'
+    | '/ia'
+    | '/mensagens'
     | '/pagamentos'
     | '/resultados'
     | '/servidores'
@@ -195,6 +250,11 @@ export interface FileRouteTypes {
     | '/assistente'
     | '/clientes'
     | '/cobrancas'
+    | '/configuracoes'
+    | '/diagnostico'
+    | '/empresas'
+    | '/ia'
+    | '/mensagens'
     | '/pagamentos'
     | '/resultados'
     | '/servidores'
@@ -213,6 +273,11 @@ export interface RootRouteChildren {
   AssistenteRoute: typeof AssistenteRoute
   ClientesRoute: typeof ClientesRoute
   CobrancasRoute: typeof CobrancasRoute
+  ConfiguracoesRoute: typeof ConfiguracoesRoute
+  DiagnosticoRoute: typeof DiagnosticoRoute
+  EmpresasRoute: typeof EmpresasRoute
+  IaRoute: typeof IaRoute
+  MensagensRoute: typeof MensagensRoute
   PagamentosRoute: typeof PagamentosRoute
   ResultadosRoute: typeof ResultadosRoute
   ServidoresRoute: typeof ServidoresRoute
@@ -260,6 +325,41 @@ declare module '@tanstack/react-router' {
       path: '/pagamentos'
       fullPath: '/pagamentos'
       preLoaderRoute: typeof PagamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mensagens': {
+      id: '/mensagens'
+      path: '/mensagens'
+      fullPath: '/mensagens'
+      preLoaderRoute: typeof MensagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ia': {
+      id: '/ia'
+      path: '/ia'
+      fullPath: '/ia'
+      preLoaderRoute: typeof IaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresas': {
+      id: '/empresas'
+      path: '/empresas'
+      fullPath: '/empresas'
+      preLoaderRoute: typeof EmpresasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnostico': {
+      id: '/diagnostico'
+      path: '/diagnostico'
+      fullPath: '/diagnostico'
+      preLoaderRoute: typeof DiagnosticoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configuracoes': {
+      id: '/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof ConfiguracoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cobrancas': {
@@ -341,6 +441,11 @@ const rootRouteChildren: RootRouteChildren = {
   AssistenteRoute: AssistenteRoute,
   ClientesRoute: ClientesRoute,
   CobrancasRoute: CobrancasRoute,
+  ConfiguracoesRoute: ConfiguracoesRoute,
+  DiagnosticoRoute: DiagnosticoRoute,
+  EmpresasRoute: EmpresasRoute,
+  IaRoute: IaRoute,
+  MensagensRoute: MensagensRoute,
   PagamentosRoute: PagamentosRoute,
   ResultadosRoute: ResultadosRoute,
   ServidoresRoute: ServidoresRoute,
