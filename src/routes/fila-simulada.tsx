@@ -745,7 +745,12 @@ function FilaSimuladaPage() {
         {!queueLoading && filteredQueue.length > 0 && (
           <ul className="space-y-2">
             {filteredQueue.map((it) => (
-              <li key={it.id} className="rounded-xl border border-border bg-card p-3 shadow-card sm:p-4">
+              <li key={it.id ?? `idx-${Math.random()}`} className="rounded-xl border border-border bg-card p-3 shadow-card sm:p-4">
+                {!it.id && IS_STAGING && (
+                  <p className="mb-2 rounded-md bg-warning-soft px-2 py-1 text-[11px] text-warning">
+                    Item sem ID — ações desabilitadas. Atualize a lista.
+                  </p>
+                )}
                 <QueueCard
                   item={it}
                   busy={busyId === it.id}
