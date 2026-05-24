@@ -571,7 +571,7 @@ function ImportarClientesPage() {
                   {rows.map((r, i) => (
                     <tr key={i} className="border-b last:border-0">
                       <td className="p-2">
-                        <StatusPill status={r.status} errors={r.errors} />
+                        <KindPill kind={rowKind(r)} errors={r.errors} />
                       </td>
                       <td className="p-2">
                         <div className="font-medium">
@@ -582,6 +582,12 @@ function ImportarClientesPage() {
                           {r.external_customer_code
                             ? `/ ${r.external_customer_code}`
                             : ""}
+                          {rowKind(r) === "existing" && r.whatsapp_e164 && (
+                            <span className="ml-1 text-amber-700 dark:text-amber-300">
+                              · já existe como{" "}
+                              {existingMap[r.whatsapp_e164]?.name ?? "cliente cadastrado"}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="p-2">{r.whatsapp_raw ?? "—"}</td>
