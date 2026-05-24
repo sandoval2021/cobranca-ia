@@ -888,9 +888,9 @@ function QueueCard({
       </div>
 
       <div className="mt-2 grid gap-x-3 gap-y-1 text-xs text-muted-foreground sm:grid-cols-2">
-        <span><strong className="text-foreground">Valor:</strong> {fmtBRL(item.amountCents)}</span>
-        <span><strong className="text-foreground">Vencimento:</strong> {fmtDate(item.dueDate)}</span>
-        <span><strong className="text-foreground">Planejada:</strong> {fmtDateTime(item.scheduledAt)}</span>
+        <span><strong className="text-foreground">Valor:</strong> {item.amountCents != null ? fmtBRL(item.amountCents) : "Valor não informado"}</span>
+        <span><strong className="text-foreground">Vencimento:</strong> {item.dueDate ? fmtDate(item.dueDate) : "Vencimento não informado"}</span>
+        <span><strong className="text-foreground">Planejada:</strong> {item.scheduledAt ? fmtDateTime(item.scheduledAt) : "Data planejada não informada"}</span>
         <span>
           <strong className="text-foreground">Tom:</strong> {TONE_LABEL[item.tone]}
           {item.attempt != null && (
