@@ -78,6 +78,8 @@ function ImportarClientesPage() {
     errored?: number;
     message?: string;
   } | null>(null);
+  const [existingMap, setExistingMap] = useState<Record<string, { name?: string }>>({});
+  const [lookupLoading, setLookupLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   // Auto-select single company
@@ -96,15 +98,82 @@ function ImportarClientesPage() {
   useEffect(() => {
     setCompanyId(null);
     setResult(null);
+    setExistingMap({});
   }, [user?.id]);
 
+  // Lookup existing customers by WhatsApp for the selected company
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      setExistingMap({});
+      if (!supabase || !supabaseConfigured) return;
+      if (!isAuthenticated || !companyId || !rows || rows.length === 0) return;
+      const e164s = Array.from(
+        new Set(rows.map((r) => r.whatsapp_e164).filter((x): x is string => !!x)),
+      );
+      if (e164s.length === 0) return;
+      setLookupLoading(true);
+      try {
+        // Defensive: customers may store WhatsApp in different columns.
+        // Fetch a wide projection scoped to the company and normalize client-side.
+        const { data, error } = await supabase
+          .from("customers")
+          .select("id,name,nome,full_name,phone,telefone,whatsapp,whatsapp_e164")
+          .eq("company_id", companyId)
+          .limit(2000);
+        if (error || !data) return;
+        const map: Record<string, { name?: string }> = {};
+        const want = new Set(e164s);
+        for (const c of data as Array<Record<string, unknown>>) {
+          const candidates = [
+            c.whatsapp_e164,
+            c.whatsapp,
+            c.phone,
+            c.telefone,
+          ];
+          for (const cand of candidates) {
+            if (typeof cand !== "string") continue;
+            const norm = normalizeWhatsApp(cand);
+            if (norm && want.has(norm) && !map[norm]) {
+              const name =
+                (typeof c.name === "string" && c.name) ||
+                (typeof c.nome === "string" && c.nome) ||
+                (typeof c.full_name === "string" && c.full_name) ||
+                undefined;
+              map[norm] = { name: name || undefined };
+              break;
+            }
+          }
+        }
+        if (!cancelled) setExistingMap(map);
+      } catch {
+        /* silent — preview still works without enrichment */
+      } finally {
+        if (!cancelled) setLookupLoading(false);
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [rows, companyId, isAuthenticated]);
+
+  const rowKind = (r: ValidatedRow): RowKind => {
+    if (r.status === "invalid") return "error";
+    if (r.status === "duplicate") return "duplicate_file";
+    if (r.whatsapp_e164 && existingMap[r.whatsapp_e164]) return "existing";
+    return "new";
+  };
+
   const counts = useMemo(() => {
-    const c = { valid: 0, duplicate: 0, invalid: 0 };
+    const c = { new: 0, existing: 0, duplicate_file: 0, error: 0 };
     rows?.forEach((r) => {
-      c[r.status]++;
+      c[rowKind(r)]++;
     });
     return c;
-  }, [rows]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, existingMap]);
+
 
   async function onFile(file: File) {
     setParseError(null);
