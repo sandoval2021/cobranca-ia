@@ -818,9 +818,13 @@ function PreviewCardRow({ item }: { item: QueueItem }) {
     <>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{item.customerName}</p>
+          <p className="truncate text-sm font-semibold">
+            {item.customerName ?? "Cliente não identificado"}
+          </p>
           <p className="truncate text-xs text-muted-foreground">
-            {fmtPhone(item.whatsapp) ?? "Sem WhatsApp"} · {fmtBRL(item.amountCents)} · venc. {fmtDate(item.dueDate)}
+            {fmtPhone(item.whatsapp) ?? "Sem WhatsApp cadastrado"} ·{" "}
+            {item.amountCents != null ? fmtBRL(item.amountCents) : "Valor não informado"} · venc.{" "}
+            {item.dueDate ? fmtDate(item.dueDate) : "Vencimento não informado"}
           </p>
         </div>
         <span
