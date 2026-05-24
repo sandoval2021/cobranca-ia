@@ -127,8 +127,8 @@ function DiagnosticoPage() {
         </dl>
         {!supabaseConfigured && (
           <p className="mt-3 rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning">
-            Para conectar, defina <code>VITE_SUPABASE_URL</code> e{" "}
-            <code>VITE_SUPABASE_ANON_KEY</code> nas variáveis do projeto e
+            Para conectar, defina <code>SUPABASE_URL</code> e{" "}
+            <code>SUPABASE_ANON_KEY</code> nas variáveis do projeto e
             republique o app.
           </p>
         )}
