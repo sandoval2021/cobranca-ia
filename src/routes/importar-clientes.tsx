@@ -296,7 +296,9 @@ function ImportarClientesPage() {
               Sua conta ainda não tem empresa autorizada para importação.
             </p>
           )}
-        {companies.status === "ready" && companies.data.length > 0 && (
+        {isAuthenticated &&
+          companies.status === "ready" &&
+          companies.data.length > 0 && (
           <Select
             value={companyId ?? undefined}
             onValueChange={(v) => setCompanyId(v)}
