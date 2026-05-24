@@ -260,6 +260,8 @@ function ImportarClientesPage() {
         </p>
       </div>
 
+      <AuthGate />
+
       {/* Empresa */}
       <Card className="mb-4 p-4">
         <div className="mb-2 flex items-center gap-1.5">
@@ -267,22 +269,33 @@ function ImportarClientesPage() {
           <span className="text-sm font-medium">Empresa</span>
           <HelpTip text="Os clientes importados ficarão vinculados a esta empresa." />
         </div>
-        {companies.status === "loading" && (
+        {!isAuthenticated && (
+          <p className="text-sm text-muted-foreground">
+            Entre para ver as empresas autorizadas para a sua conta.
+          </p>
+        )}
+        {isAuthenticated && companies.status === "loading" && (
           <p className="text-sm text-muted-foreground">Carregando empresas…</p>
         )}
-        {companies.status === "not_configured" && (
+        {isAuthenticated && companies.status === "not_configured" && (
           <p className="text-sm text-muted-foreground">
             Conexão não configurada.
           </p>
         )}
-        {companies.status === "error" && (
-          <p className="text-sm text-destructive">{companies.message}</p>
-        )}
-        {companies.status === "ready" && companies.data.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Nenhuma empresa cadastrada.
+        {isAuthenticated && companies.status === "error" && (
+          <p className="text-sm text-destructive">
+            {/permiss/i.test(companies.message)
+              ? "Sua conta não tem permissão para listar empresas."
+              : companies.message}
           </p>
         )}
+        {isAuthenticated &&
+          companies.status === "ready" &&
+          companies.data.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Sua conta ainda não tem empresa autorizada para importação.
+            </p>
+          )}
         {companies.status === "ready" && companies.data.length > 0 && (
           <Select
             value={companyId ?? undefined}
