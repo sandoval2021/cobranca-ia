@@ -10,6 +10,15 @@ import {
 import appCss from "../styles.css?url";
 import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner";
+import { useAuth } from "@/lib/use-auth";
+import { LoginPage, SessionLoading } from "@/components/auth/LoginPage";
+
+function AuthGateApp() {
+  const { loading, user } = useAuth();
+  if (loading) return <SessionLoading />;
+  if (!user) return <LoginPage />;
+  return <AppShell />;
+}
 
 function NotFoundComponent() {
   return (
@@ -123,7 +132,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppShell />
+      <AuthGateApp />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
   );

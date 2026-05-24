@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useSupabaseList } from "@/lib/use-supabase";
 import { useAuth } from "@/lib/use-auth";
-import { AuthGate } from "@/components/auth/AuthGate";
+
 import { flags } from "@/lib/flags";
 import {
   extractPdfText,
@@ -273,7 +273,7 @@ function ImportarClientesPage() {
         </p>
       </div>
 
-      <AuthGate />
+      
 
       {/* Empresa */}
       <Card className="mb-4 p-4">
