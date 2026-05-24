@@ -236,6 +236,7 @@ function CollectionRulesBlock() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saveErr, setSaveErr] = useState<string | null>(null);
+  const [saveTechDetail, setSaveTechDetail] = useState<string | null>(null);
 
   // Resolve company
   useEffect(() => {
@@ -301,44 +302,110 @@ function CollectionRulesBlock() {
 
   const onSave = async () => {
     if (!settings || !companyId || !supabase) return;
-    setSaving(true);
-    setSaveErr(null);
-    setSavedAt(null);
-    // staging: trava obrigatória
-    const safe: Settings = {
-      ...settings,
-      simulation_mode: true,
-      require_manual_approval: true,
+
+    // ---- normalizar horários -> HH:mm:ss | null
+    const toHMS = (v: string | null | undefined): string | null => {
+      if (v == null) return null;
+      const s = String(v).trim();
+      if (!s) return null;
+      const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (!m) return null;
+      const hh = m[1].padStart(2, "0");
+      const mm = m[2];
+      const ss = m[3] ?? "00";
+      const hN = Number(hh), mN = Number(mm), sN = Number(ss);
+      if (hN > 23 || mN > 59 || sN > 59) return null;
+      return `${hh}:${mm}:${ss}`;
     };
-    const { error } = await supabase.rpc("upsert_collection_settings_admin", {
+
+    const tones: Tone[] = ["amigavel", "firme", "curto", "lembrete"];
+    const validTone = tones.includes(settings.default_tone) ? settings.default_tone : "amigavel";
+
+    const daysBefore = settings.days_before_due.filter((n) => Number.isInteger(n) && n >= 0);
+    const daysAfter = settings.days_after_due.filter((n) => Number.isInteger(n) && n >= 0);
+    const weekdays = settings.allowed_weekdays.filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
+    const maxAttempts = Math.trunc(Number(settings.max_attempts_per_charge));
+    const minHours = Math.trunc(Number(settings.min_hours_between_attempts));
+    const qhStart = toHMS(settings.quiet_hours_start);
+    const qhEnd = toHMS(settings.quiet_hours_end);
+
+    setSaveErr(null);
+    setSaveTechDetail(null);
+    setSavedAt(null);
+
+    if (
+      !companyId ||
+      !(maxAttempts >= 1 && maxAttempts <= 10) ||
+      !(minHours >= 1 && minHours <= 168) ||
+      (settings.quiet_hours_start && qhStart === null) ||
+      (settings.quiet_hours_end && qhEnd === null)
+    ) {
+      setSaveErr("Revise os campos destacados antes de salvar.");
+      return;
+    }
+
+    setSaving(true);
+
+    const payload = {
       p_company_id: companyId,
-      p_enabled: safe.enabled,
-      p_simulation_mode: safe.simulation_mode,
-      p_default_tone: safe.default_tone,
-      p_days_before_due: safe.days_before_due,
-      p_days_after_due: safe.days_after_due,
-      p_max_attempts_per_charge: safe.max_attempts_per_charge,
-      p_min_hours_between_attempts: safe.min_hours_between_attempts,
-      p_quiet_hours_start: safe.quiet_hours_start,
-      p_quiet_hours_end: safe.quiet_hours_end,
-      p_allowed_weekdays: safe.allowed_weekdays,
-      p_prevent_duplicate_messages: safe.prevent_duplicate_messages,
-      p_allow_paid_charge_messages: safe.allow_paid_charge_messages,
-      p_allow_cancelled_charge_messages: safe.allow_cancelled_charge_messages,
-      p_require_manual_approval: safe.require_manual_approval,
-    });
+      p_enabled: Boolean(settings.enabled),
+      p_simulation_mode: true,
+      p_default_tone: validTone,
+      p_days_before_due: daysBefore,
+      p_days_after_due: daysAfter,
+      p_max_attempts_per_charge: maxAttempts,
+      p_min_hours_between_attempts: minHours,
+      p_quiet_hours_start: qhStart,
+      p_quiet_hours_end: qhEnd,
+      p_allowed_weekdays: weekdays,
+      p_prevent_duplicate_messages: Boolean(settings.prevent_duplicate_messages),
+      p_allow_paid_charge_messages: Boolean(settings.allow_paid_charge_messages),
+      p_allow_cancelled_charge_messages: Boolean(settings.allow_cancelled_charge_messages),
+      p_require_manual_approval: true,
+    };
+
+    const { data, error } = await supabase.rpc("upsert_collection_settings_admin", payload);
     setSaving(false);
+
     if (error) {
-      const msg = friendlyErr(error.message);
+      const friendly = friendlyErr(error.message);
       setSaveErr(
-        msg.includes("permissão")
+        friendly.includes("permissão")
           ? "Você não tem permissão para alterar estas regras."
           : "Não foi possível salvar as regras agora.",
       );
+      const e = error as { message?: string; details?: string; hint?: string; code?: string };
+      const parts = [
+        e.message && `mensagem: ${e.message}`,
+        e.details && `detalhe: ${e.details}`,
+        e.hint && `dica: ${e.hint}`,
+        e.code && `código: ${e.code}`,
+      ].filter(Boolean) as string[];
+      if (flags.appEnv !== "production" && parts.length) {
+        setSaveTechDetail(parts.join(" · "));
+      }
+      // log seguro (sem segredos)
+      console.warn("[upsert_collection_settings_admin] falhou:", parts.join(" | "));
       return;
     }
-    setSettings(safe);
+
+    // sucesso — atualiza estado local com retorno (se houver) e mantém travas
+    const raw = (Array.isArray(data) ? data[0] : data) as Row | null;
+    const next = raw ? fromRpc(raw) : { ...settings };
+    setSettings({ ...next, simulation_mode: true, require_manual_approval: true });
     setSavedAt(Date.now());
+
+    // recarrega do servidor para garantir persistência
+    try {
+      const reload = await supabase.rpc("get_collection_settings_admin", { p_company_id: companyId });
+      if (!reload.error) {
+        const r = (Array.isArray(reload.data) ? reload.data[0] : reload.data) as Row | null;
+        const fresh = fromRpc(r);
+        setSettings({ ...fresh, simulation_mode: true, require_manual_approval: true });
+      }
+    } catch {
+      // silencioso: já mostramos sucesso
+    }
   };
 
   // States
@@ -543,7 +610,15 @@ function CollectionRulesBlock() {
           <div className="sticky bottom-2 z-10 -mx-1 flex flex-col gap-2 rounded-xl border border-border bg-card/95 p-3 shadow-card backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 text-xs">
               {saveErr ? (
-                <span className="text-danger">{saveErr}</span>
+                <div className="space-y-1">
+                  <span className="text-danger">{saveErr}</span>
+                  {saveTechDetail && (
+                    <details className="text-[11px] text-muted-foreground">
+                      <summary className="cursor-pointer">Detalhe técnico (staging)</summary>
+                      <p className="mt-1 break-all">{saveTechDetail}</p>
+                    </details>
+                  )}
+                </div>
               ) : savedAt ? (
                 <span className="inline-flex items-center gap-1 text-success">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Regras de cobrança salvas com sucesso.
