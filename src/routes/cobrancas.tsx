@@ -230,17 +230,11 @@ function CobrancasPage() {
     setLoading(true);
     setErrorMsg(null);
     (async () => {
-      const [chargesRes, customersRes] = await Promise.all([
-        supabase!
-          .from("customer_charges")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(200),
-        supabase!
-          .from("customers")
-          .select("id,name,nome,full_name,whatsapp_e164,whatsapp,phone,telefone")
-          .limit(500),
-      ]);
+      const chargesRes = await supabase!
+        .from("customer_charges")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
       if (!alive) return;
       if (chargesRes.error) {
         setErrorMsg(friendlyRpcError(chargesRes.error.message));
@@ -248,24 +242,67 @@ function CobrancasPage() {
         setLoading(false);
         return;
       }
-      setItems(((chargesRes.data ?? []) as Row[]).map(normalizeCharge));
-      if (!customersRes.error && customersRes.data) {
-        const map: Record<string, CustomerLite> = {};
-        const list: CustomerLite[] = [];
-        for (const c of customersRes.data as Row[]) {
-          const id = String(c.id ?? "");
-          if (!id) continue;
-          const lite: CustomerLite = {
-            id,
-            name: str(c, ["name", "nome", "full_name"]) ?? "Cliente",
-            whatsapp: str(c, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) ?? null,
-          };
-          map[id] = lite;
-          list.push(lite);
+      const charges = ((chargesRes.data ?? []) as Row[]).map(normalizeCharge);
+      setItems(charges);
+
+      // Coleta customer_ids (como string) presentes nas cobranças
+      const customerIds = Array.from(
+        new Set(
+          charges
+            .map((c) => (c.customer_id != null ? String(c.customer_id) : null))
+            .filter((v): v is string => !!v),
+        ),
+      );
+
+      // Busca defensiva de customers com fallback de colunas
+      const selectFallbacks = [
+        "id,name,nome,full_name,whatsapp_e164,whatsapp,phone,telefone",
+        "id,name,nome,full_name,whatsapp,phone,telefone",
+        "*",
+      ];
+      let customersData: Row[] = [];
+      for (const cols of selectFallbacks) {
+        const res = await supabase!.from("customers").select(cols).limit(500);
+        if (!res.error) {
+          customersData = (res.data ?? []) as unknown as Row[];
+          break;
         }
-        setCustomers(map);
-        setCustomerList(list.sort((a, b) => a.name.localeCompare(b.name)));
+        console.warn("[cobrancas] customers select falhou:", cols, res.error.message);
       }
+
+      // Garante que todo customer_id referenciado seja buscado, mesmo fora do limit
+      const haveIds = new Set(customersData.map((c) => String(c.id ?? "")));
+      const missing = customerIds.filter((id) => !haveIds.has(id));
+      if (missing.length > 0) {
+        for (const cols of selectFallbacks) {
+          const res = await supabase!
+            .from("customers")
+            .select(cols)
+            .in("id", missing);
+          if (!res.error) {
+            customersData = customersData.concat((res.data ?? []) as unknown as Row[]);
+            break;
+          }
+          console.warn("[cobrancas] customers .in() falhou:", cols, res.error.message);
+        }
+      }
+
+      if (!alive) return;
+      const map: Record<string, CustomerLite> = {};
+      const list: CustomerLite[] = [];
+      for (const c of customersData) {
+        const id = String(c.id ?? "");
+        if (!id) continue;
+        const lite: CustomerLite = {
+          id,
+          name: str(c, ["name", "nome", "full_name"]) ?? "Cliente",
+          whatsapp: str(c, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) ?? null,
+        };
+        if (!map[id]) list.push(lite);
+        map[id] = lite;
+      }
+      setCustomers(map);
+      setCustomerList(list.sort((a, b) => a.name.localeCompare(b.name)));
       setLoading(false);
     })();
     return () => {
@@ -472,7 +509,9 @@ function ChargeCard({
   onChanged: () => void;
 }) {
   const kind = classifyCharge(charge.status);
-  const who = customer?.name ?? (charge.customer_id ? "Cliente não encontrado" : "Sem cliente");
+  const who = charge.customer_id
+    ? customer?.name ?? "Cliente não encontrado"
+    : "Cobrança sem cliente vinculado";
   const phone = prettyPhone(customer?.whatsapp);
   const [busy, setBusy] = useState<null | "paid" | "overdue" | "cancel">(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -504,7 +543,7 @@ function ChargeCard({
             </span>
           </div>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {phone ?? "Sem contato"}
+            {phone ?? (charge.customer_id ? (customer ? "Sem WhatsApp cadastrado" : "—") : "—")}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
             <span>
