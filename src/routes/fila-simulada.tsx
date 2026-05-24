@@ -838,7 +838,7 @@ function PreviewCardRow({ item }: { item: QueueItem }) {
         </span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span><strong className="text-foreground">Planejada:</strong> {fmtDateTime(item.scheduledAt)}</span>
+        <span><strong className="text-foreground">Planejada:</strong> {item.scheduledAt ? fmtDateTime(item.scheduledAt) : "Data planejada não informada"}</span>
         {rel && <span>({rel})</span>}
         <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground">
           {TONE_LABEL[item.tone]}
