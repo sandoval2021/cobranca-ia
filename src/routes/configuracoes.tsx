@@ -1089,6 +1089,16 @@ function SchedulePreview({ companyId }: { companyId: string }) {
             )}
           </div>
         )}
+
+        <div className="mt-2 flex flex-col gap-2 rounded-lg border border-dashed border-border bg-surface-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 text-xs text-muted-foreground">
+            <p className="text-sm font-medium text-foreground">Fila simulada</p>
+            <p>Veja todas as cobranças planejadas pelo sistema antes de qualquer envio real.</p>
+          </div>
+          <Button asChild variant="outline" size="sm" className="shrink-0">
+            <Link to="/fila-simulada">Abrir fila simulada</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
