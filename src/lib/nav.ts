@@ -7,6 +7,7 @@ import {
   Sparkles,
   Settings,
   Activity,
+  Upload,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -21,6 +22,7 @@ export const ownerNav: NavItem[] = [
   { to: "/", label: "Início", icon: LayoutDashboard, hint: "Visão geral do ambiente" },
   { to: "/empresas", label: "Empresas", icon: Building2, hint: "Empresas cadastradas" },
   { to: "/clientes", label: "Clientes", icon: Users, hint: "Sua base de clientes" },
+  { to: "/importar-clientes", label: "Importar clientes", icon: Upload, hint: "Importar clientes a partir de PDF" },
   { to: "/cobrancas", label: "Cobranças", icon: Receipt, hint: "Cobranças geradas" },
   { to: "/mensagens", label: "Mensagens", icon: MessageCircle, hint: "Mensagens enviadas" },
   { to: "/ia", label: "IA Cobrança", icon: Sparkles, hint: "Mensagens geradas pela IA" },
