@@ -499,7 +499,7 @@ function ImportarClientesPage() {
                 className="rounded-xl border bg-card/50 p-3 text-xs"
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <StatusPill status={r.status} errors={r.errors} />
+                  <KindPill kind={rowKind(r)} errors={r.errors} />
                   <span className="text-[10px] text-muted-foreground">
                     {r.external_code ?? ""}
                     {r.external_customer_code ? ` / ${r.external_customer_code}` : ""}
@@ -508,6 +508,15 @@ function ImportarClientesPage() {
                 <p className="truncate text-sm font-semibold">
                   {r.customer_name ?? "—"}
                 </p>
+                {rowKind(r) === "existing" && r.whatsapp_e164 && (
+                  <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
+                    Já existe como:{" "}
+                    <span className="font-medium">
+                      {existingMap[r.whatsapp_e164]?.name ?? "cliente cadastrado"}
+                    </span>
+                    . Será atualizado.
+                  </p>
+                )}
                 <dl className="mt-2 grid grid-cols-[88px_1fr] gap-x-2 gap-y-1">
                   <dt className="text-muted-foreground">WhatsApp</dt>
                   <dd className="min-w-0 truncate">
