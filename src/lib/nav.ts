@@ -8,6 +8,7 @@ import {
   Settings,
   Activity,
   Upload,
+  ListChecks,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
