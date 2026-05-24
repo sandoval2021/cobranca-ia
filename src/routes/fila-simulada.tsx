@@ -37,7 +37,13 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
+import { flags } from "@/lib/flags";
 import { toast } from "sonner";
+
+const IS_STAGING = flags.appEnv !== "production";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (v: unknown): v is string =>
+  typeof v === "string" && UUID_RE.test(v.trim());
 
 export const Route = createFileRoute("/fila-simulada")({ component: FilaSimuladaPage });
 
