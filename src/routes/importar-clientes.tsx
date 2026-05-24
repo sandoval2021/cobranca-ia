@@ -101,30 +101,60 @@ function ImportarClientesPage() {
     setExistingMap({});
   }, [user?.id]);
 
+  const [lookupBump, setLookupBump] = useState(0);
+  const [lookupReady, setLookupReady] = useState(false);
+
   // Lookup existing customers by WhatsApp for the selected company
   useEffect(() => {
     let cancelled = false;
     async function run() {
       setExistingMap({});
+      setLookupReady(false);
       if (!supabase || !supabaseConfigured) return;
       if (!isAuthenticated || !companyId || !rows || rows.length === 0) return;
       const e164s = Array.from(
         new Set(rows.map((r) => r.whatsapp_e164).filter((x): x is string => !!x)),
       );
-      if (e164s.length === 0) return;
+      if (e164s.length === 0) {
+        setLookupReady(true);
+        return;
+      }
       setLookupLoading(true);
-      try {
-        // Defensive: customers may store WhatsApp in different columns.
-        // Fetch a wide projection scoped to the company and normalize client-side.
-        const { data, error } = await supabase
+
+      // Try wide projection first; if a column doesn't exist (e.g. whatsapp_e164),
+      // retry with a safe minimal projection. Either way, normalize client-side.
+      const tryFetch = async (cols: string) => {
+        return supabase!
           .from("customers")
-          .select("id,name,nome,full_name,phone,telefone,whatsapp,whatsapp_e164")
+          .select(cols)
           .eq("company_id", companyId)
-          .limit(2000);
-        if (error || !data) return;
-        const map: Record<string, { name?: string }> = {};
+          .limit(5000);
+      };
+
+      let rawData: Array<Record<string, unknown>> | null = null;
+      try {
+        let res = await tryFetch("id,name,nome,full_name,phone,telefone,whatsapp,whatsapp_e164");
+        if (res.error) {
+          res = await tryFetch("id,name,nome,full_name,phone,telefone,whatsapp");
+        }
+        if (res.error) {
+          res = await tryFetch("*");
+        }
+        if (!res.error && res.data) {
+          rawData = res.data as unknown as Array<Record<string, unknown>>;
+        } else if (res.error) {
+          console.warn("[importar-clientes] lookup failed", res.error);
+        }
+      } catch (err) {
+        console.warn("[importar-clientes] lookup threw", err);
+      }
+
+      if (cancelled) return;
+
+      const map: Record<string, { name?: string }> = {};
+      if (rawData) {
         const want = new Set(e164s);
-        for (const c of data as Array<Record<string, unknown>>) {
+        for (const c of rawData) {
           const candidates = [
             c.whatsapp_e164,
             c.whatsapp,
@@ -145,22 +175,21 @@ function ImportarClientesPage() {
             }
           }
         }
-        if (!cancelled) setExistingMap(map);
-      } catch {
-        /* silent — preview still works without enrichment */
-      } finally {
-        if (!cancelled) setLookupLoading(false);
       }
+      setExistingMap(map);
+      setLookupReady(true);
+      setLookupLoading(false);
     }
     run();
     return () => {
       cancelled = true;
     };
-  }, [rows, companyId, isAuthenticated]);
+  }, [rows, companyId, isAuthenticated, lookupBump]);
 
-  const rowKind = (r: ValidatedRow): RowKind => {
+  const rowKind = (r: ValidatedRow): RowKind | "pending" => {
     if (r.status === "invalid") return "error";
     if (r.status === "duplicate") return "duplicate_file";
+    if (!lookupReady) return "pending";
     if (r.whatsapp_e164 && existingMap[r.whatsapp_e164]) return "existing";
     return "new";
   };
