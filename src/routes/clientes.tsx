@@ -543,6 +543,7 @@ function CustomerSheet({
               onSaved={async () => {
                 setMode("view");
                 onChanged();
+                reloadTimeline();
                 // refresh
                 if (!supabase) return;
                 setDetails({ status: "loading" });
