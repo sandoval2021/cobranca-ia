@@ -191,8 +191,8 @@ function friendly(message: string, ctx: "load" | "preview" | "rebuild" | "action
 
 // ---------- normalized item shape ----------
 type QueueItem = {
-  id: string;
-  customerName: string;
+  id: string | null;
+  customerName: string | null;
   whatsapp: string | null;
   amountCents: number | null;
   dueDate: string | null;
@@ -205,25 +205,124 @@ type QueueItem = {
   allowed: boolean | null;
 };
 
+function asRow(v: unknown): Row | null {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Row) : null;
+}
+
 function normalizeItem(r: Row): QueueItem {
+  const customer = asRow(r.customer);
+  const charge = asRow(r.charge);
+
+  const rawId =
+    pickStr(r, ["id", "queue_item_id", "item_id"]) ?? null;
+  const id = isUuid(rawId) ? (rawId as string) : null;
+
+  // customer name from many shapes (including string-valued "customer")
+  let customerName =
+    pickStr(r, ["customer_name", "nome_cliente"]) ??
+    (customer ? pickStr(customer, ["name", "nome", "full_name"]) : null);
+  if (!customerName) {
+    const cVal = r.customer;
+    if (typeof cVal === "string" && cVal.trim()) customerName = cVal;
+  }
+  if (!customerName) customerName = pickStr(r, ["name"]);
+
+  const whatsapp =
+    pickStr(r, ["whatsapp_e164", "customer_whatsapp", "whatsapp", "phone", "telefone"]) ??
+    (customer ? pickStr(customer, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) : null);
+
+  const amountCentsDirect = pickNum(r, ["amount_cents", "charge_amount_cents", "valor_cents"]);
+  const amountCents =
+    amountCentsDirect ??
+    (charge ? pickNum(charge, ["amount_cents"]) : null) ??
+    (() => {
+      const a = pickNum(r, ["amount", "valor"]) ?? (charge ? pickNum(charge, ["amount"]) : null);
+      return a != null ? Math.round(a * 100) : null;
+    })();
+
+  const dueDate =
+    pickStr(r, ["due_at", "due_date", "charge_due_at", "charge_due_date", "vencimento"]) ??
+    (charge ? pickStr(charge, ["due_at", "due_date"]) : null);
+
+  const scheduledAt = pickStr(r, [
+    "scheduled_for", "scheduled_at", "planned_for", "planned_at",
+    "schedule_date", "data_planejada",
+  ]);
+
   const status = normalizeStatus(pickStr(r, ["status", "queue_status"]));
   const allowed = pickBool(r, ["allowed", "is_allowed"]);
+
   return {
-    id: pickStr(r, ["id", "queue_item_id"]) ?? "",
-    customerName: pickStr(r, ["customer_name", "customer", "nome_cliente", "name"]) ?? "Cliente",
-    whatsapp: pickStr(r, ["whatsapp_e164", "whatsapp", "phone", "telefone", "customer_whatsapp"]),
-    amountCents:
-      pickNum(r, ["amount_cents", "valor_cents"]) ??
-      (pickNum(r, ["amount", "valor"]) != null ? Math.round((pickNum(r, ["amount", "valor"]) as number) * 100) : null),
-    dueDate: pickStr(r, ["due_date", "vencimento", "charge_due_date"]),
-    scheduledAt: pickStr(r, ["scheduled_at", "planned_at", "scheduled_for", "data_planejada"]),
+    id,
+    customerName: customerName ?? null,
+    whatsapp,
+    amountCents,
+    dueDate,
+    scheduledAt,
     status: allowed === false && status === "planned" ? "blocked" : status,
     tone: normalizeTone(pickStr(r, ["tone", "tom"])),
     reason: pickStr(r, ["reason", "motivo"]),
     blockedReason: pickStr(r, ["blocked_reason", "block_reason", "motivo_bloqueio"]),
-    attempt: pickNum(r, ["attempt", "attempt_number", "tentativa"]),
+    attempt: pickNum(r, ["attempt_number", "attempt", "tentativa"]),
     allowed,
   };
+}
+
+// Extract the actual array of items from RPC responses that may be:
+//   - an array directly
+//   - { items: [...] } or { queue_preview: [...] } or { queue: [...] } or { data: [...] }
+//   - { success: true, items: [...] }
+function extractRows(data: unknown): Row[] {
+  if (Array.isArray(data)) return data as Row[];
+  const o = asRow(data);
+  if (!o) return [];
+  const keys = ["items", "queue_preview", "queue", "data", "rows", "results"];
+  for (const k of keys) {
+    const v = o[k];
+    if (Array.isArray(v)) return v as Row[];
+  }
+  return [o];
+}
+
+function stagingLog(label: string, data: unknown) {
+  if (!IS_STAGING) return;
+  try {
+    const rows = extractRows(data);
+    const first = rows[0] ?? null;
+    // eslint-disable-next-line no-console
+    console.info(`[fila-simulada] ${label}`, {
+      success: asRow(data)?.success ?? null,
+      keys: asRow(data) ? Object.keys(asRow(data) as Row) : null,
+      count: rows.length,
+      first_keys: first ? Object.keys(first) : null,
+      first_sample: first
+        ? {
+            id: first.id ?? first.queue_item_id ?? null,
+            customer_id: first.customer_id ?? null,
+            charge_id: first.charge_id ?? null,
+            customer_name: first.customer_name ?? null,
+            whatsapp_e164: first.whatsapp_e164 ?? null,
+            amount_cents: first.amount_cents ?? null,
+            due_at: first.due_at ?? first.due_date ?? null,
+            scheduled_for: first.scheduled_for ?? first.scheduled_at ?? null,
+            status: first.status ?? null,
+          }
+        : null,
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
+function techDetail(error: { message?: string; details?: string; hint?: string; code?: string } | null, payload: unknown): string {
+  const safe = JSON.stringify(payload ?? {}, null, 2);
+  return [
+    `mensagem: ${error?.message ?? "-"}`,
+    `detalhes: ${error?.details ?? "-"}`,
+    `dica: ${error?.hint ?? "-"}`,
+    `código: ${error?.code ?? "-"}`,
+    `payload: ${safe}`,
+  ].join("\n");
 }
 
 // ---------- page ----------
