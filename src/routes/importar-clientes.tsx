@@ -101,30 +101,60 @@ function ImportarClientesPage() {
     setExistingMap({});
   }, [user?.id]);
 
+  const [lookupBump, setLookupBump] = useState(0);
+  const [lookupReady, setLookupReady] = useState(false);
+
   // Lookup existing customers by WhatsApp for the selected company
   useEffect(() => {
     let cancelled = false;
     async function run() {
       setExistingMap({});
+      setLookupReady(false);
       if (!supabase || !supabaseConfigured) return;
       if (!isAuthenticated || !companyId || !rows || rows.length === 0) return;
       const e164s = Array.from(
         new Set(rows.map((r) => r.whatsapp_e164).filter((x): x is string => !!x)),
       );
-      if (e164s.length === 0) return;
+      if (e164s.length === 0) {
+        setLookupReady(true);
+        return;
+      }
       setLookupLoading(true);
-      try {
-        // Defensive: customers may store WhatsApp in different columns.
-        // Fetch a wide projection scoped to the company and normalize client-side.
-        const { data, error } = await supabase
+
+      // Try wide projection first; if a column doesn't exist (e.g. whatsapp_e164),
+      // retry with a safe minimal projection. Either way, normalize client-side.
+      const tryFetch = async (cols: string) => {
+        return supabase!
           .from("customers")
-          .select("id,name,nome,full_name,phone,telefone,whatsapp,whatsapp_e164")
+          .select(cols)
           .eq("company_id", companyId)
-          .limit(2000);
-        if (error || !data) return;
-        const map: Record<string, { name?: string }> = {};
+          .limit(5000);
+      };
+
+      let rawData: Array<Record<string, unknown>> | null = null;
+      try {
+        let res = await tryFetch("id,name,nome,full_name,phone,telefone,whatsapp,whatsapp_e164");
+        if (res.error) {
+          res = await tryFetch("id,name,nome,full_name,phone,telefone,whatsapp");
+        }
+        if (res.error) {
+          res = await tryFetch("*");
+        }
+        if (!res.error && res.data) {
+          rawData = res.data as unknown as Array<Record<string, unknown>>;
+        } else if (res.error) {
+          console.warn("[importar-clientes] lookup failed", res.error);
+        }
+      } catch (err) {
+        console.warn("[importar-clientes] lookup threw", err);
+      }
+
+      if (cancelled) return;
+
+      const map: Record<string, { name?: string }> = {};
+      if (rawData) {
         const want = new Set(e164s);
-        for (const c of data as Array<Record<string, unknown>>) {
+        for (const c of rawData) {
           const candidates = [
             c.whatsapp_e164,
             c.whatsapp,
@@ -145,34 +175,33 @@ function ImportarClientesPage() {
             }
           }
         }
-        if (!cancelled) setExistingMap(map);
-      } catch {
-        /* silent — preview still works without enrichment */
-      } finally {
-        if (!cancelled) setLookupLoading(false);
       }
+      setExistingMap(map);
+      setLookupReady(true);
+      setLookupLoading(false);
     }
     run();
     return () => {
       cancelled = true;
     };
-  }, [rows, companyId, isAuthenticated]);
+  }, [rows, companyId, isAuthenticated, lookupBump]);
 
-  const rowKind = (r: ValidatedRow): RowKind => {
+  const rowKind = (r: ValidatedRow): RowKind | "pending" => {
     if (r.status === "invalid") return "error";
     if (r.status === "duplicate") return "duplicate_file";
+    if (!lookupReady) return "pending";
     if (r.whatsapp_e164 && existingMap[r.whatsapp_e164]) return "existing";
     return "new";
   };
 
   const counts = useMemo(() => {
-    const c = { new: 0, existing: 0, duplicate_file: 0, error: 0 };
+    const c = { new: 0, existing: 0, duplicate_file: 0, error: 0, pending: 0 };
     rows?.forEach((r) => {
       c[rowKind(r)]++;
     });
     return c;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, existingMap]);
+  }, [rows, existingMap, lookupReady]);
 
 
   async function onFile(file: File) {
@@ -302,6 +331,7 @@ function ImportarClientesPage() {
           errored: counts.error,
         });
         toast.success("Importação concluída.");
+        setLookupBump((n) => n + 1);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro inesperado.";
@@ -319,11 +349,13 @@ function ImportarClientesPage() {
         ? "Selecione uma empresa."
         : !rows || rows.length === 0
           ? "Envie um arquivo com pelo menos 1 cliente válido."
-          : counts.new + counts.existing === 0 && counts.error > 0
-            ? "Revise os erros antes de continuar."
-            : counts.new + counts.existing === 0
-              ? "Envie um arquivo com pelo menos 1 cliente válido."
-              : null;
+          : !lookupReady
+            ? "Verificando clientes já cadastrados…"
+            : counts.new + counts.existing === 0 && counts.error > 0
+              ? "Revise os erros antes de continuar."
+              : counts.new + counts.existing === 0
+                ? "Envie um arquivo com pelo menos 1 cliente válido."
+                : null;
 
   const canConfirm = disabledReason === null && !confirming;
 
@@ -710,9 +742,16 @@ function KindPill({
   kind,
   errors,
 }: {
-  kind: RowKind;
+  kind: RowKind | "pending";
   errors: string[];
 }) {
+  if (kind === "pending")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Verificando…
+      </span>
+    );
   if (kind === "new")
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
