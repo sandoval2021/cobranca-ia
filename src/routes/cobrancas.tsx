@@ -567,6 +567,14 @@ function ChargeCard({
         <Button size="sm" variant="outline" onClick={onOpen} className="gap-1.5">
           <Eye className="h-3.5 w-3.5" /> Detalhes
         </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowGenerate(true)}
+          className="gap-1.5"
+        >
+          <Sparkles className="h-3.5 w-3.5" /> Gerar mensagem
+        </Button>
         {kind !== "paga" && kind !== "cancelada" && (
           <Button
             size="sm"
