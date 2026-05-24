@@ -911,6 +911,27 @@ function ChargeSheet({
             chargeId={charge.id}
             reloadKey={simBump}
           />
+
+          {/* Sugestões de IA */}
+          <div className="flex items-center justify-between gap-2 pt-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Sugestões de IA
+            </h3>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowAnalyze(true)}
+              className="h-8 gap-1.5"
+            >
+              <Brain className="h-3.5 w-3.5" /> Analisar com IA
+            </Button>
+          </div>
+          <AISuggestionsPanel
+            customerId={charge.customer_id}
+            chargeId={charge.id}
+            reloadKey={aiBump}
+            title="Sugestões desta cobrança"
+          />
         </div>
 
         <GenerateMessageDialog
@@ -925,6 +946,27 @@ function ChargeSheet({
           statusClassName={chargeClass(charge.status)}
           onSaved={() => {
             setSimBump((n) => n + 1);
+            onChanged();
+          }}
+        />
+
+        <AnalyzeWithAIDialog
+          open={showAnalyze}
+          onClose={() => setShowAnalyze(false)}
+          chargeId={charge.id}
+          customerName={who}
+          whatsappPretty={phone}
+          amountBRL={charge.amount_cents != null ? fmtBRL(charge.amount_cents) : null}
+          dueDatePretty={charge.due_date ? fmtDate(charge.due_date) : null}
+          statusPretty={chargeLabel(charge.status)}
+          statusClassName={chargeClass(charge.status)}
+          onSaved={() => {
+            setAiBump((n) => n + 1);
+            onChanged();
+          }}
+          onMessageCreated={() => {
+            setSimBump((n) => n + 1);
+            setAiBump((n) => n + 1);
             onChanged();
           }}
         />
