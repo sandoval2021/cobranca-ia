@@ -289,17 +289,17 @@ function ImportarClientesPage() {
         toast.error(friendly);
         setResult({
           message: friendly,
-          duplicated: counts.duplicate,
-          errored: counts.invalid,
+          duplicated: counts.duplicate_file,
+          errored: counts.error,
         });
       } else {
         const r = (data ?? {}) as Record<string, number>;
         setResult({
-          imported: r.imported ?? validas.length,
+          imported: r.imported ?? 0,
           updated: r.updated ?? 0,
           charges: r.charges ?? 0,
-          duplicated: counts.duplicate,
-          errored: counts.invalid,
+          duplicated: counts.duplicate_file,
+          errored: counts.error,
         });
         toast.success("Importação concluída.");
       }
