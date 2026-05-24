@@ -18,7 +18,7 @@ import { flags } from "@/lib/flags";
 
 export const Route = createFileRoute("/diagnostico")({ component: DiagnosticoPage });
 
-type CheckStatus = "loading" | "ok" | "empty" | "denied" | "error" | "not_configured";
+type CheckStatus = "loading" | "ok" | "empty" | "denied" | "protected" | "error" | "not_configured";
 type Check = { label: string; status: CheckStatus; detail?: string };
 
 const TABLES = ["companies", "customers", "customer_charges", "messages", "ai_messages"];
