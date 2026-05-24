@@ -236,6 +236,7 @@ function CollectionRulesBlock() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saveErr, setSaveErr] = useState<string | null>(null);
+  const [saveTechDetail, setSaveTechDetail] = useState<string | null>(null);
 
   // Resolve company
   useEffect(() => {
