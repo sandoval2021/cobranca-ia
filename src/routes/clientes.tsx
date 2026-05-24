@@ -776,6 +776,15 @@ function DetailView({
         </div>
       </TabsContent>
 
+      <TabsContent value="ia" className="mt-4">
+        <AISuggestionsPanel
+          customerId={customer.id}
+          chargeId={null}
+          reloadKey={timelineBump}
+          title="Sugestões de IA simulada"
+        />
+      </TabsContent>
+
       <TabsContent value="historico" className="mt-4">
         <HistoryTab customerId={customer.id} reloadKey={timelineBump} />
       </TabsContent>
