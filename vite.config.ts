@@ -12,4 +12,15 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  vite: {
+    define: {
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(process.env.URL_SUPABASE ?? ""),
+      "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ""),
+      "import.meta.env.VITE_APP_ENV": JSON.stringify(process.env.APP_ENV ?? "staging"),
+      "import.meta.env.VITE_STAGING_MODE": JSON.stringify(process.env.STAGING_MODE ?? "true"),
+      "import.meta.env.VITE_ALLOW_REAL_PAYMENTS": JSON.stringify(process.env.ALLOW_REAL_PAYMENTS ?? "false"),
+      "import.meta.env.VITE_ALLOW_REAL_WHATSAPP": JSON.stringify(process.env.ALLOW_REAL_WHATSAPP ?? "false"),
+      "import.meta.env.VITE_ALLOW_REAL_AI": JSON.stringify(process.env.ALLOW_REAL_AI ?? "false"),
+    },
+  },
 });
