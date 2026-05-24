@@ -12,7 +12,18 @@ import {
   MessageSquare,
   Receipt,
   Save,
+  History,
+  UserCog,
+  UserCheck,
+  UserX,
+  FilePlus2,
+  FileEdit,
+  CheckCircle2,
+  AlertTriangle,
+  Ban,
+  Clock,
 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
@@ -422,6 +433,8 @@ function CustomerSheet({
   const [mode, setMode] = useState<Mode>("view");
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [busy, setBusy] = useState<null | "save" | "archive" | "reactivate">(null);
+  const [timelineBump, setTimelineBump] = useState(0);
+  const reloadTimeline = () => setTimelineBump((n) => n + 1);
 
   useEffect(() => {
     if (!open || !customer) return;
@@ -470,6 +483,7 @@ function CustomerSheet({
     }
     toast.success("Cliente arquivado com sucesso.");
     onChanged();
+    reloadTimeline();
     onClose();
   };
 
@@ -486,6 +500,7 @@ function CustomerSheet({
     }
     toast.success("Cliente reativado com sucesso.");
     onChanged();
+    reloadTimeline();
     // refresh details inline
     setDetails({ status: "loading" });
     const { data } = await supabase.rpc("get_customer_details_admin", {
@@ -518,7 +533,7 @@ function CustomerSheet({
             <EmptyState icon={Users} title="Não foi possível carregar" description={details.message} />
           )}
           {details.status === "ready" && mode === "view" && (
-            <DetailView customer={merged} raw={details.data} />
+            <DetailView customer={merged} raw={details.data} timelineBump={timelineBump} />
           )}
           {details.status === "ready" && mode === "edit" && (
             <EditForm
@@ -528,6 +543,7 @@ function CustomerSheet({
               onSaved={async () => {
                 setMode("view");
                 onChanged();
+                reloadTimeline();
                 // refresh
                 if (!supabase) return;
                 setDetails({ status: "loading" });
@@ -627,50 +643,66 @@ function DetailField({
   );
 }
 
-function DetailView({ customer, raw }: { customer: Customer; raw: Row }) {
+function DetailView({
+  customer,
+  raw,
+  timelineBump,
+}: {
+  customer: Customer;
+  raw: Row;
+  timelineBump: number;
+}) {
   const charges = extractList(raw, ["charges", "ultimas_cobrancas", "recent_charges"]);
   const messages = extractList(raw, ["messages", "ultimas_mensagens", "recent_messages"]);
 
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3">
-        <DetailField label="Nome" value={customer.name} />
-        <DetailField
-          label="WhatsApp"
-          value={prettyPhone(customer.whatsapp) ?? <span className="text-muted-foreground">—</span>}
-        />
-        <DetailField
-          label="Valor mensal"
-          hint="Cobrança recorrente do cliente."
-          value={customer.amount_cents != null ? fmtBRL(customer.amount_cents) : <span className="text-muted-foreground">—</span>}
-        />
-        <DetailField
-          label="Dia de vencimento"
-          hint="Dia do mês em que a cobrança vence."
-          value={customer.due_day != null ? `Dia ${customer.due_day}` : <span className="text-muted-foreground">—</span>}
-        />
-        <DetailField
-          label="Status"
-          hint="Ativo, expirado ou arquivado."
-          value={
-            <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(customer.status))}>
-              {statusLabel(customer.status)}
-            </span>
-          }
-        />
-      </div>
+    <Tabs defaultValue="dados" className="w-full">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="dados" className="text-xs">Dados</TabsTrigger>
+        <TabsTrigger value="cobrancas" className="text-xs">Cobranças</TabsTrigger>
+        <TabsTrigger value="mensagens" className="text-xs">Mensagens</TabsTrigger>
+        <TabsTrigger value="historico" className="text-xs">Histórico</TabsTrigger>
+      </TabsList>
 
-      <div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <span>Observações</span>
-          <HelpTip text="Notas internas sobre o cliente." />
+      <TabsContent value="dados" className="mt-4 space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          <DetailField label="Nome" value={customer.name} />
+          <DetailField
+            label="WhatsApp"
+            value={prettyPhone(customer.whatsapp) ?? <span className="text-muted-foreground">—</span>}
+          />
+          <DetailField
+            label="Valor mensal"
+            hint="Cobrança recorrente do cliente."
+            value={customer.amount_cents != null ? fmtBRL(customer.amount_cents) : <span className="text-muted-foreground">—</span>}
+          />
+          <DetailField
+            label="Dia de vencimento"
+            hint="Dia do mês em que a cobrança vence."
+            value={customer.due_day != null ? `Dia ${customer.due_day}` : <span className="text-muted-foreground">—</span>}
+          />
+          <DetailField
+            label="Status"
+            hint="Ativo, expirado ou arquivado."
+            value={
+              <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(customer.status))}>
+                {statusLabel(customer.status)}
+              </span>
+            }
+          />
         </div>
-        <p className="mt-1 whitespace-pre-wrap rounded-lg border border-border bg-surface p-3 text-sm">
-          {customer.notes?.trim() ? customer.notes : <span className="text-muted-foreground">Sem observações.</span>}
-        </p>
-      </div>
+        <div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span>Observações</span>
+            <HelpTip text="Notas internas sobre o cliente." />
+          </div>
+          <p className="mt-1 whitespace-pre-wrap rounded-lg border border-border bg-surface p-3 text-sm">
+            {customer.notes?.trim() ? customer.notes : <span className="text-muted-foreground">Sem observações.</span>}
+          </p>
+        </div>
+      </TabsContent>
 
-      <div>
+      <TabsContent value="cobrancas" className="mt-4">
         <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <Receipt className="h-3.5 w-3.5" /> Últimas cobranças
         </h3>
@@ -680,7 +712,7 @@ function DetailView({ customer, raw }: { customer: Customer; raw: Row }) {
           </p>
         ) : (
           <ul className="space-y-1.5">
-            {charges.slice(0, 5).map((c, i) => (
+            {charges.slice(0, 10).map((c, i) => (
               <li key={i} className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-xs">
                 <div className="min-w-0">
                   <p className="truncate font-medium">
@@ -702,9 +734,9 @@ function DetailView({ customer, raw }: { customer: Customer; raw: Row }) {
             ))}
           </ul>
         )}
-      </div>
+      </TabsContent>
 
-      <div>
+      <TabsContent value="mensagens" className="mt-4">
         <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <MessageSquare className="h-3.5 w-3.5" /> Últimas mensagens
         </h3>
@@ -714,7 +746,7 @@ function DetailView({ customer, raw }: { customer: Customer; raw: Row }) {
           </p>
         ) : (
           <ul className="space-y-1.5">
-            {messages.slice(0, 5).map((m, i) => (
+            {messages.slice(0, 10).map((m, i) => (
               <li key={i} className="rounded-lg border border-border bg-card px-3 py-2 text-xs">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">
@@ -731,8 +763,12 @@ function DetailView({ customer, raw }: { customer: Customer; raw: Row }) {
             ))}
           </ul>
         )}
-      </div>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="historico" className="mt-4">
+        <HistoryTab customerId={customer.id} reloadKey={timelineBump} />
+      </TabsContent>
+    </Tabs>
   );
 }
 
@@ -892,4 +928,260 @@ function Field({
       {children}
     </div>
   );
+}
+
+// ---------- history tab ----------
+type TimelineEvent = {
+  id: string;
+  event_type: string;
+  created_at: string | null;
+  metadata: Row | null;
+  raw: Row;
+};
+
+type TimelineState =
+  | { status: "loading" }
+  | { status: "empty" }
+  | { status: "error"; kind: "permission" | "network" | "unknown"; message: string }
+  | { status: "ready"; events: TimelineEvent[] };
+
+const EVENT_META: Record<
+  string,
+  { title: string; text: string; icon: typeof History; tone: string }
+> = {
+  customer_updated: {
+    title: "Cliente atualizado",
+    text: "Dados do cliente foram atualizados.",
+    icon: UserCog,
+    tone: "bg-info-soft text-info",
+  },
+  customer_archived: {
+    title: "Cliente arquivado",
+    text: "Cliente foi arquivado, mas o histórico foi mantido.",
+    icon: UserX,
+    tone: "bg-muted text-muted-foreground",
+  },
+  customer_reactivated: {
+    title: "Cliente reativado",
+    text: "Cliente voltou a ficar ativo.",
+    icon: UserCheck,
+    tone: "bg-success-soft text-success",
+  },
+  charge_created: {
+    title: "Cobrança criada",
+    text: "Nova cobrança registrada para este cliente.",
+    icon: FilePlus2,
+    tone: "bg-info-soft text-info",
+  },
+  charge_updated: {
+    title: "Cobrança atualizada",
+    text: "Dados da cobrança foram atualizados.",
+    icon: FileEdit,
+    tone: "bg-info-soft text-info",
+  },
+  charge_paid: {
+    title: "Cobrança paga",
+    text: "Cobrança marcada como paga.",
+    icon: CheckCircle2,
+    tone: "bg-success-soft text-success",
+  },
+  charge_overdue: {
+    title: "Cobrança vencida",
+    text: "Cobrança marcada como vencida.",
+    icon: AlertTriangle,
+    tone: "bg-warning-soft text-warning",
+  },
+  charge_cancelled: {
+    title: "Cobrança cancelada",
+    text: "Cobrança cancelada sem apagar histórico.",
+    icon: Ban,
+    tone: "bg-muted text-muted-foreground",
+  },
+};
+
+function eventMeta(type: string) {
+  return (
+    EVENT_META[type] ?? {
+      title: type.replace(/_/g, " "),
+      text: "Evento registrado.",
+      icon: History,
+      tone: "bg-muted text-muted-foreground",
+    }
+  );
+}
+
+function fmtDateTime(s: string | null | undefined) {
+  if (!s) return "—";
+  const d = new Date(s);
+  if (isNaN(+d)) return s;
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function classifyTimelineError(msg: string): "permission" | "network" | "unknown" {
+  const m = msg.toLowerCase();
+  if (m.includes("permission") || m.includes("denied") || m.includes("rls") || m.includes("not allowed"))
+    return "permission";
+  if (m.includes("network") || m.includes("fetch") || m.includes("timeout"))
+    return "network";
+  return "unknown";
+}
+
+function HistoryTab({ customerId, reloadKey }: { customerId: string; reloadKey: number }) {
+  const [state, setState] = useState<TimelineState>({ status: "loading" });
+
+  useEffect(() => {
+    if (!supabase) {
+      setState({ status: "error", kind: "unknown", message: "Conexão não configurada." });
+      return;
+    }
+    let alive = true;
+    setState({ status: "loading" });
+    (async () => {
+      const { data, error } = await supabase!.rpc("get_customer_timeline_admin", {
+        p_customer_id: customerId,
+      });
+      if (!alive) return;
+      if (error) {
+        setState({
+          status: "error",
+          kind: classifyTimelineError(error.message),
+          message: error.message,
+        });
+        return;
+      }
+      const rows = (Array.isArray(data) ? data : []) as Row[];
+      if (rows.length === 0) {
+        setState({ status: "empty" });
+        return;
+      }
+      const events: TimelineEvent[] = rows.map((r) => ({
+        id: String(r.id ?? `${r.event_type ?? "evt"}-${r.created_at ?? Math.random()}`),
+        event_type: String(r.event_type ?? "evento"),
+        created_at: (r.created_at as string | null) ?? null,
+        metadata:
+          r.metadata && typeof r.metadata === "object" ? (r.metadata as Row) : null,
+        raw: r,
+      }));
+      events.sort((a, b) => {
+        const ta = a.created_at ? +new Date(a.created_at) : 0;
+        const tb = b.created_at ? +new Date(b.created_at) : 0;
+        return tb - ta;
+      });
+      setState({ status: "ready", events });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [customerId, reloadKey]);
+
+  if (state.status === "loading") {
+    return (
+      <div className="flex items-center justify-center py-10 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+  if (state.status === "empty") {
+    return (
+      <EmptyState
+        icon={History}
+        title="Sem histórico ainda"
+        description="Este cliente ainda não tem histórico registrado."
+      />
+    );
+  }
+  if (state.status === "error") {
+    const title =
+      state.kind === "permission" ? "Histórico indisponível" : "Não foi possível carregar o histórico";
+    const desc =
+      state.kind === "permission"
+        ? "Verifique sua sessão ou permissão."
+        : "Não foi possível carregar o histórico agora. Tente novamente.";
+    return <EmptyState icon={History} title={title} description={desc} />;
+  }
+
+  return (
+    <ol className="relative space-y-3 border-l border-border pl-4">
+      {state.events.map((ev) => {
+        const meta = eventMeta(ev.event_type);
+        const Icon = meta.icon;
+        const extras = ev.metadata ? extractExtras(ev.event_type, ev.metadata) : [];
+        return (
+          <li key={ev.id} className="relative">
+            <span
+              className={cn(
+                "absolute -left-[26px] top-1 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-background",
+                meta.tone,
+              )}
+            >
+              <Icon className="h-3 w-3" />
+            </span>
+            <div className="rounded-xl border border-border bg-card p-3 shadow-card">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">{meta.title}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{meta.text}</p>
+                </div>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                    meta.tone,
+                  )}
+                >
+                  {ev.event_type.replace(/_/g, " ")}
+                </span>
+              </div>
+              <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {fmtDateTime(ev.created_at)}
+              </div>
+              {extras.length > 0 && (
+                <ul className="mt-2 space-y-0.5 rounded-lg bg-surface p-2 text-[11px]">
+                  {extras.map((e, i) => (
+                    <li key={i} className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">{e.label}</span>
+                      <span className="font-medium text-foreground">{e.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function extractExtras(eventType: string, meta: Row): { label: string; value: string }[] {
+  const out: { label: string; value: string }[] = [];
+  const push = (label: string, v: unknown) => {
+    if (v == null || v === "") return;
+    out.push({ label, value: String(v) });
+  };
+
+  if (eventType.startsWith("charge_")) {
+    const cents = num(meta, ["amount_cents", "new_amount_cents"]);
+    if (cents != null) push("Valor", fmtBRL(cents));
+    const due = str(meta, ["due_date", "new_due_date", "vencimento"]);
+    if (due) push("Vencimento", fmtDate(due));
+    const status = str(meta, ["status", "new_status"]);
+    if (status) push("Status", status);
+    const ref = str(meta, ["external_ref", "reference"]);
+    if (ref) push("Referência", ref);
+  }
+  if (eventType === "customer_updated") {
+    push("Nome", str(meta, ["new_name", "name"]));
+    const cents = num(meta, ["new_amount_cents", "amount_cents"]);
+    if (cents != null) push("Valor", fmtBRL(cents));
+    push("Vencimento", num(meta, ["new_due_day", "due_day"]));
+    push("Status", str(meta, ["new_status", "status"]));
+  }
+  return out.slice(0, 6);
 }
