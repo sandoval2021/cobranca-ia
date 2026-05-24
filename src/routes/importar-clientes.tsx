@@ -57,7 +57,10 @@ const MAX_BYTES = 10 * 1024 * 1024;
 
 function ImportarClientesPage() {
   const { user, isAuthenticated } = useAuth();
-  const companies = useSupabaseList<Company>("companies", { limit: 100 });
+  const companies = useSupabaseList<Company>("companies", {
+    limit: 100,
+    deps: [user?.id ?? null],
+  });
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
