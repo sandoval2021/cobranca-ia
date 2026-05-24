@@ -643,50 +643,66 @@ function DetailField({
   );
 }
 
-function DetailView({ customer, raw }: { customer: Customer; raw: Row }) {
+function DetailView({
+  customer,
+  raw,
+  timelineBump,
+}: {
+  customer: Customer;
+  raw: Row;
+  timelineBump: number;
+}) {
   const charges = extractList(raw, ["charges", "ultimas_cobrancas", "recent_charges"]);
   const messages = extractList(raw, ["messages", "ultimas_mensagens", "recent_messages"]);
 
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3">
-        <DetailField label="Nome" value={customer.name} />
-        <DetailField
-          label="WhatsApp"
-          value={prettyPhone(customer.whatsapp) ?? <span className="text-muted-foreground">—</span>}
-        />
-        <DetailField
-          label="Valor mensal"
-          hint="Cobrança recorrente do cliente."
-          value={customer.amount_cents != null ? fmtBRL(customer.amount_cents) : <span className="text-muted-foreground">—</span>}
-        />
-        <DetailField
-          label="Dia de vencimento"
-          hint="Dia do mês em que a cobrança vence."
-          value={customer.due_day != null ? `Dia ${customer.due_day}` : <span className="text-muted-foreground">—</span>}
-        />
-        <DetailField
-          label="Status"
-          hint="Ativo, expirado ou arquivado."
-          value={
-            <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(customer.status))}>
-              {statusLabel(customer.status)}
-            </span>
-          }
-        />
-      </div>
+    <Tabs defaultValue="dados" className="w-full">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="dados" className="text-xs">Dados</TabsTrigger>
+        <TabsTrigger value="cobrancas" className="text-xs">Cobranças</TabsTrigger>
+        <TabsTrigger value="mensagens" className="text-xs">Mensagens</TabsTrigger>
+        <TabsTrigger value="historico" className="text-xs">Histórico</TabsTrigger>
+      </TabsList>
 
-      <div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <span>Observações</span>
-          <HelpTip text="Notas internas sobre o cliente." />
+      <TabsContent value="dados" className="mt-4 space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          <DetailField label="Nome" value={customer.name} />
+          <DetailField
+            label="WhatsApp"
+            value={prettyPhone(customer.whatsapp) ?? <span className="text-muted-foreground">—</span>}
+          />
+          <DetailField
+            label="Valor mensal"
+            hint="Cobrança recorrente do cliente."
+            value={customer.amount_cents != null ? fmtBRL(customer.amount_cents) : <span className="text-muted-foreground">—</span>}
+          />
+          <DetailField
+            label="Dia de vencimento"
+            hint="Dia do mês em que a cobrança vence."
+            value={customer.due_day != null ? `Dia ${customer.due_day}` : <span className="text-muted-foreground">—</span>}
+          />
+          <DetailField
+            label="Status"
+            hint="Ativo, expirado ou arquivado."
+            value={
+              <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(customer.status))}>
+                {statusLabel(customer.status)}
+              </span>
+            }
+          />
         </div>
-        <p className="mt-1 whitespace-pre-wrap rounded-lg border border-border bg-surface p-3 text-sm">
-          {customer.notes?.trim() ? customer.notes : <span className="text-muted-foreground">Sem observações.</span>}
-        </p>
-      </div>
+        <div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span>Observações</span>
+            <HelpTip text="Notas internas sobre o cliente." />
+          </div>
+          <p className="mt-1 whitespace-pre-wrap rounded-lg border border-border bg-surface p-3 text-sm">
+            {customer.notes?.trim() ? customer.notes : <span className="text-muted-foreground">Sem observações.</span>}
+          </p>
+        </div>
+      </TabsContent>
 
-      <div>
+      <TabsContent value="cobrancas" className="mt-4">
         <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <Receipt className="h-3.5 w-3.5" /> Últimas cobranças
         </h3>
@@ -696,7 +712,7 @@ function DetailView({ customer, raw }: { customer: Customer; raw: Row }) {
           </p>
         ) : (
           <ul className="space-y-1.5">
-            {charges.slice(0, 5).map((c, i) => (
+            {charges.slice(0, 10).map((c, i) => (
               <li key={i} className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-xs">
                 <div className="min-w-0">
                   <p className="truncate font-medium">
@@ -718,9 +734,9 @@ function DetailView({ customer, raw }: { customer: Customer; raw: Row }) {
             ))}
           </ul>
         )}
-      </div>
+      </TabsContent>
 
-      <div>
+      <TabsContent value="mensagens" className="mt-4">
         <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <MessageSquare className="h-3.5 w-3.5" /> Últimas mensagens
         </h3>
@@ -730,7 +746,7 @@ function DetailView({ customer, raw }: { customer: Customer; raw: Row }) {
           </p>
         ) : (
           <ul className="space-y-1.5">
-            {messages.slice(0, 5).map((m, i) => (
+            {messages.slice(0, 10).map((m, i) => (
               <li key={i} className="rounded-lg border border-border bg-card px-3 py-2 text-xs">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">
@@ -747,8 +763,12 @@ function DetailView({ customer, raw }: { customer: Customer; raw: Row }) {
             ))}
           </ul>
         )}
-      </div>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="historico" className="mt-4">
+        <HistoryTab customerId={customer.id} reloadKey={timelineBump} />
+      </TabsContent>
+    </Tabs>
   );
 }
 
