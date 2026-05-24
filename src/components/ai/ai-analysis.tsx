@@ -706,7 +706,7 @@ export function AISuggestionsPanel({
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                   {message}
                 </p>
-                {chargeRef && !customerId === false && (
+                {chargeRef && customerId && !chargeId && (
                   <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
                     <AlertTriangle className="h-3 w-3" /> {chargeRef}
                   </p>
