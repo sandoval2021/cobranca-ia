@@ -37,7 +37,13 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
+import { flags } from "@/lib/flags";
 import { toast } from "sonner";
+
+const IS_STAGING = flags.appEnv !== "production";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (v: unknown): v is string =>
+  typeof v === "string" && UUID_RE.test(v.trim());
 
 export const Route = createFileRoute("/fila-simulada")({ component: FilaSimuladaPage });
 
@@ -185,8 +191,8 @@ function friendly(message: string, ctx: "load" | "preview" | "rebuild" | "action
 
 // ---------- normalized item shape ----------
 type QueueItem = {
-  id: string;
-  customerName: string;
+  id: string | null;
+  customerName: string | null;
   whatsapp: string | null;
   amountCents: number | null;
   dueDate: string | null;
@@ -199,25 +205,124 @@ type QueueItem = {
   allowed: boolean | null;
 };
 
+function asRow(v: unknown): Row | null {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Row) : null;
+}
+
 function normalizeItem(r: Row): QueueItem {
+  const customer = asRow(r.customer);
+  const charge = asRow(r.charge);
+
+  const rawId =
+    pickStr(r, ["id", "queue_item_id", "item_id"]) ?? null;
+  const id = isUuid(rawId) ? (rawId as string) : null;
+
+  // customer name from many shapes (including string-valued "customer")
+  let customerName =
+    pickStr(r, ["customer_name", "nome_cliente"]) ??
+    (customer ? pickStr(customer, ["name", "nome", "full_name"]) : null);
+  if (!customerName) {
+    const cVal = r.customer;
+    if (typeof cVal === "string" && cVal.trim()) customerName = cVal;
+  }
+  if (!customerName) customerName = pickStr(r, ["name"]);
+
+  const whatsapp =
+    pickStr(r, ["whatsapp_e164", "customer_whatsapp", "whatsapp", "phone", "telefone"]) ??
+    (customer ? pickStr(customer, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) : null);
+
+  const amountCentsDirect = pickNum(r, ["amount_cents", "charge_amount_cents", "valor_cents"]);
+  const amountCents =
+    amountCentsDirect ??
+    (charge ? pickNum(charge, ["amount_cents"]) : null) ??
+    (() => {
+      const a = pickNum(r, ["amount", "valor"]) ?? (charge ? pickNum(charge, ["amount"]) : null);
+      return a != null ? Math.round(a * 100) : null;
+    })();
+
+  const dueDate =
+    pickStr(r, ["due_at", "due_date", "charge_due_at", "charge_due_date", "vencimento"]) ??
+    (charge ? pickStr(charge, ["due_at", "due_date"]) : null);
+
+  const scheduledAt = pickStr(r, [
+    "scheduled_for", "scheduled_at", "planned_for", "planned_at",
+    "schedule_date", "data_planejada",
+  ]);
+
   const status = normalizeStatus(pickStr(r, ["status", "queue_status"]));
   const allowed = pickBool(r, ["allowed", "is_allowed"]);
+
   return {
-    id: pickStr(r, ["id", "queue_item_id"]) ?? "",
-    customerName: pickStr(r, ["customer_name", "customer", "nome_cliente", "name"]) ?? "Cliente",
-    whatsapp: pickStr(r, ["whatsapp_e164", "whatsapp", "phone", "telefone", "customer_whatsapp"]),
-    amountCents:
-      pickNum(r, ["amount_cents", "valor_cents"]) ??
-      (pickNum(r, ["amount", "valor"]) != null ? Math.round((pickNum(r, ["amount", "valor"]) as number) * 100) : null),
-    dueDate: pickStr(r, ["due_date", "vencimento", "charge_due_date"]),
-    scheduledAt: pickStr(r, ["scheduled_at", "planned_at", "scheduled_for", "data_planejada"]),
+    id,
+    customerName: customerName ?? null,
+    whatsapp,
+    amountCents,
+    dueDate,
+    scheduledAt,
     status: allowed === false && status === "planned" ? "blocked" : status,
     tone: normalizeTone(pickStr(r, ["tone", "tom"])),
     reason: pickStr(r, ["reason", "motivo"]),
     blockedReason: pickStr(r, ["blocked_reason", "block_reason", "motivo_bloqueio"]),
-    attempt: pickNum(r, ["attempt", "attempt_number", "tentativa"]),
+    attempt: pickNum(r, ["attempt_number", "attempt", "tentativa"]),
     allowed,
   };
+}
+
+// Extract the actual array of items from RPC responses that may be:
+//   - an array directly
+//   - { items: [...] } or { queue_preview: [...] } or { queue: [...] } or { data: [...] }
+//   - { success: true, items: [...] }
+function extractRows(data: unknown): Row[] {
+  if (Array.isArray(data)) return data as Row[];
+  const o = asRow(data);
+  if (!o) return [];
+  const keys = ["items", "queue_preview", "queue", "data", "rows", "results"];
+  for (const k of keys) {
+    const v = o[k];
+    if (Array.isArray(v)) return v as Row[];
+  }
+  return [o];
+}
+
+function stagingLog(label: string, data: unknown) {
+  if (!IS_STAGING) return;
+  try {
+    const rows = extractRows(data);
+    const first = rows[0] ?? null;
+    // eslint-disable-next-line no-console
+    console.info(`[fila-simulada] ${label}`, {
+      success: asRow(data)?.success ?? null,
+      keys: asRow(data) ? Object.keys(asRow(data) as Row) : null,
+      count: rows.length,
+      first_keys: first ? Object.keys(first) : null,
+      first_sample: first
+        ? {
+            id: first.id ?? first.queue_item_id ?? null,
+            customer_id: first.customer_id ?? null,
+            charge_id: first.charge_id ?? null,
+            customer_name: first.customer_name ?? null,
+            whatsapp_e164: first.whatsapp_e164 ?? null,
+            amount_cents: first.amount_cents ?? null,
+            due_at: first.due_at ?? first.due_date ?? null,
+            scheduled_for: first.scheduled_for ?? first.scheduled_at ?? null,
+            status: first.status ?? null,
+          }
+        : null,
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
+function techDetail(error: { message?: string; details?: string; hint?: string; code?: string } | null, payload: unknown): string {
+  const safe = JSON.stringify(payload ?? {}, null, 2);
+  return [
+    `mensagem: ${error?.message ?? "-"}`,
+    `detalhes: ${error?.details ?? "-"}`,
+    `dica: ${error?.hint ?? "-"}`,
+    `código: ${error?.code ?? "-"}`,
+    `payload: ${safe}`,
+  ].join("\n");
 }
 
 // ---------- page ----------
@@ -295,21 +400,23 @@ function FilaSimuladaPage() {
     if (!supabase || !companyId) return;
     setQueueLoading(true);
     setQueueErr(null);
-    const { data, error } = await supabase.rpc("get_collection_simulation_queue_admin", {
+    const payload = {
       p_company_id: companyId,
       p_status: statusFilter === "all" ? null : statusFilter,
       p_customer_id: null,
       p_charge_id: null,
       p_limit: 200,
       p_offset: 0,
-    });
+    };
+    const { data, error } = await supabase.rpc("get_collection_simulation_queue_admin", payload);
     setQueueLoading(false);
     if (error) {
       setQueueErr(friendly(error.message, "load"));
+      if (IS_STAGING) console.warn("[fila-simulada] load error", techDetail(error, payload));
       return;
     }
-    const arr = Array.isArray(data) ? (data as Row[]) : data ? [data as Row] : [];
-    setQueue(arr.map(normalizeItem));
+    stagingLog("get_collection_simulation_queue_admin", data);
+    setQueue(extractRows(data).map(normalizeItem));
   };
 
   useEffect(() => {
@@ -323,52 +430,65 @@ function FilaSimuladaPage() {
     setPreviewLoading(true);
     setPreviewErr(null);
     setPreview(null);
-    const { data, error } = await supabase.rpc("preview_collection_simulation_queue_admin", {
+    const payload = {
       p_company_id: companyId,
       p_from_date: fromDate,
       p_to_date: toDate,
       p_limit: 100,
-    });
+    };
+    const { data, error } = await supabase.rpc("preview_collection_simulation_queue_admin", payload);
     setPreviewLoading(false);
     if (error) {
       setPreviewErr(friendly(error.message, "preview"));
+      if (IS_STAGING) console.warn("[fila-simulada] preview error", techDetail(error, payload));
       return;
     }
-    const arr = Array.isArray(data) ? (data as Row[]) : data ? [data as Row] : [];
-    setPreview(arr.map(normalizeItem));
+    stagingLog("preview_collection_simulation_queue_admin", data);
+    setPreview(extractRows(data).map(normalizeItem));
   };
 
   // rebuild
   const doRebuild = async () => {
     if (!supabase || !companyId) return;
     setRebuilding(true);
-    const { error } = await supabase.rpc("rebuild_collection_simulation_queue_admin", {
+    const payload = {
       p_company_id: companyId,
       p_from_date: fromDate,
       p_to_date: toDate,
       p_limit: 200,
-    });
+    };
+    const { data, error } = await supabase.rpc("rebuild_collection_simulation_queue_admin", payload);
     setRebuilding(false);
     setConfirmRebuild(false);
     if (error) {
-      toast.error(friendly(error.message, "rebuild"));
+      toast.error(friendly(error.message, "rebuild"), {
+        description: IS_STAGING ? techDetail(error, payload) : undefined,
+      });
       return;
     }
+    stagingLog("rebuild_collection_simulation_queue_admin", data);
     toast.success("Fila simulada reconstruída com sucesso.");
     await loadQueue();
   };
 
   // per-item actions
-  const callAction = async (id: string, action: "approve_simulation" | "skip" | "cancel") => {
+  const callAction = async (
+    id: string | null,
+    action: "approve_simulation" | "skip" | "cancel",
+  ) => {
     if (!supabase) return;
+    if (!isUuid(id)) {
+      toast.error("Este item da fila está sem identificação. Atualize a lista e tente novamente.");
+      return;
+    }
+    const payload = { p_queue_item_id: id, p_action: action };
     setBusyId(id);
-    const { error } = await supabase.rpc("update_collection_queue_item_admin", {
-      p_queue_item_id: id,
-      p_action: action,
-    });
+    const { error } = await supabase.rpc("update_collection_queue_item_admin", payload);
     setBusyId(null);
     if (error) {
-      toast.error(friendly(error.message, "action"));
+      toast.error(friendly(error.message, "action"), {
+        description: IS_STAGING ? techDetail(error, payload) : undefined,
+      });
       return;
     }
     if (action === "approve_simulation") toast.success("Item aprovado para simulação.");
@@ -377,15 +497,20 @@ function FilaSimuladaPage() {
     await loadQueue();
   };
 
-  const createMessage = async (id: string) => {
+  const createMessage = async (id: string | null) => {
     if (!supabase) return;
+    if (!isUuid(id)) {
+      toast.error("Este item da fila está sem identificação. Atualize a lista e tente novamente.");
+      return;
+    }
+    const payload = { p_queue_item_id: id };
     setBusyId(id);
-    const { error } = await supabase.rpc("create_simulated_message_from_queue_admin", {
-      p_queue_item_id: id,
-    });
+    const { error } = await supabase.rpc("create_simulated_message_from_queue_admin", payload);
     setBusyId(null);
     if (error) {
-      toast.error(friendly(error.message, "create"));
+      toast.error(friendly(error.message, "create"), {
+        description: IS_STAGING ? techDetail(error, payload) : undefined,
+      });
       return;
     }
     toast.success("Mensagem simulada criada com sucesso.");
@@ -399,7 +524,7 @@ function FilaSimuladaPage() {
     return queue.filter((it) => {
       if (filter !== "all" && it.status !== filter) return false;
       if (!q) return true;
-      const name = it.customerName.toLowerCase();
+      const name = (it.customerName ?? "").toLowerCase();
       const phone = (it.whatsapp ?? "").replace(/\D+/g, "");
       return name.includes(q) || (qd && phone.includes(qd));
     });
@@ -620,7 +745,12 @@ function FilaSimuladaPage() {
         {!queueLoading && filteredQueue.length > 0 && (
           <ul className="space-y-2">
             {filteredQueue.map((it) => (
-              <li key={it.id} className="rounded-xl border border-border bg-card p-3 shadow-card sm:p-4">
+              <li key={it.id ?? `idx-${Math.random()}`} className="rounded-xl border border-border bg-card p-3 shadow-card sm:p-4">
+                {!it.id && IS_STAGING && (
+                  <p className="mb-2 rounded-md bg-warning-soft px-2 py-1 text-[11px] text-warning">
+                    Item sem ID — ações desabilitadas. Atualize a lista.
+                  </p>
+                )}
                 <QueueCard
                   item={it}
                   busy={busyId === it.id}
@@ -688,9 +818,13 @@ function PreviewCardRow({ item }: { item: QueueItem }) {
     <>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{item.customerName}</p>
+          <p className="truncate text-sm font-semibold">
+            {item.customerName ?? "Cliente não identificado"}
+          </p>
           <p className="truncate text-xs text-muted-foreground">
-            {fmtPhone(item.whatsapp) ?? "Sem WhatsApp"} · {fmtBRL(item.amountCents)} · venc. {fmtDate(item.dueDate)}
+            {fmtPhone(item.whatsapp) ?? "Sem WhatsApp cadastrado"} ·{" "}
+            {item.amountCents != null ? fmtBRL(item.amountCents) : "Valor não informado"} · venc.{" "}
+            {item.dueDate ? fmtDate(item.dueDate) : "Vencimento não informado"}
           </p>
         </div>
         <span
@@ -704,7 +838,7 @@ function PreviewCardRow({ item }: { item: QueueItem }) {
         </span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span><strong className="text-foreground">Planejada:</strong> {fmtDateTime(item.scheduledAt)}</span>
+        <span><strong className="text-foreground">Planejada:</strong> {item.scheduledAt ? fmtDateTime(item.scheduledAt) : "Data planejada não informada"}</span>
         {rel && <span>({rel})</span>}
         <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground">
           {TONE_LABEL[item.tone]}
@@ -736,9 +870,11 @@ function QueueCard({
     <>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{item.customerName}</p>
+          <p className="truncate text-sm font-semibold">
+            {item.customerName ?? "Cliente não identificado"}
+          </p>
           <p className="truncate text-xs text-muted-foreground">
-            {fmtPhone(item.whatsapp) ?? "Sem WhatsApp"}
+            {fmtPhone(item.whatsapp) ?? "Sem WhatsApp cadastrado"}
           </p>
         </div>
         <span
@@ -752,9 +888,9 @@ function QueueCard({
       </div>
 
       <div className="mt-2 grid gap-x-3 gap-y-1 text-xs text-muted-foreground sm:grid-cols-2">
-        <span><strong className="text-foreground">Valor:</strong> {fmtBRL(item.amountCents)}</span>
-        <span><strong className="text-foreground">Vencimento:</strong> {fmtDate(item.dueDate)}</span>
-        <span><strong className="text-foreground">Planejada:</strong> {fmtDateTime(item.scheduledAt)}</span>
+        <span><strong className="text-foreground">Valor:</strong> {item.amountCents != null ? fmtBRL(item.amountCents) : "Valor não informado"}</span>
+        <span><strong className="text-foreground">Vencimento:</strong> {item.dueDate ? fmtDate(item.dueDate) : "Vencimento não informado"}</span>
+        <span><strong className="text-foreground">Planejada:</strong> {item.scheduledAt ? fmtDateTime(item.scheduledAt) : "Data planejada não informada"}</span>
         <span>
           <strong className="text-foreground">Tom:</strong> {TONE_LABEL[item.tone]}
           {item.attempt != null && (
