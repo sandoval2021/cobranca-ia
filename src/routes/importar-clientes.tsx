@@ -149,6 +149,14 @@ function ImportarClientesPage() {
       toast.error("Conexão com Supabase não configurada.");
       return;
     }
+    if (!isAuthenticated) {
+      toast.error("Faça login para importar clientes.");
+      return;
+    }
+    if (flags.appEnv !== "staging") {
+      toast.error("Importação disponível apenas em ambiente de testes.");
+      return;
+    }
     if (!companyId) {
       toast.error("Selecione uma empresa.");
       return;
@@ -181,23 +189,31 @@ function ImportarClientesPage() {
 
       if (error) {
         const m = (error.message || "").toLowerCase();
-        if (
+        let friendly = "Erro ao importar: " + error.message;
+        if (m.includes("jwt") || m.includes("not authenticated") || m.includes("auth")) {
+          friendly = "Faça login para importar clientes.";
+        } else if (
+          m.includes("permission") ||
+          m.includes("denied") ||
+          m.includes("not allowed") ||
+          m.includes("rls")
+        ) {
+          friendly = "Sua conta não tem permissão para importar clientes desta empresa.";
+        } else if (
           m.includes("does not exist") ||
           m.includes("not find function") ||
           m.includes("could not find")
         ) {
-          setResult({
-            message:
-              "Importação lida com sucesso. Falta instalar a função segura de gravação no Supabase.",
-            duplicated: counts.duplicate,
-            errored: counts.invalid,
-          });
-          toast.message(
-            "Função de gravação não instalada no Supabase de staging."
-          );
-        } else {
-          toast.error("Erro ao importar: " + error.message);
+          friendly = "Função segura de importação ainda não instalada no Supabase.";
+        } else if (m.includes("invalid") || m.includes("constraint") || m.includes("type")) {
+          friendly = "Revise os dados do arquivo antes de importar.";
         }
+        toast.error(friendly);
+        setResult({
+          message: friendly,
+          duplicated: counts.duplicate,
+          errored: counts.invalid,
+        });
       } else {
         const r = (data ?? {}) as Record<string, number>;
         setResult({
@@ -217,7 +233,15 @@ function ImportarClientesPage() {
     }
   }
 
-  const canConfirm = !!companyId && counts.valid > 0 && !confirming;
+  const canConfirm =
+    isAuthenticated &&
+    !!companyId &&
+    counts.valid > 0 &&
+    !confirming &&
+    flags.appEnv === "staging" &&
+    !flags.allowRealPayments &&
+    !flags.allowRealWhatsapp &&
+    !flags.allowRealAi;
 
   return (
     <PageContainer>
