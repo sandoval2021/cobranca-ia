@@ -13,6 +13,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/use-supabase";
+import { useAuth } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 
 export const Route = createFileRoute("/diagnostico")({ component: DiagnosticoPage });
