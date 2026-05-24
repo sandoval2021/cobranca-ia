@@ -7,6 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { friendlyAuthError } from "@/lib/use-auth";
+import { flags } from "@/lib/flags";
+
+const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
+const hasKey = Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY);
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
