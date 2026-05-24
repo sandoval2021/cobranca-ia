@@ -195,13 +195,13 @@ function ImportarClientesPage() {
   };
 
   const counts = useMemo(() => {
-    const c = { new: 0, existing: 0, duplicate_file: 0, error: 0 };
+    const c = { new: 0, existing: 0, duplicate_file: 0, error: 0, pending: 0 };
     rows?.forEach((r) => {
       c[rowKind(r)]++;
     });
     return c;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, existingMap]);
+  }, [rows, existingMap, lookupReady]);
 
 
   async function onFile(file: File) {
