@@ -14,11 +14,13 @@ import {
   Loader2,
   Save,
   Sparkles,
+  Brain,
 } from "lucide-react";
 import {
   GenerateMessageDialog,
   SimulatedMessagesPanel,
 } from "@/components/messages/simulated-messages";
+import { AnalyzeWithAIDialog, AISuggestionsPanel } from "@/components/ai/ai-analysis";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
