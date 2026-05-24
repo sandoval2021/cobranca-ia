@@ -273,7 +273,7 @@ function ImportarClientesPage() {
         </p>
       </div>
 
-      <AuthGate />
+      
 
       {/* Empresa */}
       <Card className="mb-4 p-4">
