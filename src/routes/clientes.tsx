@@ -533,7 +533,7 @@ function CustomerSheet({
             <EmptyState icon={Users} title="Não foi possível carregar" description={details.message} />
           )}
           {details.status === "ready" && mode === "view" && (
-            <DetailView customer={merged} raw={details.data} />
+            <DetailView customer={merged} raw={details.data} timelineBump={timelineBump} />
           )}
           {details.status === "ready" && mode === "edit" && (
             <EditForm
