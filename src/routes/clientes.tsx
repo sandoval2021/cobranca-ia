@@ -659,10 +659,11 @@ function DetailView({
 
   return (
     <Tabs defaultValue="dados" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="dados" className="text-xs">Dados</TabsTrigger>
         <TabsTrigger value="cobrancas" className="text-xs">Cobranças</TabsTrigger>
         <TabsTrigger value="mensagens" className="text-xs">Mensagens</TabsTrigger>
+        <TabsTrigger value="ia" className="text-xs">IA</TabsTrigger>
         <TabsTrigger value="historico" className="text-xs">Histórico</TabsTrigger>
       </TabsList>
 
