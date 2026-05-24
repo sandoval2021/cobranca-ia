@@ -62,14 +62,8 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
       </nav>
 
       <div className="border-t border-border p-3">
-        <div className="flex items-center gap-3 rounded-lg bg-surface-muted p-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-            VC
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">Você</p>
-            <p className="truncate text-xs text-muted-foreground">conta@exemplo.com</p>
-          </div>
+        <div className="rounded-lg bg-surface-muted p-2">
+          <AuthStatus />
         </div>
       </div>
     </aside>
