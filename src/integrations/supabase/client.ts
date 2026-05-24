@@ -7,7 +7,11 @@ export const supabaseConfigured = Boolean(url && anonKey);
 
 export const supabase: SupabaseClient | null = supabaseConfigured
   ? createClient(url!, anonKey!, {
-      auth: { persistSession: false, autoRefreshToken: false },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        storageKey: "cobranca-ia-auth",
+      },
     })
   : null;
 
