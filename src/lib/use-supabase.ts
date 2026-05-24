@@ -9,7 +9,11 @@ export type LoadState<T> =
 
 export function useSupabaseList<T = Record<string, unknown>>(
   table: string,
-  options?: { limit?: number; order?: { column: string; ascending?: boolean } },
+  options?: {
+    limit?: number;
+    order?: { column: string; ascending?: boolean };
+    deps?: ReadonlyArray<unknown>;
+  },
 ) {
   const [state, setState] = useState<LoadState<T>>({ status: "loading" });
 
@@ -19,6 +23,7 @@ export function useSupabaseList<T = Record<string, unknown>>(
       setState({ status: "not_configured" });
       return;
     }
+    setState({ status: "loading" });
     (async () => {
       let q = supabase.from(table).select("*").limit(options?.limit ?? 100);
       if (options?.order) {
@@ -38,12 +43,15 @@ export function useSupabaseList<T = Record<string, unknown>>(
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table]);
+  }, [table, ...(options?.deps ?? [])]);
 
   return state;
 }
 
-export function useSupabaseCount(table: string) {
+export function useSupabaseCount(
+  table: string,
+  options?: { deps?: ReadonlyArray<unknown> },
+) {
   const [state, setState] = useState<
     | { status: "loading" }
     | { status: "not_configured" }
@@ -57,6 +65,7 @@ export function useSupabaseCount(table: string) {
       setState({ status: "not_configured" });
       return;
     }
+    setState({ status: "loading" });
     (async () => {
       const { count, error } = await supabase
         .from(table)
@@ -71,7 +80,8 @@ export function useSupabaseCount(table: string) {
     return () => {
       alive = false;
     };
-  }, [table]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, ...(options?.deps ?? [])]);
 
   return state;
 }

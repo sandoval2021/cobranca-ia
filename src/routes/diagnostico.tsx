@@ -13,16 +13,17 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/use-supabase";
+import { useAuth } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 
 export const Route = createFileRoute("/diagnostico")({ component: DiagnosticoPage });
 
-type CheckStatus = "loading" | "ok" | "empty" | "denied" | "error" | "not_configured";
+type CheckStatus = "loading" | "ok" | "empty" | "denied" | "protected" | "error" | "not_configured";
 type Check = { label: string; status: CheckStatus; detail?: string };
 
 const TABLES = ["companies", "customers", "customer_charges", "messages", "ai_messages"];
 
-async function runCheck(table: string): Promise<Check> {
+async function runCheck(table: string, isAuthed: boolean): Promise<Check> {
   if (!supabaseConfigured || !supabase) return { label: table, status: "not_configured" };
   const { count, error } = await supabase
     .from(table)
@@ -30,6 +31,9 @@ async function runCheck(table: string): Promise<Check> {
   if (error) {
     const m = friendlyError(error.message);
     const denied = /permiss/i.test(m);
+    if (denied && !isAuthed) {
+      return { label: table, status: "protected", detail: "Faça login para acessar" };
+    }
     return { label: table, status: denied ? "denied" : "error", detail: m };
   }
   if (!count || count === 0) return { label: table, status: "empty" };
@@ -44,16 +48,21 @@ function ui(s: CheckStatus) {
       return { icon: CheckCircle2, color: "text-success", text: "Conectado" };
     case "empty":
       return { icon: MinusCircle, color: "text-warning", text: "Sem dados demo" };
+    case "protected":
+      return { icon: MinusCircle, color: "text-muted-foreground", text: "Protegido — faça login" };
     case "denied":
       return { icon: AlertCircle, color: "text-danger", text: "Permissão bloqueada" };
     case "not_configured":
       return { icon: AlertCircle, color: "text-danger", text: "Conexão não configurada" };
     case "error":
       return { icon: AlertCircle, color: "text-danger", text: "Erro de configuração" };
+    default:
+      return { icon: AlertCircle, color: "text-danger", text: "Desconhecido" };
   }
 }
 
 function DiagnosticoPage() {
+  const { isAuthenticated, user } = useAuth();
   const [conn, setConn] = useState<Check>({ label: "Conexão Supabase", status: "loading" });
   const [checks, setChecks] = useState<Check[]>(
     TABLES.map((t) => ({ label: t, status: "loading" })),
@@ -73,12 +82,13 @@ function DiagnosticoPage() {
       setConn({
         label: "Conexão Supabase",
         status: "ok",
-        detail: "URL e chave presentes",
+        detail: isAuthenticated ? `Sessão: ${user?.email ?? "ok"}` : "URL e chave presentes",
       });
-      const results = await Promise.all(TABLES.map(runCheck));
+      setChecks(TABLES.map((t) => ({ label: t, status: "loading" })));
+      const results = await Promise.all(TABLES.map((t) => runCheck(t, isAuthenticated)));
       setChecks(results);
     })();
-  }, []);
+  }, [isAuthenticated, user?.id]);
 
   const connectedCount = checks.filter((c) => c.status === "ok").length;
   const allDone = checks.every((c) => c.status !== "loading");
@@ -100,6 +110,12 @@ function DiagnosticoPage() {
         <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <SummaryRow label="Supabase configurado" value={supabaseConfigured ? "Sim" : "Não"} ok={supabaseConfigured} />
           <SummaryRow label="Ambiente" value={flags.appEnv} ok />
+          <SummaryRow
+            label="Sessão"
+            value={isAuthenticated ? (user?.email ?? "Logado") : "Não logado"}
+            ok={isAuthenticated}
+            invertOkColor
+          />
           <SummaryRow label="Pagamentos reais" value={flags.allowRealPayments ? "Liberado" : "Bloqueado"} ok={!flags.allowRealPayments} invertOkColor />
           <SummaryRow label="WhatsApp real" value={flags.allowRealWhatsapp ? "Liberado" : "Bloqueado"} ok={!flags.allowRealWhatsapp} invertOkColor />
           <SummaryRow label="IA real" value={flags.allowRealAi ? "Liberada" : "Bloqueada"} ok={!flags.allowRealAi} invertOkColor />
