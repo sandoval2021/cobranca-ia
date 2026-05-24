@@ -701,7 +701,9 @@ function ChargeSheet({
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
   const [showGenerate, setShowGenerate] = useState(false);
+  const [showAnalyze, setShowAnalyze] = useState(false);
   const [simBump, setSimBump] = useState(0);
+  const [aiBump, setAiBump] = useState(0);
 
   useEffect(() => {
     if (!open || !charge) return;
