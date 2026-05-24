@@ -239,15 +239,22 @@ function ImportarClientesPage() {
     }
   }
 
-  const canConfirm =
-    isAuthenticated &&
-    !!companyId &&
-    counts.valid > 0 &&
-    !confirming &&
-    flags.appEnv === "staging" &&
-    !flags.allowRealPayments &&
-    !flags.allowRealWhatsapp &&
-    !flags.allowRealAi;
+  const disabledReason: string | null = !isAuthenticated
+    ? "Entre com uma conta autorizada para importar."
+    : flags.appEnv !== "staging"
+      ? "A importação só funciona no ambiente de testes."
+      : !companyId
+        ? "Selecione uma empresa."
+        : !rows || rows.length === 0
+          ? "Envie um arquivo com pelo menos 1 cliente válido."
+          : counts.valid === 0 && counts.invalid > 0
+            ? "Revise os erros antes de continuar."
+            : counts.valid === 0
+              ? "Envie um arquivo com pelo menos 1 cliente válido."
+              : null;
+
+  const canConfirm = disabledReason === null && !confirming;
+
 
   return (
     <PageContainer>
