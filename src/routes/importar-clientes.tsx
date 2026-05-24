@@ -56,6 +56,7 @@ function companyLabel(c: Company): string {
 const MAX_BYTES = 10 * 1024 * 1024;
 
 function ImportarClientesPage() {
+  const { user, isAuthenticated } = useAuth();
   const companies = useSupabaseList<Company>("companies", { limit: 100 });
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
