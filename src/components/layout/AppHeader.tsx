@@ -1,5 +1,6 @@
-import { Menu, Bell, Search } from "lucide-react";
+import { Menu, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AuthStatus } from "@/components/auth/AuthStatus";
 
 type Props = {
   title: string;
@@ -24,10 +25,10 @@ export function AppHeader({ title, onMenu, action }: Props) {
       </h1>
       <div className="flex items-center gap-1">
         {action}
-        <Button variant="ghost" size="icon" aria-label="Buscar" className="hidden sm:inline-flex">
-          <Search className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" size="icon" aria-label="Notificações">
+        <div className="md:hidden">
+          <AuthStatus compact />
+        </div>
+        <Button variant="ghost" size="icon" aria-label="Notificações" className="hidden sm:inline-flex">
           <Bell className="h-5 w-5" />
         </Button>
       </div>
