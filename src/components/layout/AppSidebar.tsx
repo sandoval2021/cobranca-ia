@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { ownerNav, adminNav } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { Sparkles, ShieldCheck } from "lucide-react";
+import { AuthStatus } from "@/components/auth/AuthStatus";
 
 type Props = {
   variant?: "owner" | "admin";
