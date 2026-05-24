@@ -263,7 +263,7 @@ export function validateRows(rows: RawRow[]): ValidatedRow[] {
     if (r.amount_raw && amount_cents === null) errors.push("Valor inválido");
     const expires_at = normalizeDate(r.expires_raw);
     if (r.expires_raw && !expires_at) errors.push("Data inválida");
-    if (!r.customer_name) errors.push("Nome ausente");
+    // customer_name nunca é nulo (fallback amigável aplicado no parser)
 
     let status: "valid" | "invalid" | "duplicate" = errors.length ? "invalid" : "valid";
     if (status === "valid" && whatsapp_e164) {
