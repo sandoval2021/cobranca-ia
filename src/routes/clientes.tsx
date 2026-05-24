@@ -764,6 +764,14 @@ function DetailView({
             ))}
           </ul>
         )}
+
+        <div className="mt-4">
+          <SimulatedMessagesPanel
+            customerId={customer.id}
+            chargeId={null}
+            reloadKey={timelineBump}
+          />
+        </div>
       </TabsContent>
 
       <TabsContent value="historico" className="mt-4">
