@@ -154,7 +154,9 @@ function IndicacoesPage() {
 
   return (
     <PageContainer>
+      <div className="mb-1"><ProtectedModeBadge /></div>
       <SectionHeader
+
         title="Indicações"
         subtitle="Acompanhe clientes que indicaram pessoas e controle bonificações."
         action={
