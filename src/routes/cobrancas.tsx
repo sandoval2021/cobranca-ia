@@ -866,13 +866,14 @@ function ChargeSheet({
               </div>
               <div>
                 <Label className="text-xs">Status</Label>
-                <Select value={toChargeRpcStatus(status) ?? "pendente"} onValueChange={setStatus}>
+                <Select value={classifyCharge(status) === "outro" ? "pendente" : classifyCharge(status)} onValueChange={setStatus}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pendente">Pendente</SelectItem>
                     <SelectItem value="paga">Paga</SelectItem>
                     <SelectItem value="vencida">Vencida</SelectItem>
                     <SelectItem value="cancelada">Cancelada</SelectItem>
+                    <SelectItem value="falhou">Falhou</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
