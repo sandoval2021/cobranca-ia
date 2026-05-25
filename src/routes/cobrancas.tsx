@@ -78,6 +78,21 @@ import { cn } from "@/lib/utils";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
+import { flags } from "@/lib/flags";
+
+type RpcErr = { message?: string; details?: string | null; hint?: string | null; code?: string | null };
+function stagingRpcDetail(rpc: string, payload: unknown, err: RpcErr) {
+  if (flags.appEnv === "production") return undefined;
+  try {
+    return `RPC: ${rpc}\nPayload: ${JSON.stringify(payload)}\nmessage: ${err.message ?? ""}\ndetails: ${err.details ?? ""}\nhint: ${err.hint ?? ""}\ncode: ${err.code ?? ""}`;
+  } catch {
+    return `RPC: ${rpc} — ${err.message ?? ""}`;
+  }
+}
+function toastRpcError(friendlyMsg: string, rpc: string, payload: unknown, err: RpcErr) {
+  const description = stagingRpcDetail(rpc, payload, err);
+  toast.error(friendlyMsg, description ? { description, duration: 12000 } : undefined);
+}
 
 export const Route = createFileRoute("/cobrancas")({ component: CobrancasPage });
 
@@ -528,10 +543,11 @@ function ChargeCard({
   const callRpc = async (fn: string, success: string, kindBusy: "paid" | "overdue" | "cancel") => {
     if (!supabase) return;
     setBusy(kindBusy);
-    const { error } = await supabase.rpc(fn, { p_charge_id: charge.id });
+    const payload = { p_charge_id: charge.id };
+    const { error } = await supabase.rpc(fn, payload);
     setBusy(null);
     if (error) {
-      toast.error(friendlyRpcError(error.message));
+      toastRpcError(friendlyRpcError(error.message), fn, payload, error);
       return;
     }
     toast.success(success);
@@ -754,15 +770,16 @@ function ChargeSheet({
       return;
     }
     setSaving(true);
-    const { error } = await supabase.rpc("update_charge_admin", {
+    const payload = {
       p_charge_id: charge.id,
       p_amount_cents: cents,
       p_due_date: due,
       p_status: status || null,
-    });
+    };
+    const { error } = await supabase.rpc("update_charge_admin", payload);
     setSaving(false);
     if (error) {
-      toast.error(friendlyRpcError(error.message));
+      toastRpcError(friendlyRpcError(error.message), "update_charge_admin", payload, error);
       return;
     }
     toast.success("Cobrança atualizada com sucesso.");
@@ -1089,16 +1106,17 @@ function CreateChargeDialog({
       return;
     }
     setBusy(true);
-    const { error } = await supabase.rpc("create_charge_admin", {
+    const payload = {
       p_customer_id: customerId,
       p_amount_cents: cents,
       p_due_date: due,
       p_status: status,
       p_external_ref: ref.trim() || null,
-    });
+    };
+    const { error } = await supabase.rpc("create_charge_admin", payload);
     setBusy(false);
     if (error) {
-      toast.error(friendlyRpcError(error.message));
+      toastRpcError(friendlyRpcError(error.message), "create_charge_admin", payload, error);
       return;
     }
     toast.success("Cobrança criada com sucesso.");
@@ -1205,14 +1223,15 @@ function RenewCustomerDialog({
       return;
     }
     setBusy(true);
-    const { error } = await supabase.rpc("renew_customer_admin", {
+    const payload = {
       p_customer_id: customerId,
       p_months: m,
       p_amount_cents: cents,
-    });
+    };
+    const { error } = await supabase.rpc("renew_customer_admin", payload);
     setBusy(false);
     if (error) {
-      toast.error(friendlyRpcError(error.message));
+      toastRpcError(friendlyRpcError(error.message), "renew_customer_admin", payload, error);
       return;
     }
     toast.success("Cliente renovado com sucesso.");
