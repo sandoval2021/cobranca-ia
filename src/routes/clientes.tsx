@@ -261,6 +261,7 @@ function ClientesPage() {
       if (filter === "app_ibo") return screens.some((s) => s.app === "ibo_player" || s.app === "ibo_pro" || s.app === "ibo_mix");
       if (filter === "acc_mac_key") return screens.some((s) => s.access_type === "mac_key");
       if (filter === "acc_user_pass") return screens.some((s) => s.access_type === "user_pass");
+      if (filter === "needs_update") return screens.some((s) => s.needs_server_update && s.status !== "arquivada");
       return true;
     };
 
