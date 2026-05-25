@@ -10,6 +10,7 @@ import {
   Upload,
   ListChecks,
   BarChart3,
+  CalendarClock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -24,6 +25,7 @@ export const ownerNav: NavItem[] = [
   { to: "/", label: "Início", icon: LayoutDashboard, hint: "Visão geral do ambiente" },
   { to: "/empresas", label: "Empresas", icon: Building2, hint: "Empresas cadastradas" },
   { to: "/clientes", label: "Clientes", icon: Users, hint: "Sua base de clientes" },
+  { to: "/operacao-dia", label: "Operação do dia", icon: CalendarClock, hint: "Quem precisa de atenção hoje" },
   { to: "/importar-clientes", label: "Importar clientes", icon: Upload, hint: "Importar clientes a partir de PDF" },
   { to: "/cobrancas", label: "Cobranças", icon: Receipt, hint: "Cobranças geradas" },
   { to: "/mensagens", label: "Mensagens", icon: MessageCircle, hint: "Mensagens enviadas" },
@@ -37,9 +39,9 @@ export const ownerNav: NavItem[] = [
 export const ownerBottomNav: NavItem[] = [
   { to: "/", label: "Início", icon: LayoutDashboard },
   { to: "/clientes", label: "Clientes", icon: Users },
+  { to: "/operacao-dia", label: "Hoje", icon: CalendarClock },
   { to: "/cobrancas", label: "Cobranças", icon: Receipt },
   { to: "/mensagens", label: "Chat", icon: MessageCircle },
-  { to: "/diagnostico", label: "Status", icon: Activity },
 ];
 
 export const adminNav: NavItem[] = ownerNav;
