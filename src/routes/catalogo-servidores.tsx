@@ -61,6 +61,7 @@ function CatalogoServidoresPage() {
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [importPreview, setImportPreview] = useState<ServerEntry[] | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
 
   const refresh = () => setServers(listServers());
 
