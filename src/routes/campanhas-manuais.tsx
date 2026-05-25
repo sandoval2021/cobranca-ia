@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { applyRevendaVariables } from "@/lib/revenda-settings";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/use-auth";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
