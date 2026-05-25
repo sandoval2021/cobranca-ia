@@ -980,6 +980,13 @@ function PriorityCard({
               ? (s.server_ids ?? []).map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
               : <SemServidorBadge />)}
           </div>
+          {s && (s.server_ids ?? []).length > 0 && (
+            <ServerRouteInfo
+              serverIds={s.server_ids}
+              primaryServerId={s.primary_server_id}
+              className="mt-1"
+            />
+          )}
           <div className="mt-1 text-xs text-muted-foreground">
             {phone ?? "Sem WhatsApp"}
             {s ? (
