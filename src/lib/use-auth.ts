@@ -18,7 +18,7 @@ async function getSessionWithTimeout(timeoutMs = 3500): Promise<Session | null> 
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!supabase || !supabaseConfigured) {
@@ -32,10 +32,10 @@ export function useAuth() {
       setSession(currentSession);
       setLoading(false);
     }
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange?.((_e, s) => {
       setSession(s);
       setLoading(false);
-    });
+    }) ?? { data: { subscription: { unsubscribe: () => undefined } } };
     refreshSession();
     window.addEventListener(AUTH_REFRESH_EVENT, refreshSession);
     return () => {
