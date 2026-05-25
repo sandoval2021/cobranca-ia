@@ -33,7 +33,6 @@ import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
 import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
-import { Route as PreparacaoBackendRouteImport } from './routes/preparacao-backend'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TestesRoute = TestesRouteImport.update({
@@ -154,6 +153,11 @@ const BackupGeralRoute = BackupGeralRouteImport.update({
 const AdminDnsRotasRoute = AdminDnsRotasRouteImport.update({
   id: '/admin-dns-rotas',
   path: '/admin-dns-rotas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreparacaoBackendRoute = PreparacaoBackendRouteImport.update({
+  id: '/preparacao-backend',
+  path: '/preparacao-backend',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
