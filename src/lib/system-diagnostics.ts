@@ -695,12 +695,12 @@ function checkOperacao(alerts: DiagnosticAlert[]) {
     });
 
   const sched = getImportScheduleSummary();
-  if (sched && sched.pendentes > 0)
+  if (sched && sched.pending > 0)
     alerts.push({
       id: "op-agenda",
       area: "operacao",
       level: "atencao",
-      title: `${sched.pendentes} item(ns) pendentes na agenda da importação`,
+      title: `${sched.pending} item(ns) pendentes na agenda da importação`,
       description: "Há disparos planejados ainda não tratados.",
       action: "Abra a Agenda da importação.",
       to: "/importar-clientes",
