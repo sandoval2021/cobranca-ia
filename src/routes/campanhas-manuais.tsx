@@ -1035,6 +1035,13 @@ function CampanhasManuaisPage() {
                         </span>
                       )}
                     </div>
+                    {p.screen && (p.screen.server_ids ?? []).length > 0 && (
+                      <ServerRouteInfo
+                        serverIds={p.screen.server_ids}
+                        primaryServerId={p.screen.primary_server_id}
+                        className="mt-1"
+                      />
+                    )}
                     <div className="mt-1 text-xs text-muted-foreground">
                       {prettyPhone(p.customer.whatsapp) ?? "Sem WhatsApp"}
                       {p.screen ? (
