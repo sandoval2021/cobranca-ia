@@ -173,10 +173,25 @@ function groupOf(kind: DispatchKind, scheduledForISO: string, todayISO: string):
 
 // ---------- builder ----------
 
+function priorityFromRule(p: RulePriority): DispatchPriority {
+  switch (p) {
+    case "baixa": return "baixa";
+    case "media": return "media";
+    case "alta": return "alta";
+    case "recuperacao": return "media";
+    case "bloqueado": return "info";
+  }
+}
+
+function isKnownKind(id: string): id is DispatchKind {
+  return id in KIND_LABEL;
+}
+
 export function buildSchedule(rows: ValidatedRow[]): ScheduleItem[] {
   const out: ScheduleItem[] = [];
   const tISO = isoDay(today0());
   const phoneSeen = new Map<string, number>(); // phone → first index in out
+  const rules: ManualDispatchRule[] = listRules();
 
   rows.forEach((r, idx) => {
     const name = (r.customer_name ?? "").trim() || "Cliente sem nome";
@@ -185,14 +200,13 @@ export function buildSchedule(rows: ValidatedRow[]): ScheduleItem[] {
     const days = daysUntil(due);
     const id = `imp_${idx}_${Date.now().toString(36)}`;
 
-    // Bloqueios
+    // Bloqueios globais (cobre todas as regras default)
     const blockReasons: string[] = [];
     if (!phone) blockReasons.push("Sem WhatsApp cadastrado");
     if (!due) blockReasons.push("Sem data de vencimento");
     if (r.status === "invalid") blockReasons.push("Dados incompletos");
     if (r.status === "duplicate") blockReasons.push("Possível duplicado");
 
-    // duplicado por telefone dentro da própria agenda (defensivo)
     if (phone) {
       if (phoneSeen.has(phone)) {
         blockReasons.push("Possível duplicado");
@@ -207,47 +221,54 @@ export function buildSchedule(rows: ValidatedRow[]): ScheduleItem[] {
           ? "revisar"
           : "bloqueado";
       out.push({
-        id,
-        name,
-        whatsapp: phone,
-        amount_cents: r.amount_cents,
-        due_date: due,
-        days,
-        scheduled_for: tISO,
-        kind: "bloqueado",
-        kindLabel: KIND_LABEL.bloqueado,
-        priority: "info",
-        status,
+        id, name, whatsapp: phone, amount_cents: r.amount_cents,
+        due_date: due, days, scheduled_for: tISO,
+        kind: "bloqueado", kindLabel: KIND_LABEL.bloqueado,
+        priority: "info", status,
         reason: blockReasons.join(" · "),
-        message: "",
-        group: "bloqueados",
+        message: "", group: "bloqueados",
       });
       return;
     }
 
     const d = days as number;
-    const { kind, priority } = classify(d);
+    const rule = pickRule(d, rules);
 
-    // Regra: lista vencida 30+ dias → priorizar recuperação,
-    // não criar disparo de app pago (a importação não gera app pago,
-    // mas registramos o aviso para ser exibido na UI).
+    if (!rule) {
+      // Nenhuma regra ativa cobre este caso → marcar para revisão
+      out.push({
+        id, name, whatsapp: phone, amount_cents: r.amount_cents,
+        due_date: due, days: d, scheduled_for: tISO,
+        kind: "bloqueado", kindLabel: "Sem regra ativa",
+        priority: "info", status: "revisar",
+        reason: "Nenhuma regra de disparo ativa para este vencimento",
+        message: "", group: "bloqueados",
+      });
+      return;
+    }
+
+    const kind: DispatchKind = isKnownKind(rule.id) ? rule.id : "lembrete_leve";
+    const priority = priorityFromRule(rule.priority);
+
+    // Regra: lista vencida 30+ dias → priorizar recuperação
     let warning: string | undefined;
-    if (d <= -30) {
+    if (rule.recoveryOverApp && d <= -30) {
       warning = "Lista vencida há muito tempo. Primeiro tente recuperar o cliente antes de falar do aplicativo.";
     }
 
-    const message = msgFor(kind, name, d);
+    const message = applyTemplate(rule.template, {
+      nome: name,
+      whatsapp: phone,
+      vencimento: fmtDateBR(due),
+      dias: Math.abs(d),
+      valor: fmtBRL(r.amount_cents),
+    });
 
     out.push({
-      id,
-      name,
-      whatsapp: phone,
-      amount_cents: r.amount_cents,
-      due_date: due,
-      days: d,
-      scheduled_for: tISO, // sempre disparo recomendado para hoje
+      id, name, whatsapp: phone, amount_cents: r.amount_cents,
+      due_date: due, days: d, scheduled_for: tISO,
       kind,
-      kindLabel: KIND_LABEL[kind],
+      kindLabel: rule.name,
       priority,
       status: "pronto",
       reason: reasonFor(kind, d),
@@ -259,6 +280,7 @@ export function buildSchedule(rows: ValidatedRow[]): ScheduleItem[] {
 
   return out;
 }
+
 
 function reasonFor(kind: DispatchKind, days: number): string {
   switch (kind) {
