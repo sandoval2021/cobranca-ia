@@ -773,7 +773,7 @@ function ChargeSheet({
     const payload = {
       p_charge_id: charge.id,
       p_amount_cents: cents,
-      p_due_date: due,
+      p_due_at: due,
       p_status: status || null,
     };
     const { error } = await supabase.rpc("update_charge_admin", payload);
