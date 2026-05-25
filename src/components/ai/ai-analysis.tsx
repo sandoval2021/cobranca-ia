@@ -37,6 +37,21 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { flags } from "@/lib/flags";
+
+type RpcErr = { message?: string; details?: string | null; hint?: string | null; code?: string | null };
+function stagingDetail(rpc: string, payload: unknown, err: RpcErr) {
+  if (flags.appEnv === "production") return undefined;
+  try {
+    return `RPC: ${rpc}\nPayload: ${JSON.stringify(payload)}\nmessage: ${err.message ?? ""}\ndetails: ${err.details ?? ""}\nhint: ${err.hint ?? ""}\ncode: ${err.code ?? ""}`;
+  } catch {
+    return `RPC: ${rpc} — ${err.message ?? ""}`;
+  }
+}
+function toastRpcError(friendlyMsg: string, rpc: string, payload: unknown, err: RpcErr) {
+  const description = stagingDetail(rpc, payload, err);
+  toast.error(friendlyMsg, description ? { description } : undefined);
+}
 
 type Row = Record<string, unknown>;
 
@@ -200,13 +215,11 @@ export function AnalyzeWithAIDialog({
     if (!supabase || !chargeId) return;
     setStage("generating");
     setSavedAiMessageId(null);
-    const { data, error } = await supabase.rpc("generate_ai_charge_analysis_admin", {
-      p_charge_id: chargeId,
-      p_goal: goal,
-    });
+    const payload = { p_charge_id: chargeId, p_goal: goal };
+    const { data, error } = await supabase.rpc("generate_ai_charge_analysis_admin", payload);
     if (error) {
       setStage("idle");
-      toast.error(friendly(error.message, "generate"));
+      toastRpcError(friendly(error.message, "generate"), "generate_ai_charge_analysis_admin", payload, error);
       return;
     }
     const a = extractAnalysis(data);
@@ -234,32 +247,33 @@ export function AnalyzeWithAIDialog({
   const handleSave = async () => {
     if (!supabase || !chargeId || !analysis) return;
     setStage("saving");
-    const { data, error } = await supabase.rpc("save_ai_simulated_suggestion_admin", {
-      p_charge_id: chargeId,
-      p_goal: goal,
-      p_suggested_tone: analysis.tone ?? "amigavel",
-      p_recommended_action: analysis.action ?? null,
-      p_suggested_message: analysis.message,
-      p_metadata: {
-        risk: analysis.risk,
-        reason: analysis.reason,
-        source: "frontend_simulated",
-      },
-    });
+    // Spec: save_ai_simulated_suggestion_admin({ p_charge_id, p_analysis })
+    const analysisPayload = {
+      goal,
+      risk_level: analysis.risk,
+      suggested_tone: analysis.tone ?? "amigavel",
+      recommended_action: analysis.action,
+      suggested_message: analysis.message,
+      reason: analysis.reason,
+      source: "frontend_simulated",
+      raw: analysis.raw,
+    };
+    const payload = { p_charge_id: chargeId, p_analysis: analysisPayload };
+    const { data, error } = await supabase.rpc("save_ai_simulated_suggestion_admin", payload);
     if (error) {
       setStage("ready");
-      toast.error(friendly(error.message, "save"));
+      toastRpcError(friendly(error.message, "save"), "save_ai_simulated_suggestion_admin", payload, error);
       return;
     }
-    const payload = Array.isArray(data) ? (data[0] as Row) : (data as Row | null);
+    const ret = Array.isArray(data) ? (data[0] as Row) : (data as Row | null);
     const id =
-      (payload && typeof payload === "object"
-        ? pickStr(payload as Row, ["ai_message_id", "id"])
+      (ret && typeof ret === "object"
+        ? pickStr(ret as Row, ["ai_message_id", "id"])
         : null) ?? analysis.aiMessageId;
     setSavedAiMessageId(id);
     const warning =
-      payload && typeof payload === "object"
-        ? pickStr(payload as Row, ["warning", "aviso"])
+      ret && typeof ret === "object"
+        ? pickStr(ret as Row, ["warning", "aviso"])
         : null;
     if (warning) {
       toast.success("Sugestão salva. O histórico pode demorar alguns instantes para atualizar.");
@@ -271,16 +285,14 @@ export function AnalyzeWithAIDialog({
   };
 
   const handleCreateMessage = async () => {
-    if (!supabase || !chargeId || !savedAiMessageId || !analysis) return;
+    if (!supabase || !savedAiMessageId) return;
     setStage("creating");
-    const { error } = await supabase.rpc("create_message_from_ai_suggestion_admin", {
-      p_charge_id: chargeId,
-      p_ai_message_id: savedAiMessageId,
-      p_tone: analysis.tone ?? "amigavel",
-    });
+    // Spec: create_message_from_ai_suggestion_admin({ p_ai_message_id })
+    const payload = { p_ai_message_id: savedAiMessageId };
+    const { error } = await supabase.rpc("create_message_from_ai_suggestion_admin", payload);
     if (error) {
       setStage("saved");
-      toast.error(friendly(error.message, "create"));
+      toastRpcError(friendly(error.message, "create"), "create_message_from_ai_suggestion_admin", payload, error);
       return;
     }
     toast.success("Mensagem simulada criada a partir da IA.");
@@ -601,13 +613,15 @@ export function AISuggestionsPanel({
     let alive = true;
     setState({ status: "loading" });
     (async () => {
-      const { data, error } = await supabase!.rpc("get_ai_simulated_suggestions_admin", {
-        p_customer_id: customerId,
-        p_charge_id: chargeId,
-      });
+      const payload = { p_customer_id: customerId, p_charge_id: chargeId };
+      const { data, error } = await supabase!.rpc("get_ai_simulated_suggestions_admin", payload);
       if (!alive) return;
       if (error) {
-        setState({ status: "error", message: friendly(error.message, "load") });
+        const detail = stagingDetail("get_ai_simulated_suggestions_admin", payload, error);
+        setState({
+          status: "error",
+          message: detail ? `${friendly(error.message, "load")}\n\n${detail}` : friendly(error.message, "load"),
+        });
         return;
       }
       const list = (Array.isArray(data) ? (data as Row[]) : []).slice();
@@ -641,7 +655,7 @@ export function AISuggestionsPanel({
       )}
 
       {state.status === "error" && (
-        <p className="rounded-lg border border-dashed border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+        <p className="whitespace-pre-wrap rounded-lg border border-dashed border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
           {state.message}
         </p>
       )}
