@@ -316,6 +316,13 @@ function ClientesPage() {
         const serverNames = (s.server_ids ?? [])
           .map((id) => getServerById(id)?.name?.toLowerCase() ?? "")
           .join(" ");
+        const routeHaystack = (s.server_ids ?? [])
+          .map((sid) => {
+            const r = getPrimaryRouteForServer(sid);
+            if (!r) return "";
+            return [r.host, r.subdomain, r.value].filter(Boolean).join(" ").toLowerCase();
+          })
+          .join(" ");
         return (
           s.name.toLowerCase().includes(q) ||
           (APP_CATALOG[s.app]?.label.toLowerCase().includes(q) ?? false) ||
@@ -324,6 +331,7 @@ function ClientesPage() {
           (s.username ?? "").toLowerCase().includes(q) ||
           (s.server ?? "").toLowerCase().includes(q) ||
           serverNames.includes(q) ||
+          routeHaystack.includes(q) ||
           (s.list_server_url ?? "").toLowerCase().includes(q) ||
           (s.list_username ?? "").toLowerCase().includes(q) ||
           (s.server_notes ?? "").toLowerCase().includes(q)
