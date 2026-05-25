@@ -1015,9 +1015,26 @@ function CampanhasManuaisPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <div className="mt-4">
+        <ImportAgendaSection
+          title="Agenda da importação"
+          subtitle="Filtre por hoje, pendentes, copiados, bloqueados, recuperação e inativos."
+          initialChip="todos"
+          restrictTo={[
+            "todos",
+            "hoje",
+            "pendentes",
+            "copiados",
+            "bloqueados",
+            "recuperar",
+            "inativos",
+          ]}
+        />
+      </div>
     </PageContainer>
   );
 }
+
 
 // ---------- mini components ----------
 function Mini({
