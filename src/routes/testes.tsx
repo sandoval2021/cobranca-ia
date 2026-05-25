@@ -39,6 +39,8 @@ import {
 } from "@/lib/referrals";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+import { canCreateTrialLead } from "@/lib/plan-limits";
+import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 
 
 export const Route = createFileRoute("/testes")({
