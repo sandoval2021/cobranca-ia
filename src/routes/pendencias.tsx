@@ -366,7 +366,52 @@ function PendenciasPage() {
               recommended: "Atualize a rota/servidor e avise o cliente.",
             });
           }
-        }
+
+          // ----- App pago -----
+          if (isPaidApp(s)) {
+            const ad = appDueDays(s);
+            const appLabel = APP_CATALOG[s.app]?.label ?? s.app;
+            if (ad == null) {
+              out.push({
+                key: `appnov::${c.id}::${s.id}`, type: "app_sem_venc", customer: c, screen: s,
+                description: `App pago ${appLabel} sem vencimento cadastrado.`,
+                recommended: "Cadastre o vencimento da licença do app.",
+              });
+            } else if (ad < 0) {
+              out.push({
+                key: `appvenc::${c.id}::${s.id}`, type: "app_pago_vencido", customer: c, screen: s, days: ad,
+                description: `Licença do app ${appLabel} vencida há ${Math.abs(ad)} dia(s).`,
+                recommended: "Envie aviso de renovação do app.",
+              });
+            } else if (ad <= 7) {
+              out.push({
+                key: `app7::${c.id}::${s.id}`, type: "app_pago_7d", customer: c, screen: s, days: ad,
+                description: `App ${appLabel} vence em ${ad} dia(s).`,
+                recommended: "Avise o cliente sobre a renovação da licença.",
+              });
+            } else if (ad <= 30) {
+              out.push({
+                key: `app30::${c.id}::${s.id}`, type: "app_pago_30d", customer: c, screen: s, days: ad,
+                description: `App ${appLabel} vence em ${ad} dia(s).`,
+                recommended: "Programe lembrete de renovação do app.",
+              });
+            }
+            const at = s.access_type;
+            if ((at === "mac" || at === "mac_key") && (!s.mac || (at === "mac_key" && !s.app_key))) {
+              out.push({
+                key: `appmac::${c.id}::${s.id}`, type: "app_sem_mackey", customer: c, screen: s,
+                description: `App pago ${appLabel} sem MAC/Key.`,
+                recommended: "Peça o MAC e a Key ao cliente.",
+              });
+            }
+            if (ad != null && ad <= 30 && !(s.app_renewal_value && s.app_renewal_value.trim())) {
+              out.push({
+                key: `appval::${c.id}::${s.id}`, type: "app_sem_valor", customer: c, screen: s,
+                description: `App ${appLabel} sem valor de renovação.`,
+                recommended: "Cadastre o valor da renovação para usar nas mensagens.",
+              });
+            }
+          }
       }
     }
 
