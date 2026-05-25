@@ -28,6 +28,7 @@ import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servidores'
 import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
+import { Route as BackupGeralRouteImport } from './routes/backup-geral'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TestesRoute = TestesRouteImport.update({
@@ -125,6 +126,11 @@ const BaseConhecimentoRoute = BaseConhecimentoRouteImport.update({
   path: '/base-conhecimento',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BackupGeralRoute = BackupGeralRouteImport.update({
+  id: '/backup-geral',
+  path: '/backup-geral',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -133,6 +139,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/catalogo-servidores': typeof CatalogoServidoresRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/catalogo-servidores': typeof CatalogoServidoresRoute
@@ -178,6 +186,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/catalogo-servidores': typeof CatalogoServidoresRoute
@@ -202,6 +211,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
     | '/catalogo-servidores'
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
     | '/catalogo-servidores'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
     | '/catalogo-servidores'
@@ -269,6 +281,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BackupGeralRoute: typeof BackupGeralRoute
   BaseConhecimentoRoute: typeof BaseConhecimentoRoute
   CampanhasManuaisRoute: typeof CampanhasManuaisRoute
   CatalogoServidoresRoute: typeof CatalogoServidoresRoute
@@ -425,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BaseConhecimentoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/backup-geral': {
+      id: '/backup-geral'
+      path: '/backup-geral'
+      fullPath: '/backup-geral'
+      preLoaderRoute: typeof BackupGeralRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -437,6 +457,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BackupGeralRoute: BackupGeralRoute,
   BaseConhecimentoRoute: BaseConhecimentoRoute,
   CampanhasManuaisRoute: CampanhasManuaisRoute,
   CatalogoServidoresRoute: CatalogoServidoresRoute,

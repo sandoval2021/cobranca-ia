@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Download, Upload, ShieldCheck, FileText, RefreshCw, AlertTriangle,
-  CheckCircle2, Info, HardDrive,
+  CheckCircle2, Info,
 } from "lucide-react";
 
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -151,8 +151,7 @@ function BackupGeralPage() {
     <PageContainer>
       <SectionHeader
         title="Backup Geral"
-        description="Proteja seus dados locais exportando um backup completo do sistema."
-        icon={HardDrive}
+        subtitle="Proteja seus dados locais exportando um backup completo do sistema."
       />
 
       <Card className="border-amber-500/30 bg-amber-500/5 p-4">
