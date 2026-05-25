@@ -134,10 +134,6 @@ export function AppScreensSection({
   }, [screens]);
 
   const openNew = () => {
-    // limite local por plano + status da empresa (somente para criação)
-    // editar continua sempre permitido
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { canCreateScreen } = require("@/lib/plan-limits") as typeof import("@/lib/plan-limits");
     const d = canCreateScreen();
     if (!d.allowed) { toast.error(d.message ?? "Bloqueado pelo plano"); return; }
     setEditing(null); setSheetOpen(true);
