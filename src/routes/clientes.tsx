@@ -465,9 +465,21 @@ function FilterPill({
   );
 }
 
-function ClientCard({ customer, onOpen }: { customer: Customer; onOpen: () => void }) {
+function ClientCard({
+  customer,
+  screens,
+  onOpen,
+}: {
+  customer: Customer;
+  screens: AppScreen[];
+  onOpen: () => void;
+}) {
   const phone = prettyPhone(customer.whatsapp);
   const initial = customer.name.trim().charAt(0).toUpperCase() || "?";
+  const days = nextDueDays(customer.due_day, screens);
+  const urg = urgencyFromDays(days);
+  const activeScreens = screens.filter((s) => s.status !== "arquivada").slice(0, 4);
+
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-card">
       <div className="flex items-start gap-3">
@@ -499,7 +511,38 @@ function ClientCard({ customer, onOpen }: { customer: Customer; onOpen: () => vo
             {customer.due_day != null && (
               <span>Vence dia {customer.due_day}</span>
             )}
+            {days != null && (
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>
+                {urgencyLabel(urg, days)}
+              </span>
+            )}
           </div>
+          {activeScreens.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {activeScreens.map((s) => {
+                const app = APP_CATALOG[s.app];
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
+                      app.badgeClass,
+                    )}
+                    title={`${s.name} · ${app.label}`}
+                  >
+                    {s.name} · {app.label}
+                  </button>
+                );
+              })}
+              {screens.length > activeScreens.length && (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                  +{screens.length - activeScreens.length}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
       <div className="mt-3 flex justify-end">
