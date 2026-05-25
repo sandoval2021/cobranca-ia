@@ -42,6 +42,7 @@ const EVENTS_AFTER_RESTORE = [
   "cobranca_ia_manual_rules:changed",
   "cobranca_ia_trial_leads:changed",
   "cobranca_ia_referrals:changed",
+  "cobranca_ia_revenda_settings:changed",
 ];
 
 export type RestoreMode = "merge" | "replace";
