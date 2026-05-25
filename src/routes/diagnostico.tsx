@@ -66,17 +66,23 @@ function levelLabel(l: DiagnosticLevel) {
 function DiagnosticoPage() {
   const [report, setReport] = useState<DiagnosticsReport | null>(null);
   const [chip, setChip] = useState<ChipKey>("todos");
+  const [setup, setSetup] = useState(() => getSetupProgress());
 
-  const refresh = () => setReport(runSystemDiagnostics());
+  const refresh = () => {
+    setReport(runSystemDiagnostics());
+    setSetup(getSetupProgress());
+  };
 
   useEffect(() => {
     refresh();
     const onChange = () => refresh();
     window.addEventListener("storage", onChange);
     window.addEventListener(LOCAL_SECURITY_EVENT, onChange);
+    window.addEventListener(SETUP_WIZARD_EVENT, onChange);
     return () => {
       window.removeEventListener("storage", onChange);
       window.removeEventListener(LOCAL_SECURITY_EVENT, onChange);
+      window.removeEventListener(SETUP_WIZARD_EVENT, onChange);
     };
   }, []);
 
