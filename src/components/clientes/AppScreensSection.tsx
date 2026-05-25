@@ -36,6 +36,8 @@ import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
 
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { canCreateScreen } from "@/lib/plan-limits";
+import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 import { ScreenServerRoutes } from "@/components/clientes/ScreenServerRoutes";
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
@@ -131,7 +133,11 @@ export function AppScreensSection({
     });
   }, [screens]);
 
-  const openNew = () => { setEditing(null); setSheetOpen(true); };
+  const openNew = () => {
+    const d = canCreateScreen();
+    if (!d.allowed) { toast.error(d.message ?? "Bloqueado pelo plano"); return; }
+    setEditing(null); setSheetOpen(true);
+  };
   const openEdit = (s: AppScreen) => { setEditing(s); setSheetOpen(true); };
 
   // --- copy customer (todas as telas) ---
@@ -236,6 +242,7 @@ export function AppScreensSection({
 
   return (
     <div className="space-y-3">
+      <PlanLimitNotice moduleKey="telas" compact />
       <div className="flex items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <Tv className="h-3.5 w-3.5" /> Telas e aplicativos

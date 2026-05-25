@@ -29,6 +29,8 @@ import {
 } from "@/lib/server-catalog";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+import { canCreateServer } from "@/lib/plan-limits";
+import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 
 
 export const Route = createFileRoute("/catalogo-servidores")({
@@ -81,7 +83,11 @@ function CatalogoServidoresPage() {
     });
   }, [servers]);
 
-  const openNew = () => { setEditing(null); setSheetOpen(true); };
+  const openNew = () => {
+    const d = canCreateServer();
+    if (!d.allowed) { toast.error(d.message ?? "Bloqueado pelo plano"); return; }
+    setEditing(null); setSheetOpen(true);
+  };
   const openEdit = (s: ServerEntry) => { setEditing(s); setSheetOpen(true); };
 
   const handleExport = () => {
@@ -133,6 +139,7 @@ function CatalogoServidoresPage() {
         title="Servidores"
         subtitle="Configure os servidores e painéis usados nas telas dos clientes."
       />
+      <PlanLimitNotice moduleKey="servidores" />
 
 
       <div className="mb-3 rounded-md border border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">

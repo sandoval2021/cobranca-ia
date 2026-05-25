@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
+import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { ImportAgendaSection } from "@/components/import/ImportAgendaSection";
 
@@ -807,6 +808,7 @@ function CampanhasManuaisPage() {
         hint="Tudo é gerado e copiado localmente — você cola no WhatsApp manualmente."
       />
       <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
+      <PlanLimitNotice moduleKey="campanhas" />
 
       {/* aviso fixo */}
       <div className="mb-3 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft/60 px-3 py-2 text-xs text-warning-foreground">

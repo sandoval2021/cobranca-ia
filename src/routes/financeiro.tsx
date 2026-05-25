@@ -8,6 +8,7 @@ import {
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
+import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,6 +118,7 @@ function FinanceiroPage() {
       />
 
       <CompanyScopeNotice moduleKey="cobranca_ia_finance_entries_v1" />
+      <PlanLimitNotice moduleKey="financeiro" action="usar" />
 
 
       <Card className="p-3 border-dashed bg-muted/30 mb-4 flex items-start gap-2">

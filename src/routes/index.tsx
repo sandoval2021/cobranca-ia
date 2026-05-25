@@ -35,6 +35,7 @@ import {
   getCompanyStatus,
   daysUntilDue,
 } from "@/lib/companies";
+import { getCompanyUsage } from "@/lib/plan-limits";
 
 function OwnerRoleNotice() {
   const { isOwner, user } = useLocalAuth();
@@ -60,6 +61,24 @@ function OwnerRoleNotice() {
               Módulos liberados: {plan.modulos.length}
             </p>
           )}
+          {(() => {
+            const u = company ? getCompanyUsage(company.id) : null;
+            if (!u || !plan) return null;
+            const Row = ({ k, used, lim }: { k: string; used: number; lim: number }) => (
+              <div className="flex items-center justify-between rounded border bg-card px-2 py-1 text-[11px]">
+                <span className="text-muted-foreground">{k}</span>
+                <span className={used >= lim ? "font-semibold text-rose-600" : "font-medium"}>{used}/{lim}</span>
+              </div>
+            );
+            return (
+              <div className="mt-2 grid grid-cols-2 gap-1">
+                <Row k="Clientes" used={u.clientes} lim={plan.limite_clientes} />
+                <Row k="Telas" used={u.telas} lim={plan.limite_telas} />
+                <Row k="Testes" used={u.testes} lim={plan.limite_testes} />
+                <Row k="Servidores" used={u.servidores} lim={plan.limite_servidores} />
+              </div>
+            );
+          })()}
           {days != null && days >= 0 && days <= 7 && (
             <p className="mt-1 rounded bg-amber-100 px-2 py-1 text-[11px] text-amber-900">
               Seu painel vence em {days} dia(s). Fale com o suporte para renovar.

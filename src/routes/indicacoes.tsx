@@ -5,6 +5,7 @@ import { Copy, Search, Download, Upload, Check, Info, Settings2, Plus } from "lu
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
+import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,6 +158,7 @@ function IndicacoesPage() {
     <PageContainer>
       <div className="mb-1"><ProtectedModeBadge /></div>
       <CompanyScopeNotice moduleKey="cobranca_ia_referrals_v1" />
+      <PlanLimitNotice moduleKey="indicacoes" />
       <SectionHeader
 
         title="Indicações"

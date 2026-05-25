@@ -39,6 +39,8 @@ import {
 } from "@/lib/referrals";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+import { canCreateTrialLead } from "@/lib/plan-limits";
+import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 
 
 export const Route = createFileRoute("/testes")({
@@ -156,6 +158,11 @@ function TestesPage() {
       }
       toast.success("Teste atualizado");
     } else {
+      const decision = canCreateTrialLead();
+      if (!decision.allowed) {
+        toast.error(decision.message ?? "Bloqueado pelo plano");
+        return;
+      }
       const lead = saveTrialLead(input);
       if (lead.indicado_por_nome || lead.indicado_por_whatsapp) {
         saveReferral({
@@ -271,6 +278,7 @@ function TestesPage() {
     <PageContainer>
       <div className="mb-1"><ProtectedModeBadge /></div>
       <CompanyScopeNotice moduleKey="cobranca_ia_trial_leads_v1" />
+      <PlanLimitNotice moduleKey="testes" />
       <SectionHeader
         title="Testes"
         subtitle="Acompanhe pessoas que pediram teste e ainda não viraram clientes."
