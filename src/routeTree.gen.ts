@@ -31,6 +31,7 @@ import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servid
 import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
+import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TestesRoute = TestesRouteImport.update({
@@ -143,6 +144,11 @@ const BackupGeralRoute = BackupGeralRouteImport.update({
   path: '/backup-geral',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDnsRotasRoute = AdminDnsRotasRouteImport.update({
+  id: '/admin-dns-rotas',
+  path: '/admin-dns-rotas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -151,6 +157,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin-dns-rotas': typeof AdminDnsRotasRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin-dns-rotas': typeof AdminDnsRotasRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
@@ -202,6 +210,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin-dns-rotas': typeof AdminDnsRotasRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
@@ -229,6 +238,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin-dns-rotas'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin-dns-rotas'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin-dns-rotas'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
@@ -305,6 +317,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminDnsRotasRoute: typeof AdminDnsRotasRoute
   BackupGeralRoute: typeof BackupGeralRoute
   BaseConhecimentoRoute: typeof BaseConhecimentoRoute
   CampanhasManuaisRoute: typeof CampanhasManuaisRoute
@@ -485,6 +498,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BackupGeralRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin-dns-rotas': {
+      id: '/admin-dns-rotas'
+      path: '/admin-dns-rotas'
+      fullPath: '/admin-dns-rotas'
+      preLoaderRoute: typeof AdminDnsRotasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -497,6 +517,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminDnsRotasRoute: AdminDnsRotasRoute,
   BackupGeralRoute: BackupGeralRoute,
   BaseConhecimentoRoute: BaseConhecimentoRoute,
   CampanhasManuaisRoute: CampanhasManuaisRoute,

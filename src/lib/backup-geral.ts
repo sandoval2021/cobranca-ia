@@ -31,6 +31,9 @@ export const BACKUP_MODULES: BackupModule[] = [
   { key: "cobranca_ia_campaign_copied_v1", label: "Campanhas copiadas" },
   { key: "cobranca_ia_pending_resolved_v1", label: "Pendências resolvidas" },
   { key: "cobranca_ia_revenda_settings_v1", label: "Configurações da revenda" },
+  { key: "cobranca_ia_dns_domains_v1", label: "DNS e Rotas — Domínios", isList: true },
+  { key: "cobranca_ia_dns_routes_v1", label: "DNS e Rotas — Rotas", isList: true },
+  { key: "cobranca_ia_dns_route_history_v1", label: "DNS e Rotas — Histórico", isList: true },
 ];
 
 const EVENTS_AFTER_RESTORE = [
@@ -43,6 +46,7 @@ const EVENTS_AFTER_RESTORE = [
   "cobranca_ia_trial_leads:changed",
   "cobranca_ia_referrals:changed",
   "cobranca_ia_revenda_settings:changed",
+  "cobranca_ia_dns_routes:changed",
 ];
 
 export type RestoreMode = "merge" | "replace";
