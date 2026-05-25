@@ -395,6 +395,7 @@ function GoalsSection({ goals, settings, onReload }: { goals: FinanceGoal[]; set
   const [target, setTarget] = useState<number>(0);
   const [deadline, setDeadline] = useState("");
   const [description, setDescription] = useState("");
+  const { guard, dialog: securityDialog } = useSecurityGuard();
 
   const create = () => {
     if (!name || target <= 0) { toast.error("Informe nome e valor alvo"); return; }
@@ -403,6 +404,7 @@ function GoalsSection({ goals, settings, onReload }: { goals: FinanceGoal[]; set
     onReload();
     toast.success("Objetivo criado");
   };
+
 
   return (
     <div className="space-y-3">
