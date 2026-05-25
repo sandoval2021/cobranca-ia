@@ -29,6 +29,8 @@ import {
 } from "@/lib/server-catalog";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+import { canCreateServer } from "@/lib/plan-limits";
+import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 
 
 export const Route = createFileRoute("/catalogo-servidores")({
