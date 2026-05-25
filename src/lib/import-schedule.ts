@@ -2,6 +2,14 @@
 // 100% client-side. Nothing is sent. Statuses persist in localStorage.
 
 import type { ValidatedRow } from "./import-parse";
+import {
+  listRules,
+  pickRule,
+  applyTemplate,
+  type ManualDispatchRule,
+  type RulePriority,
+} from "./manual-dispatch-rules";
+
 
 export type DispatchKind =
   | "lembrete_leve"        // D-7
