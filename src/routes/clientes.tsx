@@ -57,6 +57,12 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
 import { getCurrentCompanyAdmin, listCustomersAdmin } from "@/lib/rpc-admin";
+import {
+  APP_CATALOG, AppKey, AppScreen, listAllScreens, listScreens,
+  nextDueDays, urgencyFromDays, urgencyClass, urgencyLabel,
+} from "@/lib/app-screens";
+import { AppScreensSection } from "@/components/clientes/AppScreensSection";
+import { Tv } from "lucide-react";
 
 export const Route = createFileRoute("/clientes")({ component: ClientesPage });
 
@@ -171,7 +177,11 @@ function friendlyRpcError(msg: string): string {
 }
 
 // ---------- page ----------
-type Filter = "todos" | "ativo" | "expirado" | "arquivado";
+type Filter =
+  | "todos" | "ativo" | "expirado" | "arquivado"
+  | "hoje" | "7d" | "vencidos"
+  | "app_bob" | "app_xciptv" | "app_ibo"
+  | "acc_mac_key" | "acc_user_pass";
 
 function ClientesPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -180,6 +190,12 @@ function ClientesPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("todos");
+  const [screensVersion, setScreensVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setScreensVersion((v) => v + 1);
+    window.addEventListener("app-screens:changed", bump);
+    return () => window.removeEventListener("app-screens:changed", bump);
+  }, []);
   const [openId, setOpenId] = useState<string | null>(null);
   const [reloadBump, setReloadBump] = useState(0);
 
@@ -233,24 +249,69 @@ function ClientesPage() {
 
   const reload = () => setReloadBump((n) => n + 1);
 
+  const allScreens = useMemo(() => listAllScreens(), [items, screensVersion]);
+
   const filtered = useMemo(() => {
     if (!items) return [];
     const q = query.trim().toLowerCase();
+    const matchesAppFilter = (screens: AppScreen[]): boolean => {
+      if (filter === "app_bob") return screens.some((s) => s.app === "bob_player" || s.app === "bob_play");
+      if (filter === "app_xciptv") return screens.some((s) => s.app === "xciptv");
+      if (filter === "app_ibo") return screens.some((s) => s.app === "ibo_player" || s.app === "ibo_pro" || s.app === "ibo_mix");
+      if (filter === "acc_mac_key") return screens.some((s) => s.access_type === "mac_key");
+      if (filter === "acc_user_pass") return screens.some((s) => s.access_type === "user_pass");
+      return true;
+    };
+
     return items.filter((c) => {
       const kind = classifyStatus(c.status);
-      if (filter !== "todos" && kind !== filter) return false;
+      const screens = allScreens[c.id] ?? [];
+      if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
+        if (kind !== filter) return false;
+      } else if (filter === "hoje" || filter === "7d" || filter === "vencidos") {
+        const d = nextDueDays(c.due_day, screens);
+        if (d == null) return false;
+        if (filter === "hoje" && d !== 0) return false;
+        if (filter === "7d" && (d < 0 || d > 7)) return false;
+        if (filter === "vencidos" && d >= 0) return false;
+      } else if (filter !== "todos") {
+        if (!matchesAppFilter(screens)) return false;
+      }
       if (!q) return true;
       const phone = onlyDigits(c.whatsapp ?? "");
-      return (
+      if (
         c.name.toLowerCase().includes(q) ||
         phone.includes(onlyDigits(q)) ||
         (c.whatsapp ?? "").toLowerCase().includes(q)
+      ) return true;
+      // busca dentro das telas
+      return screens.some((s) =>
+        s.name.toLowerCase().includes(q) ||
+        (APP_CATALOG[s.app]?.label.toLowerCase().includes(q) ?? false) ||
+        (s.mac ?? "").toLowerCase().includes(q) ||
+        (s.app_key ?? "").toLowerCase().includes(q) ||
+        (s.username ?? "").toLowerCase().includes(q) ||
+        (s.server ?? "").toLowerCase().includes(q)
       );
     });
-  }, [items, query, filter]);
+  }, [items, query, filter, allScreens]);
+
+  // Ordenação por vencimento mais próximo; vencidos vão pro fim
+  const ordered = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const da = nextDueDays(a.due_day, allScreens[a.id] ?? []);
+      const db = nextDueDays(b.due_day, allScreens[b.id] ?? []);
+      const rank = (d: number | null) => {
+        if (d == null) return 500;
+        if (d < 0) return 1000 + Math.abs(d); // vencidos no fim
+        return d; // 0,1,2,... primeiros
+      };
+      return rank(da) - rank(db);
+    });
+  }, [filtered, allScreens]);
 
   const counts = useMemo(() => {
-    const c = { todos: 0, ativo: 0, expirado: 0, arquivado: 0 };
+    const c = { todos: 0, ativo: 0, expirado: 0, arquivado: 0, hoje: 0, d7: 0, vencidos: 0 };
     if (items) {
       c.todos = items.length;
       for (const it of items) {
@@ -258,10 +319,16 @@ function ClientesPage() {
         if (k === "ativo") c.ativo++;
         else if (k === "expirado") c.expirado++;
         else if (k === "arquivado") c.arquivado++;
+        const d = nextDueDays(it.due_day, allScreens[it.id] ?? []);
+        if (d != null) {
+          if (d === 0) c.hoje++;
+          if (d >= 0 && d <= 7) c.d7++;
+          if (d < 0) c.vencidos++;
+        }
       }
     }
     return c;
-  }, [items]);
+  }, [items, allScreens]);
 
   const opened = openId ? items?.find((c) => c.id === openId) ?? null : null;
 
@@ -279,7 +346,7 @@ function ClientesPage() {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por nome ou WhatsApp"
+          placeholder="Buscar por nome, WhatsApp, tela, app, MAC, usuário…"
           className="h-11 pl-9 pr-9"
           inputMode="search"
         />
@@ -298,9 +365,17 @@ function ClientesPage() {
       {/* Filtros */}
       <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         <FilterPill active={filter === "todos"} onClick={() => setFilter("todos")} label="Todos" count={counts.todos} />
+        <FilterPill active={filter === "hoje"} onClick={() => setFilter("hoje")} label="Vencem hoje" count={counts.hoje} />
+        <FilterPill active={filter === "7d"} onClick={() => setFilter("7d")} label="Próx. 7 dias" count={counts.d7} />
+        <FilterPill active={filter === "vencidos"} onClick={() => setFilter("vencidos")} label="Vencidos" count={counts.vencidos} />
         <FilterPill active={filter === "ativo"} onClick={() => setFilter("ativo")} label="Ativos" count={counts.ativo} />
         <FilterPill active={filter === "expirado"} onClick={() => setFilter("expirado")} label="Expirados" count={counts.expirado} />
         <FilterPill active={filter === "arquivado"} onClick={() => setFilter("arquivado")} label="Arquivados" count={counts.arquivado} />
+        <FilterPill active={filter === "app_bob"} onClick={() => setFilter("app_bob")} label="Bob Player" count={0} hideCount />
+        <FilterPill active={filter === "app_xciptv"} onClick={() => setFilter("app_xciptv")} label="XCIPTV" count={0} hideCount />
+        <FilterPill active={filter === "app_ibo"} onClick={() => setFilter("app_ibo")} label="IBO" count={0} hideCount />
+        <FilterPill active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={0} hideCount />
+        <FilterPill active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={0} hideCount />
       </div>
 
       {/* Estados */}
@@ -320,7 +395,7 @@ function ClientesPage() {
         <EmptyState icon={Users} title="Não foi possível carregar" description={errorMsg} />
       )}
 
-      {isAuthenticated && !loading && !errorMsg && filtered.length === 0 && (
+      {isAuthenticated && !loading && !errorMsg && ordered.length === 0 && (
         <EmptyState
           icon={Users}
           title="Nenhum cliente encontrado"
@@ -328,10 +403,15 @@ function ClientesPage() {
         />
       )}
 
-      {isAuthenticated && !loading && !errorMsg && filtered.length > 0 && (
+      {isAuthenticated && !loading && !errorMsg && ordered.length > 0 && (
         <div className="space-y-2">
-          {filtered.map((c) => (
-            <ClientCard key={c.id} customer={c} onOpen={() => setOpenId(c.id)} />
+          {ordered.map((c) => (
+            <ClientCard
+              key={c.id}
+              customer={c}
+              screens={allScreens[c.id] ?? []}
+              onOpen={() => setOpenId(c.id)}
+            />
           ))}
         </div>
       )}
@@ -351,11 +431,13 @@ function FilterPill({
   onClick,
   label,
   count,
+  hideCount,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   count: number;
+  hideCount?: boolean;
 }) {
   return (
     <button
@@ -369,21 +451,35 @@ function FilterPill({
       )}
     >
       {label}
-      <span
-        className={cn(
-          "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-          active ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground",
-        )}
-      >
-        {count}
-      </span>
+      {!hideCount && (
+        <span
+          className={cn(
+            "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+            active ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground",
+          )}
+        >
+          {count}
+        </span>
+      )}
     </button>
   );
 }
 
-function ClientCard({ customer, onOpen }: { customer: Customer; onOpen: () => void }) {
+function ClientCard({
+  customer,
+  screens,
+  onOpen,
+}: {
+  customer: Customer;
+  screens: AppScreen[];
+  onOpen: () => void;
+}) {
   const phone = prettyPhone(customer.whatsapp);
   const initial = customer.name.trim().charAt(0).toUpperCase() || "?";
+  const days = nextDueDays(customer.due_day, screens);
+  const urg = urgencyFromDays(days);
+  const activeScreens = screens.filter((s) => s.status !== "arquivada").slice(0, 4);
+
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-card">
       <div className="flex items-start gap-3">
@@ -415,7 +511,38 @@ function ClientCard({ customer, onOpen }: { customer: Customer; onOpen: () => vo
             {customer.due_day != null && (
               <span>Vence dia {customer.due_day}</span>
             )}
+            {days != null && (
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>
+                {urgencyLabel(urg, days)}
+              </span>
+            )}
           </div>
+          {activeScreens.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {activeScreens.map((s) => {
+                const app = APP_CATALOG[s.app];
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
+                      app.badgeClass,
+                    )}
+                    title={`${s.name} · ${app.label}`}
+                  >
+                    {s.name} · {app.label}
+                  </button>
+                );
+              })}
+              {screens.length > activeScreens.length && (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                  +{screens.length - activeScreens.length}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
       <div className="mt-3 flex justify-end">
@@ -674,13 +801,20 @@ function DetailView({
 
   return (
     <Tabs defaultValue="dados" className="w-full">
-      <TabsList className="grid w-full grid-cols-5">
+      <TabsList className="grid w-full grid-cols-6">
         <TabsTrigger value="dados" className="text-xs">Dados</TabsTrigger>
-        <TabsTrigger value="cobrancas" className="text-xs">Cobranças</TabsTrigger>
-        <TabsTrigger value="mensagens" className="text-xs">Mensagens</TabsTrigger>
+        <TabsTrigger value="telas" className="text-xs gap-1">
+          <Tv className="h-3 w-3" /> Telas
+        </TabsTrigger>
+        <TabsTrigger value="cobrancas" className="text-xs">Cobr.</TabsTrigger>
+        <TabsTrigger value="mensagens" className="text-xs">Msg</TabsTrigger>
         <TabsTrigger value="ia" className="text-xs">IA</TabsTrigger>
-        <TabsTrigger value="historico" className="text-xs">Histórico</TabsTrigger>
+        <TabsTrigger value="historico" className="text-xs">Hist.</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="telas" className="mt-4">
+        <AppScreensSection customerId={customer.id} />
+      </TabsContent>
 
       <TabsContent value="dados" className="mt-4 space-y-5">
         <div className="grid grid-cols-2 gap-3">
