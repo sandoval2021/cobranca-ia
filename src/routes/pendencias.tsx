@@ -259,13 +259,16 @@ function PendenciasPage() {
   useEffect(() => {
     const bumpS = () => setScreensVersion((v) => v + 1);
     const bumpR = () => setResolvedVersion((v) => v + 1);
+    const bumpSrv = () => setServersVersion((v) => v + 1);
     window.addEventListener("app-screens:changed", bumpS);
     window.addEventListener("campaign-copy:changed", bumpR);
     window.addEventListener("pending-resolved:changed", bumpR);
+    window.addEventListener(SERVER_CATALOG_EVENT, bumpSrv);
     return () => {
       window.removeEventListener("app-screens:changed", bumpS);
       window.removeEventListener("campaign-copy:changed", bumpR);
       window.removeEventListener("pending-resolved:changed", bumpR);
+      window.removeEventListener(SERVER_CATALOG_EVENT, bumpSrv);
     };
   }, []);
 
