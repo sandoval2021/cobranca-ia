@@ -190,6 +190,12 @@ function ClientesPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("todos");
+  const [screensVersion, setScreensVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setScreensVersion((v) => v + 1);
+    window.addEventListener("app-screens:changed", bump);
+    return () => window.removeEventListener("app-screens:changed", bump);
+  }, []);
   const [openId, setOpenId] = useState<string | null>(null);
   const [reloadBump, setReloadBump] = useState(0);
 
