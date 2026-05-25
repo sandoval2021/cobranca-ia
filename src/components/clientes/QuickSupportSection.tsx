@@ -189,11 +189,15 @@ function header(s: AppScreen) {
   if (isMacKeyApp(s)) {
     if (s.mac) parts.push(`🔑 MAC: ${s.mac}`);
   }
+  const ri = getScreenRouteInfo(s);
+  if (ri.serverName) parts.push(`🖥️ Servidor: ${ri.serverName}`);
+  parts.push(`🌐 Rota pública: ${ri.routeHost || "não informado"}`);
   if (s.due_date) parts.push(`📅 Vencimento: ${fmtDate(s.due_date)}`);
   const r = routeLabel(s.route);
   if (r) parts.push(`🛰 Rota: ${r}`);
   return parts.join("\n");
 }
+
 
 function technicalBlock({ screen: s, reveal }: GenInput): string {
   const lines: string[] = [];
