@@ -177,7 +177,11 @@ function friendlyRpcError(msg: string): string {
 }
 
 // ---------- page ----------
-type Filter = "todos" | "ativo" | "expirado" | "arquivado";
+type Filter =
+  | "todos" | "ativo" | "expirado" | "arquivado"
+  | "hoje" | "7d" | "vencidos"
+  | "app_bob" | "app_xciptv" | "app_ibo"
+  | "acc_mac_key" | "acc_user_pass";
 
 function ClientesPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
