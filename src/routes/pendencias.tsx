@@ -173,17 +173,25 @@ const TECH_PENDING: TechItem[] = [
 type PendingType =
   | "hoje" | "vencido" | "7d"
   | "sem_app" | "sem_whats" | "atualizar_servidor"
+  | "app_pago_vencido" | "app_pago_7d" | "app_pago_30d"
+  | "app_sem_venc" | "app_sem_mackey" | "app_sem_valor"
   | "campanha_pendente" | "tecnica";
 
 const TYPE_META: Record<PendingType, { label: string; tone: string; icon: typeof AlertCircle; priority: number }> = {
   hoje:                { label: "Vence hoje",          tone: "border-red-400/60 bg-red-50/60 dark:border-red-500/40 dark:bg-red-500/10",            icon: AlertCircle, priority: 0 },
   vencido:             { label: "Vencido",             tone: "border-red-500/60 bg-red-100/60 dark:border-red-600/40 dark:bg-red-700/15",           icon: AlertCircle, priority: 1 },
-  atualizar_servidor:  { label: "Atualizar servidor",  tone: "border-violet-400/60 bg-violet-50/60 dark:border-violet-500/40 dark:bg-violet-500/10", icon: RefreshCcw,  priority: 2 },
-  sem_whats:           { label: "Sem WhatsApp",        tone: "border-amber-400/60 bg-amber-50/60 dark:border-amber-500/40 dark:bg-amber-500/10",    icon: PhoneOff,    priority: 3 },
-  sem_app:             { label: "Sem app cadastrado",  tone: "border-slate-300/60 bg-muted/40",                                                      icon: Tv,          priority: 4 },
-  "7d":                { label: "Próximos 7 dias",     tone: "border-amber-300/50 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10",    icon: AlertTriangle, priority: 5 },
-  campanha_pendente:   { label: "Campanha não copiada",tone: "border-orange-300/50 bg-orange-50/60 dark:border-orange-500/30 dark:bg-orange-500/10",icon: Copy,        priority: 6 },
-  tecnica:             { label: "Pendência técnica",   tone: "border-border bg-card",                                                                icon: Wrench,      priority: 7 },
+  app_pago_vencido:    { label: "App pago vencido",    tone: "border-red-500/60 bg-red-100/60 dark:border-red-600/40 dark:bg-red-700/15",           icon: AlertCircle, priority: 2 },
+  atualizar_servidor:  { label: "Atualizar servidor",  tone: "border-violet-400/60 bg-violet-50/60 dark:border-violet-500/40 dark:bg-violet-500/10", icon: RefreshCcw,  priority: 3 },
+  app_pago_7d:         { label: "App pago vence 7d",   tone: "border-orange-400/50 bg-orange-50/60 dark:border-orange-500/30 dark:bg-orange-500/10",icon: AlertTriangle, priority: 4 },
+  sem_whats:           { label: "Sem WhatsApp",        tone: "border-amber-400/60 bg-amber-50/60 dark:border-amber-500/40 dark:bg-amber-500/10",    icon: PhoneOff,    priority: 5 },
+  sem_app:             { label: "Sem app cadastrado",  tone: "border-slate-300/60 bg-muted/40",                                                      icon: Tv,          priority: 6 },
+  "7d":                { label: "Próximos 7 dias",     tone: "border-amber-300/50 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10",    icon: AlertTriangle, priority: 7 },
+  app_pago_30d:        { label: "App pago vence 30d",  tone: "border-amber-300/50 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10",    icon: AlertTriangle, priority: 8 },
+  app_sem_venc:        { label: "App pago sem vencimento", tone: "border-slate-300/60 bg-muted/40",                                                  icon: Tv,          priority: 9 },
+  app_sem_mackey:      { label: "App pago sem MAC/Key",tone: "border-violet-300/50 bg-violet-50/60 dark:border-violet-500/30 dark:bg-violet-500/10",icon: Wrench,      priority: 10 },
+  app_sem_valor:       { label: "App pago sem valor de renovação", tone: "border-border bg-card",                                                    icon: Wrench,      priority: 11 },
+  campanha_pendente:   { label: "Campanha não copiada",tone: "border-orange-300/50 bg-orange-50/60 dark:border-orange-500/30 dark:bg-orange-500/10",icon: Copy,        priority: 12 },
+  tecnica:             { label: "Pendência técnica",   tone: "border-border bg-card",                                                                icon: Wrench,      priority: 13 },
 };
 
 type PendingItem = {
