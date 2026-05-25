@@ -70,7 +70,7 @@ type HistoryItem = {
 const HIST_KEY = "cobranca_ia_quick_support_history_v1";
 const HIST_LIMIT = 12;
 
-import { getActiveCompanyId, recordBelongsToActiveCompany } from "@/lib/company-scope";
+import { getActiveCompanyId } from "@/lib/company-scope";
 import { getCurrentRole } from "@/lib/local-auth";
 
 function readHistory(): HistoryItem[] {
