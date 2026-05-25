@@ -62,8 +62,6 @@ function OwnerRoleNotice() {
             </p>
           )}
           {(() => {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { getCompanyUsage } = require("@/lib/plan-limits") as typeof import("@/lib/plan-limits");
             const u = company ? getCompanyUsage(company.id) : null;
             if (!u || !plan) return null;
             const Row = ({ k, used, lim }: { k: string; used: number; lim: number }) => (
