@@ -245,3 +245,134 @@ export function mask(value?: string): string {
   if (value.length <= 2) return "••";
   return "•".repeat(Math.max(4, value.length - 2)) + value.slice(-2);
 }
+
+// ----- backup helpers -----
+
+export type BackupFile = {
+  type: "cobranca-ia/app-screens-backup";
+  version: 1;
+  generated_at: string;
+  customers: { customer_id: string; customer_name?: string; screens: AppScreen[] }[];
+};
+
+export function buildBackup(
+  customerNames: Record<string, string> = {},
+): BackupFile {
+  const all = readAll();
+  const customers = Object.entries(all).map(([cid, screens]) => ({
+    customer_id: cid,
+    customer_name: customerNames[cid],
+    screens,
+  }));
+  return {
+    type: "cobranca-ia/app-screens-backup",
+    version: 1,
+    generated_at: new Date().toISOString(),
+    customers,
+  };
+}
+
+export type BackupParseResult =
+  | { ok: true; data: Record<string, AppScreen[]>; stats: { customers: number; screens: number; apps: string[] } }
+  | { ok: false; error: string };
+
+export function parseBackup(raw: string): BackupParseResult {
+  try {
+    const json = JSON.parse(raw);
+    if (!json || typeof json !== "object") return { ok: false, error: "Arquivo inválido." };
+    // Aceita formato oficial OU dicionário {customer_id: [...]} para flexibilidade
+    let map: Record<string, AppScreen[]> = {};
+    if (json.type === "cobranca-ia/app-screens-backup" && Array.isArray(json.customers)) {
+      for (const c of json.customers) {
+        if (c && typeof c.customer_id === "string" && Array.isArray(c.screens)) {
+          map[c.customer_id] = c.screens.filter(isValidScreen);
+        }
+      }
+    } else if (Object.values(json).every((v) => Array.isArray(v))) {
+      for (const [k, v] of Object.entries(json)) {
+        if (Array.isArray(v)) map[k] = (v as AppScreen[]).filter(isValidScreen);
+      }
+    } else {
+      return { ok: false, error: "Formato não reconhecido." };
+    }
+    let screens = 0;
+    const apps = new Set<string>();
+    for (const list of Object.values(map)) {
+      screens += list.length;
+      for (const s of list) apps.add(APP_CATALOG[s.app]?.label ?? s.app);
+    }
+    return {
+      ok: true,
+      data: map,
+      stats: { customers: Object.keys(map).length, screens, apps: Array.from(apps) },
+    };
+  } catch {
+    return { ok: false, error: "JSON inválido." };
+  }
+}
+
+function isValidScreen(s: unknown): s is AppScreen {
+  if (!s || typeof s !== "object") return false;
+  const o = s as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.customer_id === "string" &&
+    typeof o.name === "string" &&
+    typeof o.app === "string" &&
+    typeof o.access_type === "string" &&
+    typeof o.status === "string"
+  );
+}
+
+// ----- copy/format helpers -----
+
+function fmtDate(d?: string): string {
+  if (!d) return "—";
+  const dt = new Date(d + "T00:00:00");
+  if (isNaN(+dt)) return d;
+  return dt.toLocaleDateString("pt-BR");
+}
+
+function routeLabel(r?: RouteKind): string | null {
+  if (!r) return null;
+  return ROUTE_OPTIONS.find((o) => o.value === r)?.label ?? null;
+}
+
+export function formatScreenAsText(
+  s: AppScreen,
+  customerName: string,
+  opts: { revealSecrets?: boolean } = {},
+): string {
+  const lines: string[] = [];
+  lines.push(`Cliente: ${customerName}`);
+  lines.push(`Tela: ${s.name}`);
+  lines.push(`App: ${APP_CATALOG[s.app]?.label ?? s.app}`);
+  if (s.access_type === "user_pass") {
+    if (s.username) lines.push(`Usuário: ${s.username}`);
+    if (s.password) lines.push(`Senha: ${opts.revealSecrets ? s.password : mask(s.password)}`);
+    if (s.server) lines.push(`Servidor: ${s.server}`);
+    if (s.port) lines.push(`Porta: ${s.port}`);
+  } else if (s.access_type === "mac_key") {
+    if (s.mac) lines.push(`MAC: ${s.mac}`);
+    if (s.app_key) lines.push(`Key: ${opts.revealSecrets ? s.app_key : mask(s.app_key)}`);
+  }
+  if (s.portal_url) lines.push(`Portal: ${s.portal_url}`);
+  const r = routeLabel(s.route);
+  if (r) lines.push(`Rota: ${r}`);
+  if (s.due_date) lines.push(`Vencimento: ${fmtDate(s.due_date)}`);
+  if (s.needs_server_update) lines.push(`⚠ Precisa atualizar servidor`);
+  if (s.notes) lines.push(`Observações: ${s.notes}`);
+  return lines.join("\n");
+}
+
+export function formatCustomerScreensAsText(
+  customerName: string,
+  screens: AppScreen[],
+  opts: { revealSecrets?: boolean } = {},
+): string {
+  const active = screens.filter((s) => s.status !== "arquivada");
+  if (active.length === 0) return `Cliente: ${customerName}\n(sem telas cadastradas)`;
+  return active
+    .map((s) => formatScreenAsText(s, customerName, opts))
+    .join("\n\n---\n\n");
+}
