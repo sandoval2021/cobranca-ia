@@ -9,8 +9,8 @@ import {
   RotateCcw,
   Info,
   StickyNote,
-  ListChecks,
   ArrowRight,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageContainer";
