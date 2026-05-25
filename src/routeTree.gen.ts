@@ -155,11 +155,6 @@ const AdminDnsRotasRoute = AdminDnsRotasRouteImport.update({
   path: '/admin-dns-rotas',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PreparacaoBackendRoute = PreparacaoBackendRouteImport.update({
-  id: '/preparacao-backend',
-  path: '/preparacao-backend',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -192,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/relatorio': typeof RelatorioRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/preparacao-backend': typeof PreparacaoBackendRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
