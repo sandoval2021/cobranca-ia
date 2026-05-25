@@ -370,7 +370,15 @@ function ServerCard({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setReveal(true); setAskReveal(false); }}>Mostrar</AlertDialogAction>
+            <AlertDialogAction onClick={() => {
+              setAskReveal(false);
+              guard({
+                kind: "server_password",
+                title: "Mostrar senha do painel",
+                actionLabel: "Mostrar",
+                onConfirm: () => setReveal(true),
+              });
+            }}>Mostrar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -383,7 +391,15 @@ function ServerCard({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { copyText(server.panel_password ?? "", "Senha"); setAskCopyPwd(false); }}>
+            <AlertDialogAction onClick={() => {
+              setAskCopyPwd(false);
+              guard({
+                kind: "server_password",
+                title: "Copiar senha do painel",
+                actionLabel: "Copiar",
+                onConfirm: () => copyText(server.panel_password ?? "", "Senha"),
+              });
+            }}>
               Copiar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -403,12 +419,18 @@ function ServerCard({
               setAskCopyFull(false);
             }}>Copiar mascarado</Button>
             <AlertDialogAction onClick={() => {
-              copyText(formatServerAsText(server, { revealSecrets: true }), "Dados do servidor (c/ senha)");
               setAskCopyFull(false);
+              guard({
+                kind: "server_password",
+                title: "Copiar dados com senha visível",
+                actionLabel: "Copiar",
+                onConfirm: () => copyText(formatServerAsText(server, { revealSecrets: true }), "Dados do servidor (c/ senha)"),
+              });
             }}>Copiar com senha</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </li>
   );
 }
