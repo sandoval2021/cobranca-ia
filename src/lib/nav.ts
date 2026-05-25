@@ -29,6 +29,7 @@ export const ownerNav: NavItem[] = [
   { to: "/mensagens", label: "Mensagens", icon: MessageCircle, hint: "Mensagens enviadas" },
   { to: "/ia", label: "IA Cobrança", icon: Sparkles, hint: "Mensagens geradas pela IA" },
   { to: "/fila-simulada", label: "Fila simulada", icon: ListChecks, hint: "Cobranças planejadas antes de envio" },
+  { to: "/relatorio", label: "Relatório", icon: BarChart3, hint: "Relatório da simulação" },
   { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente" },
   { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Testes de conexão" },
 ];
