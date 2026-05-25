@@ -161,7 +161,7 @@ function checkClientesTelas(alerts: DiagnosticAlert[]) {
           if (dd != null && dd < 0) pagoVencido++;
         }
         const alertsP = paidAppAlerts(s);
-        if (alertsP.some((a) => a.type === "missing_credentials")) pagoSemKey++;
+        if (alertsP.includes("sem_mac_key")) pagoSemKey++;
       }
     }
   }
