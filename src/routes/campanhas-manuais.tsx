@@ -681,6 +681,7 @@ function CampanhasManuaisPage() {
     : (templateKey === "personalizado" ? customBody : currentTemplate.body);
 
   const sensitiveBody = hasSensitiveVars(effectiveBody);
+  const serverSecretsBody = hasServerSecretVars(effectiveBody);
 
   // Resumo
   const summary = useMemo(() => {
