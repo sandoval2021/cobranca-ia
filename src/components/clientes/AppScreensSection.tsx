@@ -621,7 +621,21 @@ function ScreenSheet({
   const [route, setRoute] = useState<RouteKind | "">("");
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [notes, setNotes] = useState("");
+  const [serverIds, setServerIds] = useState<string[]>([]);
+  const [primaryServerId, setPrimaryServerId] = useState<string>("");
+  const [listServerUrl, setListServerUrl] = useState("");
+  const [listUsername, setListUsername] = useState("");
+  const [listPassword, setListPassword] = useState("");
+  const [serverNotes, setServerNotes] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const [serverCatalogVersion, setServerCatalogVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setServerCatalogVersion((v) => v + 1);
+    window.addEventListener(SERVER_CATALOG_EVENT, bump);
+    return () => window.removeEventListener(SERVER_CATALOG_EVENT, bump);
+  }, []);
+  const activeServers = useMemo(() => listActiveServers(), [serverCatalogVersion, open]);
 
   useEffect(() => {
     if (!open) return;
