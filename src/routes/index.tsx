@@ -532,6 +532,49 @@ function Dashboard() {
         <StatCard label="Servidores sem vínculo" value={String(counters.servidoresSemVinculo)} icon={Server} accent="info" />
       </div>
 
+      {/* Diagnóstico */}
+      <div className="mt-4">
+        <Link
+          to="/diagnostico"
+          className={cn(
+            "flex items-center gap-3 rounded-2xl border p-3 shadow-card transition-colors",
+            diag.overall === "critico"
+              ? "border-danger/30 bg-danger-soft hover:bg-danger-soft/80"
+              : diag.overall === "atencao"
+                ? "border-warning/30 bg-warning-soft hover:bg-warning-soft/80"
+                : "border-success/30 bg-success-soft hover:bg-success-soft/80",
+          )}
+        >
+          <div
+            className={cn(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+              diag.overall === "critico"
+                ? "bg-danger text-white"
+                : diag.overall === "atencao"
+                  ? "bg-warning text-white"
+                  : "bg-success text-white",
+            )}
+          >
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold tracking-tight">
+              Diagnóstico:{" "}
+              {diag.overall === "ok"
+                ? "tudo certo"
+                : diag.overall === "atencao"
+                  ? "itens de atenção"
+                  : "alertas críticos"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {diag.critico} crítico(s) · {diag.atencao} atenção · {diag.modulos} módulos com dados
+            </p>
+          </div>
+          <span className="shrink-0 text-xs font-medium text-primary">Abrir</span>
+        </Link>
+      </div>
+
+
       {/* Ações de hoje */}
       <div className="mt-6">
         <SectionHeader
