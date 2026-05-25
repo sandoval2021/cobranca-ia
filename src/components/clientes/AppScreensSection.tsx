@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Pencil, Archive, RotateCcw, Eye, EyeOff, Copy, ExternalLink,
-  Tv, Loader2, X, Save, AlertCircle,
+  Tv, Loader2, X, Save, AlertCircle, Download, Upload, Trash2,
+  ServerCog, Share2, ShieldAlert, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,14 +11,21 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { HelpTip } from "@/components/ui-premium/HelpTip";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   APP_CATALOG, APP_OPTIONS, AppKey, AppScreen, AccessType, ScreenStatus,
+  RouteKind, ROUTE_OPTIONS,
   listScreens, upsertScreen, archiveScreen, reactivateScreen, newId,
   daysUntil, urgencyFromDays, urgencyClass, urgencyLabel, mask,
+  buildBackup, parseBackup, mergeAll, replaceAll, clearCustomerScreens,
+  formatScreenAsText, formatCustomerScreensAsText,
 } from "@/lib/app-screens";
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
@@ -36,7 +44,10 @@ const STATUS_CLASS: Record<ScreenStatus, string> = {
   arquivada: "bg-muted text-muted-foreground",
 };
 
-function copyToClipboard(text: string, label: string) {
+const ALERT_DISMISS_KEY = "cobranca_ia_app_screens_alert_dismissed_v1";
+const BACKUP_OPEN_KEY = "cobranca_ia_app_screens_backup_open_v1";
+
+function copyText(text: string, label: string) {
   if (!text) return;
   try {
     navigator.clipboard?.writeText(text);
@@ -46,12 +57,41 @@ function copyToClipboard(text: string, label: string) {
   }
 }
 
-export function AppScreensSection({ customerId }: { customerId: string }) {
+function todayStamp(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+export function AppScreensSection({
+  customerId,
+  customerName = "Cliente",
+}: {
+  customerId: string;
+  customerName?: string;
+}) {
   const [screens, setScreens] = useState<AppScreen[]>([]);
   const [editing, setEditing] = useState<AppScreen | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+
+  const [alertDismissed, setAlertDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(ALERT_DISMISS_KEY) === "1";
+  });
+  const [backupOpen, setBackupOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(BACKUP_OPEN_KEY) === "1";
+  });
+  const persistBackupOpen = (v: boolean) => {
+    setBackupOpen(v);
+    try { window.localStorage.setItem(BACKUP_OPEN_KEY, v ? "1" : "0"); } catch { /* noop */ }
+  };
+  const dismissAlert = () => {
+    setAlertDismissed(true);
+    try { window.localStorage.setItem(ALERT_DISMISS_KEY, "1"); } catch { /* noop */ }
+  };
 
   const refresh = () => setScreens(listScreens(customerId));
 
@@ -72,20 +112,87 @@ export function AppScreensSection({ customerId }: { customerId: string }) {
       if (da == null && db == null) return 0;
       if (da == null) return 1;
       if (db == null) return -1;
-      // hoje primeiro, vencidos por último
       const ka = da < 0 ? 1000 + Math.abs(da) : da;
       const kb = db < 0 ? 1000 + Math.abs(db) : db;
       return ka - kb;
     });
   }, [screens]);
 
-  const openNew = () => {
-    setEditing(null);
-    setSheetOpen(true);
+  const openNew = () => { setEditing(null); setSheetOpen(true); };
+  const openEdit = (s: AppScreen) => { setEditing(s); setSheetOpen(true); };
+
+  // --- copy customer (todas as telas) ---
+  const [askRevealCustomer, setAskRevealCustomer] = useState(false);
+  const copyCustomer = (revealSecrets: boolean) => {
+    const text = formatCustomerScreensAsText(customerName, screens, { revealSecrets });
+    copyText(text, revealSecrets ? "Dados do cliente (com senha/key)" : "Dados do cliente");
   };
-  const openEdit = (s: AppScreen) => {
-    setEditing(s);
-    setSheetOpen(true);
+
+  // --- copy uma tela ---
+  const [askRevealScreen, setAskRevealScreen] = useState<AppScreen | null>(null);
+  const copyScreen = (s: AppScreen, revealSecrets: boolean) => {
+    const text = formatScreenAsText(s, customerName, { revealSecrets });
+    copyText(text, revealSecrets ? "Tela (com senha/key)" : "Tela");
+  };
+
+  // --- backup ---
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importPreview, setImportPreview] = useState<
+    | null
+    | { data: Record<string, AppScreen[]>; stats: { customers: number; screens: number; apps: string[] } }
+  >(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const handleExport = () => {
+    const data = buildBackup({ [customerId]: customerName });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `backup-telas-aplicativos-cobranca-ia-${todayStamp()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success("Backup gerado com sucesso.");
+  };
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const txt = await file.text();
+      const res = parseBackup(txt);
+      if (!res.ok) {
+        toast.error("Este arquivo não parece ser um backup válido de telas e aplicativos.");
+        return;
+      }
+      setImportPreview({ data: res.data, stats: res.stats });
+    } catch {
+      toast.error("Não foi possível ler o arquivo.");
+    }
+  };
+
+  const confirmMerge = () => {
+    if (!importPreview) return;
+    mergeAll(importPreview.data);
+    setImportPreview(null);
+    toast.success("Backup importado e mesclado.");
+  };
+  const confirmReplace = () => {
+    if (!importPreview) return;
+    replaceAll(importPreview.data);
+    setImportPreview(null);
+    toast.success("Dados locais substituídos pelo backup.");
+  };
+
+  const handleClearCustomer = () => {
+    clearCustomerScreens(customerId);
+    setConfirmClear(false);
+    toast.success("Telas locais deste cliente removidas.");
   };
 
   return (
@@ -100,9 +207,80 @@ export function AppScreensSection({ customerId }: { customerId: string }) {
         </Button>
       </div>
 
-      <div className="rounded-md border border-dashed border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">
-        <AlertCircle className="mr-1 inline h-3 w-3" />
-        Telas salvas localmente neste navegador (preview). Falta backend/RPC/tabela para persistir no servidor.
+      {/* Aviso de persistência local */}
+      {!alertDismissed ? (
+        <div className="rounded-md border border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div className="min-w-0 flex-1">
+              Salvo apenas neste navegador por enquanto. Faça backup se for cadastrar dados reais.
+            </div>
+            <button
+              type="button"
+              onClick={dismissAlert}
+              className="shrink-0 rounded border border-warning/40 px-2 py-0.5 text-[10px] font-medium hover:bg-warning/10"
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAlertDismissed(false)}
+          className="flex w-full items-center gap-1.5 rounded-md border border-warning/30 bg-warning-soft/20 px-2 py-1 text-left text-[10px] text-warning hover:bg-warning-soft/40"
+        >
+          <AlertCircle className="h-3 w-3" /> Salvo só neste navegador. Tocar para ver detalhes.
+        </button>
+      )}
+
+      {/* Bloco backup */}
+      <div className="rounded-xl border border-border bg-card">
+        <button
+          type="button"
+          onClick={() => persistBackupOpen(!backupOpen)}
+          className="flex w-full items-center justify-between gap-2 p-3 text-left"
+        >
+          <div className="flex items-center gap-1.5 text-xs font-semibold">
+            <ShieldAlert className="h-3.5 w-3.5 text-info" /> Backup das telas
+          </div>
+          {backupOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        </button>
+        {backupOpen && (
+          <div className="space-y-3 border-t border-border p-3">
+            <p className="text-[11px] text-muted-foreground">
+              Enquanto o salvamento definitivo no servidor não está ativo,
+              faça backup para não perder os dados cadastrados neste navegador.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={handleExport}>
+                <Download className="h-3.5 w-3.5" /> Exportar backup
+              </Button>
+              <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={handleImportClick}>
+                <Upload className="h-3.5 w-3.5" /> Importar backup
+              </Button>
+              <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setAskRevealCustomer(true)} disabled={screens.length === 0}>
+                <Share2 className="h-3.5 w-3.5" /> Copiar dados do cliente
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9 gap-1.5 text-danger hover:text-danger"
+                onClick={() => setConfirmClear(true)}
+                disabled={screens.length === 0}
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Limpar dados locais
+              </Button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={handleFile}
+            />
+          </div>
+        )}
       </div>
 
       {sorted.length === 0 ? (
@@ -118,6 +296,7 @@ export function AppScreensSection({ customerId }: { customerId: string }) {
             const days = daysUntil(s.due_date);
             const urg = urgencyFromDays(days);
             const expanded = expandedId === s.id;
+            const routeName = ROUTE_OPTIONS.find((o) => o.value === s.route)?.label;
             return (
               <li key={s.id} className="rounded-xl border border-border bg-card shadow-card">
                 <button
@@ -134,14 +313,24 @@ export function AppScreensSection({ customerId }: { customerId: string }) {
                       <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-medium", STATUS_CLASS[s.status])}>
                         {STATUS_LABEL[s.status]}
                       </span>
+                      {s.needs_server_update && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
+                          <ServerCog className="h-3 w-3" /> Atualizar servidor
+                        </span>
+                      )}
                     </div>
-                    {s.due_date && (
-                      <div className="mt-1">
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {s.due_date && (
                         <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>
                           {urgencyLabel(urg, days)}
                         </span>
-                      </div>
-                    )}
+                      )}
+                      {routeName && (
+                        <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] text-muted-foreground">
+                          Rota: {routeName}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </button>
 
@@ -149,26 +338,26 @@ export function AppScreensSection({ customerId }: { customerId: string }) {
                   <div className="space-y-3 border-t border-border p-3">
                     {s.access_type === "user_pass" && (
                       <FieldGroup>
-                        <FieldRow label="Usuário" value={s.username} onCopy={() => copyToClipboard(s.username ?? "", "Usuário")} />
+                        <FieldRow label="Usuário" value={s.username} onCopy={() => copyText(s.username ?? "", "Usuário")} />
                         <FieldRow
                           label="Senha"
                           value={revealed[s.id + ":pwd"] ? s.password : mask(s.password)}
-                          onCopy={() => copyToClipboard(s.password ?? "", "Senha")}
+                          onCopy={() => copyText(s.password ?? "", "Senha")}
                           onToggle={() => setRevealed((r) => ({ ...r, [s.id + ":pwd"]: !r[s.id + ":pwd"] }))}
                           revealed={!!revealed[s.id + ":pwd"]}
                           sensitive
                         />
-                        <FieldRow label="Servidor" value={s.server} onCopy={() => copyToClipboard(s.server ?? "", "Servidor")} />
-                        {s.port && <FieldRow label="Porta" value={s.port} onCopy={() => copyToClipboard(s.port ?? "", "Porta")} />}
+                        <FieldRow label="Servidor" value={s.server} onCopy={() => copyText(s.server ?? "", "Servidor")} />
+                        {s.port && <FieldRow label="Porta" value={s.port} onCopy={() => copyText(s.port ?? "", "Porta")} />}
                       </FieldGroup>
                     )}
                     {s.access_type === "mac_key" && (
                       <FieldGroup>
-                        <FieldRow label="MAC" value={s.mac} onCopy={() => copyToClipboard(s.mac ?? "", "MAC")} />
+                        <FieldRow label="MAC" value={s.mac} onCopy={() => copyText(s.mac ?? "", "MAC")} />
                         <FieldRow
                           label="Key"
                           value={revealed[s.id + ":key"] ? s.app_key : mask(s.app_key)}
-                          onCopy={() => copyToClipboard(s.app_key ?? "", "Key")}
+                          onCopy={() => copyText(s.app_key ?? "", "Key")}
                           onToggle={() => setRevealed((r) => ({ ...r, [s.id + ":key"]: !r[s.id + ":key"] }))}
                           revealed={!!revealed[s.id + ":key"]}
                           sensitive
@@ -194,19 +383,22 @@ export function AppScreensSection({ customerId }: { customerId: string }) {
                       </p>
                     )}
 
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" className="flex-1 gap-1.5" onClick={() => openEdit(s)}>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => copyScreen(s, false)}>
+                        <Copy className="h-3.5 w-3.5" /> Copiar esta tela
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setAskRevealScreen(s)}>
+                        <Eye className="h-3.5 w-3.5" /> Copiar c/ senha
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => openEdit(s)}>
                         <Pencil className="h-3.5 w-3.5" /> Editar
                       </Button>
                       {s.status === "arquivada" ? (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 gap-1.5"
-                          onClick={() => {
-                            reactivateScreen(customerId, s.id);
-                            toast.success("Tela reativada");
-                          }}
+                          className="gap-1.5"
+                          onClick={() => { reactivateScreen(customerId, s.id); toast.success("Tela reativada"); }}
                         >
                           <RotateCcw className="h-3.5 w-3.5" /> Reativar
                         </Button>
@@ -214,11 +406,8 @@ export function AppScreensSection({ customerId }: { customerId: string }) {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 gap-1.5 text-danger hover:text-danger"
-                          onClick={() => {
-                            archiveScreen(customerId, s.id);
-                            toast.success("Tela arquivada");
-                          }}
+                          className="gap-1.5 text-danger hover:text-danger"
+                          onClick={() => { archiveScreen(customerId, s.id); toast.success("Tela arquivada"); }}
                         >
                           <Archive className="h-3.5 w-3.5" /> Arquivar
                         </Button>
@@ -238,6 +427,101 @@ export function AppScreensSection({ customerId }: { customerId: string }) {
         customerId={customerId}
         initial={editing}
       />
+
+      {/* Confirma copiar dados do cliente com senha/key */}
+      <AlertDialog open={askRevealCustomer} onOpenChange={(o) => !o && setAskRevealCustomer(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Copiar dados do cliente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Por padrão a senha/key vai mascarada. Deseja copiar com a senha/key visível? Esses dados são sensíveis.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <Button variant="outline" onClick={() => { copyCustomer(false); setAskRevealCustomer(false); }}>
+              Copiar mascarado
+            </Button>
+            <AlertDialogAction onClick={() => { copyCustomer(true); setAskRevealCustomer(false); }}>
+              Copiar com senha/key
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirma copiar tela com senha/key */}
+      <AlertDialog open={!!askRevealScreen} onOpenChange={(o) => !o && setAskRevealScreen(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Copiar tela com senha/key</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esses dados são sensíveis. Deseja copiar mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (askRevealScreen) copyScreen(askRevealScreen, true);
+                setAskRevealScreen(null);
+              }}
+            >
+              Copiar com senha/key
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirma limpar dados locais */}
+      <AlertDialog open={confirmClear} onOpenChange={(o) => !o && setConfirmClear(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Limpar dados locais deste cliente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso remove todas as telas/apps salvas neste navegador para este cliente. Faça o backup antes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearCustomer} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Limpar agora
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Prévia da importação */}
+      <AlertDialog open={!!importPreview} onOpenChange={(o) => !o && setImportPreview(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Importar backup</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <div>Deseja importar este backup? Os dados locais existentes podem ser atualizados.</div>
+                {importPreview && (
+                  <ul className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                    <li>Clientes: <strong className="text-foreground">{importPreview.stats.customers}</strong></li>
+                    <li>Telas: <strong className="text-foreground">{importPreview.stats.screens}</strong></li>
+                    <li>
+                      Apps encontrados:{" "}
+                      <strong className="text-foreground">
+                        {importPreview.stats.apps.length > 0 ? importPreview.stats.apps.join(", ") : "—"}
+                      </strong>
+                    </li>
+                  </ul>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <Button variant="outline" onClick={confirmMerge}>Mesclar com dados atuais</Button>
+            <AlertDialogAction onClick={confirmReplace} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Substituir dados locais
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -297,6 +581,8 @@ function ScreenSheet({
   const [portalUrl, setPortalUrl] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<ScreenStatus>("ativa");
+  const [route, setRoute] = useState<RouteKind | "">("");
+  const [needsUpdate, setNeedsUpdate] = useState(false);
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -315,6 +601,8 @@ function ScreenSheet({
       setPortalUrl(initial.portal_url ?? "");
       setDueDate(initial.due_date ?? "");
       setStatus(initial.status);
+      setRoute(initial.route ?? "");
+      setNeedsUpdate(!!initial.needs_server_update);
       setNotes(initial.notes ?? "");
     } else {
       setName("");
@@ -322,11 +610,10 @@ function ScreenSheet({
       setAccessType(APP_CATALOG.xciptv.access);
       setUsername(""); setPassword(""); setServer(""); setPort("");
       setMac(""); setAppKey(""); setPortalUrl(""); setDueDate("");
-      setStatus("ativa"); setNotes("");
+      setStatus("ativa"); setRoute(""); setNeedsUpdate(false); setNotes("");
     }
   }, [open, initial]);
 
-  // Quando muda o app, sugere o tipo de acesso default
   useEffect(() => {
     const def = APP_CATALOG[app]?.access ?? "outro";
     if (def !== "outro") setAccessType(def);
@@ -334,10 +621,7 @@ function ScreenSheet({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      toast.error("Informe o nome da tela.");
-      return;
-    }
+    if (!name.trim()) { toast.error("Informe o nome da tela."); return; }
     setBusy(true);
     const now = new Date().toISOString();
     const screen: AppScreen = {
@@ -355,6 +639,8 @@ function ScreenSheet({
       portal_url: portalUrl.trim() || undefined,
       due_date: dueDate || undefined,
       status,
+      route: route || undefined,
+      needs_server_update: needsUpdate || undefined,
       notes: notes.trim() || undefined,
       created_at: initial?.created_at ?? now,
       updated_at: now,
@@ -453,6 +739,36 @@ function ScreenSheet({
               </select>
             </Field>
           </div>
+
+          <Field label="Rota / servidor usado" hint="Identifica qual rota o cliente está usando hoje.">
+            <select
+              value={route}
+              onChange={(e) => setRoute(e.target.value as RouteKind | "")}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            >
+              <option value="">— Não informada —</option>
+              {ROUTE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
+
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-surface p-3 text-xs">
+            <input
+              type="checkbox"
+              checked={needsUpdate}
+              onChange={(e) => setNeedsUpdate(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-warning"
+            />
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-1 font-medium">
+                <ServerCog className="h-3.5 w-3.5 text-warning" /> Precisa atualizar servidor
+              </span>
+              <span className="text-muted-foreground">
+                Marca esta tela para aparecer no filtro de pendências de servidor.
+              </span>
+            </span>
+          </label>
 
           <Field label="Observações">
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={1000} />
