@@ -562,6 +562,7 @@ export const PRE_SUPABASE_CHECKLIST: ChecklistItem[] = [
   { id: "mt-rpc", label: "Funções RPC seguras planejadas (SECURITY DEFINER)" },
   { id: "mt-audit", label: "Logs/auditoria planejados" },
   { id: "mt-local-migration", label: "Migração local por empresa revisada" },
+  { id: "mt-derived", label: "Módulos derivados também levam company_id (manual_renewals, import_schedule_items, quick_support_history, campaign_logs, pending_resolutions)" },
 ];
 
 // ---------- Leitura local ----------
