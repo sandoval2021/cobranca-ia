@@ -41,6 +41,7 @@ export type FinanceSettings = {
 
 export type FinanceEntry = {
   id: string;
+  company_id?: string | null;
   date: string; // yyyy-mm-dd
   customer_name?: string;
   customer_whatsapp?: string;
@@ -64,6 +65,7 @@ export type FinanceEntry = {
 
 export type FinanceGoal = {
   id: string;
+  company_id?: string | null;
   name: string;
   target: number;
   reserved: number;
@@ -164,17 +166,35 @@ export function upsertAppCost(c: AppCost): void {
 }
 
 // ---------- Entries ----------
+import { getCurrentRole } from "./local-auth";
+import { getActiveCompanyId } from "./company-scope";
+
+function scopedFilter<T extends { company_id?: string | null }>(list: T[]): T[] {
+  const role = getCurrentRole();
+  const activeId = getActiveCompanyId();
+  if (role === "super_admin" && !activeId) return list;
+  if (!activeId) return [];
+  return list.filter((r) => r.company_id === activeId);
+}
+
 export function listFinanceEntries(): FinanceEntry[] {
+  const arr = readJson<FinanceEntry[]>(ENTRIES_KEY, []);
+  return scopedFilter(Array.isArray(arr) ? arr : []);
+}
+
+export function listAllFinanceEntriesRaw(): FinanceEntry[] {
   const arr = readJson<FinanceEntry[]>(ENTRIES_KEY, []);
   return Array.isArray(arr) ? arr : [];
 }
 
 export function saveFinanceEntry(e: Omit<FinanceEntry, "id" | "created_at" | "updated_at"> & { id?: string }): FinanceEntry {
-  const list = listFinanceEntries();
+  const list = listAllFinanceEntriesRaw();
   const id = e.id ?? newFinanceId("fin");
+  const activeId = getActiveCompanyId();
   const entry: FinanceEntry = {
     ...e,
     id,
+    company_id: e.company_id ?? activeId ?? null,
     created_at: nowIso(),
     updated_at: nowIso(),
   } as FinanceEntry;
@@ -187,31 +207,38 @@ export function saveFinanceEntry(e: Omit<FinanceEntry, "id" | "created_at" | "up
 }
 
 export function updateFinanceEntry(id: string, patch: Partial<FinanceEntry>): void {
-  const list = listFinanceEntries();
+  const list = listAllFinanceEntriesRaw();
   const idx = list.findIndex((e) => e.id === id);
   if (idx < 0) return;
   const prev = list[idx];
-  list[idx] = { ...prev, ...patch, updated_at: nowIso() };
+  list[idx] = { ...prev, ...patch, company_id: patch.company_id ?? prev.company_id, updated_at: nowIso() };
   writeJson(ENTRIES_KEY, list);
 }
 
 export function deleteFinanceEntry(id: string): void {
-  const list = listFinanceEntries().filter((e) => e.id !== id);
+  const list = listAllFinanceEntriesRaw().filter((e) => e.id !== id);
   writeJson(ENTRIES_KEY, list);
 }
 
 // ---------- Goals ----------
 export function listFinanceGoals(): FinanceGoal[] {
   const arr = readJson<FinanceGoal[]>(GOALS_KEY, []);
+  return scopedFilter(Array.isArray(arr) ? arr : []);
+}
+
+export function listAllFinanceGoalsRaw(): FinanceGoal[] {
+  const arr = readJson<FinanceGoal[]>(GOALS_KEY, []);
   return Array.isArray(arr) ? arr : [];
 }
 
 export function saveFinanceGoal(g: Omit<FinanceGoal, "id" | "created_at" | "updated_at" | "reserved"> & { id?: string; reserved?: number }): FinanceGoal {
-  const list = listFinanceGoals();
+  const list = listAllFinanceGoalsRaw();
   const id = g.id ?? newFinanceId("goal");
+  const activeId = getActiveCompanyId();
   const goal: FinanceGoal = {
     ...g,
     id,
+    company_id: g.company_id ?? activeId ?? null,
     reserved: g.reserved ?? 0,
     created_at: nowIso(),
     updated_at: nowIso(),
@@ -222,20 +249,20 @@ export function saveFinanceGoal(g: Omit<FinanceGoal, "id" | "created_at" | "upda
 }
 
 export function updateFinanceGoal(id: string, patch: Partial<FinanceGoal>): void {
-  const list = listFinanceGoals();
+  const list = listAllFinanceGoalsRaw();
   const idx = list.findIndex((g) => g.id === id);
   if (idx < 0) return;
-  list[idx] = { ...list[idx], ...patch, updated_at: nowIso() };
+  list[idx] = { ...list[idx], ...patch, company_id: patch.company_id ?? list[idx].company_id, updated_at: nowIso() };
   writeJson(GOALS_KEY, list);
 }
 
 export function deleteFinanceGoal(id: string): void {
-  const list = listFinanceGoals().filter((g) => g.id !== id);
+  const list = listAllFinanceGoalsRaw().filter((g) => g.id !== id);
   writeJson(GOALS_KEY, list);
 }
 
 function addGoalReserve(goalId: string, amount: number): void {
-  const list = listFinanceGoals();
+  const list = listAllFinanceGoalsRaw();
   const idx = list.findIndex((g) => g.id === goalId);
   if (idx < 0) return;
   const reserved = (list[idx].reserved || 0) + amount;
