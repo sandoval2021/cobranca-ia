@@ -23,6 +23,7 @@ import {
   Store,
   ShieldCheck,
   Network,
+  Database,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";

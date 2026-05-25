@@ -13,6 +13,7 @@ import { Route as TestesRouteImport } from './routes/testes'
 import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
 import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
+import { Route as PreparacaoBackendRouteImport } from './routes/preparacao-backend'
 import { Route as PendenciasRouteImport } from './routes/pendencias'
 import { Route as OperacaoDiaRouteImport } from './routes/operacao-dia'
 import { Route as MensagensRouteImport } from './routes/mensagens'
@@ -52,6 +53,11 @@ const RelatorioRoute = RelatorioRouteImport.update({
 const RegrasDisparoRoute = RegrasDisparoRouteImport.update({
   id: '/regras-disparo',
   path: '/regras-disparo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreparacaoBackendRoute = PreparacaoBackendRouteImport.update({
+  id: '/preparacao-backend',
+  path: '/preparacao-backend',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PendenciasRoute = PendenciasRouteImport.update({
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/mensagens': typeof MensagensRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
+  '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
   '/seguranca-local': typeof SegurancaLocalRoute
@@ -202,6 +209,7 @@ export interface FileRoutesByTo {
   '/mensagens': typeof MensagensRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
+  '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
   '/seguranca-local': typeof SegurancaLocalRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/mensagens': typeof MensagensRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
+  '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
   '/seguranca-local': typeof SegurancaLocalRoute
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/operacao-dia'
     | '/pendencias'
+    | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
     | '/seguranca-local'
@@ -283,6 +293,7 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/operacao-dia'
     | '/pendencias'
+    | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
     | '/seguranca-local'
@@ -309,6 +320,7 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/operacao-dia'
     | '/pendencias'
+    | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
     | '/seguranca-local'
@@ -336,6 +348,7 @@ export interface RootRouteChildren {
   MensagensRoute: typeof MensagensRoute
   OperacaoDiaRoute: typeof OperacaoDiaRoute
   PendenciasRoute: typeof PendenciasRoute
+  PreparacaoBackendRoute: typeof PreparacaoBackendRoute
   RegrasDisparoRoute: typeof RegrasDisparoRoute
   RelatorioRoute: typeof RelatorioRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
@@ -370,6 +383,13 @@ declare module '@tanstack/react-router' {
       path: '/regras-disparo'
       fullPath: '/regras-disparo'
       preLoaderRoute: typeof RegrasDisparoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preparacao-backend': {
+      id: '/preparacao-backend'
+      path: '/preparacao-backend'
+      fullPath: '/preparacao-backend'
+      preLoaderRoute: typeof PreparacaoBackendRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pendencias': {
@@ -536,6 +556,7 @@ const rootRouteChildren: RootRouteChildren = {
   MensagensRoute: MensagensRoute,
   OperacaoDiaRoute: OperacaoDiaRoute,
   PendenciasRoute: PendenciasRoute,
+  PreparacaoBackendRoute: PreparacaoBackendRoute,
   RegrasDisparoRoute: RegrasDisparoRoute,
   RelatorioRoute: RelatorioRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
