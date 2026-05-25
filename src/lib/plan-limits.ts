@@ -108,9 +108,9 @@ export function getCompanyUsage(companyId: string | null | undefined): CompanyUs
   const financeiro_entradas = countByCompany(listAllFinanceEntriesRaw(), companyId);
   // Servidores/DNS — atualmente são globais (sem company_id). Reportamos 0 por enquanto
   // mas mantemos a estrutura para o futuro.
-  const servidores = (listServers() as { company_id?: string | null }[])
+  const servidores = (listServers() as unknown as { company_id?: string | null }[])
     .filter((s) => s.company_id === companyId).length;
-  const dns_rotas = (listDnsRoutes() as { company_id?: string | null }[])
+  const dns_rotas = (listDnsRoutes() as unknown as { company_id?: string | null }[])
     .filter((r) => r.company_id === companyId).length;
 
   return { clientes: customers.size, telas, testes, servidores, dns_rotas, financeiro_entradas, indicacoes };
