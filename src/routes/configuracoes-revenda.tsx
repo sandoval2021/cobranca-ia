@@ -105,7 +105,7 @@ function ConfiguracoesRevendaPage() {
     <PageContainer>
       <SectionHeader
         title="Minha Revenda"
-        description="Configure os dados usados nas mensagens, cobranças e atendimento."
+        subtitle="Configure os dados usados nas mensagens, cobranças e atendimento."
       />
 
       <div className="rounded-lg border border-amber-300/40 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-900 dark:text-amber-200 flex gap-2">
