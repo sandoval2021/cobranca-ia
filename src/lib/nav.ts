@@ -20,7 +20,7 @@ import {
   Gift,
   Wallet,
   HardDrive,
-} from "lucide-react";
+  Store,
 
 import type { LucideIcon } from "lucide-react";
 
