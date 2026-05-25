@@ -249,9 +249,11 @@ function PendenciasPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("todas");
+  const [serverFilter, setServerFilter] = useState<string>("__all__");
   const [showResolved, setShowResolved] = useState(false);
   const [screensVersion, setScreensVersion] = useState(0);
   const [resolvedVersion, setResolvedVersion] = useState(0);
+  const [serversVersion, setServersVersion] = useState(0);
   const [confirmReveal, setConfirmReveal] = useState<null | { screen: AppScreen; customerName: string }>(null);
 
   useEffect(() => {
