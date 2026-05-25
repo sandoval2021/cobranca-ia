@@ -63,10 +63,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 
 function ImportarClientesPage() {
   const { user, isAuthenticated } = useAuth();
-  const companies = useSupabaseList<Company>("companies", {
-    limit: 100,
-    deps: [user?.id ?? null],
-  });
+  const companyState = useCurrentCompany();
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
@@ -85,19 +82,14 @@ function ImportarClientesPage() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  // Auto-select single company
+  // Auto-seleciona a empresa atual da sessão (mantém UI igual).
   useEffect(() => {
-    if (
-      companies.status === "ready" &&
-      companies.data.length === 1 &&
-      !companyId
-    ) {
-      const only = companies.data[0] as Record<string, unknown>;
-      if (typeof only.id === "string") setCompanyId(only.id);
+    if (companyState.status === "ready" && !companyId) {
+      setCompanyId(companyState.companyId);
     }
-  }, [companies, companyId]);
+  }, [companyState, companyId]);
 
-  // Reset selection on user change
+  // Reset on user change
   useEffect(() => {
     setCompanyId(null);
     setResult(null);
