@@ -279,6 +279,8 @@ const VARS = [
   "nome", "whatsapp", "tela", "app", "vencimento", "dias", "rota",
   "servidor", "mac", "key", "usuario",
   "vencimento_app", "dias_app", "valor_app", "tipo_app", "portal_app",
+  "painel", "usuario_painel", "senha_painel",
+  "link_lista", "usuario_lista", "senha_lista",
 ] as const;
 
 type VarKey = (typeof VARS)[number];
