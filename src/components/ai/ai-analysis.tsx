@@ -37,6 +37,21 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { flags } from "@/lib/flags";
+
+type RpcErr = { message?: string; details?: string | null; hint?: string | null; code?: string | null };
+function stagingDetail(rpc: string, payload: unknown, err: RpcErr) {
+  if (flags.appEnv === "production") return undefined;
+  try {
+    return `RPC: ${rpc}\nPayload: ${JSON.stringify(payload)}\nmessage: ${err.message ?? ""}\ndetails: ${err.details ?? ""}\nhint: ${err.hint ?? ""}\ncode: ${err.code ?? ""}`;
+  } catch {
+    return `RPC: ${rpc} — ${err.message ?? ""}`;
+  }
+}
+function toastRpcError(friendlyMsg: string, rpc: string, payload: unknown, err: RpcErr) {
+  const description = stagingDetail(rpc, payload, err);
+  toast.error(friendlyMsg, description ? { description } : undefined);
+}
 
 type Row = Record<string, unknown>;
 
