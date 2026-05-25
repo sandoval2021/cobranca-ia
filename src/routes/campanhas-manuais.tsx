@@ -432,6 +432,12 @@ function appDays(s: AppScreen | null): number | null {
   return Math.floor((+d - +t) / 86400000);
 }
 
+// Cliente com lista mensal vencida há mais de 30 dias: priorizar recuperação,
+// não aparecer em públicos de "app pago".
+function listaMuitoVencida(p: PublicItem): boolean {
+  return p.days != null && p.days < -30;
+}
+
 function matchesAudience(p: PublicItem, a: Audience): boolean {
   const s = p.screen;
   const paid = isPaid(s);
@@ -450,12 +456,12 @@ function matchesAudience(p: PublicItem, a: Audience): boolean {
     case "app_vu": return s?.app === "vu_player";
     case "acc_mac_key": return s?.access_type === "mac_key";
     case "acc_user_pass": return s?.access_type === "user_pass";
-    case "app_pago_vencendo": return paid && ad != null && ad >= 0 && ad <= 30;
-    case "app_pago_7d": return paid && ad != null && ad >= 0 && ad <= 7;
-    case "app_pago_vencido": return paid && ad != null && ad < 0;
-    case "app_sem_venc": return paid && s != null && !s.app_due_date;
+    case "app_pago_vencendo": return paid && !listaMuitoVencida(p) && ad != null && ad >= 0 && ad <= 30;
+    case "app_pago_7d": return paid && !listaMuitoVencida(p) && ad != null && ad >= 0 && ad <= 7;
+    case "app_pago_vencido": return paid && !listaMuitoVencida(p) && ad != null && ad < 0;
+    case "app_sem_venc": return paid && !listaMuitoVencida(p) && s != null && !s.app_due_date;
     case "app_sem_mackey": {
-      if (!paid || !s) return false;
+      if (!paid || !s || listaMuitoVencida(p)) return false;
       const at = s.access_type;
       return (at === "mac" || at === "mac_key") && (!s.mac || (at === "mac_key" && !s.app_key));
     }
