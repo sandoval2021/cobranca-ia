@@ -32,6 +32,7 @@ import {
 import {
   listActiveServers, serverBadgeStyle, SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
