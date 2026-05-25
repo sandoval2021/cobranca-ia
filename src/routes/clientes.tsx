@@ -418,6 +418,7 @@ function ClientesPage() {
         subtitle="Gerencie sua base de clientes"
         hint="Edite, arquive e consulte o histórico de cada cliente com segurança."
       />
+      <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
 
       {/* Busca */}
       <div className="relative mb-3">

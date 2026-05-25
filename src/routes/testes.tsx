@@ -269,6 +269,7 @@ function TestesPage() {
   return (
     <PageContainer>
       <div className="mb-1"><ProtectedModeBadge /></div>
+      <CompanyScopeNotice moduleKey="cobranca_ia_trial_leads_v1" />
       <SectionHeader
         title="Testes"
         subtitle="Acompanhe pessoas que pediram teste e ainda não viraram clientes."
