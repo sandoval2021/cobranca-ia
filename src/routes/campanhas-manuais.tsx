@@ -49,6 +49,8 @@ import {
   mask,
   ROUTE_OPTIONS,
 } from "@/lib/app-screens";
+import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { buildServerVarsForScreen } from "@/lib/server-catalog";
 
 export const Route = createFileRoute("/campanhas-manuais")({
   component: CampanhasManuaisPage,
