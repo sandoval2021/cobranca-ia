@@ -42,6 +42,8 @@ import {
 import { listServers, listActiveServers } from "@/lib/server-catalog";
 import { APP_CATALOG, APP_OPTIONS } from "@/lib/app-screens";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+
 
 export const Route = createFileRoute("/financeiro")({
   head: () => ({
@@ -107,10 +109,12 @@ function FinanceiroPage() {
 
   return (
     <PageContainer>
+      <div className="mb-1"><ProtectedModeBadge /></div>
       <SectionHeader
         title="Financeiro"
         subtitle="Controle receitas, custos, lucro e objetivos do seu negócio."
       />
+
 
       <Card className="p-3 border-dashed bg-muted/30 mb-4 flex items-start gap-2">
         <Info className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
@@ -395,6 +399,7 @@ function GoalsSection({ goals, settings, onReload }: { goals: FinanceGoal[]; set
   const [target, setTarget] = useState<number>(0);
   const [deadline, setDeadline] = useState("");
   const [description, setDescription] = useState("");
+  const { guard, dialog: securityDialog } = useSecurityGuard();
 
   const create = () => {
     if (!name || target <= 0) { toast.error("Informe nome e valor alvo"); return; }
@@ -403,6 +408,7 @@ function GoalsSection({ goals, settings, onReload }: { goals: FinanceGoal[]; set
     onReload();
     toast.success("Objetivo criado");
   };
+
 
   return (
     <div className="space-y-3">
@@ -451,22 +457,42 @@ function GoalsSection({ goals, settings, onReload }: { goals: FinanceGoal[]; set
                 </div>
               </div>
               <div className="flex flex-col gap-1">
-                <Button size="sm" variant="ghost" onClick={() => { saveFinanceSettings({ default_goal_id: isDefault ? undefined : g.id }); onReload(); }}>
+                <Button size="sm" variant="ghost" onClick={() => guard({
+                  kind: "finance",
+                  title: isDefault ? "Remover objetivo padrão" : "Tornar objetivo padrão",
+                  description: "Isso altera a separação automática da reserva.",
+                  actionLabel: "Confirmar",
+                  onConfirm: () => { saveFinanceSettings({ default_goal_id: isDefault ? undefined : g.id }); onReload(); },
+                })}>
                   {isDefault ? "Remover padrão" : "Tornar padrão"}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { updateFinanceGoal(g.id, { status: g.status === "pausado" ? "ativo" : "pausado" }); onReload(); }}>
+                <Button size="sm" variant="ghost" onClick={() => guard({
+                  kind: "finance",
+                  title: g.status === "pausado" ? "Retomar objetivo" : "Pausar objetivo",
+                  actionLabel: "Confirmar",
+                  onConfirm: () => { updateFinanceGoal(g.id, { status: g.status === "pausado" ? "ativo" : "pausado" }); onReload(); },
+                })}>
                   {g.status === "pausado" ? "Retomar" : "Pausar"}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { if (confirm(`Excluir objetivo "${g.name}"?`)) { deleteFinanceGoal(g.id); onReload(); } }}>
+                <Button size="sm" variant="ghost" onClick={() => guard({
+                  kind: "delete",
+                  title: `Excluir objetivo "${g.name}"?`,
+                  description: "Esta ação não pode ser desfeita.",
+                  actionLabel: "Excluir",
+                  onConfirm: () => { deleteFinanceGoal(g.id); onReload(); toast.success("Objetivo excluído"); },
+                })}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
+
             </div>
           </Card>
         );
       })}
+      {securityDialog}
     </div>
   );
+
 }
 
 // ---------- Simulator ----------

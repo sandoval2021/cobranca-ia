@@ -33,6 +33,8 @@ import {
   listActiveServers, serverBadgeStyle, SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
@@ -237,7 +239,9 @@ export function AppScreensSection({
         <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <Tv className="h-3.5 w-3.5" /> Telas e aplicativos
           <HelpTip text="Use para separar quando o cliente tem mais de uma TV ou aparelho." />
+          <ProtectedModeBadge className="ml-1" />
         </h3>
+
         <div className="flex items-center gap-1.5">
           {screens.some((s) => s.status !== "arquivada") && (
             <Button

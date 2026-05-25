@@ -17,6 +17,11 @@ import {
   listScreens, mask,
 } from "@/lib/app-screens";
 import { applyRevendaVariables, getRevendaSettings, REVENDA_SETTINGS_EVENT } from "@/lib/revenda-settings";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+import type { ProtectedActionKind } from "@/lib/local-security";
+
+
 
 // ------- tipos & storage -------
 
@@ -391,6 +396,8 @@ export function QuickSupportSection({
   const [confirmReveal, setConfirmReveal] = useState<null | {
     onConfirm: () => void;
   }>(null);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
+
 
   const refreshScreens = () => setScreens(listScreens(customerId));
   const refreshHistory = () => setHistory(readHistory());
@@ -427,7 +434,22 @@ export function QuickSupportSection({
 
   const selected = activeScreens.find((s) => s.id === selectedId) ?? null;
 
-  const askReveal = (fn: () => void) => setConfirmReveal({ onConfirm: fn });
+  const askReveal = (fn: () => void) =>
+    setConfirmReveal({
+      onConfirm: () => {
+        const kind: ProtectedActionKind = selected && isMacKeyApp(selected)
+          ? "app_key"
+          : "server_password";
+        guard({
+          kind,
+          title: "Revelar dados sensíveis",
+          description: "Esta ação revela ou copia senha/key real. Confirme com PIN se exigido.",
+          actionLabel: "Continuar",
+          onConfirm: fn,
+        });
+      },
+    });
+
 
   const copyAndLog = (text: string, label: string, kind: string) => {
     copyText(text, label, {
@@ -442,11 +464,13 @@ export function QuickSupportSection({
       <div>
         <h3 className="flex items-center gap-1.5 text-sm font-semibold">
           <Headphones className="h-4 w-4 text-primary" /> Atendimento rápido
+          <ProtectedModeBadge className="ml-1" />
         </h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Gere respostas prontas com base no app e na tela do cliente.
         </p>
       </div>
+
 
       <div className="rounded-md border border-info/40 bg-info-soft/40 p-2 text-[11px] text-info">
         <AlertCircle className="mr-1 inline h-3 w-3" />
@@ -687,7 +711,9 @@ export function QuickSupportSection({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </div>
+
   );
 }
 

@@ -28,6 +28,8 @@ import {
   SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+
 
 export const Route = createFileRoute("/catalogo-servidores")({
   component: CatalogoServidoresPage,
@@ -126,10 +128,12 @@ function CatalogoServidoresPage() {
 
   return (
     <PageContainer>
+      <div className="mb-1"><ProtectedModeBadge /></div>
       <SectionHeader
         title="Servidores"
         subtitle="Configure os servidores e painéis usados nas telas dos clientes."
       />
+
 
       <div className="mb-3 rounded-md border border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">
         <div className="flex items-start gap-2">
