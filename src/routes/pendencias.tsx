@@ -492,6 +492,11 @@ function PendenciasPage() {
         case "sem_whats": return p.type === "sem_whats";
         case "atualizar_servidor": return p.type === "atualizar_servidor";
         case "tecnicas": return p.type === "tecnica";
+        case "app_pago_vencido": return p.type === "app_pago_vencido";
+        case "app_pago_7d": return p.type === "app_pago_7d";
+        case "app_pago_30d": return p.type === "app_pago_30d";
+        case "app_sem_venc": return p.type === "app_sem_venc";
+        case "app_sem_mackey": return p.type === "app_sem_mackey";
       }
     };
     return pendings.filter((p) => {
