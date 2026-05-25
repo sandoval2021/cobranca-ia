@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Copy, Search, Download, Upload, Check, Info, Settings2, Plus } from "lucide-react";
 
 import { PageContainer } from "@/components/layout/PageContainer";
+import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

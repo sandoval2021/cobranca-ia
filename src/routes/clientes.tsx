@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
 import { ListCardSkeleton } from "@/components/ui-premium/Skeletons";
