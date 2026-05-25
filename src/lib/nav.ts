@@ -50,6 +50,7 @@ export const ownerNav: NavItem[] = [
   { to: "/indicacoes", label: "Indicações", icon: Gift, hint: "Indicações e bonificações" },
   { to: "/financeiro", label: "Financeiro", icon: Wallet, hint: "Receitas, custos, lucro e objetivos" },
   { to: "/regras-disparo", label: "Regras de disparo", icon: SlidersHorizontal, hint: "Quando sugerir mensagens manuais" },
+  { to: "/backup-geral", label: "Backup Geral", icon: HardDrive, hint: "Exportar/importar backup local de tudo" },
   { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente" },
   { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Testes de conexão" },
 
