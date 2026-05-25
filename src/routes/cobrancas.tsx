@@ -149,15 +149,22 @@ const parseBRLToCents = (s: string): number | null => {
 };
 
 type ChargeKind = "pendente" | "paga" | "vencida" | "cancelada" | "outro";
+/**
+ * Mapeia o status amigável da UI para o valor real do enum charge_status no banco.
+ * Enum aceito: pendente | aprovado | falhou | cancelado | expirado.
+ * Retorna null se o valor for desconhecido (chamador deve abortar a RPC).
+ */
 const toChargeRpcStatus = (status: string | null | undefined): string | null => {
   const v = (status ?? "").trim().toLowerCase();
-  if (!v) return null;
-  if (["pendente", "pending", "open", "created", "new"].includes(v)) return "pendente";
-  if (["paga", "paid", "approved", "success", "confirmed"].includes(v)) return "paga";
-  if (["vencida", "overdue", "expired"].includes(v)) return "vencida";
-  if (["cancelada", "canceled", "cancelled", "cancelado"].includes(v)) return "cancelada";
-  return v;
+  if (!v) return "pendente";
+  if (["pendente", "pending", "open", "created", "new", "aberta"].includes(v)) return "pendente";
+  if (["paga", "paid", "approved", "aprovado", "success", "confirmed"].includes(v)) return "aprovado";
+  if (["vencida", "vencido", "overdue", "expired", "expirado"].includes(v)) return "expirado";
+  if (["cancelada", "cancelado", "canceled", "cancelled"].includes(v)) return "cancelado";
+  if (["falhou", "falha", "failed", "error"].includes(v)) return "falhou";
+  return null;
 };
+
 const classifyCharge = (s: string | null | undefined): ChargeKind => {
   const v = (s ?? "").toLowerCase();
   if (!v) return "outro";
@@ -168,12 +175,20 @@ const classifyCharge = (s: string | null | undefined): ChargeKind => {
   return "outro";
 };
 const chargeLabel = (s: string | null | undefined) => {
+  const v = (s ?? "").toLowerCase();
+  if (/(falh|failed|error)/.test(v)) return "Falhou";
   const k = classifyCharge(s);
   if (k === "paga") return "Paga";
   if (k === "vencida") return "Vencida";
   if (k === "cancelada") return "Cancelada";
   if (k === "pendente") return "Pendente";
   return s ?? "—";
+};
+const chargeUiKey = (s: string | null | undefined): "pendente" | "paga" | "vencida" | "cancelada" | "falhou" => {
+  const v = (s ?? "").toLowerCase();
+  if (/(falh|failed|error)/.test(v)) return "falhou";
+  const k = classifyCharge(s);
+  return k === "outro" ? "pendente" : k;
 };
 const chargeClass = (s: string | null | undefined) => {
   const k = classifyCharge(s);
@@ -780,12 +795,17 @@ function ChargeSheet({
       toast.error("Informe uma data de vencimento válida.");
       return;
     }
+    const rpcStatus = toChargeRpcStatus(status);
+    if (!rpcStatus) {
+      toast.error("Selecione um status válido para a cobrança.");
+      return;
+    }
     setSaving(true);
     const payload = {
       p_charge_id: charge.id,
       p_amount_cents: cents,
       p_due_at: due,
-      p_status: toChargeRpcStatus(status),
+      p_status: rpcStatus,
     };
     const { error } = await supabase.rpc("update_charge_admin", payload);
     setSaving(false);
@@ -854,13 +874,14 @@ function ChargeSheet({
               </div>
               <div>
                 <Label className="text-xs">Status</Label>
-                <Select value={toChargeRpcStatus(status) ?? "pendente"} onValueChange={setStatus}>
+                <Select value={chargeUiKey(status)} onValueChange={setStatus}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pendente">Pendente</SelectItem>
                     <SelectItem value="paga">Paga</SelectItem>
                     <SelectItem value="vencida">Vencida</SelectItem>
                     <SelectItem value="cancelada">Cancelada</SelectItem>
+                    <SelectItem value="falhou">Falhou</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1116,12 +1137,17 @@ function CreateChargeDialog({
       toast.error("Informe uma data de vencimento válida.");
       return;
     }
+    const rpcStatus = toChargeRpcStatus(status);
+    if (!rpcStatus) {
+      toast.error("Selecione um status válido para a cobrança.");
+      return;
+    }
     setBusy(true);
     const payload = {
       p_customer_id: customerId,
       p_amount_cents: cents,
       p_due_at: due,
-      p_status: toChargeRpcStatus(status),
+      p_status: rpcStatus,
       p_external_reference: ref.trim() || null,
     };
     const { error } = await supabase.rpc("create_charge_admin", payload);
@@ -1172,6 +1198,7 @@ function CreateChargeDialog({
                 <SelectItem value="paga">Paga</SelectItem>
                 <SelectItem value="vencida">Vencida</SelectItem>
                 <SelectItem value="cancelada">Cancelada</SelectItem>
+                <SelectItem value="falhou">Falhou</SelectItem>
               </SelectContent>
             </Select>
           </div>
