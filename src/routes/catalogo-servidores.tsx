@@ -138,6 +138,7 @@ function CatalogoServidoresPage() {
       <SectionHeader
         title="Servidores"
         subtitle="Configure os servidores e painéis usados nas telas dos clientes."
+      />
       <PlanLimitNotice moduleKey="servidores" />
 
 
