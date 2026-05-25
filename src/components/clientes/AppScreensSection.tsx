@@ -81,6 +81,8 @@ export function AppScreensSection({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+  const [renewOpen, setRenewOpen] = useState(false);
+  const [renewInitialScreenId, setRenewInitialScreenId] = useState<string | null>(null);
 
   const [alertDismissed, setAlertDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
