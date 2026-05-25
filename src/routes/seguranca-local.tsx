@@ -109,7 +109,7 @@ function SegurancaLocalPage() {
     <PageContainer>
       <SectionHeader
         title="Segurança"
-        description="Proteja dados sensíveis deste navegador com PIN e modo protegido."
+        subtitle="Proteja dados sensíveis deste navegador com PIN e modo protegido."
       />
 
       <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 text-sm flex gap-2 mb-4">
