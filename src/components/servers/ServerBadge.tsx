@@ -197,7 +197,15 @@ function ServerDetailsSheet({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setReveal(true); setAskReveal(false); }}>
+            <AlertDialogAction onClick={() => {
+              setAskReveal(false);
+              guard({
+                kind: "server_password",
+                title: "Mostrar senha do painel",
+                actionLabel: "Mostrar",
+                onConfirm: () => setReveal(true),
+              });
+            }}>
               Mostrar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -215,8 +223,13 @@ function ServerDetailsSheet({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
-              copyText(server.panel_password ?? "", "Senha do painel");
               setAskCopyPwd(false);
+              guard({
+                kind: "server_password",
+                title: "Copiar senha do painel",
+                actionLabel: "Copiar",
+                onConfirm: () => copyText(server.panel_password ?? "", "Senha do painel"),
+              });
             }}>
               Copiar senha
             </AlertDialogAction>
@@ -241,14 +254,20 @@ function ServerDetailsSheet({
               Copiar mascarado
             </Button>
             <AlertDialogAction onClick={() => {
-              copyText(formatServerAsText(server, { revealSecrets: true }), "Dados do servidor (com senha)");
               setAskCopyFull(false);
+              guard({
+                kind: "server_password",
+                title: "Copiar dados com senha visível",
+                actionLabel: "Copiar",
+                onConfirm: () => copyText(formatServerAsText(server, { revealSecrets: true }), "Dados do servidor (com senha)"),
+              });
             }}>
               Copiar com senha
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </>
   );
 }
