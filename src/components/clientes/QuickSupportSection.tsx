@@ -464,11 +464,13 @@ export function QuickSupportSection({
       <div>
         <h3 className="flex items-center gap-1.5 text-sm font-semibold">
           <Headphones className="h-4 w-4 text-primary" /> Atendimento rápido
+          <ProtectedModeBadge className="ml-1" />
         </h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Gere respostas prontas com base no app e na tela do cliente.
         </p>
       </div>
+
 
       <div className="rounded-md border border-info/40 bg-info-soft/40 p-2 text-[11px] text-info">
         <AlertCircle className="mr-1 inline h-3 w-3" />
