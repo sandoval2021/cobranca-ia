@@ -240,3 +240,84 @@ export function formatServerAsText(
   ].filter(Boolean);
   return lines.join("\n");
 }
+
+// ----- helpers para integração com Telas/Campanhas -----
+
+export type ServerLite = { id: string; name: string };
+
+/** IDs únicos de servidores presentes nas telas (ativas/arquivadas inclusive). */
+export function serverIdsFromScreens(
+  screens: { server_ids?: string[] }[],
+): string[] {
+  const set = new Set<string>();
+  for (const s of screens) for (const id of s.server_ids ?? []) set.add(id);
+  return Array.from(set);
+}
+
+/** Lista resumida (nome+id) dos servidores referenciados pelas telas. */
+export function serversFromScreens(
+  screens: { server_ids?: string[] }[],
+): ServerLite[] {
+  const ids = serverIdsFromScreens(screens);
+  return ids
+    .map((id) => getServerById(id))
+    .filter((s): s is ServerEntry => !!s)
+    .map((s) => ({ id: s.id, name: s.name }));
+}
+
+/** True se as telas têm pelo menos um vínculo com o servidor `id`. */
+export function screensHaveServer(
+  screens: { server_ids?: string[] }[],
+  id: string,
+): boolean {
+  if (id === "__none__") {
+    return screens.some((s) => (s.server_ids ?? []).length === 0);
+  }
+  return screens.some((s) => (s.server_ids ?? []).includes(id));
+}
+
+export type ServerTemplateVars = {
+  servidor: string;
+  painel: string;
+  usuario_painel: string;
+  senha_painel: string;
+  link_lista: string;
+  usuario_lista: string;
+  senha_lista: string;
+};
+
+/**
+ * Variáveis de servidor para uma tela específica.
+ * Usa o `primary_server_id` (ou o primeiro de `server_ids`) como contexto.
+ * Senhas voltam mascaradas por padrão — só revele com confirmação do usuário.
+ */
+export function buildServerVarsForScreen(
+  screen: {
+    server_ids?: string[];
+    primary_server_id?: string;
+    list_server_url?: string;
+    list_username?: string;
+    list_password?: string;
+  },
+  opts: { revealSecrets?: boolean } = {},
+): ServerTemplateVars {
+  const reveal = !!opts.revealSecrets;
+  const id =
+    screen.primary_server_id ||
+    (screen.server_ids && screen.server_ids[0]) ||
+    "";
+  const s = id ? getServerById(id) : null;
+  return {
+    servidor: s?.name ?? "",
+    painel: s?.panel_url ?? "",
+    usuario_painel: s?.panel_username ?? "",
+    senha_painel: s?.panel_password
+      ? (reveal ? s.panel_password : maskSecret(s.panel_password))
+      : "",
+    link_lista: screen.list_server_url ?? "",
+    usuario_lista: screen.list_username ?? "",
+    senha_lista: screen.list_password
+      ? (reveal ? screen.list_password : maskSecret(screen.list_password))
+      : "",
+  };
+}
