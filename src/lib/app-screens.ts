@@ -63,6 +63,13 @@ export type AppScreen = {
   route?: RouteKind;
   needs_server_update?: boolean;
   notes?: string;
+  // Servidores/painéis vinculados (IDs do catálogo local de servidores)
+  server_ids?: string[];
+  primary_server_id?: string;
+  list_server_url?: string;
+  list_username?: string;
+  list_password?: string;
+  server_notes?: string;
   created_at: string;
   updated_at: string;
 };
