@@ -691,7 +691,7 @@ function SupportCard({
   onCopyReveal: (gen: () => string) => void;
   screenAccessKind: import("@/lib/app-screens").AccessType;
 }) {
-  const hasSensitive = screenAccessKind !== "outro";
+  const hasSensitive = screenAccessKind !== "outro" && screenAccessKind !== "nao_informado";
   return (
     <div className="rounded-xl border border-border bg-card p-3">
       <div className="mb-2">
