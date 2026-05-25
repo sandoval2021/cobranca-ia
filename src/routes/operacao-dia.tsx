@@ -156,6 +156,17 @@ function msgAvisoSimulado() {
   return `(Aviso interno) Este é um ambiente de testes. Nenhuma mensagem foi enviada automaticamente para o cliente.`;
 }
 
+// ----- mensagens de app pago -----
+function msgAppVencendo(name: string, app: string, tela: string, diasApp: number, vencApp: string, valor?: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nO aplicativo ${app} da sua ${tela} vence em ${diasApp} dia(s).\n\n📱 App: ${app}\n📺 Tela: ${tela}\n📅 Vencimento do app: ${vencApp}${valor ? `\n💰 Renovação: ${valor}` : ""}\n\nEssa renovação é da licença do aplicativo, separada da mensalidade da lista.`;
+}
+function msgAppVencido(name: string, app: string, tela: string, vencApp: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nA licença do aplicativo ${app} da sua ${tela} está vencida.\n\n📱 App: ${app}\n📺 Tela: ${tela}\n📅 Vencimento: ${vencApp}\n\nQuando a licença vence, o app pode parar de abrir ou pedir renovação.`;
+}
+function msgPedirMacKeyApp(name: string, app: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nPara eu conferir o app ${app}, preciso que você me envie o MAC e a Key que aparecem na tela do aplicativo.\n\nSe puder, mande também um print da tela.`;
+}
+
 // Mensagem de "dados da tela" mascarados
 function copyTelaDados(s: AppScreen, customerName: string) {
   return formatScreenAsText(s, customerName, { revealSecrets: false });
