@@ -99,7 +99,7 @@ export function ImportAgendaSection({
       return;
     }
     try {
-      await navigator.clipboard.writeText(it.message);
+      await navigator.clipboard.writeText(applyRevendaVariables(it.message));
       updateStatus(it, "copiado");
       toast.success("Mensagem copiada");
     } catch {
@@ -116,7 +116,7 @@ export function ImportAgendaSection({
     const txt = list
       .map(
         (it) =>
-          `# ${it.name} (${it.whatsapp ?? "sem whatsapp"})\n${it.message}`,
+          `# ${it.name} (${it.whatsapp ?? "sem whatsapp"})\n${applyRevendaVariables(it.message ?? "")}`,
       )
       .join("\n\n---\n\n");
     try {
