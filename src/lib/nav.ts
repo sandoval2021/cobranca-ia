@@ -22,6 +22,7 @@ import {
   HardDrive,
   Store,
   ShieldCheck,
+  Network,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
