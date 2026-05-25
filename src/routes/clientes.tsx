@@ -666,21 +666,41 @@ function ClientCard({
                 const app = APP_CATALOG[s.app];
                 const sids = s.server_ids ?? [];
                 return (
-                  <div key={s.id} className="flex flex-wrap items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onOpen(); }}
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
-                        app.badgeClass,
-                      )}
-                      title={`${s.name} · ${app.label}`}
-                    >
-                      {s.name} · {app.label}
-                    </button>
-                    {sids.length > 0
-                      ? sids.map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
-                      : <SemServidorBadge />}
+                  <div key={s.id} className="space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
+                          app.badgeClass,
+                        )}
+                        title={`${s.name} · ${app.label}`}
+                      >
+                        {s.name} · {app.label}
+                      </button>
+                      {sids.length > 0
+                        ? sids.map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
+                        : <SemServidorBadge />}
+                    </div>
+                    {sids.length > 0 && (
+                      <div className="text-[10px] text-muted-foreground pl-1">
+                        {sids.map((sid) => {
+                          const r = getPrimaryRouteForServer(sid);
+                          const srv = getServerById(sid);
+                          return (
+                            <div key={sid} className="truncate">
+                              {srv?.name ?? "Servidor"}:{" "}
+                              {r?.host ? (
+                                <span className="font-mono text-foreground/80">{r.host}</span>
+                              ) : (
+                                <span>Servidor sem rota</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
