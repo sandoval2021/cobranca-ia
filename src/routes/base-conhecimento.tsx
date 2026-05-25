@@ -119,7 +119,6 @@ function BaseConhecimentoPage() {
   return (
     <PageContainer>
       <SectionHeader
-        icon={BookOpen}
         title="Base da IA"
         subtitle="Cadastre respostas e regras para treinar o atendimento automático no futuro."
       />
