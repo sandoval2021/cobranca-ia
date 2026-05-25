@@ -42,6 +42,8 @@ import {
 import { listServers, listActiveServers } from "@/lib/server-catalog";
 import { APP_CATALOG, APP_OPTIONS } from "@/lib/app-screens";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+
 
 export const Route = createFileRoute("/financeiro")({
   head: () => ({
