@@ -23,6 +23,7 @@ import {
   Store,
   ShieldCheck,
   Network,
+  Database,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -59,6 +60,7 @@ export const ownerNav: NavItem[] = [
   { to: "/admin-dns-rotas", label: "DNS e Rotas", icon: Network, hint: "Super Admin: domínios, subdomínios e rotas dos servidores" },
   { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente" },
   { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Saúde dos dados, segurança, rotas, financeiro e operação local" },
+  { to: "/preparacao-backend", label: "Preparação Backend", icon: Database, hint: "Mapeie dados locais e prepare a futura migração segura para banco de dados" },
 
 ];
 
