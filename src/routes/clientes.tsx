@@ -181,7 +181,8 @@ type Filter =
   | "todos" | "ativo" | "expirado" | "arquivado"
   | "hoje" | "7d" | "vencidos"
   | "app_bob" | "app_xciptv" | "app_ibo"
-  | "acc_mac_key" | "acc_user_pass";
+  | "acc_mac_key" | "acc_user_pass"
+  | "needs_update";
 
 function ClientesPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -260,6 +261,7 @@ function ClientesPage() {
       if (filter === "app_ibo") return screens.some((s) => s.app === "ibo_player" || s.app === "ibo_pro" || s.app === "ibo_mix");
       if (filter === "acc_mac_key") return screens.some((s) => s.access_type === "mac_key");
       if (filter === "acc_user_pass") return screens.some((s) => s.access_type === "user_pass");
+      if (filter === "needs_update") return screens.some((s) => s.needs_server_update && s.status !== "arquivada");
       return true;
     };
 
@@ -311,7 +313,12 @@ function ClientesPage() {
   }, [filtered, allScreens]);
 
   const counts = useMemo(() => {
-    const c = { todos: 0, ativo: 0, expirado: 0, arquivado: 0, hoje: 0, d7: 0, vencidos: 0 };
+    const c = {
+      todos: 0, ativo: 0, expirado: 0, arquivado: 0,
+      hoje: 0, d7: 0, vencidos: 0,
+      app_bob: 0, app_xciptv: 0, app_ibo: 0,
+      acc_mac_key: 0, acc_user_pass: 0, needs_update: 0,
+    };
     if (items) {
       c.todos = items.length;
       for (const it of items) {
@@ -319,12 +326,19 @@ function ClientesPage() {
         if (k === "ativo") c.ativo++;
         else if (k === "expirado") c.expirado++;
         else if (k === "arquivado") c.arquivado++;
-        const d = nextDueDays(it.due_day, allScreens[it.id] ?? []);
+        const screens = allScreens[it.id] ?? [];
+        const d = nextDueDays(it.due_day, screens);
         if (d != null) {
           if (d === 0) c.hoje++;
           if (d >= 0 && d <= 7) c.d7++;
           if (d < 0) c.vencidos++;
         }
+        if (screens.some((s) => s.app === "bob_player" || s.app === "bob_play")) c.app_bob++;
+        if (screens.some((s) => s.app === "xciptv")) c.app_xciptv++;
+        if (screens.some((s) => s.app === "ibo_player" || s.app === "ibo_pro" || s.app === "ibo_mix")) c.app_ibo++;
+        if (screens.some((s) => s.access_type === "mac_key")) c.acc_mac_key++;
+        if (screens.some((s) => s.access_type === "user_pass")) c.acc_user_pass++;
+        if (screens.some((s) => s.needs_server_update && s.status !== "arquivada")) c.needs_update++;
       }
     }
     return c;
@@ -371,11 +385,12 @@ function ClientesPage() {
         <FilterPill active={filter === "ativo"} onClick={() => setFilter("ativo")} label="Ativos" count={counts.ativo} />
         <FilterPill active={filter === "expirado"} onClick={() => setFilter("expirado")} label="Expirados" count={counts.expirado} />
         <FilterPill active={filter === "arquivado"} onClick={() => setFilter("arquivado")} label="Arquivados" count={counts.arquivado} />
-        <FilterPill active={filter === "app_bob"} onClick={() => setFilter("app_bob")} label="Bob Player" count={0} hideCount />
-        <FilterPill active={filter === "app_xciptv"} onClick={() => setFilter("app_xciptv")} label="XCIPTV" count={0} hideCount />
-        <FilterPill active={filter === "app_ibo"} onClick={() => setFilter("app_ibo")} label="IBO" count={0} hideCount />
-        <FilterPill active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={0} hideCount />
-        <FilterPill active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={0} hideCount />
+        <FilterPill active={filter === "needs_update"} onClick={() => setFilter("needs_update")} label="Atualizar servidor" count={counts.needs_update} />
+        <FilterPill active={filter === "app_bob"} onClick={() => setFilter("app_bob")} label="Bob Player" count={counts.app_bob} dim={counts.app_bob === 0} />
+        <FilterPill active={filter === "app_xciptv"} onClick={() => setFilter("app_xciptv")} label="XCIPTV" count={counts.app_xciptv} dim={counts.app_xciptv === 0} />
+        <FilterPill active={filter === "app_ibo"} onClick={() => setFilter("app_ibo")} label="IBO" count={counts.app_ibo} dim={counts.app_ibo === 0} />
+        <FilterPill active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={counts.acc_mac_key} dim={counts.acc_mac_key === 0} />
+        <FilterPill active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={counts.acc_user_pass} dim={counts.acc_user_pass === 0} />
       </div>
 
       {/* Estados */}
@@ -432,12 +447,14 @@ function FilterPill({
   label,
   count,
   hideCount,
+  dim,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   count: number;
   hideCount?: boolean;
+  dim?: boolean;
 }) {
   return (
     <button
@@ -447,7 +464,9 @@ function FilterPill({
         "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
         active
           ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-card text-foreground hover:bg-muted",
+          : dim
+            ? "border-border/60 bg-card/60 text-muted-foreground hover:bg-muted"
+            : "border-border bg-card text-foreground hover:bg-muted",
       )}
     >
       {label}
@@ -479,6 +498,7 @@ function ClientCard({
   const days = nextDueDays(customer.due_day, screens);
   const urg = urgencyFromDays(days);
   const activeScreens = screens.filter((s) => s.status !== "arquivada").slice(0, 4);
+  const needsUpdate = screens.some((s) => s.needs_server_update && s.status !== "arquivada");
 
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-card">
@@ -487,7 +507,7 @@ function ClientCard({
           {initial}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="truncate text-sm font-semibold">{customer.name}</p>
             <span
               className={cn(
@@ -497,6 +517,11 @@ function ClientCard({
             >
               {statusLabel(customer.status)}
             </span>
+            {needsUpdate && (
+              <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
+                Atualizar servidor
+              </span>
+            )}
           </div>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
             {phone ?? "Sem contato cadastrado"}
@@ -813,7 +838,7 @@ function DetailView({
       </TabsList>
 
       <TabsContent value="telas" className="mt-4">
-        <AppScreensSection customerId={customer.id} />
+        <AppScreensSection customerId={customer.id} customerName={customer.name} />
       </TabsContent>
 
       <TabsContent value="dados" className="mt-4 space-y-5">
