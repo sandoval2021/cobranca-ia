@@ -29,6 +29,12 @@ import { StatCard } from "@/components/ui-premium/StatCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLocalAuth } from "@/lib/use-local-auth";
+import {
+  getCompanyForUser,
+  getPlanById,
+  getCompanyStatus,
+  daysUntilDue,
+} from "@/lib/companies";
 
 function OwnerRoleNotice() {
   const { isOwner, user } = useLocalAuth();
