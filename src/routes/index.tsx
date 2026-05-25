@@ -50,6 +50,7 @@ import {
 } from "@/lib/financeiro-local";
 import { getLocalDataHealth, getModuleSummaries } from "@/lib/backup-geral";
 import { getDiagnosticsSummary } from "@/lib/system-diagnostics";
+import { getSetupProgress, getNextRecommendation, SETUP_WIZARD_EVENT } from "@/lib/setup-wizard";
 import { isProtectedModeActive, LOCAL_SECURITY_EVENT } from "@/lib/local-security";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
@@ -343,17 +344,23 @@ function Dashboard() {
   const { counters, health, totalModules } = useDashboardData();
   const [protectedMode, setProtectedMode] = useState(false);
   const [diag, setDiag] = useState(() => getDiagnosticsSummary());
+  const [setup, setSetup] = useState(() => getSetupProgress());
+  const [setupRec, setSetupRec] = useState(() => getNextRecommendation());
 
   useEffect(() => {
     const refresh = () => {
       setProtectedMode(isProtectedModeActive());
       setDiag(getDiagnosticsSummary());
+      setSetup(getSetupProgress());
+      setSetupRec(getNextRecommendation());
     };
     refresh();
     window.addEventListener(LOCAL_SECURITY_EVENT, refresh);
+    window.addEventListener(SETUP_WIZARD_EVENT, refresh);
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(LOCAL_SECURITY_EVENT, refresh);
+      window.removeEventListener(SETUP_WIZARD_EVENT, refresh);
       window.removeEventListener("storage", refresh);
     };
   }, []);
@@ -573,6 +580,46 @@ function Dashboard() {
           <span className="shrink-0 text-xs font-medium text-primary">Abrir</span>
         </Link>
       </div>
+
+      {/* Configuração Inicial */}
+      <div className="mt-4 rounded-2xl border border-border bg-card p-3 shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Configuração inicial
+            </p>
+            <p className="mt-0.5 text-sm font-semibold">
+              {setup.percent}% concluída
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {setup.completed}/{setup.total} passos · {setup.pending} pendente(s)
+            </p>
+          </div>
+          <Link to="/configuracao-inicial" className="shrink-0">
+            <Button size="sm" variant="outline">
+              Abrir Configuração Inicial
+              <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        </div>
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
+          <div
+            className="h-full bg-primary transition-all"
+            style={{ width: `${setup.percent}%` }}
+          />
+        </div>
+        {setupRec && (
+          <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+            <Info className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+            <span>
+              <span className="font-medium text-foreground">Próximo passo:</span>{" "}
+              {setupRec.message}
+            </span>
+          </p>
+        )}
+      </div>
+
+
 
 
       {/* Ações de hoje */}

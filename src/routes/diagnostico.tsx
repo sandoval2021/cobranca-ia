@@ -26,6 +26,7 @@ import {
   type DiagnosticsReport,
 } from "@/lib/system-diagnostics";
 import { LOCAL_SECURITY_EVENT } from "@/lib/local-security";
+import { getSetupProgress, SETUP_WIZARD_EVENT } from "@/lib/setup-wizard";
 
 export const Route = createFileRoute("/diagnostico")({ component: DiagnosticoPage });
 
@@ -65,17 +66,23 @@ function levelLabel(l: DiagnosticLevel) {
 function DiagnosticoPage() {
   const [report, setReport] = useState<DiagnosticsReport | null>(null);
   const [chip, setChip] = useState<ChipKey>("todos");
+  const [setup, setSetup] = useState(() => getSetupProgress());
 
-  const refresh = () => setReport(runSystemDiagnostics());
+  const refresh = () => {
+    setReport(runSystemDiagnostics());
+    setSetup(getSetupProgress());
+  };
 
   useEffect(() => {
     refresh();
     const onChange = () => refresh();
     window.addEventListener("storage", onChange);
     window.addEventListener(LOCAL_SECURITY_EVENT, onChange);
+    window.addEventListener(SETUP_WIZARD_EVENT, onChange);
     return () => {
       window.removeEventListener("storage", onChange);
       window.removeEventListener(LOCAL_SECURITY_EVENT, onChange);
+      window.removeEventListener(SETUP_WIZARD_EVENT, onChange);
     };
   }, []);
 
@@ -182,7 +189,24 @@ function DiagnosticoPage() {
         <Button size="sm" variant="outline" asChild>
           <Link to="/preparacao-backend">Preparar Backend</Link>
         </Button>
+        <Button size="sm" variant="outline" asChild>
+          <Link to="/configuracao-inicial">Ver Configuração Inicial</Link>
+        </Button>
       </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary-soft/40 px-3 py-2 text-xs">
+        <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
+        <span className="flex-1">
+          Configuração inicial:{" "}
+          <span className="font-semibold">{setup.percent}% concluída</span>
+          {setup.pending > 0 ? ` · ${setup.pending} pendente(s)` : ""}
+        </span>
+        <Link to="/configuracao-inicial" className="font-medium text-primary hover:underline">
+          Abrir
+        </Link>
+      </div>
+
+
 
       <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-surface-muted px-3 py-2 text-xs">
         <Info className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
