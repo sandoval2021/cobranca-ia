@@ -92,29 +92,44 @@ function IndicacoesPage() {
   }, [refs, filter, query]);
 
   function handleExport() {
-    const data = exportReferrals();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `indicacoes-cobranca-ia-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    guard({
+      kind: "backup",
+      title: "Exportar indicações",
+      actionLabel: "Exportar",
+      onConfirm: () => {
+        const data = exportReferrals();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `indicacoes-cobranca-ia-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+    });
   }
 
   function handleImport(file: File) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(String(reader.result));
-        const res = importReferrals(parsed, "merge");
-        toast.success(`Importadas ${res.imported} indicações`);
-        reload();
-      } catch {
-        toast.error("Arquivo inválido");
-      }
-    };
-    reader.readAsText(file);
+    guard({
+      kind: "backup",
+      title: "Importar indicações",
+      description: "Os dados serão mesclados com as indicações locais.",
+      actionLabel: "Importar",
+      onConfirm: () => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(String(reader.result));
+            const res = importReferrals(parsed, "merge");
+            toast.success(`Importadas ${res.imported} indicações`);
+            reload();
+          } catch {
+            toast.error("Arquivo inválido");
+          }
+        };
+        reader.readAsText(file);
+      },
+    });
   }
 
   function markPending(r: Referral) {
@@ -122,11 +137,20 @@ function IndicacoesPage() {
     reload();
   }
   function markApplied(id: string) {
-    updateReferral(id, { status: "Bonificação aplicada", bonificacao_aplicada_em: new Date().toISOString() });
-    setApplyForId(null);
-    reload();
-    toast.success("Bonificação marcada como aplicada");
+    guard({
+      kind: "delete",
+      title: "Marcar bonificação como aplicada",
+      description: "Esta alteração é definitiva no histórico local.",
+      actionLabel: "Confirmar",
+      onConfirm: () => {
+        updateReferral(id, { status: "Bonificação aplicada", bonificacao_aplicada_em: new Date().toISOString() });
+        setApplyForId(null);
+        reload();
+        toast.success("Bonificação marcada como aplicada");
+      },
+    });
   }
+
 
   return (
     <PageContainer>
