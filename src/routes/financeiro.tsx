@@ -118,6 +118,7 @@ function FinanceiroPage() {
       />
 
       <CompanyScopeNotice moduleKey="cobranca_ia_finance_entries_v1" />
+      <PlanLimitNotice moduleKey="financeiro" action="usar" />
 
 
       <Card className="p-3 border-dashed bg-muted/30 mb-4 flex items-start gap-2">
