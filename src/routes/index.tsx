@@ -499,6 +499,12 @@ function Dashboard() {
           <ShieldCheck className="h-3 w-3" />
           Modo local/manual: nenhuma mensagem ou pagamento será enviado automaticamente.
         </div>
+        {protectedMode && (
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/90 px-2.5 py-1 text-[11px] font-semibold text-white ml-2">
+            <ShieldCheck className="h-3 w-3" />
+            Modo protegido ativo
+          </div>
+        )}
       </div>
 
       {/* Cards principais */}
