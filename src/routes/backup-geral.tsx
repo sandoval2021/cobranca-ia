@@ -55,6 +55,7 @@ function BackupGeralPage() {
   const [confirmMode, setConfirmMode] = useState<RestoreMode | null>(null);
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [checks, setChecks] = useState<Record<string, boolean>>({});
+  const { guard, dialog: securityDialog } = useSecurityGuard();
 
   const refresh = useCallback(() => {
     setSummaries(getModuleSummaries());
