@@ -351,6 +351,16 @@ function OperacaoDiaPage() {
       xciptv: 0,
       ibo: 0,
       vu: 0,
+      eagle: 0,
+      duplex: 0,
+      setiptv: 0,
+      smartone: 0,
+      // apps pagos
+      paidVenc30: 0,
+      paidVenc7: 0,
+      paidVencido: 0,
+      paidSemVenc: 0,
+      paidSemMacKey: 0,
     };
     for (const p of priorities) {
       if (p.urgency === "hoje") s.hoje++;
@@ -367,6 +377,21 @@ function OperacaoDiaPage() {
         if (a === "xciptv") s.xciptv++;
         if (a === "ibo_player" || a === "ibo_pro" || a === "ibo_mix") s.ibo++;
         if (a === "vu_player") s.vu++;
+        if (a === "eagle_play") s.eagle++;
+        if (a === "duplex_play") s.duplex++;
+        if (a === "set_iptv") s.setiptv++;
+        if (a === "smart_one") s.smartone++;
+        if (isPaidApp(p.screen)) {
+          const d = appDueDays(p.screen);
+          if (d == null) s.paidSemVenc++;
+          else if (d < 0) s.paidVencido++;
+          else if (d <= 7) s.paidVenc7++;
+          if (d != null && d >= 0 && d <= 30) s.paidVenc30++;
+          const at = p.screen.access_type;
+          if ((at === "mac" || at === "mac_key") && (!p.screen.mac || (at === "mac_key" && !p.screen.app_key))) {
+            s.paidSemMacKey++;
+          }
+        }
       }
     }
     return s;
@@ -376,6 +401,9 @@ function OperacaoDiaPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const matchesFilter = (p: Priority): boolean => {
+      const s = p.screen;
+      const paid = s ? isPaidApp(s) : false;
+      const ad = s && paid ? appDueDays(s) : null;
       switch (filter) {
         case "todos": return true;
         case "hoje": return p.urgency === "hoje";
@@ -384,12 +412,25 @@ function OperacaoDiaPage() {
         case "vencidos": return p.urgency === "vencido";
         case "needs_update": return p.needsUpdate;
         case "sem_app": return p.screen == null;
-        case "app_bob": return p.screen?.app === "bob_player" || p.screen?.app === "bob_play";
-        case "app_xciptv": return p.screen?.app === "xciptv";
-        case "app_ibo": return p.screen?.app === "ibo_player" || p.screen?.app === "ibo_pro" || p.screen?.app === "ibo_mix";
-        case "app_vu": return p.screen?.app === "vu_player";
-        case "acc_mac_key": return p.screen?.access_type === "mac_key";
-        case "acc_user_pass": return p.screen?.access_type === "user_pass";
+        case "app_bob": return s?.app === "bob_player" || s?.app === "bob_play";
+        case "app_xciptv": return s?.app === "xciptv";
+        case "app_ibo": return s?.app === "ibo_player" || s?.app === "ibo_pro" || s?.app === "ibo_mix";
+        case "app_vu": return s?.app === "vu_player";
+        case "app_eagle": return s?.app === "eagle_play";
+        case "app_duplex": return s?.app === "duplex_play";
+        case "app_set": return s?.app === "set_iptv";
+        case "app_smartone": return s?.app === "smart_one";
+        case "acc_mac_key": return s?.access_type === "mac_key";
+        case "acc_user_pass": return s?.access_type === "user_pass";
+        case "app_pago_vencendo": return paid && ad != null && ad >= 0 && ad <= 30;
+        case "app_pago_7d": return paid && ad != null && ad >= 0 && ad <= 7;
+        case "app_pago_vencido": return paid && ad != null && ad < 0;
+        case "app_sem_venc": return paid && ad == null;
+        case "app_sem_mackey": {
+          if (!paid || !s) return false;
+          const at = s.access_type;
+          return (at === "mac" || at === "mac_key") && (!s.mac || (at === "mac_key" && !s.app_key));
+        }
       }
     };
     return priorities.filter((p) => {
