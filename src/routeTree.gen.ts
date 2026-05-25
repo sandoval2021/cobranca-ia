@@ -340,8 +340,6 @@ export interface RootRouteChildren {
   RelatorioRoute: typeof RelatorioRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
-  AdminDnsRotasRoute: typeof AdminDnsRotasRoute
-
 }
 
 declare module '@tanstack/react-router' {

@@ -41,7 +41,7 @@ import {
   buildHost, buildServerPublicLink,
   exportDnsRoutes, parseDnsRoutesBackup, importDnsRoutes,
 } from "@/lib/dns-routes";
-import { listServers, getServerById, type ServerEntry } from "@/lib/server-catalog";
+import { listServers, type ServerEntry } from "@/lib/server-catalog";
 
 export const Route = createFileRoute("/admin-dns-rotas")({
   head: () => ({
