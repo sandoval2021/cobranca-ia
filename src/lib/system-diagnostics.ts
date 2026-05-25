@@ -720,6 +720,7 @@ export function runSystemDiagnostics(): DiagnosticsReport {
   checkFinanceiro(alerts);
   checkTestesIndicacoes(alerts);
   checkOperacao(alerts);
+  checkMultiTenant(alerts);
 
   const sec = getLocalSecuritySettings();
   const rev = getRevendaSettings();
