@@ -385,11 +385,12 @@ function ClientesPage() {
         <FilterPill active={filter === "ativo"} onClick={() => setFilter("ativo")} label="Ativos" count={counts.ativo} />
         <FilterPill active={filter === "expirado"} onClick={() => setFilter("expirado")} label="Expirados" count={counts.expirado} />
         <FilterPill active={filter === "arquivado"} onClick={() => setFilter("arquivado")} label="Arquivados" count={counts.arquivado} />
-        <FilterPill active={filter === "app_bob"} onClick={() => setFilter("app_bob")} label="Bob Player" count={0} hideCount />
-        <FilterPill active={filter === "app_xciptv"} onClick={() => setFilter("app_xciptv")} label="XCIPTV" count={0} hideCount />
-        <FilterPill active={filter === "app_ibo"} onClick={() => setFilter("app_ibo")} label="IBO" count={0} hideCount />
-        <FilterPill active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={0} hideCount />
-        <FilterPill active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={0} hideCount />
+        <FilterPill active={filter === "needs_update"} onClick={() => setFilter("needs_update")} label="Atualizar servidor" count={counts.needs_update} />
+        <FilterPill active={filter === "app_bob"} onClick={() => setFilter("app_bob")} label="Bob Player" count={counts.app_bob} dim={counts.app_bob === 0} />
+        <FilterPill active={filter === "app_xciptv"} onClick={() => setFilter("app_xciptv")} label="XCIPTV" count={counts.app_xciptv} dim={counts.app_xciptv === 0} />
+        <FilterPill active={filter === "app_ibo"} onClick={() => setFilter("app_ibo")} label="IBO" count={counts.app_ibo} dim={counts.app_ibo === 0} />
+        <FilterPill active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={counts.acc_mac_key} dim={counts.acc_mac_key === 0} />
+        <FilterPill active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={counts.acc_user_pass} dim={counts.acc_user_pass === 0} />
       </div>
 
       {/* Estados */}
