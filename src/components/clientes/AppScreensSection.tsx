@@ -365,17 +365,25 @@ export function AppScreensSection({
                         {s.port && <FieldRow label="Porta" value={s.port} onCopy={() => copyText(s.port ?? "", "Porta")} />}
                       </FieldGroup>
                     )}
-                    {s.access_type === "mac_key" && (
+                    {(s.access_type === "mac" || s.access_type === "mac_key") && (
                       <FieldGroup>
                         <FieldRow label="MAC" value={s.mac} onCopy={() => copyText(s.mac ?? "", "MAC")} />
-                        <FieldRow
-                          label="Key"
-                          value={revealed[s.id + ":key"] ? s.app_key : mask(s.app_key)}
-                          onCopy={() => copyText(s.app_key ?? "", "Key")}
-                          onToggle={() => setRevealed((r) => ({ ...r, [s.id + ":key"]: !r[s.id + ":key"] }))}
-                          revealed={!!revealed[s.id + ":key"]}
-                          sensitive
-                        />
+                        {s.access_type === "mac_key" && (
+                          <FieldRow
+                            label="Key"
+                            value={revealed[s.id + ":key"] ? s.app_key : mask(s.app_key)}
+                            onCopy={() => copyText(s.app_key ?? "", "Key")}
+                            onToggle={() => setRevealed((r) => ({ ...r, [s.id + ":key"]: !r[s.id + ":key"] }))}
+                            revealed={!!revealed[s.id + ":key"]}
+                            sensitive
+                          />
+                        )}
+                      </FieldGroup>
+                    )}
+                    {s.tier === "pago" && (s.app_due_date || s.app_renewal_value) && (
+                      <FieldGroup>
+                        {s.app_due_date && <FieldRow label="Lic. app" value={new Date(s.app_due_date + "T00:00:00").toLocaleDateString("pt-BR")} />}
+                        {s.app_renewal_value && <FieldRow label="Renov." value={s.app_renewal_value} onCopy={() => copyText(s.app_renewal_value ?? "", "Valor renovação")} />}
                       </FieldGroup>
                     )}
 
