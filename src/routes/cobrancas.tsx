@@ -149,6 +149,15 @@ const parseBRLToCents = (s: string): number | null => {
 };
 
 type ChargeKind = "pendente" | "paga" | "vencida" | "cancelada" | "outro";
+const toChargeRpcStatus = (status: string | null | undefined): string | null => {
+  const v = (status ?? "").trim().toLowerCase();
+  if (!v) return null;
+  if (["pendente", "pending", "open", "created", "new"].includes(v)) return "pendente";
+  if (["paga", "paid", "approved", "success", "confirmed"].includes(v)) return "paga";
+  if (["vencida", "overdue", "expired"].includes(v)) return "vencida";
+  if (["cancelada", "canceled", "cancelled", "cancelado"].includes(v)) return "cancelada";
+  return v;
+};
 const classifyCharge = (s: string | null | undefined): ChargeKind => {
   const v = (s ?? "").toLowerCase();
   if (!v) return "outro";
@@ -179,6 +188,8 @@ function friendlyRpcError(msg: string): string {
   const m = msg.toLowerCase();
   if (m.includes("permission") || m.includes("not allowed") || m.includes("denied") || m.includes("rls"))
     return "Você não tem permissão para esta ação.";
+  if (m.includes("status"))
+    return "Status inválido para cobrança.";
   if (m.includes("amount") || m.includes("valor"))
     return "Informe um valor válido.";
   if (m.includes("due") || m.includes("vencimento") || m.includes("date"))
