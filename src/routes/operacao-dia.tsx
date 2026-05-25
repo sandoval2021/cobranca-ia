@@ -468,7 +468,20 @@ function OperacaoDiaPage() {
         (s.route ?? "").toLowerCase().includes(q)
       );
     });
-  }, [priorities, filter, query]);
+  }, [priorities, filter, serverFilter, query]);
+
+  // Contadores por servidor para a barra de filtros
+  const serverCounts = useMemo(() => {
+    const active = listActiveServers();
+    const out = active.map((s) => ({ id: s.id, name: s.name, color: s.color, count: 0 }));
+    let none = 0;
+    for (const p of priorities) {
+      const sids = p.screen?.server_ids ?? [];
+      if (p.screen && sids.length === 0) none += 1;
+      for (const o of out) if (sids.includes(o.id)) o.count += 1;
+    }
+    return { servers: out, none };
+  }, [priorities, screensVersion]);
 
   const ordered = useMemo(
     () => [...filtered].sort((a, b) => rank(a) - rank(b)),
