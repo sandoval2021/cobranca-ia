@@ -192,6 +192,10 @@ function DiagnosticoPage() {
         <Button size="sm" variant="outline" asChild>
           <Link to="/configuracao-inicial">Ver Configuração Inicial</Link>
         </Button>
+        <Button size="sm" variant="outline" asChild>
+          <Link to="/ajuda">Consultar ajuda</Link>
+        </Button>
+
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary-soft/40 px-3 py-2 text-xs">

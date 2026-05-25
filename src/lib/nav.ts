@@ -25,6 +25,9 @@ import {
   Network,
   Database,
   Wand2,
+  LifeBuoy,
+
+
 
 } from "lucide-react";
 
@@ -64,6 +67,9 @@ export const ownerNav: NavItem[] = [
   { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente" },
   { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Saúde dos dados, segurança, rotas, financeiro e operação local" },
   { to: "/preparacao-backend", label: "Preparação Backend", icon: Database, hint: "Mapeie dados locais e prepare a futura migração segura para banco de dados" },
+  { to: "/ajuda", label: "Ajuda", icon: LifeBuoy, hint: "Aprenda como usar cada parte do sistema" },
+
+
 
 ];
 
