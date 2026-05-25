@@ -400,6 +400,7 @@ function BackupGeralPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </PageContainer>
   );
 }
