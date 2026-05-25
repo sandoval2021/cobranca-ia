@@ -358,7 +358,9 @@ function IndicacoesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </PageContainer>
+
   );
 }
 
