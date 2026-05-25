@@ -48,6 +48,8 @@ import {
   daysUntil,
   formatScreenAsText,
   ROUTE_OPTIONS,
+  isPaidApp,
+  appDueDays,
 } from "@/lib/app-screens";
 
 export const Route = createFileRoute("/pendencias")({
