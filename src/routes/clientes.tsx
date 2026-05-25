@@ -539,6 +539,18 @@ function ClientCard({
                 Atualizar servidor
               </span>
             )}
+            {(() => {
+              const alertsSet = new Set<string>();
+              for (const s of screens) {
+                if (s.status === "arquivada") continue;
+                for (const a of paidAppAlerts(s)) alertsSet.add(a);
+              }
+              return Array.from(alertsSet).slice(0, 4).map((a) => (
+                <span key={a} className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium", paidAlertClass(a as any))}>
+                  {PAID_ALERT_LABEL[a as keyof typeof PAID_ALERT_LABEL]}
+                </span>
+              ));
+            })()}
           </div>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
             {phone ?? "Sem contato cadastrado"}
