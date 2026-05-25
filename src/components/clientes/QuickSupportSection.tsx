@@ -593,7 +593,7 @@ export function QuickSupportSection({
           <MessageSquare className="h-3 w-3" /> Mensagens prontas
         </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {QUICK_MESSAGES.map((m) => (
+          {quickMessages.map((m) => (
             <button
               key={m.key}
               type="button"
