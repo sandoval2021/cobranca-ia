@@ -156,6 +156,11 @@ function IndicacoesPage() {
         </div>
       </Card>
 
+      <div className="mb-3 text-[11px] text-muted-foreground">
+        Mensagens usando dados de Minha Revenda.{" "}
+        <Link to="/configuracoes-revenda" className="underline">Editar Minha Revenda</Link>
+      </div>
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 mb-4">
         <Tile label="Indicações" value={stats.total} />
         <Tile label="Em teste" value={stats.emTeste} />
