@@ -158,6 +158,11 @@ function TestesPage() {
       }
       toast.success("Teste atualizado");
     } else {
+      const decision = canCreateTrialLead();
+      if (!decision.allowed) {
+        toast.error(decision.message ?? "Bloqueado pelo plano");
+        return;
+      }
       const lead = saveTrialLead(input);
       if (lead.indicado_por_nome || lead.indicado_por_whatsapp) {
         saveReferral({
