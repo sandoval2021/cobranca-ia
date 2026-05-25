@@ -16,6 +16,8 @@ import {
   BookOpen,
   SlidersHorizontal,
   Server,
+  Beaker,
+  Gift,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
