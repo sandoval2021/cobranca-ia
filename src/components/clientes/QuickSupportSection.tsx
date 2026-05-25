@@ -60,14 +60,18 @@ type QuickKey =
 type HistoryItem = {
   id: string;
   at: string; // ISO
-  kind: string; // label do tipo
+  kind: string;
   app?: string;
   screen?: string;
   text: string;
+  company_id?: string | null;
 };
 
 const HIST_KEY = "cobranca_ia_quick_support_history_v1";
 const HIST_LIMIT = 12;
+
+import { getActiveCompanyId, recordBelongsToActiveCompany } from "@/lib/company-scope";
+import { getCurrentRole } from "@/lib/local-auth";
 
 function readHistory(): HistoryItem[] {
   if (typeof window === "undefined") return [];
@@ -75,7 +79,12 @@ function readHistory(): HistoryItem[] {
     const raw = window.localStorage.getItem(HIST_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    const role = getCurrentRole();
+    const activeId = getActiveCompanyId();
+    if (role === "super_admin" && !activeId) return parsed;
+    if (!activeId) return [];
+    return parsed.filter((h: HistoryItem) => h.company_id === activeId);
   } catch {
     return [];
   }
@@ -89,9 +98,16 @@ function writeHistory(items: HistoryItem[]) {
   }
 }
 function pushHistory(item: Omit<HistoryItem, "id" | "at">) {
-  const list = readHistory();
+  // ler bruto para não cortar histórico de outras empresas
+  let list: HistoryItem[] = [];
+  try {
+    const raw = window.localStorage.getItem(HIST_KEY);
+    list = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(list)) list = [];
+  } catch { list = []; }
   list.unshift({
     ...item,
+    company_id: item.company_id ?? getActiveCompanyId() ?? null,
     id: `qs_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     at: new Date().toISOString(),
   });
