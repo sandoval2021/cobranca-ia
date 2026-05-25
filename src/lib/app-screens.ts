@@ -420,3 +420,60 @@ export function formatCustomerScreensAsText(
     .map((s) => formatScreenAsText(s, customerName, opts))
     .join("\n\n---\n\n");
 }
+
+// ----- helpers de "app pago" -----
+export function isPaidApp(s: AppScreen): boolean {
+  const tier = s.tier ?? APP_CATALOG[s.app]?.tier ?? "desconhecido";
+  return tier === "pago";
+}
+
+export type PaidAppAlert =
+  | "vencido"
+  | "vence_7d"
+  | "vence_30d"
+  | "sem_vencimento"
+  | "sem_mac_key"
+  | "sem_valor";
+
+export function paidAppAlerts(s: AppScreen): PaidAppAlert[] {
+  if (!isPaidApp(s) || s.status === "arquivada") return [];
+  const out: PaidAppAlert[] = [];
+  const d = appDueDays(s);
+  if (d == null) {
+    out.push("sem_vencimento");
+  } else if (d < 0) {
+    out.push("vencido");
+  } else if (d <= 7) {
+    out.push("vence_7d");
+  } else if (d <= 30) {
+    out.push("vence_30d");
+  }
+  const at = s.access_type;
+  if ((at === "mac" || at === "mac_key") && (!s.mac || (at === "mac_key" && !s.app_key))) {
+    out.push("sem_mac_key");
+  }
+  if (d != null && d <= 30 && !(s.app_renewal_value && s.app_renewal_value.trim())) {
+    out.push("sem_valor");
+  }
+  return out;
+}
+
+export const PAID_ALERT_LABEL: Record<PaidAppAlert, string> = {
+  vencido: "App vencido",
+  vence_7d: "App vence em breve",
+  vence_30d: "App vence em 30 dias",
+  sem_vencimento: "Sem vencimento do app",
+  sem_mac_key: "Sem MAC/Key",
+  sem_valor: "Renovação sem valor",
+};
+
+export function paidAlertClass(a: PaidAppAlert): string {
+  switch (a) {
+    case "vencido": return "bg-red-200 text-red-900 dark:bg-red-900/40 dark:text-red-200 border border-red-500/60";
+    case "vence_7d": return "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300 border border-orange-400/50";
+    case "vence_30d": return "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-400/50";
+    case "sem_vencimento": return "bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-300 border border-slate-400/40";
+    case "sem_mac_key": return "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300 border border-violet-400/50";
+    case "sem_valor": return "bg-muted text-muted-foreground border border-border";
+  }
+}
