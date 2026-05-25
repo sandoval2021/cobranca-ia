@@ -713,6 +713,12 @@ function ScreenSheet({
       route: route || undefined,
       needs_server_update: needsUpdate || undefined,
       notes: notes.trim() || undefined,
+      server_ids: serverIds.length > 0 ? serverIds : undefined,
+      primary_server_id: primaryServerId && serverIds.includes(primaryServerId) ? primaryServerId : undefined,
+      list_server_url: listServerUrl.trim() || undefined,
+      list_username: listUsername.trim() || undefined,
+      list_password: listPassword || undefined,
+      server_notes: serverNotes.trim() || undefined,
       created_at: initial?.created_at ?? now,
       updated_at: now,
     };
