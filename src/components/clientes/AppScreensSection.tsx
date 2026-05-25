@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Pencil, Archive, RotateCcw, Eye, EyeOff, Copy, ExternalLink,
   Tv, Loader2, X, Save, AlertCircle, Download, Upload, Trash2,
-  ServerCog, Share2, ShieldAlert, ChevronDown, ChevronUp,
+  ServerCog, Share2, ShieldAlert, ChevronDown, ChevronUp, Server,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,10 @@ import {
   buildBackup, parseBackup, mergeAll, replaceAll, clearCustomerScreens,
   formatScreenAsText, formatCustomerScreensAsText,
 } from "@/lib/app-screens";
+import {
+  listActiveServers, serverBadgeStyle, SERVER_CATALOG_EVENT,
+} from "@/lib/server-catalog";
+import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
   ativa: "Ativa",
@@ -344,9 +348,17 @@ export function AppScreensSection({
                           Rota: {routeName}
                         </span>
                       )}
+                      {s.server_ids && s.server_ids.length > 0 ? (
+                        s.server_ids.map((sid) => (
+                          <ServerBadge key={sid} serverId={sid} />
+                        ))
+                      ) : (
+                        <SemServidorBadge />
+                      )}
                     </div>
                   </div>
                 </button>
+
 
                 {expanded && (
                   <div className="space-y-3 border-t border-border p-3">
@@ -609,7 +621,21 @@ function ScreenSheet({
   const [route, setRoute] = useState<RouteKind | "">("");
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [notes, setNotes] = useState("");
+  const [serverIds, setServerIds] = useState<string[]>([]);
+  const [primaryServerId, setPrimaryServerId] = useState<string>("");
+  const [listServerUrl, setListServerUrl] = useState("");
+  const [listUsername, setListUsername] = useState("");
+  const [listPassword, setListPassword] = useState("");
+  const [serverNotes, setServerNotes] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const [serverCatalogVersion, setServerCatalogVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setServerCatalogVersion((v) => v + 1);
+    window.addEventListener(SERVER_CATALOG_EVENT, bump);
+    return () => window.removeEventListener(SERVER_CATALOG_EVENT, bump);
+  }, []);
+  const activeServers = useMemo(() => listActiveServers(), [serverCatalogVersion, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -632,6 +658,12 @@ function ScreenSheet({
       setRoute(initial.route ?? "");
       setNeedsUpdate(!!initial.needs_server_update);
       setNotes(initial.notes ?? "");
+      setServerIds(initial.server_ids ?? []);
+      setPrimaryServerId(initial.primary_server_id ?? "");
+      setListServerUrl(initial.list_server_url ?? "");
+      setListUsername(initial.list_username ?? "");
+      setListPassword(initial.list_password ?? "");
+      setServerNotes(initial.server_notes ?? "");
     } else {
       const def = APP_CATALOG.xciptv;
       setName("");
@@ -642,6 +674,8 @@ function ScreenSheet({
       setMac(""); setAppKey(""); setPortalUrl(""); setDueDate("");
       setAppDueDate(""); setAppRenewalValue("");
       setStatus("ativa"); setRoute(""); setNeedsUpdate(false); setNotes("");
+      setServerIds([]); setPrimaryServerId("");
+      setListServerUrl(""); setListUsername(""); setListPassword(""); setServerNotes("");
     }
   }, [open, initial]);
 
@@ -679,6 +713,12 @@ function ScreenSheet({
       route: route || undefined,
       needs_server_update: needsUpdate || undefined,
       notes: notes.trim() || undefined,
+      server_ids: serverIds.length > 0 ? serverIds : undefined,
+      primary_server_id: primaryServerId && serverIds.includes(primaryServerId) ? primaryServerId : undefined,
+      list_server_url: listServerUrl.trim() || undefined,
+      list_username: listUsername.trim() || undefined,
+      list_password: listPassword || undefined,
+      server_notes: serverNotes.trim() || undefined,
       created_at: initial?.created_at ?? now,
       updated_at: now,
     };
@@ -849,6 +889,73 @@ function ScreenSheet({
           <Field label="Observações (opcional)">
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={1000} />
           </Field>
+
+          <div className="space-y-3 rounded-lg border border-border bg-surface p-3">
+            <p className="flex items-center gap-1.5 text-xs font-semibold">
+              <Server className="h-3.5 w-3.5" /> Servidor e painel
+              <HelpTip text="Servidor ou painel onde essa tela/lista está cadastrada." />
+            </p>
+            {activeServers.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground">
+                Nenhum servidor ativo no catálogo. Cadastre em Servidores.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Servidores vinculados (opcional)</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeServers.map((srv) => {
+                    const active = serverIds.includes(srv.id);
+                    return (
+                      <button
+                        key={srv.id}
+                        type="button"
+                        onClick={() => {
+                          setServerIds((ids) =>
+                            active ? ids.filter((x) => x !== srv.id) : [...ids, srv.id],
+                          );
+                          if (active && primaryServerId === srv.id) setPrimaryServerId("");
+                        }}
+                        style={active ? serverBadgeStyle(srv.color) : undefined}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium",
+                          !active && "border-border bg-card text-muted-foreground hover:bg-muted",
+                        )}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: srv.color }} />
+                        {srv.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {serverIds.length > 1 && (
+              <Field label="Servidor principal (opcional)">
+                <select
+                  value={primaryServerId}
+                  onChange={(e) => setPrimaryServerId(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                >
+                  <option value="">— Nenhum —</option>
+                  {activeServers.filter((s) => serverIds.includes(s.id)).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            <Field label="Link da lista/servidor (opcional)" hint="Link usado pelo app/lista do cliente.">
+              <Input value={listServerUrl} onChange={(e) => setListServerUrl(e.target.value)} placeholder="http://..." maxLength={500} />
+            </Field>
+            <Field label="Usuário da lista (opcional)" hint="Usuário usado no app/lista do cliente, se existir.">
+              <Input value={listUsername} onChange={(e) => setListUsername(e.target.value)} maxLength={120} />
+            </Field>
+            <Field label="Senha da lista (opcional)" hint="Senha usada no app/lista do cliente. Fica mascarada por padrão.">
+              <Input type="password" value={listPassword} onChange={(e) => setListPassword(e.target.value)} maxLength={200} />
+            </Field>
+            <Field label="Observações do servidor (opcional)">
+              <Textarea value={serverNotes} onChange={(e) => setServerNotes(e.target.value)} rows={2} maxLength={500} />
+            </Field>
+          </div>
 
           <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-border bg-card px-4 py-3">
             <Button type="button" variant="outline" onClick={onClose} disabled={busy} className="flex-1">

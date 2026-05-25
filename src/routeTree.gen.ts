@@ -22,6 +22,7 @@ import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as CobrancasRouteImport } from './routes/cobrancas'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servidores'
 import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as IndexRouteImport } from './routes/index'
@@ -91,6 +92,11 @@ const ClientesRoute = ClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CatalogoServidoresRoute = CatalogoServidoresRouteImport.update({
+  id: '/catalogo-servidores',
+  path: '/catalogo-servidores',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CampanhasManuaisRoute = CampanhasManuaisRouteImport.update({
   id: '/campanhas-manuais',
   path: '/campanhas-manuais',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
+  '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
+  '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
+  '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/'
     | '/base-conhecimento'
     | '/campanhas-manuais'
+    | '/catalogo-servidores'
     | '/clientes'
     | '/cobrancas'
     | '/configuracoes'
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/'
     | '/base-conhecimento'
     | '/campanhas-manuais'
+    | '/catalogo-servidores'
     | '/clientes'
     | '/cobrancas'
     | '/configuracoes'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/'
     | '/base-conhecimento'
     | '/campanhas-manuais'
+    | '/catalogo-servidores'
     | '/clientes'
     | '/cobrancas'
     | '/configuracoes'
@@ -223,6 +235,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BaseConhecimentoRoute: typeof BaseConhecimentoRoute
   CampanhasManuaisRoute: typeof CampanhasManuaisRoute
+  CatalogoServidoresRoute: typeof CatalogoServidoresRoute
   ClientesRoute: typeof ClientesRoute
   CobrancasRoute: typeof CobrancasRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
@@ -331,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/catalogo-servidores': {
+      id: '/catalogo-servidores'
+      path: '/catalogo-servidores'
+      fullPath: '/catalogo-servidores'
+      preLoaderRoute: typeof CatalogoServidoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/campanhas-manuais': {
       id: '/campanhas-manuais'
       path: '/campanhas-manuais'
@@ -359,6 +379,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BaseConhecimentoRoute: BaseConhecimentoRoute,
   CampanhasManuaisRoute: CampanhasManuaisRoute,
+  CatalogoServidoresRoute: CatalogoServidoresRoute,
   ClientesRoute: ClientesRoute,
   CobrancasRoute: CobrancasRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,

@@ -64,6 +64,8 @@ import {
 } from "@/lib/app-screens";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
+import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { getServerById } from "@/lib/server-catalog";
 import { Tv } from "lucide-react";
 
 export const Route = createFileRoute("/clientes")({ component: ClientesPage });
@@ -304,14 +306,23 @@ function ClientesPage() {
         (c.whatsapp ?? "").toLowerCase().includes(q)
       ) return true;
       // busca dentro das telas
-      return screens.some((s) =>
-        s.name.toLowerCase().includes(q) ||
-        (APP_CATALOG[s.app]?.label.toLowerCase().includes(q) ?? false) ||
-        (s.mac ?? "").toLowerCase().includes(q) ||
-        (s.app_key ?? "").toLowerCase().includes(q) ||
-        (s.username ?? "").toLowerCase().includes(q) ||
-        (s.server ?? "").toLowerCase().includes(q)
-      );
+      return screens.some((s) => {
+        const serverNames = (s.server_ids ?? [])
+          .map((id) => getServerById(id)?.name?.toLowerCase() ?? "")
+          .join(" ");
+        return (
+          s.name.toLowerCase().includes(q) ||
+          (APP_CATALOG[s.app]?.label.toLowerCase().includes(q) ?? false) ||
+          (s.mac ?? "").toLowerCase().includes(q) ||
+          (s.app_key ?? "").toLowerCase().includes(q) ||
+          (s.username ?? "").toLowerCase().includes(q) ||
+          (s.server ?? "").toLowerCase().includes(q) ||
+          serverNames.includes(q) ||
+          (s.list_server_url ?? "").toLowerCase().includes(q) ||
+          (s.list_username ?? "").toLowerCase().includes(q) ||
+          (s.server_notes ?? "").toLowerCase().includes(q)
+        );
+      });
     });
   }, [items, query, filter, allScreens]);
 
@@ -572,22 +583,27 @@ function ClientCard({
             )}
           </div>
           {activeScreens.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
+            <div className="mt-2 space-y-1">
               {activeScreens.map((s) => {
                 const app = APP_CATALOG[s.app];
+                const sids = s.server_ids ?? [];
                 return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onOpen(); }}
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
-                      app.badgeClass,
-                    )}
-                    title={`${s.name} · ${app.label}`}
-                  >
-                    {s.name} · {app.label}
-                  </button>
+                  <div key={s.id} className="flex flex-wrap items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
+                        app.badgeClass,
+                      )}
+                      title={`${s.name} · ${app.label}`}
+                    >
+                      {s.name} · {app.label}
+                    </button>
+                    {sids.length > 0
+                      ? sids.map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
+                      : <SemServidorBadge />}
+                  </div>
                 );
               })}
               {screens.length > activeScreens.length && (
@@ -599,6 +615,7 @@ function ClientCard({
           )}
         </div>
       </div>
+
       <div className="mt-3 flex justify-end">
         <Button size="sm" variant="outline" onClick={onOpen} className="gap-1.5">
           <Eye className="h-3.5 w-3.5" /> Ver detalhes
