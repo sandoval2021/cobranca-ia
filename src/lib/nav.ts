@@ -13,7 +13,7 @@ import {
   CalendarClock,
   Megaphone,
   AlertCircle,
-} from "lucide-react";
+  BookOpen,
 import type { LucideIcon } from "lucide-react";
 
 export type NavItem = {
