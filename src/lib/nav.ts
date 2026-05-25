@@ -21,6 +21,7 @@ import {
   Wallet,
   HardDrive,
   Store,
+  ShieldCheck,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
