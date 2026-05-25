@@ -6,6 +6,14 @@ import { AuthStatus } from "@/components/auth/AuthStatus";
 import { LocalUserBadge } from "@/components/auth/LocalUserBadge";
 import { useLocalAuth } from "@/lib/use-local-auth";
 import { roleLabel } from "@/lib/permissions";
+import { useEffect, useState } from "react";
+import {
+  ROUTE_TO_MODULE,
+  canCompanyUseModule,
+  getCompanyForUser,
+  getCurrentCompany,
+  COMPANIES_EVENT,
+} from "@/lib/companies";
 
 type Props = {
   variant?: "owner" | "admin";
@@ -14,8 +22,26 @@ type Props = {
 
 export function AppSidebar({ variant = "owner", onNavigate }: Props) {
   const baseItems = variant === "admin" ? adminNav : ownerNav;
-  const { role, user } = useLocalAuth();
-  const items = filterNavByRole(baseItems, role);
+  const { role, user, isOwner } = useLocalAuth();
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const r = () => setTick((n) => n + 1);
+    window.addEventListener(COMPANIES_EVENT, r);
+    window.addEventListener("storage", r);
+    return () => {
+      window.removeEventListener(COMPANIES_EVENT, r);
+      window.removeEventListener("storage", r);
+    };
+  }, []);
+  const company = isOwner ? getCompanyForUser(user?.email) : getCurrentCompany();
+  let items = filterNavByRole(baseItems, role);
+  if (isOwner && company) {
+    items = items.filter((item) => {
+      const mod = ROUTE_TO_MODULE[item.to];
+      if (!mod) return true;
+      return canCompanyUseModule(company, mod);
+    });
+  }
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
