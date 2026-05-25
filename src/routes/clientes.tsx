@@ -449,6 +449,47 @@ function ClientesPage() {
         <FilterPill active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={counts.acc_user_pass} dim={counts.acc_user_pass === 0} />
       </div>
 
+      {/* Filtros por servidor */}
+      <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <FilterPill
+          active={serverFilter === "__all__"}
+          onClick={() => setServerFilter("__all__")}
+          label="Todos servidores"
+          count={items?.length ?? 0}
+        />
+        <FilterPill
+          active={serverFilter === "__none__"}
+          onClick={() => setServerFilter("__none__")}
+          label="Sem servidor"
+          count={serverCounts.none}
+          dim={serverCounts.none === 0}
+        />
+        {serverCounts.servers.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setServerFilter(s.id)}
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              serverFilter === s.id
+                ? "border-primary bg-primary text-primary-foreground"
+                : s.count === 0
+                  ? "border-border/60 bg-card/60 text-muted-foreground hover:bg-muted"
+                  : "border-border bg-card text-foreground hover:bg-muted",
+            )}
+            title={`Servidor ${s.name}`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} aria-hidden />
+            {s.name}
+            <span className={cn(
+              "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+              serverFilter === s.id ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground",
+            )}>{s.count}</span>
+          </button>
+        ))}
+      </div>
+
+
       {/* Estados */}
       {!isAuthenticated && !authLoading && (
         <EmptyState icon={Users} title="Entre para ver seus clientes" description="Faça login para gerenciar sua base." />
