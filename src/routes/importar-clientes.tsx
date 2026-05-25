@@ -28,8 +28,11 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
-import { useSupabaseList } from "@/lib/use-supabase";
 import { useAuth } from "@/lib/use-auth";
+import {
+  useCurrentCompany,
+  getImportCustomerDedupAdmin,
+} from "@/lib/rpc-admin";
 
 import { flags } from "@/lib/flags";
 import {
