@@ -453,16 +453,34 @@ function GoalsSection({ goals, settings, onReload }: { goals: FinanceGoal[]; set
                 </div>
               </div>
               <div className="flex flex-col gap-1">
-                <Button size="sm" variant="ghost" onClick={() => { saveFinanceSettings({ default_goal_id: isDefault ? undefined : g.id }); onReload(); }}>
+                <Button size="sm" variant="ghost" onClick={() => guard({
+                  kind: "finance",
+                  title: isDefault ? "Remover objetivo padrão" : "Tornar objetivo padrão",
+                  description: "Isso altera a separação automática da reserva.",
+                  actionLabel: "Confirmar",
+                  onConfirm: () => { saveFinanceSettings({ default_goal_id: isDefault ? undefined : g.id }); onReload(); },
+                })}>
                   {isDefault ? "Remover padrão" : "Tornar padrão"}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { updateFinanceGoal(g.id, { status: g.status === "pausado" ? "ativo" : "pausado" }); onReload(); }}>
+                <Button size="sm" variant="ghost" onClick={() => guard({
+                  kind: "finance",
+                  title: g.status === "pausado" ? "Retomar objetivo" : "Pausar objetivo",
+                  actionLabel: "Confirmar",
+                  onConfirm: () => { updateFinanceGoal(g.id, { status: g.status === "pausado" ? "ativo" : "pausado" }); onReload(); },
+                })}>
                   {g.status === "pausado" ? "Retomar" : "Pausar"}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { if (confirm(`Excluir objetivo "${g.name}"?`)) { deleteFinanceGoal(g.id); onReload(); } }}>
+                <Button size="sm" variant="ghost" onClick={() => guard({
+                  kind: "delete",
+                  title: `Excluir objetivo "${g.name}"?`,
+                  description: "Esta ação não pode ser desfeita.",
+                  actionLabel: "Excluir",
+                  onConfirm: () => { deleteFinanceGoal(g.id); onReload(); toast.success("Objetivo excluído"); },
+                })}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
+
             </div>
           </Card>
         );
