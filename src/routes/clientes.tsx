@@ -313,7 +313,12 @@ function ClientesPage() {
   }, [filtered, allScreens]);
 
   const counts = useMemo(() => {
-    const c = { todos: 0, ativo: 0, expirado: 0, arquivado: 0, hoje: 0, d7: 0, vencidos: 0 };
+    const c = {
+      todos: 0, ativo: 0, expirado: 0, arquivado: 0,
+      hoje: 0, d7: 0, vencidos: 0,
+      app_bob: 0, app_xciptv: 0, app_ibo: 0,
+      acc_mac_key: 0, acc_user_pass: 0, needs_update: 0,
+    };
     if (items) {
       c.todos = items.length;
       for (const it of items) {
@@ -321,12 +326,19 @@ function ClientesPage() {
         if (k === "ativo") c.ativo++;
         else if (k === "expirado") c.expirado++;
         else if (k === "arquivado") c.arquivado++;
-        const d = nextDueDays(it.due_day, allScreens[it.id] ?? []);
+        const screens = allScreens[it.id] ?? [];
+        const d = nextDueDays(it.due_day, screens);
         if (d != null) {
           if (d === 0) c.hoje++;
           if (d >= 0 && d <= 7) c.d7++;
           if (d < 0) c.vencidos++;
         }
+        if (screens.some((s) => s.app === "bob_player" || s.app === "bob_play")) c.app_bob++;
+        if (screens.some((s) => s.app === "xciptv")) c.app_xciptv++;
+        if (screens.some((s) => s.app === "ibo_player" || s.app === "ibo_pro" || s.app === "ibo_mix")) c.app_ibo++;
+        if (screens.some((s) => s.access_type === "mac_key")) c.acc_mac_key++;
+        if (screens.some((s) => s.access_type === "user_pass")) c.acc_user_pass++;
+        if (screens.some((s) => s.needs_server_update && s.status !== "arquivada")) c.needs_update++;
       }
     }
     return c;
