@@ -249,24 +249,69 @@ function ClientesPage() {
 
   const reload = () => setReloadBump((n) => n + 1);
 
+  const allScreens = useMemo(() => listAllScreens(), [items, screensVersion]);
+
   const filtered = useMemo(() => {
     if (!items) return [];
     const q = query.trim().toLowerCase();
+    const matchesAppFilter = (screens: AppScreen[]): boolean => {
+      if (filter === "app_bob") return screens.some((s) => s.app === "bob_player" || s.app === "bob_play");
+      if (filter === "app_xciptv") return screens.some((s) => s.app === "xciptv");
+      if (filter === "app_ibo") return screens.some((s) => s.app === "ibo_player" || s.app === "ibo_pro" || s.app === "ibo_mix");
+      if (filter === "acc_mac_key") return screens.some((s) => s.access_type === "mac_key");
+      if (filter === "acc_user_pass") return screens.some((s) => s.access_type === "user_pass");
+      return true;
+    };
+
     return items.filter((c) => {
       const kind = classifyStatus(c.status);
-      if (filter !== "todos" && kind !== filter) return false;
+      const screens = allScreens[c.id] ?? [];
+      if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
+        if (kind !== filter) return false;
+      } else if (filter === "hoje" || filter === "7d" || filter === "vencidos") {
+        const d = nextDueDays(c.due_day, screens);
+        if (d == null) return false;
+        if (filter === "hoje" && d !== 0) return false;
+        if (filter === "7d" && (d < 0 || d > 7)) return false;
+        if (filter === "vencidos" && d >= 0) return false;
+      } else if (filter !== "todos") {
+        if (!matchesAppFilter(screens)) return false;
+      }
       if (!q) return true;
       const phone = onlyDigits(c.whatsapp ?? "");
-      return (
+      if (
         c.name.toLowerCase().includes(q) ||
         phone.includes(onlyDigits(q)) ||
         (c.whatsapp ?? "").toLowerCase().includes(q)
+      ) return true;
+      // busca dentro das telas
+      return screens.some((s) =>
+        s.name.toLowerCase().includes(q) ||
+        (APP_CATALOG[s.app]?.label.toLowerCase().includes(q) ?? false) ||
+        (s.mac ?? "").toLowerCase().includes(q) ||
+        (s.app_key ?? "").toLowerCase().includes(q) ||
+        (s.username ?? "").toLowerCase().includes(q) ||
+        (s.server ?? "").toLowerCase().includes(q)
       );
     });
-  }, [items, query, filter]);
+  }, [items, query, filter, allScreens]);
+
+  // Ordenação por vencimento mais próximo; vencidos vão pro fim
+  const ordered = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const da = nextDueDays(a.due_day, allScreens[a.id] ?? []);
+      const db = nextDueDays(b.due_day, allScreens[b.id] ?? []);
+      const rank = (d: number | null) => {
+        if (d == null) return 500;
+        if (d < 0) return 1000 + Math.abs(d); // vencidos no fim
+        return d; // 0,1,2,... primeiros
+      };
+      return rank(da) - rank(db);
+    });
+  }, [filtered, allScreens]);
 
   const counts = useMemo(() => {
-    const c = { todos: 0, ativo: 0, expirado: 0, arquivado: 0 };
+    const c = { todos: 0, ativo: 0, expirado: 0, arquivado: 0, hoje: 0, d7: 0, vencidos: 0 };
     if (items) {
       c.todos = items.length;
       for (const it of items) {
@@ -274,10 +319,16 @@ function ClientesPage() {
         if (k === "ativo") c.ativo++;
         else if (k === "expirado") c.expirado++;
         else if (k === "arquivado") c.arquivado++;
+        const d = nextDueDays(it.due_day, allScreens[it.id] ?? []);
+        if (d != null) {
+          if (d === 0) c.hoje++;
+          if (d >= 0 && d <= 7) c.d7++;
+          if (d < 0) c.vencidos++;
+        }
       }
     }
     return c;
-  }, [items]);
+  }, [items, allScreens]);
 
   const opened = openId ? items?.find((c) => c.id === openId) ?? null : null;
 
