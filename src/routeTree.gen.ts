@@ -30,6 +30,7 @@ import { Route as ConfiguracaoInicialRouteImport } from './routes/configuracao-i
 import { Route as CobrancasRouteImport } from './routes/cobrancas'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servidores'
+import { Route as ConfiguracaoInicialRouteImport } from './routes/configuracao-inicial'
 import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
