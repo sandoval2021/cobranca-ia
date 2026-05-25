@@ -585,14 +585,15 @@ function checkTestesIndicacoes(alerts: DiagnosticAlert[]) {
   let testesVencidos = 0;
   let quentesSemAcao = 0;
   for (const l of leads) {
-    if (l.status !== "em_teste" && l.status !== "novo") continue;
-    const fim = (l as any).data_fim as string | undefined;
+    const ativo = l.status === "Em teste" || l.status === "Teste enviado" || l.status === "Aguardando resposta" || l.status === "Novo contato";
+    if (!ativo) continue;
+    const fim = l.data_fim;
     if (fim && fim.slice(0, 10) < hoje) {
       const fs = listFollowUps(l.id);
       if (!fs.some((f) => f.status === "Resolvido" || f.status === "Copiado"))
         testesVencidos++;
     }
-    if ((l as any).interesse === "Quente" && !(l as any).proxima_acao) quentesSemAcao++;
+    if (l.interesse === "Quente" && !l.proxima_acao) quentesSemAcao++;
   }
   if (testesVencidos)
     alerts.push({
