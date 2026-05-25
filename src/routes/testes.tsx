@@ -195,43 +195,76 @@ function TestesPage() {
   }
 
   function handleLost(lead: TrialLead) {
-    markTrialLeadLost(lead.id);
-    updateReferralByLead(lead.id, { status: "Não fechou" });
-    reload();
-    toast.success("Marcado como Não fechou");
+    guard({
+      kind: "delete",
+      title: "Marcar como Não fechou?",
+      description: "Esta alteração é definitiva neste lead.",
+      actionLabel: "Confirmar",
+      onConfirm: () => {
+        markTrialLeadLost(lead.id);
+        updateReferralByLead(lead.id, { status: "Não fechou" });
+        reload();
+        toast.success("Marcado como Não fechou");
+      },
+    });
   }
 
   function handleArchive(lead: TrialLead) {
-    archiveTrialLead(lead.id);
-    reload();
-    toast.success("Teste arquivado");
+    guard({
+      kind: "delete",
+      title: "Arquivar teste?",
+      description: "O teste será removido da lista ativa.",
+      actionLabel: "Arquivar",
+      onConfirm: () => {
+        archiveTrialLead(lead.id);
+        reload();
+        toast.success("Teste arquivado");
+      },
+    });
   }
 
   function handleExport() {
-    const data = exportTrialLeads();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `testes-cobranca-ia-${todayIso()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    guard({
+      kind: "backup",
+      title: "Exportar testes",
+      description: "Será gerado um arquivo JSON com os testes locais.",
+      actionLabel: "Exportar",
+      onConfirm: () => {
+        const data = exportTrialLeads();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `testes-cobranca-ia-${todayIso()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+    });
   }
 
   function handleImport(file: File) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(String(reader.result));
-        const res = importTrialLeads(parsed, "merge");
-        toast.success(`Importados ${res.imported} testes`);
-        reload();
-      } catch (e) {
-        toast.error("Arquivo inválido");
-      }
-    };
-    reader.readAsText(file);
+    guard({
+      kind: "backup",
+      title: "Importar testes",
+      description: "Os dados do arquivo serão mesclados com os testes locais.",
+      actionLabel: "Importar",
+      onConfirm: () => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(String(reader.result));
+            const res = importTrialLeads(parsed, "merge");
+            toast.success(`Importados ${res.imported} testes`);
+            reload();
+          } catch {
+            toast.error("Arquivo inválido");
+          }
+        };
+        reader.readAsText(file);
+      },
+    });
   }
+
 
   return (
     <PageContainer>
