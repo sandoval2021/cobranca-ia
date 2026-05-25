@@ -341,7 +341,12 @@ function ServerCard({
             size="sm"
             variant="outline"
             className="gap-1.5 text-danger hover:text-danger"
-            onClick={() => { archiveServer(server.id); toast.success("Servidor inativado"); }}
+            onClick={() => guard({
+              kind: "delete",
+              title: `Inativar servidor ${server.name}`,
+              actionLabel: "Inativar",
+              onConfirm: () => { archiveServer(server.id); toast.success("Servidor inativado"); },
+            })}
           >
             <Archive className="h-3.5 w-3.5" /> Inativar
           </Button>
