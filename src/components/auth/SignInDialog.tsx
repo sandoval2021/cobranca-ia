@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { friendlyAuthError } from "@/lib/use-auth";
+import { AUTH_REFRESH_EVENT, friendlyAuthError } from "@/lib/use-auth";
 
 export function SignInDialog({
   open,
@@ -35,18 +35,24 @@ export function SignInDialog({
     }
     setError(null);
     setSubmitting(true);
-    const { error: err } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setSubmitting(false);
-    if (err) {
-      setError(friendlyAuthError(err.message));
-      return;
+    try {
+      const { error: err } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (err) {
+        setError(friendlyAuthError(err.message));
+        return;
+      }
+      window.dispatchEvent(new Event(AUTH_REFRESH_EVENT));
+      toast.success("Bem-vindo!");
+      setPassword("");
+      onOpenChange(false);
+    } catch {
+      setError("Falha de conexão. Tente novamente.");
+    } finally {
+      setSubmitting(false);
     }
-    toast.success("Bem-vindo!");
-    setPassword("");
-    onOpenChange(false);
   }
 
   return (
