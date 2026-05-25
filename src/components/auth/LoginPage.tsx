@@ -10,7 +10,10 @@ import { friendlyAuthError } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 
 const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
-const hasKey = Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY);
+const hasKey = Boolean(
+  import.meta.env.VITE_SUPABASE_ANON_KEY ??
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+);
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
