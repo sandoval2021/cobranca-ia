@@ -583,22 +583,27 @@ function ClientCard({
             )}
           </div>
           {activeScreens.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
+            <div className="mt-2 space-y-1">
               {activeScreens.map((s) => {
                 const app = APP_CATALOG[s.app];
+                const sids = s.server_ids ?? [];
                 return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onOpen(); }}
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
-                      app.badgeClass,
-                    )}
-                    title={`${s.name} · ${app.label}`}
-                  >
-                    {s.name} · {app.label}
-                  </button>
+                  <div key={s.id} className="flex flex-wrap items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
+                        app.badgeClass,
+                      )}
+                      title={`${s.name} · ${app.label}`}
+                    >
+                      {s.name} · {app.label}
+                    </button>
+                    {sids.length > 0
+                      ? sids.map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
+                      : <SemServidorBadge />}
+                  </div>
                 );
               })}
               {screens.length > activeScreens.length && (
@@ -610,6 +615,7 @@ function ClientCard({
           )}
         </div>
       </div>
+
       <div className="mt-3 flex justify-end">
         <Button size="sm" variant="outline" onClick={onOpen} className="gap-1.5">
           <Eye className="h-3.5 w-3.5" /> Ver detalhes
