@@ -440,6 +440,14 @@ function OperacaoDiaPage() {
     };
     return priorities.filter((p) => {
       if (!matchesFilter(p)) return false;
+      if (serverFilter !== "__all__") {
+        if (serverFilter === "__none__") {
+          if (p.screen && (p.screen.server_ids ?? []).length > 0) return false;
+        } else {
+          if (!p.screen) return false;
+          if (!(p.screen.server_ids ?? []).includes(serverFilter)) return false;
+        }
+      }
       if (!q) return true;
       const c = p.customer;
       const phone = onlyDigits(c.whatsapp ?? "");
