@@ -580,20 +580,15 @@ function CampanhasManuaisPage() {
       hoje: 0, "3d": 0, "7d": 0, vencidos: 0, needs_update: 0, sem_app: 0,
       app_bob: 0, app_xciptv: 0, app_ibo: 0, app_vu: 0,
       acc_mac_key: 0, acc_user_pass: 0,
+      app_pago_vencendo: 0, app_pago_vencido: 0, app_pago_7d: 0,
+      app_sem_venc: 0, app_sem_mackey: 0,
     };
+    const keys = Object.keys(c) as Audience[];
     for (const p of publicAll) {
-      if (p.urgency === "hoje") c.hoje++;
-      if (p.urgency === "hoje" || p.urgency === "3d") c["3d"]++;
-      if (p.urgency === "hoje" || p.urgency === "3d" || p.urgency === "7d") c["7d"]++;
-      if (p.urgency === "vencido") c.vencidos++;
-      if (p.needsUpdate) c.needs_update++;
-      if (!p.screen) c.sem_app++;
-      if (p.screen?.app === "bob_player" || p.screen?.app === "bob_play") c.app_bob++;
-      if (p.screen?.app === "xciptv") c.app_xciptv++;
-      if (p.screen?.app === "ibo_player" || p.screen?.app === "ibo_pro" || p.screen?.app === "ibo_mix") c.app_ibo++;
-      if (p.screen?.app === "vu_player") c.app_vu++;
-      if (p.screen?.access_type === "mac_key") c.acc_mac_key++;
-      if (p.screen?.access_type === "user_pass") c.acc_user_pass++;
+      for (const k of keys) {
+        if (k === "todos") continue;
+        if (matchesAudience(p, k)) c[k] += 1;
+      }
     }
     return c;
   }, [publicAll]);
