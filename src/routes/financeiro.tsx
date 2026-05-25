@@ -8,6 +8,7 @@ import {
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
+import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
