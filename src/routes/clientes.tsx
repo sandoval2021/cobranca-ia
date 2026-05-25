@@ -62,6 +62,7 @@ import {
   nextDueDays, urgencyFromDays, urgencyClass, urgencyLabel,
 } from "@/lib/app-screens";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
+import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { Tv } from "lucide-react";
 
 export const Route = createFileRoute("/clientes")({ component: ClientesPage });
