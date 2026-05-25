@@ -233,7 +233,7 @@ function TestesPage() {
       <SectionHeader
         title="Testes"
         subtitle="Acompanhe pessoas que pediram teste e ainda não viraram clientes."
-        actions={
+        action={
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => { setEditing(null); setOpenNew(true); }} className="gap-2">
               <Plus className="h-4 w-4" /> Novo teste

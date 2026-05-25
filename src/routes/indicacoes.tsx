@@ -128,7 +128,7 @@ function IndicacoesPage() {
       <SectionHeader
         title="Indicações"
         subtitle="Acompanhe clientes que indicaram pessoas e controle bonificações."
-        actions={
+        action={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRulesOpen(true)} className="gap-2">
               <Settings2 className="h-4 w-4" /> Regras de bonificação
