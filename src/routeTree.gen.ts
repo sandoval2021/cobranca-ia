@@ -24,7 +24,6 @@ import { Route as CobrancasRouteImport } from './routes/cobrancas'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servidores'
 import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
-import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servidores'
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as IndexRouteImport } from './routes/index'
 
