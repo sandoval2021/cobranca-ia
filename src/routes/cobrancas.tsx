@@ -1198,6 +1198,7 @@ function CreateChargeDialog({
                 <SelectItem value="paga">Paga</SelectItem>
                 <SelectItem value="vencida">Vencida</SelectItem>
                 <SelectItem value="cancelada">Cancelada</SelectItem>
+                <SelectItem value="falhou">Falhou</SelectItem>
               </SelectContent>
             </Select>
           </div>
