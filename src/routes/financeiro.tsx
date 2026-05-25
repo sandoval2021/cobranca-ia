@@ -63,6 +63,7 @@ function FinanceiroPage() {
   const [typeFilter, setTypeFilter] = useState<EntryType | "todos">("todos");
   const [entryDraft, setEntryDraft] = useState<FinanceDraft | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
 
   const reload = useCallback(() => {
     setEntries(listFinanceEntries());
