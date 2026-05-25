@@ -34,11 +34,6 @@ const TestesRoute = TestesRouteImport.update({
   path: '/testes',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndicacoesRoute = IndicacoesRouteImport.update({
-  id: '/indicacoes',
-  path: '/indicacoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const RelatorioRoute = RelatorioRouteImport.update({
   id: '/relatorio',
   path: '/relatorio',
