@@ -458,14 +458,15 @@ function checkBackup(alerts: DiagnosticAlert[]): string | null {
       });
   }
   const health = getLocalDataHealth();
-  if (health.status === "danger")
+  const firstMsg = health.issues[0]?.message;
+  if (health.status === "review")
     alerts.push({
-      id: "backup-health-danger",
+      id: "backup-health-review",
       area: "backup",
       level: "critico",
-      title: "Saúde dos dados locais: crítica",
-      description: health.message || "Vários módulos sem dados.",
-      action: "Revise os módulos vazios antes de continuar.",
+      title: "Saúde dos dados locais: revisar",
+      description: firstMsg || "Há módulos com formato inesperado.",
+      action: "Revise os módulos antes de continuar.",
       to: "/backup-geral",
       ctaLabel: "Abrir Backup Geral",
     });
@@ -475,7 +476,7 @@ function checkBackup(alerts: DiagnosticAlert[]): string | null {
       area: "backup",
       level: "atencao",
       title: "Saúde dos dados locais: atenção",
-      description: health.message || "Alguns módulos sem dados.",
+      description: firstMsg || "Alguns módulos sem dados.",
       action: "Confira os módulos no Backup Geral.",
       to: "/backup-geral",
       ctaLabel: "Abrir Backup Geral",
