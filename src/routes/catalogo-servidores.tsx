@@ -27,6 +27,7 @@ import {
   newServerId, serverBadgeStyle, maskSecret, formatServerAsText,
   SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 
 export const Route = createFileRoute("/catalogo-servidores")({
   component: CatalogoServidoresPage,
