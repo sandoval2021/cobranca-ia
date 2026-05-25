@@ -219,16 +219,19 @@ export const REF_TEMPLATES = {
     "Olá {indicador}, tudo bem? 😊\n\nA pessoa que você indicou já está em teste.\nAssim que ela fechar, eu te aviso por aqui.",
 };
 
+import { applyRevendaVariables } from "./revenda-settings";
+
 export function renderReferralMessage(
   type: keyof typeof REF_TEMPLATES,
   data: { indicador: string; fechadas: number; faltam: number; meta: number; bonificacao: string },
 ) {
-  return REF_TEMPLATES[type]
+  const base = REF_TEMPLATES[type]
     .replaceAll("{indicador}", data.indicador || "tudo bem")
     .replaceAll("{fechadas}", String(data.fechadas))
     .replaceAll("{faltam}", String(data.faltam))
     .replaceAll("{meta}", String(data.meta))
     .replaceAll("{bonificacao}", data.bonificacao);
+  return applyRevendaVariables(base);
 }
 
 export function bonusDescription(rules: ReferralRules) {
