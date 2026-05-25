@@ -519,6 +519,10 @@ function Dashboard() {
         )}
       </div>
 
+      <OwnerRoleNotice />
+
+
+
       {/* Cards principais */}
       <SectionHeader
         title="Resumo geral"
