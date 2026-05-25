@@ -33,19 +33,10 @@ import { useLocalAuth } from "@/lib/use-local-auth";
 function OwnerRoleNotice() {
   const { isOwner, user } = useLocalAuth();
   if (!isOwner) return null;
-  // lazy import-safe
-  const company = require("@/lib/companies").getCompanyForUser(user?.email) as
-    | import("@/lib/companies").Company
-    | null;
-  const plan = company
-    ? (require("@/lib/companies").getPlanById(company.plano_id) as
-        | import("@/lib/companies").CompanyPlan
-        | null)
-    : null;
-  const status = company
-    ? (require("@/lib/companies").getCompanyStatus(company) as string)
-    : "sem_empresa";
-  const days = company ? (require("@/lib/companies").daysUntilDue(company) as number | null) : null;
+  const company = getCompanyForUser(user?.email);
+  const plan = company ? getPlanById(company.plano_id) : null;
+  const status = company ? getCompanyStatus(company) : "sem_empresa";
+  const days = company ? daysUntilDue(company) : null;
   return (
     <div className="mb-4 space-y-2">
       <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
