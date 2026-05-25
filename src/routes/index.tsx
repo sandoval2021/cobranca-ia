@@ -29,13 +29,51 @@ import { StatCard } from "@/components/ui-premium/StatCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLocalAuth } from "@/lib/use-local-auth";
+import {
+  getCompanyForUser,
+  getPlanById,
+  getCompanyStatus,
+  daysUntilDue,
+} from "@/lib/companies";
 
 function OwnerRoleNotice() {
-  const { isOwner } = useLocalAuth();
+  const { isOwner, user } = useLocalAuth();
   if (!isOwner) return null;
+  const company = getCompanyForUser(user?.email);
+  const plan = company ? getPlanById(company.plano_id) : null;
+  const status = company ? getCompanyStatus(company) : "sem_empresa";
+  const days = company ? daysUntilDue(company) : null;
   return (
-    <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
-      Painel do Dono: algumas áreas administrativas (DNS, Preparação Backend, Diagnóstico avançado, Segurança global) foram ocultadas.
+    <div className="mb-4 space-y-2">
+      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
+        Painel do Dono: algumas áreas administrativas foram ocultadas conforme seu plano.
+      </div>
+      {company ? (
+        <div className="rounded-xl border bg-card p-3 text-sm shadow-sm">
+          <p className="font-semibold">{company.nome}</p>
+          <p className="text-xs text-muted-foreground">
+            Plano: {plan?.nome ?? "—"} · Status: {status}
+            {company.data_vencimento ? ` · Vence em ${company.data_vencimento}` : ""}
+          </p>
+          {plan && (
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Módulos liberados: {plan.modulos.length}
+            </p>
+          )}
+          {days != null && days >= 0 && days <= 7 && (
+            <p className="mt-1 rounded bg-amber-100 px-2 py-1 text-[11px] text-amber-900">
+              Seu painel vence em {days} dia(s). Fale com o suporte para renovar.
+            </p>
+          )}
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            Dados locais atuais ainda não estão isolados por empresa. Isolamento real será feito no backend.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          Sua conta ainda não está vinculada a uma empresa. Peça ao admin para vincular seu e-mail.
+        </div>
+      )}
     </div>
   );
 }
