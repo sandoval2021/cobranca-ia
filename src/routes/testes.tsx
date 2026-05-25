@@ -77,6 +77,8 @@ function TestesPage() {
   const [query, setQuery] = useState("");
   const [msgLead, setMsgLead] = useState<TrialLead | null>(null);
   const [convertLead, setConvertLead] = useState<TrialLead | null>(null);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
+
 
   const reload = () => {
     setLeads(listTrialLeads());
