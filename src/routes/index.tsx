@@ -344,17 +344,23 @@ function Dashboard() {
   const { counters, health, totalModules } = useDashboardData();
   const [protectedMode, setProtectedMode] = useState(false);
   const [diag, setDiag] = useState(() => getDiagnosticsSummary());
+  const [setup, setSetup] = useState(() => getSetupProgress());
+  const [setupRec, setSetupRec] = useState(() => getNextRecommendation());
 
   useEffect(() => {
     const refresh = () => {
       setProtectedMode(isProtectedModeActive());
       setDiag(getDiagnosticsSummary());
+      setSetup(getSetupProgress());
+      setSetupRec(getNextRecommendation());
     };
     refresh();
     window.addEventListener(LOCAL_SECURITY_EVENT, refresh);
+    window.addEventListener(SETUP_WIZARD_EVENT, refresh);
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(LOCAL_SECURITY_EVENT, refresh);
+      window.removeEventListener(SETUP_WIZARD_EVENT, refresh);
       window.removeEventListener("storage", refresh);
     };
   }, []);
