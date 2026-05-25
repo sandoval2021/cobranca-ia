@@ -478,7 +478,9 @@ function TestesPage() {
         reload();
         setConvertLead(null);
       }} />
+      {securityDialog}
     </PageContainer>
+
   );
 }
 
