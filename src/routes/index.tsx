@@ -28,6 +28,17 @@ import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { StatCard } from "@/components/ui-premium/StatCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLocalAuth } from "@/lib/use-local-auth";
+
+function OwnerRoleNotice() {
+  const { isOwner } = useLocalAuth();
+  if (!isOwner) return null;
+  return (
+    <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
+      Painel do Dono: algumas áreas administrativas (DNS, Preparação Backend, Diagnóstico avançado, Segurança global) foram ocultadas.
+    </div>
+  );
+}
 
 import {
   listAllScreens,
@@ -518,6 +529,10 @@ function Dashboard() {
           </div>
         )}
       </div>
+
+      <OwnerRoleNotice />
+
+
 
       {/* Cards principais */}
       <SectionHeader

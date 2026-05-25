@@ -1,8 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ownerNav, adminNav } from "@/lib/nav";
+import { ownerNav, adminNav, filterNavByRole } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { Sparkles, ShieldCheck } from "lucide-react";
 import { AuthStatus } from "@/components/auth/AuthStatus";
+import { LocalUserBadge } from "@/components/auth/LocalUserBadge";
+import { useLocalAuth } from "@/lib/use-local-auth";
+import { roleLabel } from "@/lib/permissions";
 
 type Props = {
   variant?: "owner" | "admin";
@@ -10,14 +13,16 @@ type Props = {
 };
 
 export function AppSidebar({ variant = "owner", onNavigate }: Props) {
-  const items = variant === "admin" ? adminNav : ownerNav;
+  const baseItems = variant === "admin" ? adminNav : ownerNav;
+  const { role, user } = useLocalAuth();
+  const items = filterNavByRole(baseItems, role);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
     <aside className="flex h-full w-[var(--sidebar-width)] flex-col border-r border-border bg-surface">
       <div className="flex h-[var(--header-height)] items-center gap-2 border-b border-border px-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-          {variant === "admin" ? (
+          {role === "super_admin" ? (
             <ShieldCheck className="h-4 w-4" />
           ) : (
             <Sparkles className="h-4 w-4" />
@@ -25,10 +30,10 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold tracking-tight">
-            {variant === "admin" ? "Painel Admin" : "Meu Painel"}
+            {role === "super_admin" ? "Painel Admin" : "Meu Painel"}
           </p>
           <p className="truncate text-xs text-muted-foreground">
-            {variant === "admin" ? "Operação" : "Plano Pro"}
+            {user ? roleLabel(role) : "Sem sessão local"}
           </p>
         </div>
       </div>
@@ -62,7 +67,12 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
         </ul>
       </nav>
 
-      <div className="border-t border-border p-3">
+      <div className="space-y-2 border-t border-border p-3">
+        {user && (
+          <div className="rounded-lg bg-surface-muted p-2">
+            <LocalUserBadge />
+          </div>
+        )}
         <div className="rounded-lg bg-surface-muted p-2">
           <AuthStatus />
         </div>

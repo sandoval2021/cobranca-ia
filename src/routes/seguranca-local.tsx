@@ -20,6 +20,7 @@ import {
   setupPin, changePin, disablePinProtection,
   isUnlocked, lockNow, unlockWithPin,
 } from "@/lib/local-security";
+import { LocalRoleSwitcher } from "@/components/auth/LocalRoleSwitcher";
 
 export const Route = createFileRoute("/seguranca-local")({
   head: () => ({
@@ -111,6 +112,12 @@ function SegurancaLocalPage() {
         title="Segurança"
         subtitle="Proteja dados sensíveis deste navegador com PIN e modo protegido."
       />
+
+      <div className="mb-4">
+        <LocalRoleSwitcher />
+      </div>
+
+
 
       <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 text-sm flex gap-2 mb-4">
         <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-600 shrink-0" />
