@@ -315,11 +315,17 @@ Cadastre esses dados no portal do app. Qualquer dúvida me chama.`
 
 function genForaHorario(i: GenInput): string {
   const { customerName } = i;
+  const rev = getRevendaSettings();
+  const custom = rev.atendimento.texto_fora_horario?.trim();
+  if (custom) {
+    return `Olá ${customerName}! 😊\n${applyRevendaVariables(custom)}`;
+  }
+  const horario = rev.atendimento.horario_semana?.trim() || "segunda a sábado, das 09h às 21h";
   return (
 `Olá ${customerName}! 😊
 No momento estamos fora do horário de atendimento.
 
-🕘 Atendimento: segunda a sábado, das 09h às 21h.
+🕘 Atendimento: ${horario}.
 
 Sua mensagem foi registrada e respondo assim que possível. Obrigado pela compreensão!`
   );
