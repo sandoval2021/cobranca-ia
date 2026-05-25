@@ -395,7 +395,7 @@ function ClientesPage() {
         <EmptyState icon={Users} title="Não foi possível carregar" description={errorMsg} />
       )}
 
-      {isAuthenticated && !loading && !errorMsg && filtered.length === 0 && (
+      {isAuthenticated && !loading && !errorMsg && ordered.length === 0 && (
         <EmptyState
           icon={Users}
           title="Nenhum cliente encontrado"
@@ -403,10 +403,15 @@ function ClientesPage() {
         />
       )}
 
-      {isAuthenticated && !loading && !errorMsg && filtered.length > 0 && (
+      {isAuthenticated && !loading && !errorMsg && ordered.length > 0 && (
         <div className="space-y-2">
-          {filtered.map((c) => (
-            <ClientCard key={c.id} customer={c} onOpen={() => setOpenId(c.id)} />
+          {ordered.map((c) => (
+            <ClientCard
+              key={c.id}
+              customer={c}
+              screens={allScreens[c.id] ?? []}
+              onOpen={() => setOpenId(c.id)}
+            />
           ))}
         </div>
       )}
