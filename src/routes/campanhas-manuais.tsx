@@ -622,6 +622,14 @@ function CampanhasManuaisPage() {
     const q = query.trim().toLowerCase();
     return publicAll.filter((p) => {
       if (!matchesAudience(p, audience)) return false;
+      if (serverFilter !== "__all__") {
+        const sids = p.screen?.server_ids ?? [];
+        if (serverFilter === "__none__") {
+          if (p.screen && sids.length > 0) return false;
+        } else {
+          if (!p.screen || !sids.includes(serverFilter)) return false;
+        }
+      }
       if (!q) return true;
       const c = p.customer;
       const phone = onlyDigits(c.whatsapp ?? "");
@@ -633,7 +641,22 @@ function CampanhasManuaisPage() {
       ) return true;
       return false;
     });
-  }, [publicAll, audience, query]);
+  }, [publicAll, audience, serverFilter, query]);
+
+  // Contadores por servidor (sobre o público já filtrado por audience)
+  const serverCounts = useMemo(() => {
+    void serversVersion;
+    const audiencePool = publicAll.filter((p) => matchesAudience(p, audience));
+    const active = listActiveServers();
+    const out = active.map((s) => ({ id: s.id, name: s.name, color: s.color, count: 0 }));
+    let none = 0;
+    for (const p of audiencePool) {
+      const sids = p.screen?.server_ids ?? [];
+      if (!p.screen || sids.length === 0) none += 1;
+      for (const o of out) if (sids.includes(o.id)) o.count += 1;
+    }
+    return { servers: out, none, total: audiencePool.length };
+  }, [publicAll, audience, serversVersion]);
 
   // Quando trocar filtro/busca, manter apenas selecionados que ainda aparecem
   useEffect(() => {
