@@ -770,15 +770,16 @@ function ChargeSheet({
       return;
     }
     setSaving(true);
-    const { error } = await supabase.rpc("update_charge_admin", {
+    const payload = {
       p_charge_id: charge.id,
       p_amount_cents: cents,
       p_due_date: due,
       p_status: status || null,
-    });
+    };
+    const { error } = await supabase.rpc("update_charge_admin", payload);
     setSaving(false);
     if (error) {
-      toast.error(friendlyRpcError(error.message));
+      toastRpcError(friendlyRpcError(error.message), "update_charge_admin", payload, error);
       return;
     }
     toast.success("Cobrança atualizada com sucesso.");
