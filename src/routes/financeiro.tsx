@@ -485,8 +485,10 @@ function GoalsSection({ goals, settings, onReload }: { goals: FinanceGoal[]; set
           </Card>
         );
       })}
+      {securityDialog}
     </div>
   );
+
 }
 
 // ---------- Simulator ----------
