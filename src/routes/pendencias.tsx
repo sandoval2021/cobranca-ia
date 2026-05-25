@@ -447,6 +447,8 @@ function PendenciasPage() {
       todas: 0, criticas: 0, hoje: 0, vencidos: 0, d7: 0,
       sem_app: 0, sem_whats: 0, atualizar_servidor: 0, tecnicas: 0,
       campanha_pendente: 0,
+      app_pago_vencido: 0, app_pago_7d: 0, app_pago_30d: 0,
+      app_sem_venc: 0, app_sem_mackey: 0,
     };
     for (const p of pendings) {
       if (resolved[p.key] && !showResolved) continue;
@@ -459,6 +461,11 @@ function PendenciasPage() {
       if (p.type === "atualizar_servidor") { c.atualizar_servidor++; c.criticas++; }
       if (p.type === "tecnica") c.tecnicas++;
       if (p.type === "campanha_pendente") c.campanha_pendente++;
+      if (p.type === "app_pago_vencido") { c.app_pago_vencido++; c.criticas++; }
+      if (p.type === "app_pago_7d") c.app_pago_7d++;
+      if (p.type === "app_pago_30d") c.app_pago_30d++;
+      if (p.type === "app_sem_venc") c.app_sem_venc++;
+      if (p.type === "app_sem_mackey") c.app_sem_mackey++;
     }
     return c;
   }, [pendings, resolved, showResolved]);
