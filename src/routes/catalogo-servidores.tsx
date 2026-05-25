@@ -261,6 +261,7 @@ function ServerCard({
   const [askReveal, setAskReveal] = useState(false);
   const [askCopyPwd, setAskCopyPwd] = useState(false);
   const [askCopyFull, setAskCopyFull] = useState(false);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
   const isActive = server.status === "ativo";
 
   return (
