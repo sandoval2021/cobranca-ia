@@ -42,6 +42,22 @@ import {
   validateRows,
   type ValidatedRow,
 } from "@/lib/import-parse";
+import {
+  buildSchedule,
+  applyPersistedStatus,
+  setStatus as setSchedStatus,
+  clearAllPersisted as clearSchedPersisted,
+  buildScheduleTxt,
+  matchesChip,
+  CHIP_LABEL,
+  GROUP_LABEL,
+  kindLabel,
+  fmtBRLPublic,
+  fmtDateBRPublic,
+  type ScheduleItem,
+  type ChipKey,
+  type DispatchGroup,
+} from "@/lib/import-schedule";
 
 type RowKind = "new" | "existing" | "duplicate_file" | "error";
 
