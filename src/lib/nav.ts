@@ -58,7 +58,7 @@ export const ownerNav: NavItem[] = [
   { to: "/seguranca-local", label: "Segurança", icon: ShieldCheck, hint: "PIN e modo protegido (apenas neste navegador)" },
   { to: "/admin-dns-rotas", label: "DNS e Rotas", icon: Network, hint: "Super Admin: domínios, subdomínios e rotas dos servidores" },
   { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente" },
-  { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Testes de conexão" },
+  { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Saúde dos dados, segurança, rotas, financeiro e operação local" },
 
 ];
 
