@@ -179,7 +179,19 @@ function DiagnosticoPage() {
         <Button size="sm" onClick={() => exportDiagnosticsTxt()}>
           <Download className="mr-1.5 h-4 w-4" /> Exportar diagnóstico
         </Button>
+        <Button size="sm" variant="outline" asChild>
+          <Link to="/preparacao-backend">Preparar Backend</Link>
+        </Button>
       </div>
+
+      <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-surface-muted px-3 py-2 text-xs">
+        <Info className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className="flex-1">Backend real: ainda não configurado.</span>
+        <Link to="/preparacao-backend" className="font-medium text-primary hover:underline">
+          Preparar
+        </Link>
+      </div>
+
 
       {/* Filtros */}
       <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1">
