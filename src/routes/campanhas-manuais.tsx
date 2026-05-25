@@ -824,6 +824,31 @@ function CampanhasManuaisPage() {
         <Chip active={audience === "app_sem_mackey"} onClick={() => setAudience("app_sem_mackey")} label="Sem MAC/Key" count={counts.app_sem_mackey} dim={counts.app_sem_mackey === 0} />
       </div>
 
+      {/* Filtros por servidor */}
+      <div className="mb-2 text-xs font-medium text-muted-foreground">Servidor</div>
+      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <Chip active={serverFilter === "__all__"} onClick={() => setServerFilter("__all__")} label="Todos servidores" count={serverCounts.total} />
+        <Chip active={serverFilter === "__none__"} onClick={() => setServerFilter("__none__")} label="Sem servidor" count={serverCounts.none} dim={serverCounts.none === 0} />
+        {serverCounts.servers.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setServerFilter(s.id)}
+            className={cn(
+              "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition",
+              serverFilter === s.id
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-foreground hover:bg-muted",
+              s.count === 0 && serverFilter !== s.id && "opacity-60",
+            )}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} aria-hidden />
+            {s.name} <span className={cn("ml-0.5 tabular-nums", serverFilter === s.id ? "opacity-90" : "text-muted-foreground")}>({s.count})</span>
+          </button>
+        ))}
+      </div>
+
+
       {/* Busca */}
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
