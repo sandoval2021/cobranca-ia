@@ -33,8 +33,10 @@ import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servid
 import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
+import { Route as AcessoRestritoRouteImport } from './routes/acesso-restrito'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TestesRoute = TestesRouteImport.update({
@@ -157,6 +159,11 @@ const BackupGeralRoute = BackupGeralRouteImport.update({
   path: '/backup-geral',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AjudaRoute = AjudaRouteImport.update({
   id: '/ajuda',
   path: '/ajuda',
@@ -167,6 +174,11 @@ const AdminDnsRotasRoute = AdminDnsRotasRouteImport.update({
   path: '/admin-dns-rotas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcessoRestritoRoute = AcessoRestritoRouteImport.update({
+  id: '/acesso-restrito',
+  path: '/acesso-restrito',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -175,8 +187,10 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acesso-restrito': typeof AcessoRestritoRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
   '/ajuda': typeof AjudaRoute
+  '/auth': typeof AuthRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
@@ -204,8 +218,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acesso-restrito': typeof AcessoRestritoRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
   '/ajuda': typeof AjudaRoute
+  '/auth': typeof AuthRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
@@ -234,8 +250,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/acesso-restrito': typeof AcessoRestritoRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
   '/ajuda': typeof AjudaRoute
+  '/auth': typeof AuthRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
@@ -265,8 +283,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/acesso-restrito'
     | '/admin-dns-rotas'
     | '/ajuda'
+    | '/auth'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
@@ -294,8 +314,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/acesso-restrito'
     | '/admin-dns-rotas'
     | '/ajuda'
+    | '/auth'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
@@ -323,8 +345,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/acesso-restrito'
     | '/admin-dns-rotas'
     | '/ajuda'
+    | '/auth'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
@@ -353,8 +377,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AcessoRestritoRoute: typeof AcessoRestritoRoute
   AdminDnsRotasRoute: typeof AdminDnsRotasRoute
   AjudaRoute: typeof AjudaRoute
+  AuthRoute: typeof AuthRoute
   BackupGeralRoute: typeof BackupGeralRoute
   BaseConhecimentoRoute: typeof BaseConhecimentoRoute
   CampanhasManuaisRoute: typeof CampanhasManuaisRoute
@@ -551,6 +577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BackupGeralRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ajuda': {
       id: '/ajuda'
       path: '/ajuda'
@@ -565,6 +598,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDnsRotasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/acesso-restrito': {
+      id: '/acesso-restrito'
+      path: '/acesso-restrito'
+      fullPath: '/acesso-restrito'
+      preLoaderRoute: typeof AcessoRestritoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -577,8 +617,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AcessoRestritoRoute: AcessoRestritoRoute,
   AdminDnsRotasRoute: AdminDnsRotasRoute,
   AjudaRoute: AjudaRoute,
+  AuthRoute: AuthRoute,
   BackupGeralRoute: BackupGeralRoute,
   BaseConhecimentoRoute: BaseConhecimentoRoute,
   CampanhasManuaisRoute: CampanhasManuaisRoute,
