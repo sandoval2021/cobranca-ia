@@ -33,6 +33,7 @@ import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servid
 import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
+import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -156,6 +157,11 @@ const BackupGeralRoute = BackupGeralRouteImport.update({
   path: '/backup-geral',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AjudaRoute = AjudaRouteImport.update({
+  id: '/ajuda',
+  path: '/ajuda',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDnsRotasRoute = AdminDnsRotasRouteImport.update({
   id: '/admin-dns-rotas',
   path: '/admin-dns-rotas',
@@ -170,6 +176,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
+  '/ajuda': typeof AjudaRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
+  '/ajuda': typeof AjudaRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
@@ -227,6 +235,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
+  '/ajuda': typeof AjudaRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin-dns-rotas'
+    | '/ajuda'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
@@ -285,6 +295,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin-dns-rotas'
+    | '/ajuda'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin-dns-rotas'
+    | '/ajuda'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/campanhas-manuais'
@@ -342,6 +354,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminDnsRotasRoute: typeof AdminDnsRotasRoute
+  AjudaRoute: typeof AjudaRoute
   BackupGeralRoute: typeof BackupGeralRoute
   BaseConhecimentoRoute: typeof BaseConhecimentoRoute
   CampanhasManuaisRoute: typeof CampanhasManuaisRoute
@@ -538,6 +551,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BackupGeralRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ajuda': {
+      id: '/ajuda'
+      path: '/ajuda'
+      fullPath: '/ajuda'
+      preLoaderRoute: typeof AjudaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin-dns-rotas': {
       id: '/admin-dns-rotas'
       path: '/admin-dns-rotas'
@@ -558,6 +578,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminDnsRotasRoute: AdminDnsRotasRoute,
+  AjudaRoute: AjudaRoute,
   BackupGeralRoute: BackupGeralRoute,
   BaseConhecimentoRoute: BaseConhecimentoRoute,
   CampanhasManuaisRoute: CampanhasManuaisRoute,
@@ -586,13 +607,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
