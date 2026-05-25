@@ -1109,9 +1109,9 @@ function CreateChargeDialog({
     const payload = {
       p_customer_id: customerId,
       p_amount_cents: cents,
-      p_due_date: due,
+      p_due_at: due,
       p_status: status,
-      p_external_ref: ref.trim() || null,
+      p_external_reference: ref.trim() || null,
     };
     const { error } = await supabase.rpc("create_charge_admin", payload);
     setBusy(false);
