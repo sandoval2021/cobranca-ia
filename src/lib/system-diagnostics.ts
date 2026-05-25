@@ -783,7 +783,7 @@ export function runSystemDiagnostics(): DiagnosticsReport {
     ok: 0,
     atencao: alerts.filter((a) => a.level === "atencao").length,
     critico: alerts.filter((a) => a.level === "critico").length,
-    modulos_com_dados: getModuleSummaries().filter((m) => (m.count ?? 0) > 0 || m.hasValue).length,
+    modulos_com_dados: getModuleSummaries().filter((m) => m.present && (m.count ?? 0) > 0).length,
   };
   const overall: DiagnosticLevel =
     totals.critico > 0 ? "critico" : totals.atencao > 0 ? "atencao" : "ok";
