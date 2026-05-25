@@ -655,7 +655,7 @@ export function AISuggestionsPanel({
       )}
 
       {state.status === "error" && (
-        <p className="rounded-lg border border-dashed border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+        <p className="whitespace-pre-wrap rounded-lg border border-dashed border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
           {state.message}
         </p>
       )}
