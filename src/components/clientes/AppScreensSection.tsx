@@ -36,6 +36,8 @@ import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
 
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { canCreateScreen } from "@/lib/plan-limits";
+import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 import { ScreenServerRoutes } from "@/components/clientes/ScreenServerRoutes";
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
