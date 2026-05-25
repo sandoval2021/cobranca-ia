@@ -99,13 +99,13 @@ function ImportarClientesPage() {
   const [lookupBump, setLookupBump] = useState(0);
   const [lookupReady, setLookupReady] = useState(false);
 
-  // Lookup existing customers by WhatsApp for the selected company
+  // Dedup via RPC segura: get_import_customer_dedup_admin
   useEffect(() => {
     let cancelled = false;
     async function run() {
       setExistingMap({});
       setLookupReady(false);
-      if (!supabase || !supabaseConfigured) return;
+      if (!supabaseConfigured) return;
       if (!isAuthenticated || !companyId || !rows || rows.length === 0) return;
       const e164s = Array.from(
         new Set(rows.map((r) => r.whatsapp_e164).filter((x): x is string => !!x)),
@@ -116,40 +116,16 @@ function ImportarClientesPage() {
       }
       setLookupLoading(true);
 
-      // Try wide projection first; if a column doesn't exist (e.g. whatsapp_e164),
-      // retry with a safe minimal projection. Either way, normalize client-side.
-      const tryFetch = async (cols: string) => {
-        return supabase!
-          .from("customers")
-          .select(cols)
-          .eq("company_id", companyId)
-          .limit(5000);
-      };
-
-      let rawData: Array<Record<string, unknown>> | null = null;
-      try {
-        let res = await tryFetch("id,name,nome,full_name,phone,telefone,whatsapp,whatsapp_e164");
-        if (res.error) {
-          res = await tryFetch("id,name,nome,full_name,phone,telefone,whatsapp");
-        }
-        if (res.error) {
-          res = await tryFetch("*");
-        }
-        if (!res.error && res.data) {
-          rawData = res.data as unknown as Array<Record<string, unknown>>;
-        } else if (res.error) {
-          console.warn("[importar-clientes] lookup failed", res.error);
-        }
-      } catch (err) {
-        console.warn("[importar-clientes] lookup threw", err);
-      }
-
+      const res = await getImportCustomerDedupAdmin({
+        p_company_id: companyId,
+        p_whatsapp_e164_values: e164s,
+      });
       if (cancelled) return;
 
       const map: Record<string, { name?: string }> = {};
-      if (rawData) {
+      if (!res.error && res.data) {
         const want = new Set(e164s);
-        for (const c of rawData) {
+        for (const c of res.data as Array<Record<string, unknown>>) {
           const candidates = [
             c.whatsapp_e164,
             c.whatsapp,
@@ -170,6 +146,8 @@ function ImportarClientesPage() {
             }
           }
         }
+      } else if (res.error) {
+        console.warn("[importar-clientes] dedup falhou", res.error);
       }
       setExistingMap(map);
       setLookupReady(true);
@@ -179,7 +157,7 @@ function ImportarClientesPage() {
     return () => {
       cancelled = true;
     };
-  }, [rows, companyId, isAuthenticated, lookupBump]);
+  }, [rows, companyId, isAuthenticated]);
 
   const rowKind = (r: ValidatedRow): RowKind | "pending" => {
     if (r.status === "invalid") return "error";
