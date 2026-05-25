@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth, friendlyAuthError } from "@/lib/use-auth";
+import { useAuth, friendlyAuthError, AUTH_REFRESH_EVENT } from "@/lib/use-auth";
 
 export function AuthGate({
   title = "Para importar clientes, entre com uma conta autorizada.",
@@ -45,6 +45,7 @@ export function AuthGate({
           size="sm"
           onClick={async () => {
             await supabase?.auth.signOut();
+            window.dispatchEvent(new Event(AUTH_REFRESH_EVENT));
             toast.message("Sessão encerrada.");
           }}
         >
@@ -63,18 +64,24 @@ export function AuthGate({
     }
     setError(null);
     setSubmitting(true);
-    const { error: err } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setSubmitting(false);
-    if (err) {
-      setError(friendlyAuthError(err.message));
-      return;
+    try {
+      const { error: err } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (err) {
+        setError(friendlyAuthError(err.message));
+        return;
+      }
+      window.dispatchEvent(new Event(AUTH_REFRESH_EVENT));
+      toast.success("Bem-vindo!");
+      setOpen(false);
+      setPassword("");
+    } catch {
+      setError("Falha de conexão. Tente novamente.");
+    } finally {
+      setSubmitting(false);
     }
-    toast.success("Bem-vindo!");
-    setOpen(false);
-    setPassword("");
   }
 
   return (

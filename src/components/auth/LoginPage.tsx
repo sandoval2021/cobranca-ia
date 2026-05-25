@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
-import { friendlyAuthError } from "@/lib/use-auth";
+import { AUTH_REFRESH_EVENT, friendlyAuthError } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 
 const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
-const hasKey = Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY);
+const hasKey = Boolean(
+  import.meta.env.VITE_SUPABASE_ANON_KEY ??
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+);
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -26,16 +29,22 @@ export function LoginPage() {
     }
     setError(null);
     setSubmitting(true);
-    const { error: err } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setSubmitting(false);
-    if (err) {
-      setError(friendlyAuthError(err.message));
-      return;
+    try {
+      const { error: err } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (err) {
+        setError(friendlyAuthError(err.message));
+        return;
+      }
+      window.dispatchEvent(new Event(AUTH_REFRESH_EVENT));
+      toast.success("Bem-vindo!");
+    } catch {
+      setError("Falha de conexão. Tente novamente.");
+    } finally {
+      setSubmitting(false);
     }
-    toast.success("Bem-vindo!");
   }
 
   return (

@@ -3,7 +3,7 @@ import { LogIn, LogOut, ShieldCheck, UserCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/use-auth";
+import { AUTH_REFRESH_EVENT, useAuth } from "@/lib/use-auth";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { SignInDialog } from "./SignInDialog";
 
@@ -20,6 +20,7 @@ export function AuthStatus({
     if (!supabase) return;
     setSigningOut(true);
     await supabase.auth.signOut();
+    window.dispatchEvent(new Event(AUTH_REFRESH_EVENT));
     setSigningOut(false);
     toast.message("Você saiu da conta.");
   }
