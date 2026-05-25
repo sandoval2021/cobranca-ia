@@ -506,12 +506,14 @@ export function QuickSupportSection({
 
 
   const copyAndLog = (text: string, label: string, kind: string) => {
-    copyText(text, label, {
+    const withDns = applyDnsVars(text, selected);
+    copyText(withDns, label, {
       kind,
       app: selected ? APP_CATALOG[selected.app]?.label : undefined,
       screen: selected?.name,
     });
   };
+
 
   return (
     <div className="space-y-4">
