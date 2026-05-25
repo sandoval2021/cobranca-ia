@@ -43,6 +43,7 @@ export type DispatchGroup =
 
 export type ScheduleItem = {
   id: string;
+  company_id?: string | null;
   name: string;
   whatsapp: string | null;
   amount_cents: number | null;
@@ -56,7 +57,7 @@ export type ScheduleItem = {
   reason: string;
   message: string;
   group: DispatchGroup;
-  warning?: string; // ex.: lista muito vencida
+  warning?: string;
 };
 
 const KIND_LABEL: Record<DispatchKind, string> = {
@@ -485,10 +486,25 @@ export function fmtDateBRPublic(iso: string | null): string {
 const ITEMS_KEY = "cobranca_ia_import_schedule_items_v1";
 const ITEMS_EVENT = "cobranca_ia_import_schedule:changed";
 
+import { getCurrentRole } from "./local-auth";
+import { getActiveCompanyId } from "./company-scope";
+
+function scopedFilter(items: ScheduleItem[]): ScheduleItem[] {
+  const role = getCurrentRole();
+  const activeId = getActiveCompanyId();
+  if (role === "super_admin" && !activeId) return items;
+  if (!activeId) return [];
+  return items.filter((i) => i.company_id === activeId);
+}
+
 export function saveImportScheduleItems(items: ScheduleItem[]): void {
   if (typeof window === "undefined") return;
   try {
-    const payload = { saved_at: new Date().toISOString(), items };
+    const activeId = getActiveCompanyId();
+    const tagged = items.map((it) =>
+      it.company_id ? it : { ...it, company_id: activeId ?? null },
+    );
+    const payload = { saved_at: new Date().toISOString(), items: tagged };
     window.localStorage.setItem(ITEMS_KEY, JSON.stringify(payload));
     window.dispatchEvent(new CustomEvent(ITEMS_EVENT));
   } catch {
@@ -497,6 +513,19 @@ export function saveImportScheduleItems(items: ScheduleItem[]): void {
 }
 
 export function listImportScheduleItems(): ScheduleItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(ITEMS_KEY);
+    if (!raw) return [];
+    const j = JSON.parse(raw);
+    const items: ScheduleItem[] = Array.isArray(j) ? j : Array.isArray(j?.items) ? j.items : [];
+    return scopedFilter(applyPersistedStatus(items));
+  } catch {
+    return [];
+  }
+}
+
+export function listAllImportScheduleItemsRaw(): ScheduleItem[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(ITEMS_KEY);
