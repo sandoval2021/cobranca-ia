@@ -289,10 +289,18 @@ function renderTemplate(
   body: string,
   values: Record<VarKey, string>,
 ): string {
-  return body.replace(/\{(\w+)\}/g, (_, k) => {
+  // Primeiro substitui variáveis do contexto da campanha; tokens desconhecidos
+  // permanecem para serem resolvidos por applyRevendaVariables (revenda).
+  const first = body.replace(/\{(\w+)\}/g, (match, k) => {
     const v = (values as Record<string, string>)[k];
-    return v && v.length ? v : "não informado";
+    if (v && v.length) return v;
+    if (k in (values as Record<string, string>)) return "não informado";
+    return match;
   });
+  // Aplica variáveis globais da Minha Revenda.
+  const second = applyRevendaVariables(first);
+  // Qualquer placeholder remanescente vira "não informado".
+  return second.replace(/\{(\w+)\}/g, () => "não informado");
 }
 
 function hasSensitiveVars(body: string): boolean {
