@@ -210,9 +210,21 @@ export function AppScreensSection({
           <Tv className="h-3.5 w-3.5" /> Telas e aplicativos
           <HelpTip text="Use para separar quando o cliente tem mais de uma TV ou aparelho." />
         </h3>
-        <Button size="sm" onClick={openNew} className="h-8 gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> Adicionar tela
-        </Button>
+        <div className="flex items-center gap-1.5">
+          {screens.some((s) => s.status !== "arquivada") && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setRenewInitialScreenId(null); setRenewOpen(true); }}
+              className="h-8 gap-1.5"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Renovar telas
+            </Button>
+          )}
+          <Button size="sm" onClick={openNew} className="h-8 gap-1.5">
+            <Plus className="h-3.5 w-3.5" /> Adicionar tela
+          </Button>
+        </div>
       </div>
 
       {/* Aviso de persistência local */}
