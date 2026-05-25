@@ -161,11 +161,6 @@ const AdminDnsRotasRoute = AdminDnsRotasRouteImport.update({
   path: '/admin-dns-rotas',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ConfiguracaoInicialRoute = ConfiguracaoInicialRouteImport.update({
-  id: '/configuracao-inicial',
-  path: '/configuracao-inicial',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
