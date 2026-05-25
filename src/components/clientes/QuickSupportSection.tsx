@@ -131,6 +131,45 @@ function isMacKeyApp(s: AppScreen): boolean {
   return s.access_type === "mac_key" || s.access_type === "mac";
 }
 
+function resolveServerId(s?: AppScreen | null): string | undefined {
+  if (!s) return undefined;
+  if (s.primary_server_id) return s.primary_server_id;
+  if (Array.isArray(s.server_ids) && s.server_ids.length > 0) return s.server_ids[0];
+  return undefined;
+}
+
+function getScreenRouteInfo(s?: AppScreen | null): {
+  serverId?: string;
+  serverName?: string;
+  routeHost?: string;
+  link?: string;
+} {
+  const sid = resolveServerId(s);
+  if (!sid) return {};
+  const srv = getServerById(sid);
+  const route = getPrimaryRouteForServer(sid);
+  const link = buildServerPublicLink(sid) ?? undefined;
+  return {
+    serverId: sid,
+    serverName: srv?.name,
+    routeHost: route?.host,
+    link,
+  };
+}
+
+function applyDnsVars(text: string, screen?: AppScreen | null): string {
+  if (!text) return text;
+  const sid = resolveServerId(screen);
+  const v = getDnsVariablesForServer(sid);
+  return text
+    .replaceAll("{dominio}", v.dominio)
+    .replaceAll("{subdominio}", v.subdominio)
+    .replaceAll("{rota_publica}", v.rota_publica)
+    .replaceAll("{servidor_rota}", v.servidor_rota)
+    .replaceAll("{link_publico}", v.link_publico);
+}
+
+
 // ------- geradores de texto -------
 
 type GenInput = {
