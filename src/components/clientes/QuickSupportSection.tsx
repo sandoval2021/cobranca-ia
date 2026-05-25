@@ -387,23 +387,28 @@ export function QuickSupportSection({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reveal, setReveal] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [quickMessages, setQuickMessages] = useState(() => buildQuickMessages());
   const [confirmReveal, setConfirmReveal] = useState<null | {
     onConfirm: () => void;
   }>(null);
 
   const refreshScreens = () => setScreens(listScreens(customerId));
   const refreshHistory = () => setHistory(readHistory());
+  const refreshQuick = () => setQuickMessages(buildQuickMessages());
 
   useEffect(() => {
     refreshScreens();
     refreshHistory();
     const onS = () => refreshScreens();
     const onH = () => refreshHistory();
+    const onR = () => refreshQuick();
     window.addEventListener("app-screens:changed", onS);
     window.addEventListener("quick-support:history-changed", onH);
+    window.addEventListener(REVENDA_SETTINGS_EVENT, onR);
     return () => {
       window.removeEventListener("app-screens:changed", onS);
       window.removeEventListener("quick-support:history-changed", onH);
+      window.removeEventListener(REVENDA_SETTINGS_EVENT, onR);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
