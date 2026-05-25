@@ -412,6 +412,7 @@ function PendenciasPage() {
               });
             }
           }
+        }
       }
     }
 
