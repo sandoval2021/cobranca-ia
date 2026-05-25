@@ -117,21 +117,32 @@ function BackupGeralPage() {
 
   const doRestore = (mode: RestoreMode) => {
     if (!preview) return;
-    try {
-      const { restored, skipped } = restoreFullBackup(preview.file, mode);
-      toast.success(
-        `Backup restaurado (${mode === "replace" ? "substituir" : "mesclar"}): ${restored} módulo(s).${
-          skipped ? ` ${skipped} ignorado(s).` : ""
-        }`,
-      );
-      setPreview(null);
-      setConfirmMode(null);
-      setConfirmReplace(false);
-      refresh();
-    } catch {
-      toast.error("Falha ao restaurar backup.");
-    }
+    guard({
+      kind: mode === "replace" ? "delete" : "backup",
+      title: mode === "replace" ? "Substituir dados locais" : "Mesclar backup",
+      description: mode === "replace"
+        ? "Esta ação substitui dados existentes. Confirme com PIN."
+        : "Importar e mesclar com dados atuais. Confirme com PIN.",
+      actionLabel: mode === "replace" ? "Substituir" : "Mesclar",
+      onConfirm: () => {
+        try {
+          const { restored, skipped } = restoreFullBackup(preview.file, mode);
+          toast.success(
+            `Backup restaurado (${mode === "replace" ? "substituir" : "mesclar"}): ${restored} módulo(s).${
+              skipped ? ` ${skipped} ignorado(s).` : ""
+            }`,
+          );
+          setPreview(null);
+          setConfirmMode(null);
+          setConfirmReplace(false);
+          refresh();
+        } catch {
+          toast.error("Falha ao restaurar backup.");
+        }
+      },
+    });
   };
+
 
   const totalItems = useMemo(
     () => summaries.reduce((acc, s) => acc + (s.present ? s.count : 0), 0),
