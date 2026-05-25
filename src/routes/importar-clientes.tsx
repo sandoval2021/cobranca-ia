@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 
 import { PageContainer } from "@/components/layout/PageContainer";
+import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
 import { HelpTip } from "@/components/ui-premium/HelpTip";

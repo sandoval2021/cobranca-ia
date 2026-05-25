@@ -17,6 +17,7 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { ImportAgendaSection } from "@/components/import/ImportAgendaSection";
 
