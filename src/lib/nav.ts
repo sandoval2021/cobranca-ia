@@ -19,6 +19,7 @@ import {
   Beaker,
   Gift,
   Wallet,
+  HardDrive,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
