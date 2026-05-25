@@ -329,7 +329,30 @@ function ClientesPage() {
         );
       });
     });
-  }, [items, query, filter, allScreens]);
+  }, [items, query, filter, serverFilter, allScreens]);
+
+  // Contadores por servidor (catálogo ativo) e "sem servidor"
+  const serverCounts = useMemo(() => {
+    const activeServers = listActiveServers();
+    const out: { id: string; name: string; color: string; count: number }[] =
+      activeServers.map((s) => ({ id: s.id, name: s.name, color: s.color, count: 0 }));
+    let none = 0;
+    if (items) {
+      for (const it of items) {
+        const screens = (allScreens[it.id] ?? []).filter((s) => s.status !== "arquivada");
+        const ids = new Set<string>();
+        let hasNone = false;
+        for (const s of screens) {
+          const sids = s.server_ids ?? [];
+          if (sids.length === 0) hasNone = true;
+          for (const id of sids) ids.add(id);
+        }
+        for (const o of out) if (ids.has(o.id)) o.count += 1;
+        if (hasNone) none += 1;
+      }
+    }
+    return { servers: out, none };
+  }, [items, allScreens, screensVersion]);
 
   // Ordenação por vencimento mais próximo; vencidos vão pro fim
   const ordered = useMemo(() => {
