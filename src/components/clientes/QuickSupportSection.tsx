@@ -20,6 +20,14 @@ import { applyRevendaVariables, getRevendaSettings, REVENDA_SETTINGS_EVENT } fro
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
 import type { ProtectedActionKind } from "@/lib/local-security";
+import {
+  DNS_ROUTES_EVENT,
+  buildServerPublicLink,
+  getDnsVariablesForServer,
+  getPrimaryRouteForServer,
+} from "@/lib/dns-routes";
+import { getServerById } from "@/lib/server-catalog";
+
 
 
 
@@ -123,6 +131,45 @@ function isMacKeyApp(s: AppScreen): boolean {
   return s.access_type === "mac_key" || s.access_type === "mac";
 }
 
+function resolveServerId(s?: AppScreen | null): string | undefined {
+  if (!s) return undefined;
+  if (s.primary_server_id) return s.primary_server_id;
+  if (Array.isArray(s.server_ids) && s.server_ids.length > 0) return s.server_ids[0];
+  return undefined;
+}
+
+function getScreenRouteInfo(s?: AppScreen | null): {
+  serverId?: string;
+  serverName?: string;
+  routeHost?: string;
+  link?: string;
+} {
+  const sid = resolveServerId(s);
+  if (!sid) return {};
+  const srv = getServerById(sid);
+  const route = getPrimaryRouteForServer(sid);
+  const link = buildServerPublicLink(sid) ?? undefined;
+  return {
+    serverId: sid,
+    serverName: srv?.name,
+    routeHost: route?.host,
+    link,
+  };
+}
+
+function applyDnsVars(text: string, screen?: AppScreen | null): string {
+  if (!text) return text;
+  const sid = resolveServerId(screen);
+  const v = getDnsVariablesForServer(sid);
+  return text
+    .replaceAll("{dominio}", v.dominio)
+    .replaceAll("{subdominio}", v.subdominio)
+    .replaceAll("{rota_publica}", v.rota_publica)
+    .replaceAll("{servidor_rota}", v.servidor_rota)
+    .replaceAll("{link_publico}", v.link_publico);
+}
+
+
 // ------- geradores de texto -------
 
 type GenInput = {
@@ -142,11 +189,15 @@ function header(s: AppScreen) {
   if (isMacKeyApp(s)) {
     if (s.mac) parts.push(`🔑 MAC: ${s.mac}`);
   }
+  const ri = getScreenRouteInfo(s);
+  if (ri.serverName) parts.push(`🖥️ Servidor: ${ri.serverName}`);
+  parts.push(`🌐 Rota pública: ${ri.routeHost || "não informado"}`);
   if (s.due_date) parts.push(`📅 Vencimento: ${fmtDate(s.due_date)}`);
   const r = routeLabel(s.route);
   if (r) parts.push(`🛰 Rota: ${r}`);
   return parts.join("\n");
 }
+
 
 function technicalBlock({ screen: s, reveal }: GenInput): string {
   const lines: string[] = [];
@@ -339,14 +390,17 @@ Sua mensagem foi registrada e respondo assim que possível. Obrigado pela compre
 // short / completo helpers para o card atual
 function genShort(i: GenInput): string {
   const { screen: s } = i;
+  const ri = getScreenRouteInfo(s);
+  const routeLine = `\n🌐 Rota pública: ${ri.routeHost || "não informado"}`;
   if (isMacKeyApp(s)) {
-    return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}\nMAC: ${s.mac ?? "—"} · Key: ${mask(s.app_key)}${s.portal_url ? `\nPortal: ${s.portal_url}` : ""}`;
+    return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}\nMAC: ${s.mac ?? "—"} · Key: ${mask(s.app_key)}${s.portal_url ? `\nPortal: ${s.portal_url}` : ""}${routeLine}`;
   }
   if (isUserPassApp(s)) {
-    return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}\nUsuário: ${s.username ?? "—"} · Senha: ${mask(s.password)}${s.server ? `\nServidor: ${s.server}${s.port ? `:${s.port}` : ""}` : ""}`;
+    return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}\nUsuário: ${s.username ?? "—"} · Senha: ${mask(s.password)}${s.server ? `\nServidor: ${s.server}${s.port ? `:${s.port}` : ""}` : ""}${routeLine}`;
   }
-  return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}`;
+  return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}${routeLine}`;
 }
+
 
 const SUPPORT_DEFS: { key: SupportKey; label: string; description: string; gen: (i: GenInput) => string }[] = [
   { key: "dados_acesso",        label: "Dados de acesso",       description: "Envie os dados do app",                gen: genDadosAcesso },
@@ -452,12 +506,14 @@ export function QuickSupportSection({
 
 
   const copyAndLog = (text: string, label: string, kind: string) => {
-    copyText(text, label, {
+    const withDns = applyDnsVars(text, selected);
+    copyText(withDns, label, {
       kind,
       app: selected ? APP_CATALOG[selected.app]?.label : undefined,
       screen: selected?.name,
     });
   };
+
 
   return (
     <div className="space-y-4">
@@ -548,6 +604,65 @@ export function QuickSupportSection({
                   </>
                 )}
               </div>
+
+              {(() => {
+                const ri = getScreenRouteInfo(selected);
+                if (!ri.serverId) {
+                  return (
+                    <p className="mt-2 rounded-md border border-dashed border-border bg-surface p-2 text-[10px] text-muted-foreground">
+                      Sem servidor vinculado a esta tela.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="mt-2 space-y-1.5 rounded-md border border-border bg-surface p-2 text-[11px]">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-muted-foreground">Servidor:</span>
+                      <span className="font-medium text-foreground">{ri.serverName ?? "—"}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-muted-foreground">Rota pública:</span>
+                      {ri.routeHost ? (
+                        <span className="font-mono break-all text-foreground/90">{ri.routeHost}</span>
+                      ) : (
+                        <span className="text-muted-foreground">Servidor sem rota pública</span>
+                      )}
+                    </div>
+                    {ri.routeHost && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1 px-2 text-[10px]"
+                          onClick={() => {
+                            try {
+                              navigator.clipboard.writeText(ri.routeHost!);
+                              toast.success("Rota pública copiada.");
+                            } catch {
+                              toast.error("Não foi possível copiar.");
+                            }
+                          }}
+                        >
+                          <Copy className="h-3 w-3" /> Copiar rota pública
+                        </Button>
+                        {ri.link && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 gap-1 px-2 text-[10px]"
+                            onClick={() => window.open(ri.link!, "_blank", "noopener,noreferrer")}
+                          >
+                            <ExternalLink className="h-3 w-3" /> Abrir rota pública
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
 
               <div className="mt-2 flex flex-wrap gap-2">
                 <Button
