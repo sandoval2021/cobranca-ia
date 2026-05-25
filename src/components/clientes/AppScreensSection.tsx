@@ -322,9 +322,23 @@ export function AppScreensSection({
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       {s.due_date && (
                         <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>
-                          {urgencyLabel(urg, days)}
+                          Lista: {urgencyLabel(urg, days)}
                         </span>
                       )}
+                      {(() => {
+                        const ad = appDueDays(s);
+                        if (ad == null) return null;
+                        const u = urgencyFromDays(ad);
+                        const label =
+                          ad < 0 ? "App vencido"
+                          : ad <= 30 ? "App vence em breve"
+                          : `App vence em ${ad} dias`;
+                        return (
+                          <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(u))}>
+                            {label}
+                          </span>
+                        );
+                      })()}
                       {routeName && (
                         <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] text-muted-foreground">
                           Rota: {routeName}
