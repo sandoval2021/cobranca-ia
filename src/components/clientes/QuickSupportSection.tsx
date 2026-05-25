@@ -17,6 +17,11 @@ import {
   listScreens, mask,
 } from "@/lib/app-screens";
 import { applyRevendaVariables, getRevendaSettings, REVENDA_SETTINGS_EVENT } from "@/lib/revenda-settings";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+import type { ProtectedActionKind } from "@/lib/local-security";
+
+
 
 // ------- tipos & storage -------
 
