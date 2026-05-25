@@ -245,6 +245,19 @@ function IndicacoesPage() {
                   <Check className="h-3.5 w-3.5" /> Marcar bonificação aplicada
                 </Button>
               )}
+              {(r.status === "Bonificação pendente" || r.status === "Bonificação aplicada") && (
+                <Button size="sm" variant="outline" onClick={() => {
+                  import("@/lib/financeiro-local").then(({ openFinanceWithDraft }) => {
+                    openFinanceWithDraft({
+                      customer_name: r.indicador_nome,
+                      customer_whatsapp: r.indicador_whatsapp,
+                      type: "bonificacao",
+                      note: `Bonificação por indicar ${r.indicado_nome}`,
+                      source: "indicacao",
+                    });
+                  });
+                }}>💰 Registrar no financeiro</Button>
+              )}
               {r.lead_id && (
                 <Button size="sm" variant="ghost" asChild>
                   <Link to="/testes">Ver teste</Link>

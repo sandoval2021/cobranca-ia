@@ -351,6 +351,20 @@ function TestesPage() {
                 <Button size="sm" variant="outline" onClick={() => setConvertLead(l)} className="gap-1">
                   <UserPlus className="h-3.5 w-3.5" /> Converter
                 </Button>
+                {(l.status === "Fechou" || l.status === "Convertido em cliente") && (
+                  <Button size="sm" variant="outline" onClick={() => {
+                    import("@/lib/financeiro-local").then(({ openFinanceWithDraft }) => {
+                      openFinanceWithDraft({
+                        customer_name: l.nome,
+                        customer_whatsapp: l.whatsapp,
+                        type: l.status === "Convertido em cliente" ? "teste_convertido" : "venda_nova",
+                        source: "teste",
+                      });
+                    });
+                  }} className="gap-1">
+                    💰 Financeiro
+                  </Button>
+                )}
                 <Button size="sm" variant="ghost" onClick={() => { setEditing(l); setOpenNew(true); }} className="gap-1">
                   <Pencil className="h-3.5 w-3.5" /> Editar
                 </Button>

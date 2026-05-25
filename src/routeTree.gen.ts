@@ -18,6 +18,7 @@ import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as IndicacoesRouteImport } from './routes/indicacoes'
 import { Route as ImportarClientesRouteImport } from './routes/importar-clientes'
 import { Route as IaRouteImport } from './routes/ia'
+import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaSimuladaRouteImport } from './routes/fila-simulada'
 import { Route as EmpresasRouteImport } from './routes/empresas'
 import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
@@ -72,6 +73,11 @@ const ImportarClientesRoute = ImportarClientesRouteImport.update({
 const IaRoute = IaRouteImport.update({
   id: '/ia',
   path: '/ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanceiroRoute = FinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FilaSimuladaRoute = FilaSimuladaRouteImport.update({
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/diagnostico': typeof DiagnosticoRoute
   '/empresas': typeof EmpresasRoute
   '/fila-simulada': typeof FilaSimuladaRoute
+  '/financeiro': typeof FinanceiroRoute
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/diagnostico': typeof DiagnosticoRoute
   '/empresas': typeof EmpresasRoute
   '/fila-simulada': typeof FilaSimuladaRoute
+  '/financeiro': typeof FinanceiroRoute
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/diagnostico': typeof DiagnosticoRoute
   '/empresas': typeof EmpresasRoute
   '/fila-simulada': typeof FilaSimuladaRoute
+  '/financeiro': typeof FinanceiroRoute
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
@@ -202,6 +211,7 @@ export interface FileRouteTypes {
     | '/diagnostico'
     | '/empresas'
     | '/fila-simulada'
+    | '/financeiro'
     | '/ia'
     | '/importar-clientes'
     | '/indicacoes'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/diagnostico'
     | '/empresas'
     | '/fila-simulada'
+    | '/financeiro'
     | '/ia'
     | '/importar-clientes'
     | '/indicacoes'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/diagnostico'
     | '/empresas'
     | '/fila-simulada'
+    | '/financeiro'
     | '/ia'
     | '/importar-clientes'
     | '/indicacoes'
@@ -266,6 +278,7 @@ export interface RootRouteChildren {
   DiagnosticoRoute: typeof DiagnosticoRoute
   EmpresasRoute: typeof EmpresasRoute
   FilaSimuladaRoute: typeof FilaSimuladaRoute
+  FinanceiroRoute: typeof FinanceiroRoute
   IaRoute: typeof IaRoute
   ImportarClientesRoute: typeof ImportarClientesRoute
   IndicacoesRoute: typeof IndicacoesRoute
@@ -340,6 +353,13 @@ declare module '@tanstack/react-router' {
       path: '/ia'
       fullPath: '/ia'
       preLoaderRoute: typeof IaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/financeiro': {
+      id: '/financeiro'
+      path: '/financeiro'
+      fullPath: '/financeiro'
+      preLoaderRoute: typeof FinanceiroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fila-simulada': {
@@ -426,6 +446,7 @@ const rootRouteChildren: RootRouteChildren = {
   DiagnosticoRoute: DiagnosticoRoute,
   EmpresasRoute: EmpresasRoute,
   FilaSimuladaRoute: FilaSimuladaRoute,
+  FinanceiroRoute: FinanceiroRoute,
   IaRoute: IaRoute,
   ImportarClientesRoute: ImportarClientesRoute,
   IndicacoesRoute: IndicacoesRoute,
