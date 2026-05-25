@@ -168,6 +168,28 @@ export function getLocalDataHealth(): {
     if (semStatus > 0) issues.push({ level: "info", message: `${semStatus} item(ns) da agenda sem status definido.` });
   }
 
+  // ----- Saúde multi-tenant: company_id por módulo -----
+  const scopedModules: { key: string; label: string; arr: any[] }[] = [
+    { key: "screens", label: "telas", arr: Array.isArray(screens) ? screens : [] },
+    { key: "finance", label: "entradas financeiras", arr: Array.isArray(finance) ? finance : [] },
+    { key: "goals", label: "objetivos", arr: Array.isArray(goals) ? goals : [] },
+    { key: "leads", label: "leads", arr: Array.isArray(leads) ? leads : [] },
+    { key: "refs", label: "indicações", arr: Array.isArray(refs) ? refs : [] },
+    { key: "agenda", label: "itens de agenda", arr: Array.isArray(agenda) ? agenda : [] },
+  ];
+  let totalCom = 0, totalSem = 0;
+  for (const m of scopedModules) {
+    const com = m.arr.filter((r) => r && r.company_id).length;
+    const sem = m.arr.length - com;
+    totalCom += com;
+    totalSem += sem;
+    if (sem > 0 && m.arr.length > 0) {
+      issues.push({ level: "info", message: `${sem} ${m.label} sem company_id (módulo misto).` });
+    }
+  }
+  totals.com_company_id = totalCom;
+  totals.sem_company_id = totalSem;
+
   // chaves inválidas (JSON quebrado): readKey já tolera, mas se valor for string esperando lista, sinaliza.
   for (const mod of BACKUP_MODULES) {
     const v = readKey(mod.key);

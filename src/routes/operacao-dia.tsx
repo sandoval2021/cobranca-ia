@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { ImportAgendaSection } from "@/components/import/ImportAgendaSection";
 
@@ -555,6 +556,7 @@ function OperacaoDiaPage() {
         subtitle="Veja quem precisa de atenção hoje e copie mensagens rápidas para atendimento."
         hint="Tela apenas para organizar seu atendimento — nada é enviado automaticamente."
       />
+      <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
 
       {/* aviso fixo */}
       <div className="mb-3 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft/60 px-3 py-2 text-xs text-warning-foreground">

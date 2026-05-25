@@ -17,6 +17,7 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { ImportAgendaSection } from "@/components/import/ImportAgendaSection";
 
@@ -665,6 +666,7 @@ function PendenciasPage() {
         subtitle="Veja o que precisa ser resolvido antes de avançar."
         hint="Reúne tudo que pede atenção: vencimentos, telas, dados faltando e itens técnicos."
       />
+      <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
 
       <div className="mb-3 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft/60 px-3 py-2 text-xs text-warning-foreground">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
