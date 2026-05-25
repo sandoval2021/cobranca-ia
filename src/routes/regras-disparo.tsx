@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Settings2, Pencil, Power, Download, Upload, RotateCcw, Play, Info, Save, X, AlertCircle,
+  Pencil, Power, Download, Upload, RotateCcw, Info, Save, X, AlertCircle,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { PageContainer } from "@/components/layout/PageContainer";
