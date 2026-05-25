@@ -773,7 +773,7 @@ function ChargeSheet({
     const payload = {
       p_charge_id: charge.id,
       p_amount_cents: cents,
-      p_due_date: due,
+      p_due_at: due,
       p_status: status || null,
     };
     const { error } = await supabase.rpc("update_charge_admin", payload);
@@ -1109,9 +1109,9 @@ function CreateChargeDialog({
     const payload = {
       p_customer_id: customerId,
       p_amount_cents: cents,
-      p_due_date: due,
+      p_due_at: due,
       p_status: status,
-      p_external_ref: ref.trim() || null,
+      p_external_reference: ref.trim() || null,
     };
     const { error } = await supabase.rpc("create_charge_admin", payload);
     setBusy(false);
