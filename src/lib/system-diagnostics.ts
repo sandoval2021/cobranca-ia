@@ -525,8 +525,7 @@ function checkFinanceiro(alerts: DiagnosticAlert[]) {
     });
 
   // lucro mês
-  const month = new Date().toISOString().slice(0, 7);
-  const summary = calculateFinanceSummary(filterEntriesByMonth(entries, month));
+  const summary = calculateFinanceSummary(filterEntriesByMonth(entries, new Date()));
   if (summary.net_profit < 0)
     alerts.push({
       id: "fin-lucro-negativo",
