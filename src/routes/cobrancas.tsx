@@ -1223,14 +1223,15 @@ function RenewCustomerDialog({
       return;
     }
     setBusy(true);
-    const { error } = await supabase.rpc("renew_customer_admin", {
+    const payload = {
       p_customer_id: customerId,
       p_months: m,
       p_amount_cents: cents,
-    });
+    };
+    const { error } = await supabase.rpc("renew_customer_admin", payload);
     setBusy(false);
     if (error) {
-      toast.error(friendlyRpcError(error.message));
+      toastRpcError(friendlyRpcError(error.message), "renew_customer_admin", payload, error);
       return;
     }
     toast.success("Cliente renovado com sucesso.");
