@@ -39,11 +39,6 @@ const TestesRoute = TestesRouteImport.update({
   path: '/testes',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminDnsRotasRoute = AdminDnsRotasRouteImport.update({
-  id: '/admin-dns-rotas',
-  path: '/admin-dns-rotas',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SegurancaLocalRoute = SegurancaLocalRouteImport.update({
   id: '/seguranca-local',
   path: '/seguranca-local',
