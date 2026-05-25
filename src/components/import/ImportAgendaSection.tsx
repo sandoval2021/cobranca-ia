@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
+import { applyRevendaVariables } from "@/lib/revenda-settings";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
