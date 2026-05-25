@@ -39,6 +39,7 @@ export type NavItem = {
 
 export const ownerNav: NavItem[] = [
   { to: "/", label: "Início", icon: LayoutDashboard, hint: "Visão geral do ambiente" },
+  { to: "/configuracao-inicial", label: "Configuração Inicial", icon: Wand2, hint: "Configure os passos essenciais antes de usar o sistema" },
   { to: "/empresas", label: "Empresas", icon: Building2, hint: "Empresas cadastradas" },
   { to: "/clientes", label: "Clientes", icon: Users, hint: "Sua base de clientes" },
   { to: "/operacao-dia", label: "Operação do dia", icon: CalendarClock, hint: "Quem precisa de atenção hoje" },
