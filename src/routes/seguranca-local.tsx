@@ -20,6 +20,7 @@ import {
   setupPin, changePin, disablePinProtection,
   isUnlocked, lockNow, unlockWithPin,
 } from "@/lib/local-security";
+import { LocalRoleSwitcher } from "@/components/auth/LocalRoleSwitcher";
 
 export const Route = createFileRoute("/seguranca-local")({
   head: () => ({
