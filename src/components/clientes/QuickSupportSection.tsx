@@ -20,6 +20,14 @@ import { applyRevendaVariables, getRevendaSettings, REVENDA_SETTINGS_EVENT } fro
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
 import type { ProtectedActionKind } from "@/lib/local-security";
+import {
+  DNS_ROUTES_EVENT,
+  buildServerPublicLink,
+  getDnsVariablesForServer,
+  getPrimaryRouteForServer,
+} from "@/lib/dns-routes";
+import { getServerById } from "@/lib/server-catalog";
+
 
 
 
