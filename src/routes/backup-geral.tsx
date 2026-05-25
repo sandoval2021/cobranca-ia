@@ -26,6 +26,7 @@ import {
   exportFullBackup, exportHealthReportTxt, getLocalDataHealth, getModuleSummaries,
   parseFullBackup, restoreFullBackup,
 } from "@/lib/backup-geral";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 
 export const Route = createFileRoute("/backup-geral")({
   head: () => ({
@@ -54,6 +55,7 @@ function BackupGeralPage() {
   const [confirmMode, setConfirmMode] = useState<RestoreMode | null>(null);
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [checks, setChecks] = useState<Record<string, boolean>>({});
+  const { guard, dialog: securityDialog } = useSecurityGuard();
 
   const refresh = useCallback(() => {
     setSummaries(getModuleSummaries());
@@ -65,13 +67,22 @@ function BackupGeralPage() {
   }, [refresh]);
 
   const handleExport = () => {
-    try {
-      const b = exportFullBackup();
-      toast.success(`Backup gerado com ${b.modules.length} módulo(s).`);
-    } catch {
-      toast.error("Não foi possível gerar o backup.");
-    }
+    guard({
+      kind: "backup",
+      title: "Exportar backup geral",
+      description: "O arquivo conterá dados sensíveis. Confirme com PIN.",
+      actionLabel: "Exportar",
+      onConfirm: () => {
+        try {
+          const b = exportFullBackup();
+          toast.success(`Backup gerado com ${b.modules.length} módulo(s).`);
+        } catch {
+          toast.error("Não foi possível gerar o backup.");
+        }
+      },
+    });
   };
+
 
   const handleReport = () => {
     try {
@@ -106,21 +117,32 @@ function BackupGeralPage() {
 
   const doRestore = (mode: RestoreMode) => {
     if (!preview) return;
-    try {
-      const { restored, skipped } = restoreFullBackup(preview.file, mode);
-      toast.success(
-        `Backup restaurado (${mode === "replace" ? "substituir" : "mesclar"}): ${restored} módulo(s).${
-          skipped ? ` ${skipped} ignorado(s).` : ""
-        }`,
-      );
-      setPreview(null);
-      setConfirmMode(null);
-      setConfirmReplace(false);
-      refresh();
-    } catch {
-      toast.error("Falha ao restaurar backup.");
-    }
+    guard({
+      kind: mode === "replace" ? "delete" : "backup",
+      title: mode === "replace" ? "Substituir dados locais" : "Mesclar backup",
+      description: mode === "replace"
+        ? "Esta ação substitui dados existentes. Confirme com PIN."
+        : "Importar e mesclar com dados atuais. Confirme com PIN.",
+      actionLabel: mode === "replace" ? "Substituir" : "Mesclar",
+      onConfirm: () => {
+        try {
+          const { restored, skipped } = restoreFullBackup(preview.file, mode);
+          toast.success(
+            `Backup restaurado (${mode === "replace" ? "substituir" : "mesclar"}): ${restored} módulo(s).${
+              skipped ? ` ${skipped} ignorado(s).` : ""
+            }`,
+          );
+          setPreview(null);
+          setConfirmMode(null);
+          setConfirmReplace(false);
+          refresh();
+        } catch {
+          toast.error("Falha ao restaurar backup.");
+        }
+      },
+    });
   };
+
 
   const totalItems = useMemo(
     () => summaries.reduce((acc, s) => acc + (s.present ? s.count : 0), 0),
@@ -378,6 +400,7 @@ function BackupGeralPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </PageContainer>
   );
 }

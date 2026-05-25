@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TestesRouteImport } from './routes/testes'
+import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
 import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
 import { Route as PendenciasRouteImport } from './routes/pendencias'
@@ -35,6 +36,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const TestesRoute = TestesRouteImport.update({
   id: '/testes',
   path: '/testes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SegurancaLocalRoute = SegurancaLocalRouteImport.update({
+  id: '/seguranca-local',
+  path: '/seguranca-local',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RelatorioRoute = RelatorioRouteImport.update({
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/pendencias': typeof PendenciasRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
 }
 export interface FileRoutesByTo {
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   '/pendencias': typeof PendenciasRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
 }
 export interface FileRoutesById {
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/pendencias': typeof PendenciasRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
 }
 export interface FileRouteTypes {
@@ -240,6 +249,7 @@ export interface FileRouteTypes {
     | '/pendencias'
     | '/regras-disparo'
     | '/relatorio'
+    | '/seguranca-local'
     | '/testes'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/pendencias'
     | '/regras-disparo'
     | '/relatorio'
+    | '/seguranca-local'
     | '/testes'
   id:
     | '__root__'
@@ -288,6 +299,7 @@ export interface FileRouteTypes {
     | '/pendencias'
     | '/regras-disparo'
     | '/relatorio'
+    | '/seguranca-local'
     | '/testes'
   fileRoutesById: FileRoutesById
 }
@@ -313,6 +325,7 @@ export interface RootRouteChildren {
   PendenciasRoute: typeof PendenciasRoute
   RegrasDisparoRoute: typeof RegrasDisparoRoute
   RelatorioRoute: typeof RelatorioRoute
+  SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
 }
 
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       path: '/testes'
       fullPath: '/testes'
       preLoaderRoute: typeof TestesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/seguranca-local': {
+      id: '/seguranca-local'
+      path: '/seguranca-local'
+      fullPath: '/seguranca-local'
+      preLoaderRoute: typeof SegurancaLocalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/relatorio': {
@@ -497,6 +517,7 @@ const rootRouteChildren: RootRouteChildren = {
   PendenciasRoute: PendenciasRoute,
   RegrasDisparoRoute: RegrasDisparoRoute,
   RelatorioRoute: RelatorioRoute,
+  SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
 }
 export const routeTree = rootRouteImport
