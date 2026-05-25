@@ -28,6 +28,8 @@ import {
   SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+
 
 export const Route = createFileRoute("/catalogo-servidores")({
   component: CatalogoServidoresPage,
