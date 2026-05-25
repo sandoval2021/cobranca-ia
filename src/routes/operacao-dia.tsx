@@ -49,6 +49,11 @@ import {
   mask,
   formatScreenAsText,
   ROUTE_OPTIONS,
+  isPaidApp,
+  appDueDays,
+  paidAppAlerts,
+  paidAlertClass,
+  PAID_ALERT_LABEL,
 } from "@/lib/app-screens";
 
 export const Route = createFileRoute("/operacao-dia")({
