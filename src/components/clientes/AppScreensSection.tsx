@@ -348,9 +348,17 @@ export function AppScreensSection({
                           Rota: {routeName}
                         </span>
                       )}
+                      {s.server_ids && s.server_ids.length > 0 ? (
+                        s.server_ids.map((sid) => (
+                          <ServerBadge key={sid} serverId={sid} />
+                        ))
+                      ) : (
+                        <SemServidorBadge />
+                      )}
                     </div>
                   </div>
                 </button>
+
 
                 {expanded && (
                   <div className="space-y-3 border-t border-border p-3">
