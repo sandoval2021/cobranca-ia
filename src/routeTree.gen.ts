@@ -26,6 +26,7 @@ import { Route as EmpresasRouteImport } from './routes/empresas'
 import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
 import { Route as ConfiguracoesRevendaRouteImport } from './routes/configuracoes-revenda'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
+import { Route as ConfiguracaoInicialRouteImport } from './routes/configuracao-inicial'
 import { Route as CobrancasRouteImport } from './routes/cobrancas'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servidores'
@@ -120,6 +121,11 @@ const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfiguracaoInicialRoute = ConfiguracaoInicialRouteImport.update({
+  id: '/configuracao-inicial',
+  path: '/configuracao-inicial',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CobrancasRoute = CobrancasRouteImport.update({
   id: '/cobrancas',
   path: '/cobrancas',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
+  '/configuracao-inicial': typeof ConfiguracaoInicialRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/configuracoes-revenda': typeof ConfiguracoesRevendaRoute
   '/diagnostico': typeof DiagnosticoRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
+  '/configuracao-inicial': typeof ConfiguracaoInicialRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/configuracoes-revenda': typeof ConfiguracoesRevendaRoute
   '/diagnostico': typeof DiagnosticoRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
+  '/configuracao-inicial': typeof ConfiguracaoInicialRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/configuracoes-revenda': typeof ConfiguracoesRevendaRoute
   '/diagnostico': typeof DiagnosticoRoute
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/catalogo-servidores'
     | '/clientes'
     | '/cobrancas'
+    | '/configuracao-inicial'
     | '/configuracoes'
     | '/configuracoes-revenda'
     | '/diagnostico'
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/catalogo-servidores'
     | '/clientes'
     | '/cobrancas'
+    | '/configuracao-inicial'
     | '/configuracoes'
     | '/configuracoes-revenda'
     | '/diagnostico'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/catalogo-servidores'
     | '/clientes'
     | '/cobrancas'
+    | '/configuracao-inicial'
     | '/configuracoes'
     | '/configuracoes-revenda'
     | '/diagnostico'
@@ -336,6 +348,7 @@ export interface RootRouteChildren {
   CatalogoServidoresRoute: typeof CatalogoServidoresRoute
   ClientesRoute: typeof ClientesRoute
   CobrancasRoute: typeof CobrancasRoute
+  ConfiguracaoInicialRoute: typeof ConfiguracaoInicialRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   ConfiguracoesRevendaRoute: typeof ConfiguracoesRevendaRoute
   DiagnosticoRoute: typeof DiagnosticoRoute
@@ -476,6 +489,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfiguracoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/configuracao-inicial': {
+      id: '/configuracao-inicial'
+      path: '/configuracao-inicial'
+      fullPath: '/configuracao-inicial'
+      preLoaderRoute: typeof ConfiguracaoInicialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cobrancas': {
       id: '/cobrancas'
       path: '/cobrancas'
@@ -544,6 +564,7 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogoServidoresRoute: CatalogoServidoresRoute,
   ClientesRoute: ClientesRoute,
   CobrancasRoute: CobrancasRoute,
+  ConfiguracaoInicialRoute: ConfiguracaoInicialRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
   ConfiguracoesRevendaRoute: ConfiguracoesRevendaRoute,
   DiagnosticoRoute: DiagnosticoRoute,

@@ -275,7 +275,6 @@ function ConfiguracaoInicialPage() {
       <SectionHeader
         title="Configuração Inicial"
         subtitle="Configure os passos essenciais antes de usar o sistema."
-        icon={ListChecks}
       />
 
       <div className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-surface-muted p-3 text-xs">
