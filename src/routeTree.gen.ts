@@ -9,11 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TestesRouteImport } from './routes/testes'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
 import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
 import { Route as PendenciasRouteImport } from './routes/pendencias'
 import { Route as OperacaoDiaRouteImport } from './routes/operacao-dia'
 import { Route as MensagensRouteImport } from './routes/mensagens'
+import { Route as IndicacoesRouteImport } from './routes/indicacoes'
 import { Route as ImportarClientesRouteImport } from './routes/importar-clientes'
 import { Route as IaRouteImport } from './routes/ia'
 import { Route as FilaSimuladaRouteImport } from './routes/fila-simulada'
@@ -27,6 +29,11 @@ import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TestesRoute = TestesRouteImport.update({
+  id: '/testes',
+  path: '/testes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RelatorioRoute = RelatorioRouteImport.update({
   id: '/relatorio',
   path: '/relatorio',
@@ -50,6 +57,11 @@ const OperacaoDiaRoute = OperacaoDiaRouteImport.update({
 const MensagensRoute = MensagensRouteImport.update({
   id: '/mensagens',
   path: '/mensagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndicacoesRoute = IndicacoesRouteImport.update({
+  id: '/indicacoes',
+  path: '/indicacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImportarClientesRoute = ImportarClientesRouteImport.update({
@@ -126,11 +138,13 @@ export interface FileRoutesByFullPath {
   '/fila-simulada': typeof FilaSimuladaRoute
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
+  '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/testes': typeof TestesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -145,11 +159,13 @@ export interface FileRoutesByTo {
   '/fila-simulada': typeof FilaSimuladaRoute
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
+  '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/testes': typeof TestesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -165,11 +181,13 @@ export interface FileRoutesById {
   '/fila-simulada': typeof FilaSimuladaRoute
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
+  '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/testes': typeof TestesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -186,11 +204,13 @@ export interface FileRouteTypes {
     | '/fila-simulada'
     | '/ia'
     | '/importar-clientes'
+    | '/indicacoes'
     | '/mensagens'
     | '/operacao-dia'
     | '/pendencias'
     | '/regras-disparo'
     | '/relatorio'
+    | '/testes'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -205,11 +225,13 @@ export interface FileRouteTypes {
     | '/fila-simulada'
     | '/ia'
     | '/importar-clientes'
+    | '/indicacoes'
     | '/mensagens'
     | '/operacao-dia'
     | '/pendencias'
     | '/regras-disparo'
     | '/relatorio'
+    | '/testes'
   id:
     | '__root__'
     | '/'
@@ -224,11 +246,13 @@ export interface FileRouteTypes {
     | '/fila-simulada'
     | '/ia'
     | '/importar-clientes'
+    | '/indicacoes'
     | '/mensagens'
     | '/operacao-dia'
     | '/pendencias'
     | '/regras-disparo'
     | '/relatorio'
+    | '/testes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,15 +268,24 @@ export interface RootRouteChildren {
   FilaSimuladaRoute: typeof FilaSimuladaRoute
   IaRoute: typeof IaRoute
   ImportarClientesRoute: typeof ImportarClientesRoute
+  IndicacoesRoute: typeof IndicacoesRoute
   MensagensRoute: typeof MensagensRoute
   OperacaoDiaRoute: typeof OperacaoDiaRoute
   PendenciasRoute: typeof PendenciasRoute
   RegrasDisparoRoute: typeof RegrasDisparoRoute
   RelatorioRoute: typeof RelatorioRoute
+  TestesRoute: typeof TestesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/testes': {
+      id: '/testes'
+      path: '/testes'
+      fullPath: '/testes'
+      preLoaderRoute: typeof TestesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/relatorio': {
       id: '/relatorio'
       path: '/relatorio'
@@ -286,6 +319,13 @@ declare module '@tanstack/react-router' {
       path: '/mensagens'
       fullPath: '/mensagens'
       preLoaderRoute: typeof MensagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/indicacoes': {
+      id: '/indicacoes'
+      path: '/indicacoes'
+      fullPath: '/indicacoes'
+      preLoaderRoute: typeof IndicacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/importar-clientes': {
@@ -388,11 +428,13 @@ const rootRouteChildren: RootRouteChildren = {
   FilaSimuladaRoute: FilaSimuladaRoute,
   IaRoute: IaRoute,
   ImportarClientesRoute: ImportarClientesRoute,
+  IndicacoesRoute: IndicacoesRoute,
   MensagensRoute: MensagensRoute,
   OperacaoDiaRoute: OperacaoDiaRoute,
   PendenciasRoute: PendenciasRoute,
   RegrasDisparoRoute: RegrasDisparoRoute,
   RelatorioRoute: RelatorioRoute,
+  TestesRoute: TestesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

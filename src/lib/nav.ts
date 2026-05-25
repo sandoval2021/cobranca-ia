@@ -16,6 +16,8 @@ import {
   BookOpen,
   SlidersHorizontal,
   Server,
+  Beaker,
+  Gift,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -42,6 +44,8 @@ export const ownerNav: NavItem[] = [
   { to: "/relatorio", label: "Relatório", icon: BarChart3, hint: "Relatório da simulação" },
   { to: "/base-conhecimento", label: "Base da IA", icon: BookOpen, hint: "Respostas e regras para o atendimento" },
   { to: "/catalogo-servidores", label: "Servidores", icon: Server, hint: "Servidores e painéis usados nas telas" },
+  { to: "/testes", label: "Testes", icon: Beaker, hint: "Pessoas em teste/leads" },
+  { to: "/indicacoes", label: "Indicações", icon: Gift, hint: "Indicações e bonificações" },
   { to: "/regras-disparo", label: "Regras de disparo", icon: SlidersHorizontal, hint: "Quando sugerir mensagens manuais" },
   { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente" },
   { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Testes de conexão" },
