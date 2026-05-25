@@ -390,14 +390,17 @@ Sua mensagem foi registrada e respondo assim que possível. Obrigado pela compre
 // short / completo helpers para o card atual
 function genShort(i: GenInput): string {
   const { screen: s } = i;
+  const ri = getScreenRouteInfo(s);
+  const routeLine = `\n🌐 Rota pública: ${ri.routeHost || "não informado"}`;
   if (isMacKeyApp(s)) {
-    return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}\nMAC: ${s.mac ?? "—"} · Key: ${mask(s.app_key)}${s.portal_url ? `\nPortal: ${s.portal_url}` : ""}`;
+    return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}\nMAC: ${s.mac ?? "—"} · Key: ${mask(s.app_key)}${s.portal_url ? `\nPortal: ${s.portal_url}` : ""}${routeLine}`;
   }
   if (isUserPassApp(s)) {
-    return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}\nUsuário: ${s.username ?? "—"} · Senha: ${mask(s.password)}${s.server ? `\nServidor: ${s.server}${s.port ? `:${s.port}` : ""}` : ""}`;
+    return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}\nUsuário: ${s.username ?? "—"} · Senha: ${mask(s.password)}${s.server ? `\nServidor: ${s.server}${s.port ? `:${s.port}` : ""}` : ""}${routeLine}`;
   }
-  return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}`;
+  return `Tela: ${s.name} · ${APP_CATALOG[s.app]?.label ?? s.app}${routeLine}`;
 }
+
 
 const SUPPORT_DEFS: { key: SupportKey; label: string; description: string; gen: (i: GenInput) => string }[] = [
   { key: "dados_acesso",        label: "Dados de acesso",       description: "Envie os dados do app",                gen: genDadosAcesso },
