@@ -340,6 +340,19 @@ function ShortcutTile({
 
 function Dashboard() {
   const { counters, health, totalModules } = useDashboardData();
+  const [protectedMode, setProtectedMode] = useState(false);
+
+  useEffect(() => {
+    const refresh = () => setProtectedMode(isProtectedModeActive());
+    refresh();
+    window.addEventListener(LOCAL_SECURITY_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(LOCAL_SECURITY_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
 
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
