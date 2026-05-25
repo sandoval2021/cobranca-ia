@@ -269,8 +269,9 @@ function TestesPage() {
   return (
     <PageContainer>
       <SectionHeader
-        title="Testes"
+        title={<span className="inline-flex items-center gap-2">Testes <ProtectedModeBadge /></span>}
         subtitle="Acompanhe pessoas que pediram teste e ainda não viraram clientes."
+
         action={
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => { setEditing(null); setOpenNew(true); }} className="gap-2">
