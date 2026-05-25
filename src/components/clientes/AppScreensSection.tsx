@@ -658,6 +658,12 @@ function ScreenSheet({
       setRoute(initial.route ?? "");
       setNeedsUpdate(!!initial.needs_server_update);
       setNotes(initial.notes ?? "");
+      setServerIds(initial.server_ids ?? []);
+      setPrimaryServerId(initial.primary_server_id ?? "");
+      setListServerUrl(initial.list_server_url ?? "");
+      setListUsername(initial.list_username ?? "");
+      setListPassword(initial.list_password ?? "");
+      setServerNotes(initial.server_notes ?? "");
     } else {
       const def = APP_CATALOG.xciptv;
       setName("");
@@ -668,6 +674,8 @@ function ScreenSheet({
       setMac(""); setAppKey(""); setPortalUrl(""); setDueDate("");
       setAppDueDate(""); setAppRenewalValue("");
       setStatus("ativa"); setRoute(""); setNeedsUpdate(false); setNotes("");
+      setServerIds([]); setPrimaryServerId("");
+      setListServerUrl(""); setListUsername(""); setListPassword(""); setServerNotes("");
     }
   }, [open, initial]);
 
