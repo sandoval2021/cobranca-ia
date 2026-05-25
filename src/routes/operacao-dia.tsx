@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
+import { ImportAgendaSection } from "@/components/import/ImportAgendaSection";
+
 import { EmptyState } from "@/components/ui-premium/EmptyState";
 import { ListCardSkeleton } from "@/components/ui-premium/Skeletons";
 import { Button } from "@/components/ui/button";
@@ -757,9 +759,17 @@ function OperacaoDiaPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <div className="mt-4">
+        <ImportAgendaSection
+          title="Disparos planejados pela importação"
+          subtitle="Itens vindos da última importação local. Nenhum envio automático."
+          hideWhenEmpty
+        />
+      </div>
     </PageContainer>
   );
 }
+
 
 // ---------- subcomponents ----------
 function SummaryCard({

@@ -53,10 +53,13 @@ import {
   GROUP_LABEL,
   fmtBRLPublic,
   fmtDateBRPublic,
+  saveImportScheduleItems,
+  clearImportScheduleItems,
   type ScheduleItem,
   type ChipKey,
   type DispatchGroup,
 } from "@/lib/import-schedule";
+
 
 type RowKind = "new" | "existing" | "duplicate_file" | "error";
 
@@ -769,8 +772,11 @@ function ImportScheduleSection({ rows }: { rows: ValidatedRow[] }) {
     applyPersistedStatus(baseItems),
   );
   useEffect(() => {
-    setItems(applyPersistedStatus(baseItems));
+    const next = applyPersistedStatus(baseItems);
+    setItems(next);
+    saveImportScheduleItems(next);
   }, [baseItems]);
+
 
   const [chip, setChip] = useState<ChipKey>("todos");
   const [revealId, setRevealId] = useState<string | null>(null);
@@ -815,8 +821,13 @@ function ImportScheduleSection({ rows }: { rows: ValidatedRow[] }) {
 
   function updateStatus(it: ScheduleItem, status: ScheduleItem["status"]) {
     setSchedStatus(it, status);
-    setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, status } : x)));
+    setItems((prev) => {
+      const next = prev.map((x) => (x.id === it.id ? { ...x, status } : x));
+      saveImportScheduleItems(next);
+      return next;
+    });
   }
+
 
   async function copyMessage(it: ScheduleItem) {
     if (!it.message) {
@@ -851,9 +862,13 @@ function ImportScheduleSection({ rows }: { rows: ValidatedRow[] }) {
   function clearStatuses() {
     if (!window.confirm("Limpar status locais da agenda? Isso não apaga clientes.")) return;
     clearSchedPersisted();
-    setItems(baseItems.map((it) => ({ ...it })));
+    clearImportScheduleItems();
+    const next = baseItems.map((it) => ({ ...it }));
+    setItems(next);
+    saveImportScheduleItems(next);
     toast.success("Status locais limpos");
   }
+
 
   const groupsOrder: { key: DispatchGroup; title: string }[] = [
     { key: "hoje", title: GROUP_LABEL.hoje },

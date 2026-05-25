@@ -447,3 +447,128 @@ export function fmtBRLPublic(cents: number | null): string {
 export function fmtDateBRPublic(iso: string | null): string {
   return fmtDateBR(iso);
 }
+
+// ====================================================================
+// Cross-screen persistence: full agenda items (last import) + summary
+// ====================================================================
+
+const ITEMS_KEY = "cobranca_ia_import_schedule_items_v1";
+const ITEMS_EVENT = "cobranca_ia_import_schedule:changed";
+
+export function saveImportScheduleItems(items: ScheduleItem[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    const payload = { saved_at: new Date().toISOString(), items };
+    window.localStorage.setItem(ITEMS_KEY, JSON.stringify(payload));
+    window.dispatchEvent(new CustomEvent(ITEMS_EVENT));
+  } catch {
+    // ignore quota
+  }
+}
+
+export function listImportScheduleItems(): ScheduleItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(ITEMS_KEY);
+    if (!raw) return [];
+    const j = JSON.parse(raw);
+    const items: ScheduleItem[] = Array.isArray(j) ? j : Array.isArray(j?.items) ? j.items : [];
+    return applyPersistedStatus(items);
+  } catch {
+    return [];
+  }
+}
+
+export function clearImportScheduleItems(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(ITEMS_KEY);
+    window.dispatchEvent(new CustomEvent(ITEMS_EVENT));
+  } catch {
+    // ignore
+  }
+}
+
+export type ImportScheduleSummary = {
+  total: number;
+  planned: number;
+  blocked: number;
+  today: number;
+  tomorrow: number;
+  next7: number;
+  overdueRecent: number;
+  recover: number;
+  inactive: number;
+  pending: number;
+  copied: number;
+  ignored: number;
+  review: number;
+  noWa: number;
+  noDue: number;
+  dup: number;
+  saved_at: string | null;
+};
+
+export function getImportScheduleSummary(): ImportScheduleSummary {
+  const items = listImportScheduleItems();
+  let saved_at: string | null = null;
+  if (typeof window !== "undefined") {
+    try {
+      const raw = window.localStorage.getItem(ITEMS_KEY);
+      if (raw) {
+        const j = JSON.parse(raw);
+        saved_at = typeof j?.saved_at === "string" ? j.saved_at : null;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  const blocked = items.filter((i) => i.group === "bloqueados").length;
+  return {
+    total: items.length,
+    planned: items.length - blocked,
+    blocked,
+    today: items.filter((i) => i.group === "hoje").length,
+    tomorrow: items.filter((i) => i.group === "amanha").length,
+    next7: items.filter((i) => i.group === "prox7" || i.group === "hoje" || i.group === "amanha").length,
+    overdueRecent: items.filter((i) => i.days != null && i.days < 0 && i.days >= -7).length,
+    recover: items.filter((i) => i.kind === "recuperar_cliente").length,
+    inactive: items.filter((i) => i.kind === "campanha_retorno").length,
+    pending: items.filter((i) => i.status === "pronto" || i.status === "planejado").length,
+    copied: items.filter((i) => i.status === "copiado").length,
+    ignored: items.filter((i) => i.status === "ignorado").length,
+    review: items.filter((i) => i.status === "revisar").length,
+    noWa: items.filter((i) => !i.whatsapp).length,
+    noDue: items.filter((i) => !i.due_date).length,
+    dup: items.filter((i) => i.reason.toLowerCase().includes("duplicado")).length,
+    saved_at,
+  };
+}
+
+export function getImportScheduleStatus(it: ScheduleItem): ScheduleStatus {
+  const map = readPersisted();
+  const k = statusKey(it);
+  return map[k]?.status ?? it.status;
+}
+
+export function updateImportScheduleStatus(it: ScheduleItem, status: ScheduleStatus): void {
+  setStatus(it, status);
+  // Also reflect in saved list so re-reads keep the new status.
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(ITEMS_KEY);
+    if (raw) {
+      const j = JSON.parse(raw);
+      const items: ScheduleItem[] = Array.isArray(j?.items) ? j.items : Array.isArray(j) ? j : [];
+      const k = statusKey(it);
+      const next = items.map((x) => (statusKey(x) === k ? { ...x, status } : x));
+      const payload = { saved_at: j?.saved_at ?? new Date().toISOString(), items: next };
+      window.localStorage.setItem(ITEMS_KEY, JSON.stringify(payload));
+    }
+    window.dispatchEvent(new CustomEvent(ITEMS_EVENT));
+  } catch {
+    // ignore
+  }
+}
+
+export const IMPORT_SCHEDULE_EVENT = ITEMS_EVENT;
