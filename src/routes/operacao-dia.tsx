@@ -269,6 +269,7 @@ function OperacaoDiaPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<OpFilter>("hoje");
+  const [serverFilter, setServerFilter] = useState<string>("__all__");
   const [screensVersion, setScreensVersion] = useState(0);
   const [confirmReveal, setConfirmReveal] = useState<
     | null
