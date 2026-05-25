@@ -877,6 +877,11 @@ function PriorityCard({
     return msgCobrancaHoje(p.customer.name);
   };
 
+  const alerts = s ? paidAppAlerts(s) : [];
+  const paid = s ? isPaidApp(s) : false;
+  const adays = s && paid ? appDueDays(s) : null;
+  const appLabel = appMeta?.label ?? "";
+
   return (
     <div className="rounded-xl border border-border bg-card p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -888,12 +893,27 @@ function PriorityCard({
                 {appMeta.label}
               </span>
             )}
+            {paid && (
+              <span className="rounded-md border border-purple-400/60 bg-purple-100 px-1.5 py-0.5 text-[10px] text-purple-700 dark:bg-purple-500/15 dark:text-purple-300">
+                App pago
+              </span>
+            )}
             <span className={cn("rounded-md px-1.5 py-0.5 text-[10px]", urgencyClass(urgency))}>
               {urgencyLabel(urgency, days)}
             </span>
             {p.needsUpdate && (
               <span className="rounded-md border border-violet-400/60 bg-violet-100 px-1.5 py-0.5 text-[10px] text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
                 Atualizar servidor
+              </span>
+            )}
+            {alerts.map((a) => (
+              <span key={a} className={cn("rounded-md px-1.5 py-0.5 text-[10px]", paidAlertClass(a))}>
+                {a === "vence_7d" && adays != null ? `App vence em ${adays}d` : PAID_ALERT_LABEL[a]}
+              </span>
+            ))}
+            {s?.app_renewal_value && paid && (
+              <span className="rounded-md border border-emerald-400/60 bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                Renovação: {s.app_renewal_value}
               </span>
             )}
           </div>
@@ -903,6 +923,7 @@ function PriorityCard({
               <>
                 {" · "}{s.name}
                 {s.due_date ? <> · vence {fmtDateBR(s.due_date)}</> : null}
+                {s.app_due_date ? <> · app vence {fmtDateBR(s.app_due_date)}</> : null}
                 {s.route ? <> · {ROUTE_OPTIONS.find((o) => o.value === s.route)?.label}</> : null}
               </>
             ) : (
@@ -931,6 +952,24 @@ function PriorityCard({
         >
           <Copy className="h-3.5 w-3.5" /> Cobrança
         </Button>
+        {s && paid && alerts.includes("vencido") && (
+          <Button size="sm" variant="outline" className="gap-1"
+            onClick={() => copy(msgAppVencido(p.customer.name, appLabel, s.name, fmtDateBR(s.app_due_date)), "App vencido")}>
+            <Copy className="h-3.5 w-3.5" /> Aviso app vencido
+          </Button>
+        )}
+        {s && paid && (alerts.includes("vence_7d") || alerts.includes("vence_30d")) && adays != null && (
+          <Button size="sm" variant="outline" className="gap-1"
+            onClick={() => copy(msgAppVencendo(p.customer.name, appLabel, s.name, adays, fmtDateBR(s.app_due_date), s.app_renewal_value), "App vencendo")}>
+            <Copy className="h-3.5 w-3.5" /> Aviso app vencendo
+          </Button>
+        )}
+        {s && paid && alerts.includes("sem_mac_key") && (
+          <Button size="sm" variant="outline" className="gap-1"
+            onClick={() => copy(msgPedirMacKeyApp(p.customer.name, appLabel), "Pedir MAC/Key")}>
+            <Copy className="h-3.5 w-3.5" /> Pedir MAC/Key
+          </Button>
+        )}
         {s && (
           <>
             <Button
