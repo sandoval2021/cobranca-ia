@@ -11,10 +11,12 @@ import {
 import { EmptyState } from "@/components/ui-premium/EmptyState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 import {
   APP_CATALOG, AppScreen, ROUTE_OPTIONS,
   listScreens, mask,
 } from "@/lib/app-screens";
+import { applyRevendaVariables, getRevendaSettings, REVENDA_SETTINGS_EVENT } from "@/lib/revenda-settings";
 
 // ------- tipos & storage -------
 
@@ -85,10 +87,11 @@ function pushHistory(item: Omit<HistoryItem, "id" | "at">) {
 
 function copyText(text: string, label: string, meta?: Omit<HistoryItem, "id" | "at" | "text">) {
   if (!text) return;
+  const finalText = applyRevendaVariables(text);
   try {
-    navigator.clipboard?.writeText(text);
+    navigator.clipboard?.writeText(finalText);
     toast.success(`${label} copiado`);
-    if (meta) pushHistory({ ...meta, text });
+    if (meta) pushHistory({ ...meta, text: finalText });
   } catch {
     toast.error("Não foi possível copiar");
   }
@@ -312,11 +315,17 @@ Cadastre esses dados no portal do app. Qualquer dúvida me chama.`
 
 function genForaHorario(i: GenInput): string {
   const { customerName } = i;
+  const rev = getRevendaSettings();
+  const custom = rev.atendimento.texto_fora_horario?.trim();
+  if (custom) {
+    return `Olá ${customerName}! 😊\n${applyRevendaVariables(custom)}`;
+  }
+  const horario = rev.atendimento.horario_semana?.trim() || "segunda a sábado, das 09h às 21h";
   return (
 `Olá ${customerName}! 😊
 No momento estamos fora do horário de atendimento.
 
-🕘 Atendimento: segunda a sábado, das 09h às 21h.
+🕘 Atendimento: ${horario}.
 
 Sua mensagem foi registrada e respondo assim que possível. Obrigado pela compreensão!`
   );
@@ -347,18 +356,23 @@ const SUPPORT_DEFS: { key: SupportKey; label: string; description: string; gen: 
   { key: "fora_horario",        label: "Suporte fora do horário", description: "Aviso de horário de atendimento",     gen: genForaHorario },
 ];
 
-const QUICK_MESSAGES: { key: QuickKey; label: string; text: string }[] = [
-  { key: "bom_dia",                label: "Bom dia, como posso ajudar?",       text: "Bom dia! 😊 Como posso te ajudar hoje?" },
-  { key: "pedir_print",            label: "Por favor, envie print do erro",    text: "Por favor, me envia um print da tela com o erro para eu te ajudar?" },
-  { key: "informar_app",           label: "Informe qual app você usa",         text: "Você consegue me informar qual aplicativo está usando na sua TV?" },
-  { key: "informar_mac_key",       label: "Informe MAC e Key",                 text: "Para te ajudar, me informa por favor o MAC e a Key do seu aparelho." },
-  { key: "informar_user_pass",     label: "Informe usuário e senha",           text: "Para te ajudar, me informa por favor o usuário e a senha cadastrados no app." },
-  { key: "encerrado",              label: "Atendimento encerrado",             text: "Tudo certo então! Qualquer coisa estou à disposição. 😊" },
-  { key: "horario",                label: "Horário de atendimento",            text: "Nosso horário de atendimento é de segunda a sábado, das 09h às 21h. 🕘" },
-  { key: "renovacao_disponivel",   label: "Mensalidade disponível para renovação", text: "Sua mensalidade já está disponível para renovação. Quando puder, me confirme o pagamento. Obrigado!" },
-  { key: "acesso_vencido",         label: "Seu acesso está vencido",           text: "Identifiquei que seu acesso está vencido. Para evitar interrupção, por favor regularize quando possível." },
-  { key: "vou_verificar",          label: "Vou verificar sua tela",            text: "Vou verificar sua tela aqui e já te retorno, ok? 😊" },
-];
+function buildQuickMessages(): { key: QuickKey; label: string; text: string }[] {
+  const rev = getRevendaSettings();
+  const a = rev.atendimento;
+  const horarioFallback = "Nosso horário de atendimento é de segunda a sábado, das 09h às 21h. 🕘";
+  return [
+    { key: "bom_dia",                label: "Bom dia, como posso ajudar?",       text: "Bom dia! 😊 Como posso te ajudar hoje?" },
+    { key: "pedir_print",            label: "Por favor, envie print do erro",    text: a.texto_pedir_print?.trim() || "Por favor, me envia um print da tela com o erro para eu te ajudar?" },
+    { key: "informar_app",           label: "Informe qual app você usa",         text: a.texto_pedir_nome_app?.trim() || "Você consegue me informar qual aplicativo está usando na sua TV?" },
+    { key: "informar_mac_key",       label: "Informe MAC e Key",                 text: "Para te ajudar, me informa por favor o MAC e a Key do seu aparelho." },
+    { key: "informar_user_pass",     label: "Informe usuário e senha",           text: "Para te ajudar, me informa por favor o usuário e a senha cadastrados no app." },
+    { key: "encerrado",              label: "Atendimento encerrado",             text: "Tudo certo então! Qualquer coisa estou à disposição. 😊" },
+    { key: "horario",                label: "Horário de atendimento",            text: a.horario_semana?.trim() ? `Nosso horário de atendimento: ${a.horario_semana}. 🕘` : horarioFallback },
+    { key: "renovacao_disponivel",   label: "Mensalidade disponível para renovação", text: "Sua mensalidade já está disponível para renovação. Quando puder, me confirme o pagamento. Obrigado!" },
+    { key: "acesso_vencido",         label: "Seu acesso está vencido",           text: "Identifiquei que seu acesso está vencido. Para evitar interrupção, por favor regularize quando possível." },
+    { key: "vou_verificar",          label: "Vou verificar sua tela",            text: "Vou verificar sua tela aqui e já te retorno, ok? 😊" },
+  ];
+}
 
 // ------- componente -------
 
@@ -373,23 +387,28 @@ export function QuickSupportSection({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reveal, setReveal] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [quickMessages, setQuickMessages] = useState(() => buildQuickMessages());
   const [confirmReveal, setConfirmReveal] = useState<null | {
     onConfirm: () => void;
   }>(null);
 
   const refreshScreens = () => setScreens(listScreens(customerId));
   const refreshHistory = () => setHistory(readHistory());
+  const refreshQuick = () => setQuickMessages(buildQuickMessages());
 
   useEffect(() => {
     refreshScreens();
     refreshHistory();
     const onS = () => refreshScreens();
     const onH = () => refreshHistory();
+    const onR = () => refreshQuick();
     window.addEventListener("app-screens:changed", onS);
     window.addEventListener("quick-support:history-changed", onH);
+    window.addEventListener(REVENDA_SETTINGS_EVENT, onR);
     return () => {
       window.removeEventListener("app-screens:changed", onS);
       window.removeEventListener("quick-support:history-changed", onH);
+      window.removeEventListener(REVENDA_SETTINGS_EVENT, onR);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
@@ -432,6 +451,11 @@ export function QuickSupportSection({
       <div className="rounded-md border border-info/40 bg-info-soft/40 p-2 text-[11px] text-info">
         <AlertCircle className="mr-1 inline h-3 w-3" />
         Nada será enviado automaticamente. Você apenas copia o texto e envia manualmente.
+      </div>
+
+      <div className="text-[11px] text-muted-foreground">
+        Mensagens usando dados de Minha Revenda.{" "}
+        <Link to="/configuracoes-revenda" className="underline">Editar Minha Revenda</Link>
       </div>
 
       {/* Seleção de tela */}
@@ -574,7 +598,7 @@ export function QuickSupportSection({
           <MessageSquare className="h-3 w-3" /> Mensagens prontas
         </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {QUICK_MESSAGES.map((m) => (
+          {quickMessages.map((m) => (
             <button
               key={m.key}
               type="button"

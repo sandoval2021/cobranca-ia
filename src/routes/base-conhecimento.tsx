@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { applyRevendaVariables } from "@/lib/revenda-settings";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen, Plus, Pencil, Trash2, Download, Upload, RotateCcw,
@@ -130,6 +131,26 @@ function BaseConhecimentoPage() {
             <strong>Modo local:</strong> essa base ainda não chama IA real. Ela apenas organiza conhecimento para uso futuro.
           </span>
         </div>
+      </div>
+
+      <div className="rounded-md border border-border bg-card p-3 text-xs">
+        <div className="mb-1 font-semibold">Variáveis da Revenda disponíveis</div>
+        <p className="text-muted-foreground">
+          Use estas chaves nas respostas. Elas serão substituídas pelos dados de Minha Revenda na hora de copiar/simular.
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1">
+          {[
+            "{nome_revenda}", "{responsavel}", "{whatsapp_suporte}", "{cidade}",
+            "{horario_semana}", "{horario_domingo}", "{pix}", "{recebedor}",
+            "{valor_mensal}", "{valor_tela_extra}", "{valor_app}",
+            "{valor_renovacao_app}", "{promocao}", "{data_fim_promocao}",
+          ].map((v) => (
+            <code key={v} className="rounded bg-muted px-1.5 py-0.5 text-[10px]">{v}</code>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Se não estiver preenchido em <Link to="/configuracoes-revenda" className="underline">Minha Revenda</Link>, aparece como “não informado”.
+        </p>
       </div>
 
       {/* Simulador */}
@@ -352,7 +373,7 @@ function SimulatorBlock() {
           {result.match ? (
             <>
               <div><strong>Resposta sugerida:</strong></div>
-              <p className="whitespace-pre-wrap rounded bg-card p-2">{result.match.full}</p>
+              <p className="whitespace-pre-wrap rounded bg-card p-2">{applyRevendaVariables(result.match.full)}</p>
             </>
           ) : (
             <p className="text-muted-foreground">Sem resposta na base. Crie um item para essa intenção.</p>

@@ -8,6 +8,7 @@ import {
   upsertScreen,
 } from "@/lib/app-screens";
 import { getServerById } from "@/lib/server-catalog";
+import { applyRevendaVariables } from "@/lib/revenda-settings";
 
 export type PaymentMethod = "pix" | "dinheiro" | "cartao" | "outro";
 
@@ -145,7 +146,7 @@ export function buildConfirmationMessage(rec: RenewalRecord): string {
   }
   lines.push("");
   lines.push("Se precisar de suporte, me chama por aqui.");
-  return lines.join("\n");
+  return applyRevendaVariables(lines.join("\n"));
 }
 
 export function applyRenewal(draft: RenewalDraft): RenewalRecord {

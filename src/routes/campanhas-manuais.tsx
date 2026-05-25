@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Megaphone,
@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { applyRevendaVariables } from "@/lib/revenda-settings";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/use-auth";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
@@ -289,10 +290,18 @@ function renderTemplate(
   body: string,
   values: Record<VarKey, string>,
 ): string {
-  return body.replace(/\{(\w+)\}/g, (_, k) => {
+  // Primeiro substitui variáveis do contexto da campanha; tokens desconhecidos
+  // permanecem para serem resolvidos por applyRevendaVariables (revenda).
+  const first = body.replace(/\{(\w+)\}/g, (match, k) => {
     const v = (values as Record<string, string>)[k];
-    return v && v.length ? v : "não informado";
+    if (v && v.length) return v;
+    if (k in (values as Record<string, string>)) return "não informado";
+    return match;
   });
+  // Aplica variáveis globais da Minha Revenda.
+  const second = applyRevendaVariables(first);
+  // Qualquer placeholder remanescente vira "não informado".
+  return second.replace(/\{(\w+)\}/g, () => "não informado");
 }
 
 function hasSensitiveVars(body: string): boolean {
@@ -789,6 +798,11 @@ function CampanhasManuaisPage() {
         <span>
           <b>Modo manual:</b> nenhuma mensagem será enviada automaticamente. Esta tela não envia WhatsApp — apenas gera textos para copiar.
         </span>
+      </div>
+
+      <div className="mb-3 text-[11px] text-muted-foreground">
+        Variáveis da revenda disponíveis ({"{nome_revenda}, {pix}, {valor_mensal}…"}).{" "}
+        <Link to="/configuracoes-revenda" className="underline">Editar Minha Revenda</Link>
       </div>
 
       {/* Resumo */}

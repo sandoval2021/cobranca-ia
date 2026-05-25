@@ -267,6 +267,11 @@ function TestesPage() {
         </div>
       </Card>
 
+      <div className="mb-3 text-[11px] text-muted-foreground">
+        Mensagens usando dados de Minha Revenda.{" "}
+        <Link to="/configuracoes-revenda" className="underline">Editar Minha Revenda</Link>
+      </div>
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8 mb-4">
         <StatTile label="Novos" value={stats.novos} />
         <StatTile label="Em teste" value={stats.emTeste} />
