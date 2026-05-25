@@ -1007,6 +1007,13 @@ function CampanhasManuaisPage() {
                           Atualizar servidor
                         </span>
                       )}
+                      {p.screen && (
+                        (p.screen.server_ids ?? []).length > 0
+                          ? (p.screen.server_ids ?? []).map((sid) => (
+                              <ServerBadge key={sid} serverId={sid} size="xs" />
+                            ))
+                          : <SemServidorBadge />
+                      )}
                       {mark && isToday(mark.at) && (
                         <span className="rounded-md border border-emerald-400/60 bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                           Copiado às {new Date(mark.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
