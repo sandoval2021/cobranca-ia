@@ -388,6 +388,12 @@ function buildValues(
   const serverVars = s
     ? buildServerVarsForScreen(s, { revealSecrets: !!opts.revealSecrets })
     : { servidor: "", painel: "", usuario_painel: "", senha_painel: "", link_lista: "", usuario_lista: "", senha_lista: "" };
+  const sidsForDns = s?.server_ids ?? [];
+  const dnsServerId =
+    (s?.primary_server_id && sidsForDns.includes(s.primary_server_id))
+      ? s.primary_server_id
+      : sidsForDns[0];
+  const dnsVars = getDnsVariablesForServer(dnsServerId);
   return {
     nome: firstName(it.customer.name),
     whatsapp: prettyPhone(it.customer.whatsapp) ?? "",
@@ -411,6 +417,11 @@ function buildValues(
     link_lista: serverVars.link_lista,
     usuario_lista: serverVars.usuario_lista,
     senha_lista: serverVars.senha_lista,
+    dominio: dnsVars.dominio,
+    subdominio: dnsVars.subdominio,
+    rota_publica: dnsVars.rota_publica,
+    servidor_rota: dnsVars.servidor_rota,
+    link_publico: dnsVars.link_publico,
   };
 }
 
