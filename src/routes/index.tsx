@@ -111,7 +111,8 @@ function computeCounters(): {
     else if (dueDays != null && dueDays > 0 && dueDays <= 7) proximos7 += 1;
 
     for (const s of active) {
-      if (s.server_id) usedServerIds.add(s.server_id);
+      const ids = (s.server_ids ?? []) as string[];
+      for (const id of ids) if (id) usedServerIds.add(id);
       if (isPaidApp(s)) {
         const alerts = paidAppAlerts(s);
         if (alerts.includes("vencido") || alerts.includes("vence_7d")) {
