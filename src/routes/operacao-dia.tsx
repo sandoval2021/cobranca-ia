@@ -975,6 +975,9 @@ function PriorityCard({
                 Renovação: {s.app_renewal_value}
               </span>
             )}
+            {s && ((s.server_ids ?? []).length > 0
+              ? (s.server_ids ?? []).map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
+              : <SemServidorBadge />)}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
             {phone ?? "Sem WhatsApp"}
