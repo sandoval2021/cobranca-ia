@@ -1106,16 +1106,17 @@ function CreateChargeDialog({
       return;
     }
     setBusy(true);
-    const { error } = await supabase.rpc("create_charge_admin", {
+    const payload = {
       p_customer_id: customerId,
       p_amount_cents: cents,
       p_due_date: due,
       p_status: status,
       p_external_ref: ref.trim() || null,
-    });
+    };
+    const { error } = await supabase.rpc("create_charge_admin", payload);
     setBusy(false);
     if (error) {
-      toast.error(friendlyRpcError(error.message));
+      toastRpcError(friendlyRpcError(error.message), "create_charge_admin", payload, error);
       return;
     }
     toast.success("Cobrança criada com sucesso.");
