@@ -14,7 +14,9 @@ import {
   Megaphone,
   AlertCircle,
   BookOpen,
+  SlidersHorizontal,
 } from "lucide-react";
+
 import type { LucideIcon } from "lucide-react";
 
 export type NavItem = {
@@ -38,8 +40,10 @@ export const ownerNav: NavItem[] = [
   { to: "/fila-simulada", label: "Fila simulada", icon: ListChecks, hint: "Cobranças planejadas antes de envio" },
   { to: "/relatorio", label: "Relatório", icon: BarChart3, hint: "Relatório da simulação" },
   { to: "/base-conhecimento", label: "Base da IA", icon: BookOpen, hint: "Respostas e regras para o atendimento" },
+  { to: "/regras-disparo", label: "Regras de disparo", icon: SlidersHorizontal, hint: "Quando sugerir mensagens manuais" },
   { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente" },
   { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Testes de conexão" },
+
 ];
 
 export const ownerBottomNav: NavItem[] = [

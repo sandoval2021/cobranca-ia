@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
+import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
 import { Route as PendenciasRouteImport } from './routes/pendencias'
 import { Route as OperacaoDiaRouteImport } from './routes/operacao-dia'
 import { Route as MensagensRouteImport } from './routes/mensagens'
@@ -28,6 +29,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const RelatorioRoute = RelatorioRouteImport.update({
   id: '/relatorio',
   path: '/relatorio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegrasDisparoRoute = RegrasDisparoRouteImport.update({
+  id: '/regras-disparo',
+  path: '/regras-disparo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PendenciasRoute = PendenciasRouteImport.update({
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/mensagens': typeof MensagensRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
+  '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
 }
 export interface FileRoutesByTo {
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/mensagens': typeof MensagensRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
+  '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
 }
 export interface FileRoutesById {
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/mensagens': typeof MensagensRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
+  '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
 }
 export interface FileRouteTypes {
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/operacao-dia'
     | '/pendencias'
+    | '/regras-disparo'
     | '/relatorio'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/operacao-dia'
     | '/pendencias'
+    | '/regras-disparo'
     | '/relatorio'
   id:
     | '__root__'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/operacao-dia'
     | '/pendencias'
+    | '/regras-disparo'
     | '/relatorio'
   fileRoutesById: FileRoutesById
 }
@@ -222,6 +234,7 @@ export interface RootRouteChildren {
   MensagensRoute: typeof MensagensRoute
   OperacaoDiaRoute: typeof OperacaoDiaRoute
   PendenciasRoute: typeof PendenciasRoute
+  RegrasDisparoRoute: typeof RegrasDisparoRoute
   RelatorioRoute: typeof RelatorioRoute
 }
 
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorio'
       fullPath: '/relatorio'
       preLoaderRoute: typeof RelatorioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/regras-disparo': {
+      id: '/regras-disparo'
+      path: '/regras-disparo'
+      fullPath: '/regras-disparo'
+      preLoaderRoute: typeof RegrasDisparoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pendencias': {
@@ -350,6 +370,7 @@ const rootRouteChildren: RootRouteChildren = {
   MensagensRoute: MensagensRoute,
   OperacaoDiaRoute: OperacaoDiaRoute,
   PendenciasRoute: PendenciasRoute,
+  RegrasDisparoRoute: RegrasDisparoRoute,
   RelatorioRoute: RelatorioRoute,
 }
 export const routeTree = rootRouteImport

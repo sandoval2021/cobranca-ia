@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+
 import {
   listImportScheduleItems,
   updateImportScheduleStatus,
@@ -160,7 +162,14 @@ export function ImportAgendaSection({
         <div className="min-w-0">
           <h3 className="text-base font-semibold">{title}</h3>
           <p className="text-xs text-muted-foreground">{subtitle}</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Agenda usando regras locais de disparo.{" "}
+            <Link to="/regras-disparo" className="underline underline-offset-2 hover:text-foreground">
+              Editar regras
+            </Link>
+          </p>
         </div>
+
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={copyAllVisible}>
             Copiar todas
