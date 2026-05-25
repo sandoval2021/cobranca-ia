@@ -549,6 +549,16 @@ function OperacaoDiaPage() {
         <SummaryCard label="Apps Usuário/Senha" value={summary.userpass} tone="blue" />
       </div>
 
+      {/* Cards de app pago */}
+      <div className="mb-2 text-xs font-medium text-muted-foreground">Apps pagos</div>
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <SummaryCard label="App vence 30 dias" value={summary.paidVenc30} tone="amber" />
+        <SummaryCard label="App vence 7 dias" value={summary.paidVenc7} tone="orange" />
+        <SummaryCard label="App vencido" value={summary.paidVencido} tone="redDeep" />
+        <SummaryCard label="App sem vencimento" value={summary.paidSemVenc} tone="slate" />
+        <SummaryCard label="App sem MAC/Key" value={summary.paidSemMacKey} tone="violet" />
+      </div>
+
       {/* Mensagens rápidas */}
       <QuickMessagesBar />
 
