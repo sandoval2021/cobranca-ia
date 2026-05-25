@@ -613,13 +613,15 @@ export function AISuggestionsPanel({
     let alive = true;
     setState({ status: "loading" });
     (async () => {
-      const { data, error } = await supabase!.rpc("get_ai_simulated_suggestions_admin", {
-        p_customer_id: customerId,
-        p_charge_id: chargeId,
-      });
+      const payload = { p_customer_id: customerId, p_charge_id: chargeId };
+      const { data, error } = await supabase!.rpc("get_ai_simulated_suggestions_admin", payload);
       if (!alive) return;
       if (error) {
-        setState({ status: "error", message: friendly(error.message, "load") });
+        const detail = stagingDetail("get_ai_simulated_suggestions_admin", payload, error);
+        setState({
+          status: "error",
+          message: detail ? `${friendly(error.message, "load")}\n\n${detail}` : friendly(error.message, "load"),
+        });
         return;
       }
       const list = (Array.isArray(data) ? (data as Row[]) : []).slice();
