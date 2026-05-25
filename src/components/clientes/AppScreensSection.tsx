@@ -242,6 +242,7 @@ export function AppScreensSection({
 
   return (
     <div className="space-y-3">
+      <PlanLimitNotice moduleKey="telas" compact />
       <div className="flex items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <Tv className="h-3.5 w-3.5" /> Telas e aplicativos
