@@ -451,10 +451,11 @@ function FilterPill({
           className={cn(
             "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
             active ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground",
-        )}
-      >
-        {count}
-      </span>
+          )}
+        >
+          {count}
+        </span>
+      )}
     </button>
   );
 }
