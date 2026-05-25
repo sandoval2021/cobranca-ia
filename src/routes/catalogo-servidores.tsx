@@ -83,7 +83,11 @@ function CatalogoServidoresPage() {
     });
   }, [servers]);
 
-  const openNew = () => { setEditing(null); setSheetOpen(true); };
+  const openNew = () => {
+    const d = canCreateServer();
+    if (!d.allowed) { toast.error(d.message ?? "Bloqueado pelo plano"); return; }
+    setEditing(null); setSheetOpen(true);
+  };
   const openEdit = (s: ServerEntry) => { setEditing(s); setSheetOpen(true); };
 
   const handleExport = () => {
