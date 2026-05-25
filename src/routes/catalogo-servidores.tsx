@@ -27,6 +27,7 @@ import {
   newServerId, serverBadgeStyle, maskSecret, formatServerAsText,
   SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 
 export const Route = createFileRoute("/catalogo-servidores")({
   component: CatalogoServidoresPage,
@@ -60,6 +61,7 @@ function CatalogoServidoresPage() {
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [importPreview, setImportPreview] = useState<ServerEntry[] | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
 
   const refresh = () => setServers(listServers());
 
@@ -81,18 +83,27 @@ function CatalogoServidoresPage() {
   const openEdit = (s: ServerEntry) => { setEditing(s); setSheetOpen(true); };
 
   const handleExport = () => {
-    const data = exportServers();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `catalogo-servidores-cobranca-ia-${todayStamp()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast.success("Catálogo exportado.");
+    guard({
+      kind: "backup",
+      title: "Exportar catálogo de servidores",
+      description: "Inclui senhas dos painéis. Confirme com PIN.",
+      actionLabel: "Exportar",
+      onConfirm: () => {
+        const data = exportServers();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `catalogo-servidores-cobranca-ia-${todayStamp()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        toast.success("Catálogo exportado.");
+      },
+    });
   };
+
 
   const handleImportClick = () => fileInput.current?.click();
 
@@ -177,9 +188,13 @@ function CatalogoServidoresPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
-              restoreDefaultServers();
               setConfirmRestore(false);
-              toast.success("Padrões restaurados.");
+              guard({
+                kind: "delete",
+                title: "Restaurar servidores padrões",
+                actionLabel: "Restaurar",
+                onConfirm: () => { restoreDefaultServers(); toast.success("Padrões restaurados."); },
+              });
             }}>
               Restaurar
             </AlertDialogAction>
@@ -198,18 +213,31 @@ function CatalogoServidoresPage() {
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <Button variant="outline" onClick={() => {
-              if (importPreview) importServers(importPreview, "merge");
+              const items = importPreview;
               setImportPreview(null);
-              toast.success("Catálogo mesclado.");
+              if (!items) return;
+              guard({
+                kind: "backup",
+                title: "Mesclar catálogo importado",
+                actionLabel: "Mesclar",
+                onConfirm: () => { importServers(items, "merge"); toast.success("Catálogo mesclado."); },
+              });
             }}>
               Mesclar
             </Button>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                if (importPreview) importServers(importPreview, "replace");
+                const items = importPreview;
                 setImportPreview(null);
-                toast.success("Catálogo substituído.");
+                if (!items) return;
+                guard({
+                  kind: "delete",
+                  title: "Substituir catálogo de servidores",
+                  description: "Esta ação remove os servidores atuais e usa os importados.",
+                  actionLabel: "Substituir",
+                  onConfirm: () => { importServers(items, "replace"); toast.success("Catálogo substituído."); },
+                });
               }}
             >
               Substituir
@@ -217,6 +245,7 @@ function CatalogoServidoresPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </PageContainer>
   );
 }
@@ -232,6 +261,7 @@ function ServerCard({
   const [askReveal, setAskReveal] = useState(false);
   const [askCopyPwd, setAskCopyPwd] = useState(false);
   const [askCopyFull, setAskCopyFull] = useState(false);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
   const isActive = server.status === "ativo";
 
   return (
@@ -311,7 +341,12 @@ function ServerCard({
             size="sm"
             variant="outline"
             className="gap-1.5 text-danger hover:text-danger"
-            onClick={() => { archiveServer(server.id); toast.success("Servidor inativado"); }}
+            onClick={() => guard({
+              kind: "delete",
+              title: `Inativar servidor ${server.name}`,
+              actionLabel: "Inativar",
+              onConfirm: () => { archiveServer(server.id); toast.success("Servidor inativado"); },
+            })}
           >
             <Archive className="h-3.5 w-3.5" /> Inativar
           </Button>
@@ -335,7 +370,15 @@ function ServerCard({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setReveal(true); setAskReveal(false); }}>Mostrar</AlertDialogAction>
+            <AlertDialogAction onClick={() => {
+              setAskReveal(false);
+              guard({
+                kind: "server_password",
+                title: "Mostrar senha do painel",
+                actionLabel: "Mostrar",
+                onConfirm: () => setReveal(true),
+              });
+            }}>Mostrar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -348,7 +391,15 @@ function ServerCard({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { copyText(server.panel_password ?? "", "Senha"); setAskCopyPwd(false); }}>
+            <AlertDialogAction onClick={() => {
+              setAskCopyPwd(false);
+              guard({
+                kind: "server_password",
+                title: "Copiar senha do painel",
+                actionLabel: "Copiar",
+                onConfirm: () => copyText(server.panel_password ?? "", "Senha"),
+              });
+            }}>
               Copiar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -368,12 +419,18 @@ function ServerCard({
               setAskCopyFull(false);
             }}>Copiar mascarado</Button>
             <AlertDialogAction onClick={() => {
-              copyText(formatServerAsText(server, { revealSecrets: true }), "Dados do servidor (c/ senha)");
               setAskCopyFull(false);
+              guard({
+                kind: "server_password",
+                title: "Copiar dados com senha visível",
+                actionLabel: "Copiar",
+                onConfirm: () => copyText(formatServerAsText(server, { revealSecrets: true }), "Dados do servidor (c/ senha)"),
+              });
             }}>Copiar com senha</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </li>
   );
 }

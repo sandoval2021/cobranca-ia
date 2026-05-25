@@ -32,6 +32,7 @@ import {
 import {
   listActiveServers, serverBadgeStyle, SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
@@ -83,6 +84,7 @@ export function AppScreensSection({
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [renewOpen, setRenewOpen] = useState(false);
   const [renewInitialScreenId, setRenewInitialScreenId] = useState<string | null>(null);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
 
   const [alertDismissed, setAlertDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -132,15 +134,23 @@ export function AppScreensSection({
   // --- copy customer (todas as telas) ---
   const [askRevealCustomer, setAskRevealCustomer] = useState(false);
   const copyCustomer = (revealSecrets: boolean) => {
-    const text = formatCustomerScreensAsText(customerName, screens, { revealSecrets });
-    copyText(text, revealSecrets ? "Dados do cliente (com senha/key)" : "Dados do cliente");
+    const doCopy = () => {
+      const text = formatCustomerScreensAsText(customerName, screens, { revealSecrets });
+      copyText(text, revealSecrets ? "Dados do cliente (com senha/key)" : "Dados do cliente");
+    };
+    if (revealSecrets) guard({ kind: "app_key", title: "Copiar dados com senha/key", actionLabel: "Copiar", onConfirm: doCopy });
+    else doCopy();
   };
 
   // --- copy uma tela ---
   const [askRevealScreen, setAskRevealScreen] = useState<AppScreen | null>(null);
   const copyScreen = (s: AppScreen, revealSecrets: boolean) => {
-    const text = formatScreenAsText(s, customerName, { revealSecrets });
-    copyText(text, revealSecrets ? "Tela (com senha/key)" : "Tela");
+    const doCopy = () => {
+      const text = formatScreenAsText(s, customerName, { revealSecrets });
+      copyText(text, revealSecrets ? "Tela (com senha/key)" : "Tela");
+    };
+    if (revealSecrets) guard({ kind: "app_key", title: "Copiar tela com senha/key", actionLabel: "Copiar", onConfirm: doCopy });
+    else doCopy();
   };
 
   // --- backup ---
@@ -151,19 +161,25 @@ export function AppScreensSection({
   >(null);
   const [confirmClear, setConfirmClear] = useState(false);
 
-  const handleExport = () => {
-    const data = buildBackup({ [customerId]: customerName });
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `backup-telas-aplicativos-cobranca-ia-${todayStamp()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast.success("Backup gerado com sucesso.");
-  };
+  const handleExport = () => guard({
+    kind: "backup",
+    title: "Exportar backup de telas/apps",
+    description: "O arquivo inclui senhas e keys. Confirme com PIN.",
+    actionLabel: "Exportar",
+    onConfirm: () => {
+      const data = buildBackup({ [customerId]: customerName });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup-telas-aplicativos-cobranca-ia-${todayStamp()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Backup gerado com sucesso.");
+    },
+  });
 
   const handleImportClick = () => fileInputRef.current?.click();
 
@@ -186,22 +202,34 @@ export function AppScreensSection({
 
   const confirmMerge = () => {
     if (!importPreview) return;
-    mergeAll(importPreview.data);
+    const data = importPreview.data;
     setImportPreview(null);
-    toast.success("Backup importado e mesclado.");
+    guard({
+      kind: "backup",
+      title: "Mesclar backup importado",
+      actionLabel: "Mesclar",
+      onConfirm: () => { mergeAll(data); toast.success("Backup importado e mesclado."); },
+    });
   };
   const confirmReplace = () => {
     if (!importPreview) return;
-    replaceAll(importPreview.data);
+    const data = importPreview.data;
     setImportPreview(null);
-    toast.success("Dados locais substituídos pelo backup.");
+    guard({
+      kind: "delete",
+      title: "Substituir dados locais",
+      description: "Esta ação substitui os dados locais pelos do backup.",
+      actionLabel: "Substituir",
+      onConfirm: () => { replaceAll(data); toast.success("Dados locais substituídos pelo backup."); },
+    });
   };
 
-  const handleClearCustomer = () => {
-    clearCustomerScreens(customerId);
-    setConfirmClear(false);
-    toast.success("Telas locais deste cliente removidas.");
-  };
+  const handleClearCustomer = () => guard({
+    kind: "delete",
+    title: "Remover telas locais do cliente",
+    actionLabel: "Remover",
+    onConfirm: () => { clearCustomerScreens(customerId); setConfirmClear(false); toast.success("Telas locais deste cliente removidas."); },
+  });
 
   return (
     <div className="space-y-3">
@@ -600,6 +628,7 @@ export function AppScreensSection({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </div>
   );
 }

@@ -16,6 +16,8 @@ import {
   ServerEntry, getServerById, serverBadgeStyle, maskSecret,
   formatServerAsText, SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { isProtectedModeActive, LOCAL_SECURITY_EVENT } from "@/lib/local-security";
 
 function copyText(text: string, label: string) {
   if (!text) return;
@@ -103,10 +105,18 @@ function ServerDetailsSheet({
   const [askReveal, setAskReveal] = useState(false);
   const [askCopyPwd, setAskCopyPwd] = useState(false);
   const [askCopyFull, setAskCopyFull] = useState(false);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
+  const [protectedMode, setProtectedMode] = useState(isProtectedModeActive());
 
   useEffect(() => {
     if (!open) setReveal(false);
   }, [open]);
+
+  useEffect(() => {
+    const refresh = () => setProtectedMode(isProtectedModeActive());
+    window.addEventListener(LOCAL_SECURITY_EVENT, refresh);
+    return () => window.removeEventListener(LOCAL_SECURITY_EVENT, refresh);
+  }, []);
 
   const openPanel = () => {
     if (!server.panel_url) return;
@@ -132,6 +142,11 @@ function ServerDetailsSheet({
             <SheetDescription className="text-xs">
               Dados do painel salvos apenas neste navegador. Nada é enviado.
             </SheetDescription>
+            {protectedMode && (
+              <p className="text-[10px] font-medium text-amber-600">
+                🔒 Modo protegido ativo
+              </p>
+            )}
           </SheetHeader>
 
           <div className="flex-1 space-y-3 p-4">
@@ -187,7 +202,15 @@ function ServerDetailsSheet({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setReveal(true); setAskReveal(false); }}>
+            <AlertDialogAction onClick={() => {
+              setAskReveal(false);
+              guard({
+                kind: "server_password",
+                title: "Mostrar senha do painel",
+                actionLabel: "Mostrar",
+                onConfirm: () => setReveal(true),
+              });
+            }}>
               Mostrar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -205,8 +228,13 @@ function ServerDetailsSheet({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
-              copyText(server.panel_password ?? "", "Senha do painel");
               setAskCopyPwd(false);
+              guard({
+                kind: "server_password",
+                title: "Copiar senha do painel",
+                actionLabel: "Copiar",
+                onConfirm: () => copyText(server.panel_password ?? "", "Senha do painel"),
+              });
             }}>
               Copiar senha
             </AlertDialogAction>
@@ -231,14 +259,20 @@ function ServerDetailsSheet({
               Copiar mascarado
             </Button>
             <AlertDialogAction onClick={() => {
-              copyText(formatServerAsText(server, { revealSecrets: true }), "Dados do servidor (com senha)");
               setAskCopyFull(false);
+              guard({
+                kind: "server_password",
+                title: "Copiar dados com senha visível",
+                actionLabel: "Copiar",
+                onConfirm: () => copyText(formatServerAsText(server, { revealSecrets: true }), "Dados do servidor (com senha)"),
+              });
             }}>
               Copiar com senha
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </>
   );
 }
