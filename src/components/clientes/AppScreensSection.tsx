@@ -84,6 +84,7 @@ export function AppScreensSection({
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [renewOpen, setRenewOpen] = useState(false);
   const [renewInitialScreenId, setRenewInitialScreenId] = useState<string | null>(null);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
 
   const [alertDismissed, setAlertDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
