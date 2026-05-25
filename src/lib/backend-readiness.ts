@@ -557,6 +557,11 @@ export const PRE_SUPABASE_CHECKLIST: ChecklistItem[] = [
   { id: "rls", label: "RLS planejada" },
   { id: "integracoes", label: "Integrações reais bloqueadas por padrão" },
   { id: "migrations", label: "Nenhuma migration criada no escuro" },
+  { id: "mt-company-id", label: "company_id definido nas entidades principais" },
+  { id: "mt-rls", label: "Policies RLS planejadas por company_id" },
+  { id: "mt-rpc", label: "Funções RPC seguras planejadas (SECURITY DEFINER)" },
+  { id: "mt-audit", label: "Logs/auditoria planejados" },
+  { id: "mt-local-migration", label: "Migração local por empresa revisada" },
 ];
 
 // ---------- Leitura local ----------
