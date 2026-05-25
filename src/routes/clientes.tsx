@@ -507,7 +507,7 @@ function ClientCard({
           {initial}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="truncate text-sm font-semibold">{customer.name}</p>
             <span
               className={cn(
@@ -517,6 +517,11 @@ function ClientCard({
             >
               {statusLabel(customer.status)}
             </span>
+            {needsUpdate && (
+              <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
+                Atualizar servidor
+              </span>
+            )}
           </div>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
             {phone ?? "Sem contato cadastrado"}
