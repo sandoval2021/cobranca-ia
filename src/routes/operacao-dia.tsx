@@ -759,9 +759,17 @@ function OperacaoDiaPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <div className="mt-4">
+        <ImportAgendaSection
+          title="Disparos planejados pela importação"
+          subtitle="Itens vindos da última importação local. Nenhum envio automático."
+          hideWhenEmpty
+        />
+      </div>
     </PageContainer>
   );
 }
+
 
 // ---------- subcomponents ----------
 function SummaryCard({
