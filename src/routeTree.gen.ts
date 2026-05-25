@@ -540,6 +540,7 @@ const rootRouteChildren: RootRouteChildren = {
   RelatorioRoute: RelatorioRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
+  AdminDnsRotasRoute: AdminDnsRotasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
