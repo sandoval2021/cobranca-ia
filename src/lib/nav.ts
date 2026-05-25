@@ -12,6 +12,7 @@ import {
   BarChart3,
   CalendarClock,
   Megaphone,
+  AlertCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -28,6 +29,7 @@ export const ownerNav: NavItem[] = [
   { to: "/clientes", label: "Clientes", icon: Users, hint: "Sua base de clientes" },
   { to: "/operacao-dia", label: "Operação do dia", icon: CalendarClock, hint: "Quem precisa de atenção hoje" },
   { to: "/campanhas-manuais", label: "Campanhas manuais", icon: Megaphone, hint: "Monte listas e copie mensagens" },
+  { to: "/pendencias", label: "Pendências", icon: AlertCircle, hint: "Tudo que precisa de atenção" },
   { to: "/importar-clientes", label: "Importar clientes", icon: Upload, hint: "Importar clientes a partir de PDF" },
   { to: "/cobrancas", label: "Cobranças", icon: Receipt, hint: "Cobranças geradas" },
   { to: "/mensagens", label: "Mensagens", icon: MessageCircle, hint: "Mensagens enviadas" },
