@@ -555,12 +555,19 @@ function PendenciasPage() {
 
   const buildLembrete = (p: PendingItem): string => {
     const name = p.customer?.name ?? "cliente";
+    const s = p.screen;
+    const appLabel = s ? APP_CATALOG[s.app]?.label ?? s.app : "";
+    const venc = s?.app_due_date ? fmtDateBR(s.app_due_date) : "—";
     if (p.type === "hoje") return msgVenceHoje(name);
     if (p.type === "vencido") return msgVencido(name, Math.abs(p.days ?? 0));
     if (p.type === "7d") return msgProx7(name, p.days ?? 0);
     if (p.type === "atualizar_servidor") return msgAtualizarServidor(name);
     if (p.type === "sem_app") return msgPedirApp(name);
     if (p.type === "sem_whats") return msgPedirWhats(name);
+    if (p.type === "app_pago_vencido" && s) return msgAppPagoVencido(name, appLabel, s.name, venc);
+    if ((p.type === "app_pago_7d" || p.type === "app_pago_30d") && s)
+      return msgAppPagoVencendo(name, appLabel, s.name, p.days ?? 0, venc, s.app_renewal_value);
+    if (p.type === "app_sem_mackey" && s) return msgPedirMacKeyApp(name, appLabel);
     return p.description;
   };
 
