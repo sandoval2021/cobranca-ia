@@ -38,6 +38,7 @@ export const BACKUP_MODULES: BackupModule[] = [
   { key: "cobranca_ia_company_members_v1", label: "Empresas e Planos — Membros", isList: true },
   { key: "cobranca_ia_company_plans_v1", label: "Empresas e Planos — Planos", isList: true },
   { key: "cobranca_ia_current_company_v1", label: "Empresas e Planos — Empresa atual" },
+  { key: "cobranca_ia_company_scope_migration_history_v1", label: "Histórico de migração local por empresa", isList: true },
 ];
 
 const EVENTS_AFTER_RESTORE = [
