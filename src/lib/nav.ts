@@ -15,6 +15,7 @@ import {
   AlertCircle,
   BookOpen,
   SlidersHorizontal,
+  Server,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
