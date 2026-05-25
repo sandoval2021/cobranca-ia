@@ -249,6 +249,21 @@ function ClientesPage() {
     };
   }, [isAuthenticated, authLoading, reloadBump]);
 
+  // Deep-link via sessionStorage (vindo de /operacao-dia)
+  useEffect(() => {
+    if (!items) return;
+    if (typeof window === "undefined") return;
+    try {
+      const id = window.sessionStorage.getItem("cobranca_ia_open_customer_id");
+      if (id && items.some((c) => c.id === id)) {
+        setOpenId(id);
+        window.sessionStorage.removeItem("cobranca_ia_open_customer_id");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [items]);
+
   const reload = () => setReloadBump((n) => n + 1);
 
   const allScreens = useMemo(() => listAllScreens(), [items, screensVersion]);
