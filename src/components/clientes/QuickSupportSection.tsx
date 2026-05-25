@@ -453,6 +453,11 @@ export function QuickSupportSection({
         Nada será enviado automaticamente. Você apenas copia o texto e envia manualmente.
       </div>
 
+      <div className="text-[11px] text-muted-foreground">
+        Mensagens usando dados de Minha Revenda.{" "}
+        <Link to="/configuracoes-revenda" className="underline">Editar Minha Revenda</Link>
+      </div>
+
       {/* Seleção de tela */}
       {activeScreens.length === 0 ? (
         <EmptyState
