@@ -821,8 +821,13 @@ function ImportScheduleSection({ rows }: { rows: ValidatedRow[] }) {
 
   function updateStatus(it: ScheduleItem, status: ScheduleItem["status"]) {
     setSchedStatus(it, status);
-    setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, status } : x)));
+    setItems((prev) => {
+      const next = prev.map((x) => (x.id === it.id ? { ...x, status } : x));
+      saveImportScheduleItems(next);
+      return next;
+    });
   }
+
 
   async function copyMessage(it: ScheduleItem) {
     if (!it.message) {
