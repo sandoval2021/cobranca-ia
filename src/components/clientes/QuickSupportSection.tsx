@@ -711,7 +711,9 @@ export function QuickSupportSection({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </div>
+
   );
 }
 
