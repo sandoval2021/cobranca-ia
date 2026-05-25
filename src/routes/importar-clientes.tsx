@@ -361,52 +361,24 @@ function ImportarClientesPage() {
         </div>
         {!isAuthenticated && (
           <p className="text-sm text-muted-foreground">
-            Entre para ver as empresas autorizadas para a sua conta.
+            Entre para ver a empresa autorizada para a sua conta.
           </p>
         )}
-        {isAuthenticated && companies.status === "loading" && (
-          <p className="text-sm text-muted-foreground">Carregando empresas…</p>
+        {isAuthenticated && companyState.status === "loading" && (
+          <p className="text-sm text-muted-foreground">Carregando empresa…</p>
         )}
-        {isAuthenticated && companies.status === "not_configured" && (
+        {isAuthenticated && companyState.status === "not_configured" && (
           <p className="text-sm text-muted-foreground">
             Conexão não configurada.
           </p>
         )}
-        {isAuthenticated && companies.status === "error" && (
-          <p className="text-sm text-destructive">
-            {/permiss/i.test(companies.message)
-              ? "Sua conta não tem permissão para listar empresas."
-              : companies.message}
-          </p>
+        {isAuthenticated && companyState.status === "error" && (
+          <p className="text-sm text-destructive">{companyState.message}</p>
         )}
-        {isAuthenticated &&
-          companies.status === "ready" &&
-          companies.data.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              Sua conta ainda não tem empresa autorizada para importação.
-            </p>
-          )}
-        {isAuthenticated &&
-          companies.status === "ready" &&
-          companies.data.length > 0 && (
-          <Select
-            value={companyId ?? undefined}
-            onValueChange={(v) => setCompanyId(v)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione a empresa" />
-            </SelectTrigger>
-            <SelectContent>
-              {companies.data.map((c) => {
-                const id = c.id as string;
-                return (
-                  <SelectItem key={id} value={id}>
-                    {companyLabel(c)}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+        {isAuthenticated && companyState.status === "ready" && (
+          <p className="text-sm text-muted-foreground">
+            Importando para a empresa autorizada da sua conta.
+          </p>
         )}
       </Card>
 
