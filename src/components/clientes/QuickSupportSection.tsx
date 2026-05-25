@@ -11,10 +11,12 @@ import {
 import { EmptyState } from "@/components/ui-premium/EmptyState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 import {
   APP_CATALOG, AppScreen, ROUTE_OPTIONS,
   listScreens, mask,
 } from "@/lib/app-screens";
+import { applyRevendaVariables, getRevendaSettings, REVENDA_SETTINGS_EVENT } from "@/lib/revenda-settings";
 
 // ------- tipos & storage -------
 
