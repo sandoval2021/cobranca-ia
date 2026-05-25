@@ -278,6 +278,7 @@ function TestesPage() {
     <PageContainer>
       <div className="mb-1"><ProtectedModeBadge /></div>
       <CompanyScopeNotice moduleKey="cobranca_ia_trial_leads_v1" />
+      <PlanLimitNotice moduleKey="testes" />
       <SectionHeader
         title="Testes"
         subtitle="Acompanhe pessoas que pediram teste e ainda não viraram clientes."
