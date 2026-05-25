@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
+import { Route as OperacaoDiaRouteImport } from './routes/operacao-dia'
 import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as ImportarClientesRouteImport } from './routes/importar-clientes'
 import { Route as IaRouteImport } from './routes/ia'
@@ -24,6 +25,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const RelatorioRoute = RelatorioRouteImport.update({
   id: '/relatorio',
   path: '/relatorio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperacaoDiaRoute = OperacaoDiaRouteImport.update({
+  id: '/operacao-dia',
+  path: '/operacao-dia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MensagensRoute = MensagensRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/mensagens': typeof MensagensRoute
+  '/operacao-dia': typeof OperacaoDiaRoute
   '/relatorio': typeof RelatorioRoute
 }
 export interface FileRoutesByTo {
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/mensagens': typeof MensagensRoute
+  '/operacao-dia': typeof OperacaoDiaRoute
   '/relatorio': typeof RelatorioRoute
 }
 export interface FileRoutesById {
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/mensagens': typeof MensagensRoute
+  '/operacao-dia': typeof OperacaoDiaRoute
   '/relatorio': typeof RelatorioRoute
 }
 export interface FileRouteTypes {
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/ia'
     | '/importar-clientes'
     | '/mensagens'
+    | '/operacao-dia'
     | '/relatorio'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/ia'
     | '/importar-clientes'
     | '/mensagens'
+    | '/operacao-dia'
     | '/relatorio'
   id:
     | '__root__'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/ia'
     | '/importar-clientes'
     | '/mensagens'
+    | '/operacao-dia'
     | '/relatorio'
   fileRoutesById: FileRoutesById
 }
@@ -170,6 +182,7 @@ export interface RootRouteChildren {
   IaRoute: typeof IaRoute
   ImportarClientesRoute: typeof ImportarClientesRoute
   MensagensRoute: typeof MensagensRoute
+  OperacaoDiaRoute: typeof OperacaoDiaRoute
   RelatorioRoute: typeof RelatorioRoute
 }
 
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorio'
       fullPath: '/relatorio'
       preLoaderRoute: typeof RelatorioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operacao-dia': {
+      id: '/operacao-dia'
+      path: '/operacao-dia'
+      fullPath: '/operacao-dia'
+      preLoaderRoute: typeof OperacaoDiaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mensagens': {
@@ -266,6 +286,7 @@ const rootRouteChildren: RootRouteChildren = {
   IaRoute: IaRoute,
   ImportarClientesRoute: ImportarClientesRoute,
   MensagensRoute: MensagensRoute,
+  OperacaoDiaRoute: OperacaoDiaRoute,
   RelatorioRoute: RelatorioRoute,
 }
 export const routeTree = rootRouteImport
