@@ -105,10 +105,18 @@ function ServerDetailsSheet({
   const [askReveal, setAskReveal] = useState(false);
   const [askCopyPwd, setAskCopyPwd] = useState(false);
   const [askCopyFull, setAskCopyFull] = useState(false);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
+  const [protectedMode, setProtectedMode] = useState(isProtectedModeActive());
 
   useEffect(() => {
     if (!open) setReveal(false);
   }, [open]);
+
+  useEffect(() => {
+    const refresh = () => setProtectedMode(isProtectedModeActive());
+    window.addEventListener(LOCAL_SECURITY_EVENT, refresh);
+    return () => window.removeEventListener(LOCAL_SECURITY_EVENT, refresh);
+  }, []);
 
   const openPanel = () => {
     if (!server.panel_url) return;
