@@ -53,6 +53,7 @@ import {
   isPaidApp,
   appDueDays,
 } from "@/lib/app-screens";
+import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 
 export const Route = createFileRoute("/pendencias")({
   component: PendenciasPage,
