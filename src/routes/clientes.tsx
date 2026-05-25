@@ -288,6 +288,10 @@ function ClientesPage() {
     return items.filter((c) => {
       const kind = classifyStatus(c.status);
       const screens = allScreens[c.id] ?? [];
+      if (serverFilter !== "__all__") {
+        const active = screens.filter((s) => s.status !== "arquivada");
+        if (!screensHaveServer(active, serverFilter)) return false;
+      }
       if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
         if (kind !== filter) return false;
       } else if (filter === "hoje" || filter === "7d" || filter === "vencidos") {
