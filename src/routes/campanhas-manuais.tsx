@@ -768,6 +768,11 @@ function CampanhasManuaisPage() {
         <Chip active={audience === "app_vu"} onClick={() => setAudience("app_vu")} label="Vu Player" count={counts.app_vu} dim={counts.app_vu === 0} />
         <Chip active={audience === "acc_mac_key"} onClick={() => setAudience("acc_mac_key")} label="MAC/Key" count={counts.acc_mac_key} dim={counts.acc_mac_key === 0} />
         <Chip active={audience === "acc_user_pass"} onClick={() => setAudience("acc_user_pass")} label="Usuário/Senha" count={counts.acc_user_pass} dim={counts.acc_user_pass === 0} />
+        <Chip active={audience === "app_pago_vencendo"} onClick={() => setAudience("app_pago_vencendo")} label="App pago vencendo" count={counts.app_pago_vencendo} dim={counts.app_pago_vencendo === 0} />
+        <Chip active={audience === "app_pago_vencido"} onClick={() => setAudience("app_pago_vencido")} label="App pago vencido" count={counts.app_pago_vencido} dim={counts.app_pago_vencido === 0} />
+        <Chip active={audience === "app_pago_7d"} onClick={() => setAudience("app_pago_7d")} label="App pago 7 dias" count={counts.app_pago_7d} dim={counts.app_pago_7d === 0} />
+        <Chip active={audience === "app_sem_venc"} onClick={() => setAudience("app_sem_venc")} label="Sem vencimento do app" count={counts.app_sem_venc} dim={counts.app_sem_venc === 0} />
+        <Chip active={audience === "app_sem_mackey"} onClick={() => setAudience("app_sem_mackey")} label="Sem MAC/Key" count={counts.app_sem_mackey} dim={counts.app_sem_mackey === 0} />
       </div>
 
       {/* Busca */}
