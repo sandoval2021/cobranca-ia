@@ -432,6 +432,12 @@ function appDays(s: AppScreen | null): number | null {
   return Math.floor((+d - +t) / 86400000);
 }
 
+// Cliente com lista mensal vencida há mais de 30 dias: priorizar recuperação,
+// não aparecer em públicos de "app pago".
+function listaMuitoVencida(p: PublicItem): boolean {
+  return p.days != null && p.days < -30;
+}
+
 function matchesAudience(p: PublicItem, a: Audience): boolean {
   const s = p.screen;
   const paid = isPaid(s);
@@ -450,12 +456,12 @@ function matchesAudience(p: PublicItem, a: Audience): boolean {
     case "app_vu": return s?.app === "vu_player";
     case "acc_mac_key": return s?.access_type === "mac_key";
     case "acc_user_pass": return s?.access_type === "user_pass";
-    case "app_pago_vencendo": return paid && ad != null && ad >= 0 && ad <= 30;
-    case "app_pago_7d": return paid && ad != null && ad >= 0 && ad <= 7;
-    case "app_pago_vencido": return paid && ad != null && ad < 0;
-    case "app_sem_venc": return paid && s != null && !s.app_due_date;
+    case "app_pago_vencendo": return paid && !listaMuitoVencida(p) && ad != null && ad >= 0 && ad <= 30;
+    case "app_pago_7d": return paid && !listaMuitoVencida(p) && ad != null && ad >= 0 && ad <= 7;
+    case "app_pago_vencido": return paid && !listaMuitoVencida(p) && ad != null && ad < 0;
+    case "app_sem_venc": return paid && !listaMuitoVencida(p) && s != null && !s.app_due_date;
     case "app_sem_mackey": {
-      if (!paid || !s) return false;
+      if (!paid || !s || listaMuitoVencida(p)) return false;
       const at = s.access_type;
       return (at === "mac" || at === "mac_key") && (!s.mac || (at === "mac_key" && !s.app_key));
     }
@@ -574,20 +580,15 @@ function CampanhasManuaisPage() {
       hoje: 0, "3d": 0, "7d": 0, vencidos: 0, needs_update: 0, sem_app: 0,
       app_bob: 0, app_xciptv: 0, app_ibo: 0, app_vu: 0,
       acc_mac_key: 0, acc_user_pass: 0,
+      app_pago_vencendo: 0, app_pago_vencido: 0, app_pago_7d: 0,
+      app_sem_venc: 0, app_sem_mackey: 0,
     };
+    const keys = Object.keys(c) as Audience[];
     for (const p of publicAll) {
-      if (p.urgency === "hoje") c.hoje++;
-      if (p.urgency === "hoje" || p.urgency === "3d") c["3d"]++;
-      if (p.urgency === "hoje" || p.urgency === "3d" || p.urgency === "7d") c["7d"]++;
-      if (p.urgency === "vencido") c.vencidos++;
-      if (p.needsUpdate) c.needs_update++;
-      if (!p.screen) c.sem_app++;
-      if (p.screen?.app === "bob_player" || p.screen?.app === "bob_play") c.app_bob++;
-      if (p.screen?.app === "xciptv") c.app_xciptv++;
-      if (p.screen?.app === "ibo_player" || p.screen?.app === "ibo_pro" || p.screen?.app === "ibo_mix") c.app_ibo++;
-      if (p.screen?.app === "vu_player") c.app_vu++;
-      if (p.screen?.access_type === "mac_key") c.acc_mac_key++;
-      if (p.screen?.access_type === "user_pass") c.acc_user_pass++;
+      for (const k of keys) {
+        if (k === "todos") continue;
+        if (matchesAudience(p, k)) c[k] += 1;
+      }
     }
     return c;
   }, [publicAll]);
@@ -767,6 +768,11 @@ function CampanhasManuaisPage() {
         <Chip active={audience === "app_vu"} onClick={() => setAudience("app_vu")} label="Vu Player" count={counts.app_vu} dim={counts.app_vu === 0} />
         <Chip active={audience === "acc_mac_key"} onClick={() => setAudience("acc_mac_key")} label="MAC/Key" count={counts.acc_mac_key} dim={counts.acc_mac_key === 0} />
         <Chip active={audience === "acc_user_pass"} onClick={() => setAudience("acc_user_pass")} label="Usuário/Senha" count={counts.acc_user_pass} dim={counts.acc_user_pass === 0} />
+        <Chip active={audience === "app_pago_vencendo"} onClick={() => setAudience("app_pago_vencendo")} label="App pago vencendo" count={counts.app_pago_vencendo} dim={counts.app_pago_vencendo === 0} />
+        <Chip active={audience === "app_pago_vencido"} onClick={() => setAudience("app_pago_vencido")} label="App pago vencido" count={counts.app_pago_vencido} dim={counts.app_pago_vencido === 0} />
+        <Chip active={audience === "app_pago_7d"} onClick={() => setAudience("app_pago_7d")} label="App pago 7 dias" count={counts.app_pago_7d} dim={counts.app_pago_7d === 0} />
+        <Chip active={audience === "app_sem_venc"} onClick={() => setAudience("app_sem_venc")} label="Sem vencimento do app" count={counts.app_sem_venc} dim={counts.app_sem_venc === 0} />
+        <Chip active={audience === "app_sem_mackey"} onClick={() => setAudience("app_sem_mackey")} label="Sem MAC/Key" count={counts.app_sem_mackey} dim={counts.app_sem_mackey === 0} />
       </div>
 
       {/* Busca */}
