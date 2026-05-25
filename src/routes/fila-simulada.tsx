@@ -39,6 +39,7 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 import { toast } from "sonner";
+import { getCurrentCompanyAdmin } from "@/lib/rpc-admin";
 
 const IS_STAGING = flags.appEnv !== "production";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
