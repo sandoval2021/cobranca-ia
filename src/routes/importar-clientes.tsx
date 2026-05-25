@@ -772,8 +772,11 @@ function ImportScheduleSection({ rows }: { rows: ValidatedRow[] }) {
     applyPersistedStatus(baseItems),
   );
   useEffect(() => {
-    setItems(applyPersistedStatus(baseItems));
+    const next = applyPersistedStatus(baseItems);
+    setItems(next);
+    saveImportScheduleItems(next);
   }, [baseItems]);
+
 
   const [chip, setChip] = useState<ChipKey>("todos");
   const [revealId, setRevealId] = useState<string | null>(null);
