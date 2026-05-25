@@ -498,6 +498,7 @@ function ClientCard({
   const days = nextDueDays(customer.due_day, screens);
   const urg = urgencyFromDays(days);
   const activeScreens = screens.filter((s) => s.status !== "arquivada").slice(0, 4);
+  const needsUpdate = screens.some((s) => s.needs_server_update && s.status !== "arquivada");
 
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-card">
