@@ -26,6 +26,7 @@ import {
   exportFullBackup, exportHealthReportTxt, getLocalDataHealth, getModuleSummaries,
   parseFullBackup, restoreFullBackup,
 } from "@/lib/backup-geral";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 
 export const Route = createFileRoute("/backup-geral")({
   head: () => ({
