@@ -355,6 +355,14 @@ function buildValues(
     : it.days < 0
       ? `${Math.abs(it.days)} (vencido)`
       : String(it.days);
+  const appDue = s?.app_due_date ? fmtDateBR(s.app_due_date) : "";
+  const appDays = s?.app_due_date ? (() => {
+    const d = new Date(s.app_due_date + "T00:00:00");
+    const t = new Date(); t.setHours(0,0,0,0);
+    if (isNaN(+d)) return "";
+    const diff = Math.floor((+d - +t) / 86400000);
+    return diff < 0 ? `${Math.abs(diff)} (vencido)` : String(diff);
+  })() : "";
   return {
     nome: firstName(it.customer.name),
     whatsapp: prettyPhone(it.customer.whatsapp) ?? "",
@@ -367,6 +375,11 @@ function buildValues(
     mac: s?.mac ?? "",
     key: opts.revealSecrets ? (s?.app_key ?? "") : (s?.app_key ? mask(s.app_key) : ""),
     usuario: s?.username ?? "",
+    vencimento_app: appDue,
+    dias_app: appDays,
+    valor_app: s?.app_renewal_value ?? "",
+    tipo_app: s?.tier ?? (s ? APP_CATALOG[s.app]?.tier ?? "" : ""),
+    portal_app: s?.portal_url ?? "",
   };
 }
 
