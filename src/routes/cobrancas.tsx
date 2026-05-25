@@ -1137,12 +1137,17 @@ function CreateChargeDialog({
       toast.error("Informe uma data de vencimento válida.");
       return;
     }
+    const rpcStatus = toChargeRpcStatus(status);
+    if (!rpcStatus) {
+      toast.error("Selecione um status válido para a cobrança.");
+      return;
+    }
     setBusy(true);
     const payload = {
       p_customer_id: customerId,
       p_amount_cents: cents,
       p_due_at: due,
-      p_status: toChargeRpcStatus(status),
+      p_status: rpcStatus,
       p_external_reference: ref.trim() || null,
     };
     const { error } = await supabase.rpc("create_charge_admin", payload);
