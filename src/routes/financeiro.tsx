@@ -106,9 +106,8 @@ function FinanceiroPage() {
   return (
     <PageContainer>
       <SectionHeader
-        icon={Wallet}
         title="Financeiro"
-        description="Controle receitas, custos, lucro e objetivos do seu negócio."
+        subtitle="Controle receitas, custos, lucro e objetivos do seu negócio."
       />
 
       <Card className="p-3 border-dashed bg-muted/30 mb-4 flex items-start gap-2">
