@@ -689,7 +689,7 @@ function SupportCard({
   getText: (reveal: boolean) => string;
   onCopy: (text: string, kind: string) => void;
   onCopyReveal: (gen: () => string) => void;
-  screenAccessKind: "user_pass" | "mac_key" | "outro";
+  screenAccessKind: import("@/lib/app-screens").AccessType;
 }) {
   const hasSensitive = screenAccessKind !== "outro";
   return (
