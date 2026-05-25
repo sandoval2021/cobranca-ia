@@ -62,6 +62,7 @@ import {
   nextDueDays, urgencyFromDays, urgencyClass, urgencyLabel,
 } from "@/lib/app-screens";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
+import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { Tv } from "lucide-react";
 
 export const Route = createFileRoute("/clientes")({ component: ClientesPage });
@@ -826,19 +827,24 @@ function DetailView({
 
   return (
     <Tabs defaultValue="dados" className="w-full">
-      <TabsList className="grid w-full grid-cols-6">
-        <TabsTrigger value="dados" className="text-xs">Dados</TabsTrigger>
-        <TabsTrigger value="telas" className="text-xs gap-1">
+      <TabsList className="grid w-full grid-cols-7">
+        <TabsTrigger value="dados" className="text-[10px] sm:text-xs">Dados</TabsTrigger>
+        <TabsTrigger value="telas" className="text-[10px] sm:text-xs gap-1">
           <Tv className="h-3 w-3" /> Telas
         </TabsTrigger>
-        <TabsTrigger value="cobrancas" className="text-xs">Cobr.</TabsTrigger>
-        <TabsTrigger value="mensagens" className="text-xs">Msg</TabsTrigger>
-        <TabsTrigger value="ia" className="text-xs">IA</TabsTrigger>
-        <TabsTrigger value="historico" className="text-xs">Hist.</TabsTrigger>
+        <TabsTrigger value="atend" className="text-[10px] sm:text-xs">Atend.</TabsTrigger>
+        <TabsTrigger value="cobrancas" className="text-[10px] sm:text-xs">Cobr.</TabsTrigger>
+        <TabsTrigger value="mensagens" className="text-[10px] sm:text-xs">Msg</TabsTrigger>
+        <TabsTrigger value="ia" className="text-[10px] sm:text-xs">IA</TabsTrigger>
+        <TabsTrigger value="historico" className="text-[10px] sm:text-xs">Hist.</TabsTrigger>
       </TabsList>
 
       <TabsContent value="telas" className="mt-4">
         <AppScreensSection customerId={customer.id} customerName={customer.name} />
+      </TabsContent>
+
+      <TabsContent value="atend" className="mt-4">
+        <QuickSupportSection customerId={customer.id} customerName={customer.name} />
       </TabsContent>
 
       <TabsContent value="dados" className="mt-4 space-y-5">
