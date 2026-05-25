@@ -16,6 +16,7 @@ import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
 import { Route as PreparacaoBackendRouteImport } from './routes/preparacao-backend'
 import { Route as PendenciasRouteImport } from './routes/pendencias'
 import { Route as OperacaoDiaRouteImport } from './routes/operacao-dia'
+import { Route as MigracaoEmpresaRouteImport } from './routes/migracao-empresa'
 import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as IndicacoesRouteImport } from './routes/indicacoes'
 import { Route as ImportarClientesRouteImport } from './routes/importar-clientes'
@@ -72,6 +73,11 @@ const PendenciasRoute = PendenciasRouteImport.update({
 const OperacaoDiaRoute = OperacaoDiaRouteImport.update({
   id: '/operacao-dia',
   path: '/operacao-dia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MigracaoEmpresaRoute = MigracaoEmpresaRouteImport.update({
+  id: '/migracao-empresa',
+  path: '/migracao-empresa',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MensagensRoute = MensagensRouteImport.update({
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
+  '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
+  '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
@@ -271,6 +279,7 @@ export interface FileRoutesById {
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
+  '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
@@ -304,6 +313,7 @@ export interface FileRouteTypes {
     | '/importar-clientes'
     | '/indicacoes'
     | '/mensagens'
+    | '/migracao-empresa'
     | '/operacao-dia'
     | '/pendencias'
     | '/preparacao-backend'
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/importar-clientes'
     | '/indicacoes'
     | '/mensagens'
+    | '/migracao-empresa'
     | '/operacao-dia'
     | '/pendencias'
     | '/preparacao-backend'
@@ -366,6 +377,7 @@ export interface FileRouteTypes {
     | '/importar-clientes'
     | '/indicacoes'
     | '/mensagens'
+    | '/migracao-empresa'
     | '/operacao-dia'
     | '/pendencias'
     | '/preparacao-backend'
@@ -398,6 +410,7 @@ export interface RootRouteChildren {
   ImportarClientesRoute: typeof ImportarClientesRoute
   IndicacoesRoute: typeof IndicacoesRoute
   MensagensRoute: typeof MensagensRoute
+  MigracaoEmpresaRoute: typeof MigracaoEmpresaRoute
   OperacaoDiaRoute: typeof OperacaoDiaRoute
   PendenciasRoute: typeof PendenciasRoute
   PreparacaoBackendRoute: typeof PreparacaoBackendRoute
@@ -456,6 +469,13 @@ declare module '@tanstack/react-router' {
       path: '/operacao-dia'
       fullPath: '/operacao-dia'
       preLoaderRoute: typeof OperacaoDiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/migracao-empresa': {
+      id: '/migracao-empresa'
+      path: '/migracao-empresa'
+      fullPath: '/migracao-empresa'
+      preLoaderRoute: typeof MigracaoEmpresaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mensagens': {
@@ -638,6 +658,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImportarClientesRoute: ImportarClientesRoute,
   IndicacoesRoute: IndicacoesRoute,
   MensagensRoute: MensagensRoute,
+  MigracaoEmpresaRoute: MigracaoEmpresaRoute,
   OperacaoDiaRoute: OperacaoDiaRoute,
   PendenciasRoute: PendenciasRoute,
   PreparacaoBackendRoute: PreparacaoBackendRoute,
