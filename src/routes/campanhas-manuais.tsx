@@ -806,6 +806,7 @@ function CampanhasManuaisPage() {
         subtitle="Monte listas de cobrança e copie mensagens personalizadas sem envio automático."
         hint="Tudo é gerado e copiado localmente — você cola no WhatsApp manualmente."
       />
+      <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
 
       {/* aviso fixo */}
       <div className="mb-3 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft/60 px-3 py-2 text-xs text-warning-foreground">
