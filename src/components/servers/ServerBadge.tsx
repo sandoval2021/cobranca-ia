@@ -16,6 +16,8 @@ import {
   ServerEntry, getServerById, serverBadgeStyle, maskSecret,
   formatServerAsText, SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { isProtectedModeActive, LOCAL_SECURITY_EVENT } from "@/lib/local-security";
 
 function copyText(text: string, label: string) {
   if (!text) return;
