@@ -54,6 +54,7 @@ import {
   appDueDays,
 } from "@/lib/app-screens";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { ServerRouteInfo } from "@/components/servers/ServerRouteInfo";
 import { listActiveServers, SERVER_CATALOG_EVENT } from "@/lib/server-catalog";
 
 export const Route = createFileRoute("/pendencias")({
