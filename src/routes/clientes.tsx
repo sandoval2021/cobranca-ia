@@ -801,13 +801,20 @@ function DetailView({
 
   return (
     <Tabs defaultValue="dados" className="w-full">
-      <TabsList className="grid w-full grid-cols-5">
+      <TabsList className="grid w-full grid-cols-6">
         <TabsTrigger value="dados" className="text-xs">Dados</TabsTrigger>
-        <TabsTrigger value="cobrancas" className="text-xs">Cobranças</TabsTrigger>
-        <TabsTrigger value="mensagens" className="text-xs">Mensagens</TabsTrigger>
+        <TabsTrigger value="telas" className="text-xs gap-1">
+          <Tv className="h-3 w-3" /> Telas
+        </TabsTrigger>
+        <TabsTrigger value="cobrancas" className="text-xs">Cobr.</TabsTrigger>
+        <TabsTrigger value="mensagens" className="text-xs">Msg</TabsTrigger>
         <TabsTrigger value="ia" className="text-xs">IA</TabsTrigger>
-        <TabsTrigger value="historico" className="text-xs">Histórico</TabsTrigger>
+        <TabsTrigger value="historico" className="text-xs">Hist.</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="telas" className="mt-4">
+        <AppScreensSection customerId={customer.id} />
+      </TabsContent>
 
       <TabsContent value="dados" className="mt-4 space-y-5">
         <div className="grid grid-cols-2 gap-3">
