@@ -174,13 +174,16 @@ const classifyCharge = (s: string | null | undefined): ChargeKind => {
   if (/(pend|aguard|aberta|open|created|new)/.test(v)) return "pendente";
   return "outro";
 };
-const chargeLabel = (s: string | null | undefined) => {
-  const k = classifyCharge(s);
-  if (k === "paga") return "Paga";
-  if (k === "vencida") return "Vencida";
-  if (k === "cancelada") return "Cancelada";
-  if (k === "pendente") return "Pendente";
-  return s ?? "—";
+type ChargeKind2 = "pendente" | "paga" | "vencida" | "cancelada" | "falhou" | "outro";
+const classifyChargeAll = (s: string | null | undefined): ChargeKind2 => {
+  const v = (s ?? "").toLowerCase();
+  if (!v) return "outro";
+  if (/(falh|failed|error)/.test(v)) return "falhou";
+  if (/(pag|aprovad|paid|approved|success|confirm)/.test(v)) return "paga";
+  if (/(vencid|expir|atras|overdue)/.test(v)) return "vencida";
+  if (/(cancel|void|annulled)/.test(v)) return "cancelada";
+  if (/(pend|aguard|aberta|open|created|new)/.test(v)) return "pendente";
+  return "outro";
 };
 const chargeClass = (s: string | null | undefined) => {
   const k = classifyCharge(s);
