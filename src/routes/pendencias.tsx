@@ -234,7 +234,8 @@ function readCampaignCopied(): Record<string, { at: string }> {
 // ============================================================
 type FilterKey =
   | "todas" | "criticas" | "hoje" | "vencidos" | "7d"
-  | "sem_app" | "sem_whats" | "atualizar_servidor" | "tecnicas";
+  | "sem_app" | "sem_whats" | "atualizar_servidor" | "tecnicas"
+  | "app_pago_vencido" | "app_pago_7d" | "app_pago_30d" | "app_sem_venc" | "app_sem_mackey";
 
 function PendenciasPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
