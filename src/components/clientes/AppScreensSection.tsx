@@ -496,13 +496,8 @@ export function AppScreensSection({
         customerName={customerName}
         initialScreenId={renewInitialScreenId}
       />
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+
+
 
       <ScreenSheet
         open={sheetOpen}
