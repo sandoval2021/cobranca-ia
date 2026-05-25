@@ -57,6 +57,12 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
 import { getCurrentCompanyAdmin, listCustomersAdmin } from "@/lib/rpc-admin";
+import {
+  APP_CATALOG, AppKey, AppScreen, listAllScreens, listScreens,
+  nextDueDays, urgencyFromDays, urgencyClass, urgencyLabel,
+} from "@/lib/app-screens";
+import { AppScreensSection } from "@/components/clientes/AppScreensSection";
+import { Tv } from "lucide-react";
 
 export const Route = createFileRoute("/clientes")({ component: ClientesPage });
 
