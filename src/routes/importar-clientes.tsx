@@ -42,6 +42,21 @@ import {
   validateRows,
   type ValidatedRow,
 } from "@/lib/import-parse";
+import {
+  buildSchedule,
+  applyPersistedStatus,
+  setStatus as setSchedStatus,
+  clearAllPersisted as clearSchedPersisted,
+  buildScheduleTxt,
+  matchesChip,
+  CHIP_LABEL,
+  GROUP_LABEL,
+  fmtBRLPublic,
+  fmtDateBRPublic,
+  type ScheduleItem,
+  type ChipKey,
+  type DispatchGroup,
+} from "@/lib/import-schedule";
 
 type RowKind = "new" | "existing" | "duplicate_file" | "error";
 
@@ -652,10 +667,14 @@ function ImportarClientesPage() {
                 <p>
                   {result.duplicated} linhas duplicadas no arquivo foram ignoradas.
                 </p>
-              )}
-              {(result.imported ?? 0) === 0 && (result.updated ?? 0) === 0 && (
-                <p>Importação concluída sem alterações.</p>
-              )}
+      )}
+
+      {/* Agenda de Disparos (local/simulada) */}
+      {rows && rows.length > 0 && (
+        <ImportScheduleSection rows={rows} />
+      )}
+
+
               <p className="opacity-80">
                 Se o cliente já existia, o sistema atualiza os dados em vez de duplicar.
               </p>
@@ -736,6 +755,314 @@ function ResultCard({ label, value }: { label: string; value: number }) {
         {label}
       </p>
       <p className="text-lg font-semibold">{value}</p>
+    </div>
+  );
+}
+
+// =====================================================================
+// ImportScheduleSection — Agenda local/simulada gerada na importação
+// =====================================================================
+
+function ImportScheduleSection({ rows }: { rows: ValidatedRow[] }) {
+  const baseItems = useMemo(() => buildSchedule(rows), [rows]);
+  const [items, setItems] = useState<ScheduleItem[]>(() =>
+    applyPersistedStatus(baseItems),
+  );
+  useEffect(() => {
+    setItems(applyPersistedStatus(baseItems));
+  }, [baseItems]);
+
+  const [chip, setChip] = useState<ChipKey>("todos");
+  const [revealId, setRevealId] = useState<string | null>(null);
+
+  const counts = useMemo(() => {
+    const ks: ChipKey[] = [
+      "todos","hoje","amanha","prox7","vencidos","recuperar",
+      "inativos","bloqueados","copiados","pendentes","ignorados","revisados",
+    ];
+    const c: Record<ChipKey, number> = {
+      todos: 0, hoje: 0, amanha: 0, prox7: 0, vencidos: 0, recuperar: 0,
+      inativos: 0, bloqueados: 0, copiados: 0, pendentes: 0, ignorados: 0, revisados: 0,
+    };
+    for (const it of items) for (const k of ks) if (matchesChip(it, k)) c[k]++;
+    return c;
+  }, [items]);
+
+  const filtered = useMemo(
+    () => items.filter((it) => matchesChip(it, chip)),
+    [items, chip],
+  );
+
+  // Resumo (cards superiores)
+  const summary = useMemo(() => {
+    const total = items.length;
+    const blocked = items.filter((i) => i.group === "bloqueados").length;
+    const planned = total - blocked;
+    const today = items.filter((i) => i.kind === "vence_hoje").length;
+    const next7 = items.filter(
+      (i) => i.days != null && i.days >= 0 && i.days <= 7 && i.kind !== "bloqueado",
+    ).length;
+    const overdueRecent = items.filter(
+      (i) => i.days != null && i.days < 0 && i.days >= -7,
+    ).length;
+    const recover = items.filter((i) => i.kind === "recuperar_cliente").length;
+    const inactive = items.filter((i) => i.kind === "campanha_retorno").length;
+    const noWa = items.filter((i) => !i.whatsapp).length;
+    const noDue = items.filter((i) => !i.due_date).length;
+    const dup = items.filter((i) => i.reason.includes("duplicado")).length;
+    return { total, planned, today, next7, overdueRecent, recover, inactive, blocked, noWa, noDue, dup };
+  }, [items]);
+
+  function updateStatus(it: ScheduleItem, status: ScheduleItem["status"]) {
+    setSchedStatus(it, status);
+    setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, status } : x)));
+  }
+
+  async function copyMessage(it: ScheduleItem) {
+    if (!it.message) {
+      toast.error("Sem mensagem para copiar.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(it.message);
+      updateStatus(it, "copiado");
+      toast.success("Mensagem copiada");
+    } catch {
+      toast.error("Não foi possível copiar.");
+    }
+  }
+
+  function exportTxt() {
+    const txt = buildScheduleTxt(items);
+    const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const d = new Date();
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    a.href = url;
+    a.download = `agenda-disparos-importacao-cobranca-ia-${ymd}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success("Agenda exportada");
+  }
+
+  function clearStatuses() {
+    if (!window.confirm("Limpar status locais da agenda? Isso não apaga clientes.")) return;
+    clearSchedPersisted();
+    setItems(baseItems.map((it) => ({ ...it })));
+    toast.success("Status locais limpos");
+  }
+
+  const groupsOrder: { key: DispatchGroup; title: string }[] = [
+    { key: "hoje", title: GROUP_LABEL.hoje },
+    { key: "amanha", title: GROUP_LABEL.amanha },
+    { key: "prox7", title: GROUP_LABEL.prox7 },
+    { key: "recuperacao", title: GROUP_LABEL.recuperacao },
+    { key: "bloqueados", title: GROUP_LABEL.bloqueados },
+  ];
+
+  return (
+    <Card className="p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="text-base font-semibold">Agenda criada pela importação</h3>
+          <p className="text-xs text-muted-foreground">
+            Sugestão local de quando falar com cada cliente. Nada é enviado automaticamente.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={exportTxt}>Exportar agenda</Button>
+          <Button size="sm" variant="ghost" onClick={clearStatuses}>Limpar status locais</Button>
+        </div>
+      </div>
+
+      {/* Cards de resumo */}
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+        <MiniStat label="Total importado" value={summary.total} />
+        <MiniStat label="Planejados" value={summary.planned} />
+        <MiniStat label="Vencem hoje" value={summary.today} tone="orange" />
+        <MiniStat label="Até 7 dias" value={summary.next7} tone="amber" />
+        <MiniStat label="Vencidos recentes" value={summary.overdueRecent} tone="red" />
+        <MiniStat label="Recuperar" value={summary.recover} tone="violet" />
+        <MiniStat label="Inativos" value={summary.inactive} />
+        <MiniStat label="Bloqueados" value={summary.blocked} tone="red" />
+        <MiniStat label="Sem WhatsApp" value={summary.noWa} />
+        <MiniStat label="Sem vencimento" value={summary.noDue} />
+        <MiniStat label="Duplicados" value={summary.dup} />
+      </div>
+
+      {/* Chips */}
+      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {(Object.keys(CHIP_LABEL) as ChipKey[]).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setChip(k)}
+            className={
+              "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors " +
+              (chip === k
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-background text-foreground hover:bg-accent")
+            }
+          >
+            {CHIP_LABEL[k]}
+            <span className="ml-1 opacity-70">({counts[k]})</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Lista agrupada */}
+      <div className="space-y-4">
+        {groupsOrder.map((g) => {
+          const list = filtered.filter((i) => i.group === g.key);
+          if (list.length === 0) return null;
+          return (
+            <div key={g.key}>
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {g.title} <span className="opacity-60">({list.length})</span>
+              </div>
+              <div className="space-y-2">
+                {list.map((it) => (
+                  <ScheduleCard
+                    key={it.id}
+                    item={it}
+                    revealOpen={revealId === it.id}
+                    onToggleReveal={() => setRevealId((c) => (c === it.id ? null : it.id))}
+                    onCopy={() => copyMessage(it)}
+                    onMarkCopied={() => updateStatus(it, "copiado")}
+                    onIgnore={() => updateStatus(it, "ignorado")}
+                    onReview={() => updateStatus(it, "revisar")}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+            Nenhum item no filtro selecionado.
+          </p>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function MiniStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone?: "red" | "orange" | "amber" | "violet";
+}) {
+  const toneCls =
+    tone === "red"
+      ? "border-red-300/50 bg-red-50 text-red-900 dark:border-red-700/50 dark:bg-red-950/30 dark:text-red-100"
+      : tone === "orange"
+      ? "border-orange-300/50 bg-orange-50 text-orange-900 dark:border-orange-700/50 dark:bg-orange-950/30 dark:text-orange-100"
+      : tone === "amber"
+      ? "border-amber-300/50 bg-amber-50 text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100"
+      : tone === "violet"
+      ? "border-violet-300/50 bg-violet-50 text-violet-900 dark:border-violet-700/50 dark:bg-violet-950/30 dark:text-violet-100"
+      : "border-border bg-card text-foreground";
+  return (
+    <div className={"rounded-xl border p-2.5 " + toneCls}>
+      <p className="text-[10px] uppercase tracking-wide opacity-70">{label}</p>
+      <p className="text-lg font-semibold leading-tight">{value}</p>
+    </div>
+  );
+}
+
+function ScheduleCard({
+  item,
+  revealOpen,
+  onToggleReveal,
+  onCopy,
+  onMarkCopied,
+  onIgnore,
+  onReview,
+}: {
+  item: ScheduleItem;
+  revealOpen: boolean;
+  onToggleReveal: () => void;
+  onCopy: () => void;
+  onMarkCopied: () => void;
+  onIgnore: () => void;
+  onReview: () => void;
+}) {
+  const priorityCls =
+    item.priority === "alta"
+      ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300"
+      : item.priority === "media"
+      ? "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+      : item.priority === "baixa"
+      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+      : "bg-muted text-muted-foreground";
+  const statusCls =
+    item.status === "copiado"
+      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+      : item.status === "ignorado"
+      ? "bg-muted text-muted-foreground"
+      : item.status === "bloqueado"
+      ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300"
+      : item.status === "revisar"
+      ? "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+      : "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300";
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-3">
+      <div className="mb-1.5 flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{item.name}</p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {item.whatsapp ?? "Sem WhatsApp"} · Venc. {fmtDateBRPublic(item.due_date)} · {fmtBRLPublic(item.amount_cents)}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          <span className={"rounded-full px-2 py-0.5 text-[10px] font-medium " + priorityCls}>
+            {item.priority}
+          </span>
+          <span className={"rounded-full px-2 py-0.5 text-[10px] font-medium " + statusCls}>
+            {item.status}
+          </span>
+        </div>
+      </div>
+      <p className="mb-1 text-xs">
+        <span className="font-medium">{item.kindLabel}</span>
+        <span className="text-muted-foreground"> · {item.reason}</span>
+      </p>
+      {item.warning && (
+        <p className="mb-2 rounded-md border border-amber-300/50 bg-amber-50 px-2 py-1 text-[11px] text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-100">
+          ⚠ {item.warning}
+        </p>
+      )}
+      {item.message ? (
+        <>
+          {revealOpen && (
+            <pre className="mb-2 whitespace-pre-wrap rounded-md border border-border bg-muted/40 p-2 text-[11px] text-foreground">
+              {item.message}
+            </pre>
+          )}
+          <div className="flex flex-wrap gap-1.5">
+            <Button size="sm" onClick={onCopy}>Copiar mensagem</Button>
+            <Button size="sm" variant="outline" onClick={onToggleReveal}>
+              {revealOpen ? "Ocultar" : "Ver mensagem"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onMarkCopied}>Marcar copiado</Button>
+            <Button size="sm" variant="ghost" onClick={onIgnore}>Ignorar</Button>
+            <Button size="sm" variant="ghost" onClick={onReview}>Revisar</Button>
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          <Button size="sm" variant="ghost" onClick={onReview}>Marcar revisado</Button>
+          <Button size="sm" variant="ghost" onClick={onIgnore}>Ignorar</Button>
+        </div>
+      )}
     </div>
   );
 }
