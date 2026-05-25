@@ -342,6 +342,7 @@ function ShortcutTile({
 function Dashboard() {
   const { counters, health, totalModules } = useDashboardData();
   const [protectedMode, setProtectedMode] = useState(false);
+  const [diag, setDiag] = useState(() => getDiagnosticsSummary());
 
   useEffect(() => {
     const refresh = () => setProtectedMode(isProtectedModeActive());
