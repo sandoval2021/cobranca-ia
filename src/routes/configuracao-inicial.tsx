@@ -279,11 +279,18 @@ function ConfiguracaoInicialPage() {
 
       <div className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-surface-muted p-3 text-xs">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <p>
+        <p className="flex-1">
           <span className="font-semibold">Modo local:</span> este assistente apenas
           orienta a configuração. Nada será enviado automaticamente.
         </p>
+        <Link
+          to="/ajuda"
+          className="shrink-0 whitespace-nowrap text-xs font-medium text-primary hover:underline"
+        >
+          Ver manual de ajuda
+        </Link>
       </div>
+
 
       {/* Progresso */}
       <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-card">
