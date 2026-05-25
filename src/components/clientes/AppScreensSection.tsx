@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Pencil, Archive, RotateCcw, Eye, EyeOff, Copy, ExternalLink,
   Tv, Loader2, X, Save, AlertCircle, Download, Upload, Trash2,
-  ServerCog, Share2, ShieldAlert, ChevronDown, ChevronUp,
+  ServerCog, Share2, ShieldAlert, ChevronDown, ChevronUp, Server,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,10 @@ import {
   buildBackup, parseBackup, mergeAll, replaceAll, clearCustomerScreens,
   formatScreenAsText, formatCustomerScreensAsText,
 } from "@/lib/app-screens";
+import {
+  listActiveServers, serverBadgeStyle, SERVER_CATALOG_EVENT,
+} from "@/lib/server-catalog";
+import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
   ativa: "Ativa",
