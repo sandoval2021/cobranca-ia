@@ -283,6 +283,7 @@ const VARS = [
   "vencimento_app", "dias_app", "valor_app", "tipo_app", "portal_app",
   "painel", "usuario_painel", "senha_painel",
   "link_lista", "usuario_lista", "senha_lista",
+  "dominio", "subdominio", "rota_publica", "servidor_rota", "link_publico",
 ] as const;
 
 type VarKey = (typeof VARS)[number];
