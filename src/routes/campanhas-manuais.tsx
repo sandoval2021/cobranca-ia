@@ -1058,6 +1058,27 @@ function CampanhasManuaisPage() {
                               Copiar com dados sensíveis
                             </Button>
                           )}
+                          {serverSecretsBody && p.screen && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const openText = renderTemplate(
+                                  effectiveBody,
+                                  buildValues(p, { revealSecrets: true }),
+                                );
+                                setConfirmSensitive({
+                                  text: openText,
+                                  label: "Mensagem com senhas do servidor",
+                                  itemKey: k,
+                                  serverSecrets: true,
+                                });
+                              }}
+                              className="text-amber-700 dark:text-amber-300"
+                            >
+                              Copiar com senhas do servidor
+                            </Button>
+                          )}
                         </div>
                       </div>
                     )}
