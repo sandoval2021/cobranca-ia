@@ -49,6 +49,7 @@ import {
   formatBRL,
 } from "@/lib/financeiro-local";
 import { getLocalDataHealth, getModuleSummaries } from "@/lib/backup-geral";
+import { getDiagnosticsSummary } from "@/lib/system-diagnostics";
 import { isProtectedModeActive, LOCAL_SECURITY_EVENT } from "@/lib/local-security";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
