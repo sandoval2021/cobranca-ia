@@ -30,6 +30,7 @@ export const BACKUP_MODULES: BackupModule[] = [
   { key: "cobranca_ia_quick_support_history_v1", label: "Histórico de atendimento rápido", isList: true },
   { key: "cobranca_ia_campaign_copied_v1", label: "Campanhas copiadas" },
   { key: "cobranca_ia_pending_resolved_v1", label: "Pendências resolvidas" },
+  { key: "cobranca_ia_revenda_settings_v1", label: "Configurações da revenda" },
 ];
 
 const EVENTS_AFTER_RESTORE = [
