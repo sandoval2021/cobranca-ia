@@ -636,6 +636,31 @@ function OperacaoDiaPage() {
         <FilterChip active={filter === "app_smartone"} onClick={() => setFilter("app_smartone")} label="SmartOne" count={summary.smartone} dim={summary.smartone === 0} />
       </div>
 
+      {/* Filtros por servidor */}
+      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <FilterChip active={serverFilter === "__all__"} onClick={() => setServerFilter("__all__")} label="Todos servidores" count={priorities.length} />
+        <FilterChip active={serverFilter === "__none__"} onClick={() => setServerFilter("__none__")} label="Sem servidor" count={serverCounts.none} dim={serverCounts.none === 0} />
+        {serverCounts.servers.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setServerFilter(s.id)}
+            className={cn(
+              "shrink-0 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition inline-flex items-center gap-1.5",
+              serverFilter === s.id
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-foreground hover:bg-muted",
+              s.count === 0 && serverFilter !== s.id && "opacity-60",
+            )}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} aria-hidden />
+            {s.name} <span className={cn("ml-0.5 tabular-nums", serverFilter === s.id ? "opacity-90" : "text-muted-foreground")}>({s.count})</span>
+          </button>
+        ))}
+      </div>
+
+
+
       {/* exportar */}
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold">Prioridade de hoje</h3>
