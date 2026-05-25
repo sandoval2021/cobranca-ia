@@ -142,6 +142,11 @@ function ServerDetailsSheet({
             <SheetDescription className="text-xs">
               Dados do painel salvos apenas neste navegador. Nada é enviado.
             </SheetDescription>
+            {protectedMode && (
+              <p className="text-[10px] font-medium text-amber-600">
+                🔒 Modo protegido ativo
+              </p>
+            )}
           </SheetHeader>
 
           <div className="flex-1 space-y-3 p-4">
