@@ -365,9 +365,17 @@ function ClientesPage() {
       {/* Filtros */}
       <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         <FilterPill active={filter === "todos"} onClick={() => setFilter("todos")} label="Todos" count={counts.todos} />
+        <FilterPill active={filter === "hoje"} onClick={() => setFilter("hoje")} label="Vencem hoje" count={counts.hoje} />
+        <FilterPill active={filter === "7d"} onClick={() => setFilter("7d")} label="Próx. 7 dias" count={counts.d7} />
+        <FilterPill active={filter === "vencidos"} onClick={() => setFilter("vencidos")} label="Vencidos" count={counts.vencidos} />
         <FilterPill active={filter === "ativo"} onClick={() => setFilter("ativo")} label="Ativos" count={counts.ativo} />
         <FilterPill active={filter === "expirado"} onClick={() => setFilter("expirado")} label="Expirados" count={counts.expirado} />
         <FilterPill active={filter === "arquivado"} onClick={() => setFilter("arquivado")} label="Arquivados" count={counts.arquivado} />
+        <FilterPill active={filter === "app_bob"} onClick={() => setFilter("app_bob")} label="Bob Player" count={0} hideCount />
+        <FilterPill active={filter === "app_xciptv"} onClick={() => setFilter("app_xciptv")} label="XCIPTV" count={0} hideCount />
+        <FilterPill active={filter === "app_ibo"} onClick={() => setFilter("app_ibo")} label="IBO" count={0} hideCount />
+        <FilterPill active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={0} hideCount />
+        <FilterPill active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={0} hideCount />
       </div>
 
       {/* Estados */}
