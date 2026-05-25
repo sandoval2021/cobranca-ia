@@ -699,6 +699,11 @@ function PendenciasPage() {
         <Chip active={filter === "sem_whats"} onClick={() => setFilter("sem_whats")} label="Sem WhatsApp" count={counts.sem_whats} dim={counts.sem_whats === 0} />
         <Chip active={filter === "atualizar_servidor"} onClick={() => setFilter("atualizar_servidor")} label="Atualizar servidor" count={counts.atualizar_servidor} dim={counts.atualizar_servidor === 0} />
         <Chip active={filter === "tecnicas"} onClick={() => setFilter("tecnicas")} label="Técnicas" count={counts.tecnicas} />
+        <Chip active={filter === "app_pago_vencido"} onClick={() => setFilter("app_pago_vencido")} label="App pago vencido" count={counts.app_pago_vencido} dim={counts.app_pago_vencido === 0} />
+        <Chip active={filter === "app_pago_7d"} onClick={() => setFilter("app_pago_7d")} label="App pago 7 dias" count={counts.app_pago_7d} dim={counts.app_pago_7d === 0} />
+        <Chip active={filter === "app_pago_30d"} onClick={() => setFilter("app_pago_30d")} label="App pago 30 dias" count={counts.app_pago_30d} dim={counts.app_pago_30d === 0} />
+        <Chip active={filter === "app_sem_venc"} onClick={() => setFilter("app_sem_venc")} label="Sem vencimento do app" count={counts.app_sem_venc} dim={counts.app_sem_venc === 0} />
+        <Chip active={filter === "app_sem_mackey"} onClick={() => setFilter("app_sem_mackey")} label="App sem MAC/Key" count={counts.app_sem_mackey} dim={counts.app_sem_mackey === 0} />
       </div>
 
       {/* Estados */}
