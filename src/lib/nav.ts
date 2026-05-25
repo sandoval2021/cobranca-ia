@@ -12,6 +12,7 @@ import {
   BarChart3,
   CalendarClock,
   Megaphone,
+  AlertCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
