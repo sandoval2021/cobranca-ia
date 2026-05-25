@@ -50,8 +50,6 @@ import {
   buildScheduleTxt,
   matchesChip,
   CHIP_LABEL,
-  GROUP_LABEL,
-  kindLabel,
   fmtBRLPublic,
   fmtDateBRPublic,
   type ScheduleItem,
