@@ -372,6 +372,12 @@ export function AppScreensSection({
                         <SemServidorBadge />
                       )}
                     </div>
+                    <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+                      <div>Lista vence: <span className="font-medium text-foreground">{s.due_date ? new Date(s.due_date + "T00:00:00").toLocaleDateString("pt-BR") : "—"}</span></div>
+                      {s.tier === "pago" && (
+                        <div>App vence: <span className="font-medium text-foreground">{s.app_due_date ? new Date(s.app_due_date + "T00:00:00").toLocaleDateString("pt-BR") : "—"}</span></div>
+                      )}
+                    </div>
                   </div>
                 </button>
 
