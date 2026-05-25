@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TestesRouteImport } from './routes/testes'
+import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
 import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
