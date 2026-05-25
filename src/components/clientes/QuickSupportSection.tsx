@@ -396,6 +396,8 @@ export function QuickSupportSection({
   const [confirmReveal, setConfirmReveal] = useState<null | {
     onConfirm: () => void;
   }>(null);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
+
 
   const refreshScreens = () => setScreens(listScreens(customerId));
   const refreshHistory = () => setHistory(readHistory());
