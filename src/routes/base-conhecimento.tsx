@@ -353,7 +353,7 @@ function SimulatorBlock() {
           {result.match ? (
             <>
               <div><strong>Resposta sugerida:</strong></div>
-              <p className="whitespace-pre-wrap rounded bg-card p-2">{result.match.full}</p>
+              <p className="whitespace-pre-wrap rounded bg-card p-2">{applyRevendaVariables(result.match.full)}</p>
             </>
           ) : (
             <p className="text-muted-foreground">Sem resposta na base. Crie um item para essa intenção.</p>
