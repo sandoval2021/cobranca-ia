@@ -415,9 +415,27 @@ function isToday(iso: string): boolean {
 type Audience =
   | "todos" | "hoje" | "3d" | "7d" | "vencidos" | "needs_update" | "sem_app"
   | "app_bob" | "app_xciptv" | "app_ibo" | "app_vu"
-  | "acc_mac_key" | "acc_user_pass";
+  | "acc_mac_key" | "acc_user_pass"
+  | "app_pago_vencendo" | "app_pago_vencido" | "app_pago_7d"
+  | "app_sem_venc" | "app_sem_mackey";
+
+function isPaid(s: AppScreen | null): boolean {
+  if (!s) return false;
+  const tier = s.tier ?? APP_CATALOG[s.app]?.tier ?? "desconhecido";
+  return tier === "pago";
+}
+function appDays(s: AppScreen | null): number | null {
+  if (!s || !isPaid(s) || !s.app_due_date) return null;
+  const d = new Date(s.app_due_date + "T00:00:00");
+  if (isNaN(+d)) return null;
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.floor((+d - +t) / 86400000);
+}
 
 function matchesAudience(p: PublicItem, a: Audience): boolean {
+  const s = p.screen;
+  const paid = isPaid(s);
+  const ad = appDays(s);
   switch (a) {
     case "todos": return true;
     case "hoje": return p.urgency === "hoje";
@@ -426,12 +444,21 @@ function matchesAudience(p: PublicItem, a: Audience): boolean {
     case "vencidos": return p.urgency === "vencido";
     case "needs_update": return p.needsUpdate;
     case "sem_app": return p.screen == null;
-    case "app_bob": return p.screen?.app === "bob_player" || p.screen?.app === "bob_play";
-    case "app_xciptv": return p.screen?.app === "xciptv";
-    case "app_ibo": return p.screen?.app === "ibo_player" || p.screen?.app === "ibo_pro" || p.screen?.app === "ibo_mix";
-    case "app_vu": return p.screen?.app === "vu_player";
-    case "acc_mac_key": return p.screen?.access_type === "mac_key";
-    case "acc_user_pass": return p.screen?.access_type === "user_pass";
+    case "app_bob": return s?.app === "bob_player" || s?.app === "bob_play";
+    case "app_xciptv": return s?.app === "xciptv";
+    case "app_ibo": return s?.app === "ibo_player" || s?.app === "ibo_pro" || s?.app === "ibo_mix";
+    case "app_vu": return s?.app === "vu_player";
+    case "acc_mac_key": return s?.access_type === "mac_key";
+    case "acc_user_pass": return s?.access_type === "user_pass";
+    case "app_pago_vencendo": return paid && ad != null && ad >= 0 && ad <= 30;
+    case "app_pago_7d": return paid && ad != null && ad >= 0 && ad <= 7;
+    case "app_pago_vencido": return paid && ad != null && ad < 0;
+    case "app_sem_venc": return paid && s != null && !s.app_due_date;
+    case "app_sem_mackey": {
+      if (!paid || !s) return false;
+      const at = s.access_type;
+      return (at === "mac" || at === "mac_key") && (!s.mac || (at === "mac_key" && !s.app_key));
+    }
   }
 }
 
@@ -449,6 +476,11 @@ const AUDIENCE_LABEL: Record<Audience, string> = {
   app_vu: "Vu Player",
   acc_mac_key: "MAC/Key",
   acc_user_pass: "Usuário/Senha",
+  app_pago_vencendo: "App pago vencendo",
+  app_pago_vencido: "App pago vencido",
+  app_pago_7d: "App pago 7 dias",
+  app_sem_venc: "Sem vencimento do app",
+  app_sem_mackey: "App pago sem MAC/Key",
 };
 
 // ============================================================
