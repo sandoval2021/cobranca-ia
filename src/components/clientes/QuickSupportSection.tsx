@@ -605,6 +605,65 @@ export function QuickSupportSection({
                 )}
               </div>
 
+              {(() => {
+                const ri = getScreenRouteInfo(selected);
+                if (!ri.serverId) {
+                  return (
+                    <p className="mt-2 rounded-md border border-dashed border-border bg-surface p-2 text-[10px] text-muted-foreground">
+                      Sem servidor vinculado a esta tela.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="mt-2 space-y-1.5 rounded-md border border-border bg-surface p-2 text-[11px]">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-muted-foreground">Servidor:</span>
+                      <span className="font-medium text-foreground">{ri.serverName ?? "—"}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-muted-foreground">Rota pública:</span>
+                      {ri.routeHost ? (
+                        <span className="font-mono break-all text-foreground/90">{ri.routeHost}</span>
+                      ) : (
+                        <span className="text-muted-foreground">Servidor sem rota pública</span>
+                      )}
+                    </div>
+                    {ri.routeHost && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1 px-2 text-[10px]"
+                          onClick={() => {
+                            try {
+                              navigator.clipboard.writeText(ri.routeHost!);
+                              toast.success("Rota pública copiada.");
+                            } catch {
+                              toast.error("Não foi possível copiar.");
+                            }
+                          }}
+                        >
+                          <Copy className="h-3 w-3" /> Copiar rota pública
+                        </Button>
+                        {ri.link && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 gap-1 px-2 text-[10px]"
+                            onClick={() => window.open(ri.link!, "_blank", "noopener,noreferrer")}
+                          >
+                            <ExternalLink className="h-3 w-3" /> Abrir rota pública
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+
               <div className="mt-2 flex flex-wrap gap-2">
                 <Button
                   type="button"
