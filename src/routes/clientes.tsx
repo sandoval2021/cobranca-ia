@@ -832,7 +832,7 @@ function DetailView({
       </TabsList>
 
       <TabsContent value="telas" className="mt-4">
-        <AppScreensSection customerId={customer.id} />
+        <AppScreensSection customerId={customer.id} customerName={customer.name} />
       </TabsContent>
 
       <TabsContent value="dados" className="mt-4 space-y-5">
