@@ -112,7 +112,7 @@ function isUserPassApp(s: AppScreen): boolean {
   return s.access_type === "user_pass";
 }
 function isMacKeyApp(s: AppScreen): boolean {
-  return s.access_type === "mac_key";
+  return s.access_type === "mac_key" || s.access_type === "mac";
 }
 
 // ------- geradores de texto -------
@@ -689,9 +689,9 @@ function SupportCard({
   getText: (reveal: boolean) => string;
   onCopy: (text: string, kind: string) => void;
   onCopyReveal: (gen: () => string) => void;
-  screenAccessKind: "user_pass" | "mac_key" | "outro";
+  screenAccessKind: import("@/lib/app-screens").AccessType;
 }) {
-  const hasSensitive = screenAccessKind !== "outro";
+  const hasSensitive = screenAccessKind !== "outro" && screenAccessKind !== "nao_informado";
   return (
     <div className="rounded-xl border border-border bg-card p-3">
       <div className="mb-2">

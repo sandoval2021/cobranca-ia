@@ -22,6 +22,7 @@ import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as CobrancasRouteImport } from './routes/cobrancas'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
+import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as IndexRouteImport } from './routes/index'
 
 const RelatorioRoute = RelatorioRouteImport.update({
@@ -89,6 +90,11 @@ const CampanhasManuaisRoute = CampanhasManuaisRouteImport.update({
   path: '/campanhas-manuais',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BaseConhecimentoRoute = BaseConhecimentoRouteImport.update({
+  id: '/base-conhecimento',
+  path: '/base-conhecimento',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -97,6 +103,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
@@ -130,6 +138,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/base-conhecimento': typeof BaseConhecimentoRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/base-conhecimento'
     | '/campanhas-manuais'
     | '/clientes'
     | '/cobrancas'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/base-conhecimento'
     | '/campanhas-manuais'
     | '/clientes'
     | '/cobrancas'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/base-conhecimento'
     | '/campanhas-manuais'
     | '/clientes'
     | '/cobrancas'
@@ -197,6 +209,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BaseConhecimentoRoute: typeof BaseConhecimentoRoute
   CampanhasManuaisRoute: typeof CampanhasManuaisRoute
   ClientesRoute: typeof ClientesRoute
   CobrancasRoute: typeof CobrancasRoute
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CampanhasManuaisRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/base-conhecimento': {
+      id: '/base-conhecimento'
+      path: '/base-conhecimento'
+      fullPath: '/base-conhecimento'
+      preLoaderRoute: typeof BaseConhecimentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -317,6 +337,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BaseConhecimentoRoute: BaseConhecimentoRoute,
   CampanhasManuaisRoute: CampanhasManuaisRoute,
   ClientesRoute: ClientesRoute,
   CobrancasRoute: CobrancasRoute,
