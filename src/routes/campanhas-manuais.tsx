@@ -515,6 +515,7 @@ function CampanhasManuaisPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [audience, setAudience] = useState<Audience>("hoje");
+  const [serverFilter, setServerFilter] = useState<string>("__all__");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [templateKey, setTemplateKey] = useState<TemplateKey>("lembrete");
@@ -524,20 +525,25 @@ function CampanhasManuaisPage() {
   const [editingBody, setEditingBody] = useState<string | null>(null); // override do modelo selecionado
   const [screensVersion, setScreensVersion] = useState(0);
   const [copyVersion, setCopyVersion] = useState(0);
+  const [serversVersion, setServersVersion] = useState(0);
   const [confirmSensitive, setConfirmSensitive] = useState<null | {
     text: string;
     label: string;
     itemKey: string;
+    serverSecrets?: boolean;
   }>(null);
 
   useEffect(() => {
     const bumpS = () => setScreensVersion((v) => v + 1);
     const bumpC = () => setCopyVersion((v) => v + 1);
+    const bumpSrv = () => setServersVersion((v) => v + 1);
     window.addEventListener("app-screens:changed", bumpS);
     window.addEventListener("campaign-copy:changed", bumpC);
+    window.addEventListener(SERVER_CATALOG_EVENT, bumpSrv);
     return () => {
       window.removeEventListener("app-screens:changed", bumpS);
       window.removeEventListener("campaign-copy:changed", bumpC);
+      window.removeEventListener(SERVER_CATALOG_EVENT, bumpSrv);
     };
   }, []);
 
