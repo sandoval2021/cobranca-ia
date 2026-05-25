@@ -145,7 +145,15 @@ export function buildConfirmationMessage(rec: RenewalRecord): string {
   }
   lines.push("");
   lines.push("Se precisar de suporte, me chama por aqui.");
-  return lines.join("\n");
+  // Resolve variáveis globais da Minha Revenda (não destrutivo)
+  // Import dinâmico evita ciclo entre módulos.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { applyRevendaVariables } = require("./revenda-settings") as typeof import("./revenda-settings");
+    return applyRevendaVariables(lines.join("\n"));
+  } catch {
+    return lines.join("\n");
+  }
 }
 
 export function applyRenewal(draft: RenewalDraft): RenewalRecord {
