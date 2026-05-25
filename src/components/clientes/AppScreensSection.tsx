@@ -472,6 +472,10 @@ export function AppScreensSection({
                       </p>
                     )}
 
+                    <ScreenServerRoutes screen={s} onChanged={() => { /* lista re-renderiza via evento */ }} />
+
+
+
                     {s.status !== "arquivada" && (
                       <Button
                         size="sm"
