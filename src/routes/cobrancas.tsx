@@ -78,17 +78,14 @@ import { cn } from "@/lib/utils";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
-import { flags } from "@/lib/flags";
 import {
   getCurrentCompanyAdmin,
   listChargesAdmin,
   listCustomersForSelectAdmin,
-  stagingRpcDetail,
   toastRpcError as _toastRpcError,
   type RpcErr,
 } from "@/lib/rpc-admin";
 
-// Re-export para manter assinatura local usada no arquivo.
 function toastRpcError(friendlyMsg: string, rpc: string, payload: unknown, err: RpcErr) {
   _toastRpcError(friendlyMsg, rpc, payload, err);
 }
