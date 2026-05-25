@@ -344,6 +344,21 @@ export function RenewScreensWizard({
               <Button type="button" variant="outline" onClick={() => copyText(finalized, "Confirmação")} className="flex-1">
                 <Copy className="mr-1 h-4 w-4" /> Copiar confirmação
               </Button>
+              <Button type="button" variant="outline" onClick={() => {
+                import("@/lib/financeiro-local").then(({ openFinanceWithDraft }) => {
+                  const screenLabels = Array.from(selected).map((id) => screens.find((s) => s.id === id)?.app).filter(Boolean).join(", ");
+                  openFinanceWithDraft({
+                    customer_name: customerName,
+                    type: renewApp ? "renovacao_app" : "renovacao_lista",
+                    amount_received: Number(amount) || 0,
+                    screen_label: screenLabels,
+                    note: notes,
+                    source: "renovacao",
+                  });
+                });
+              }} className="flex-1">
+                💰 Registrar no financeiro
+              </Button>
               <Button type="button" onClick={onClose} className="flex-1">
                 Fechar
               </Button>
