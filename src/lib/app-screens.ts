@@ -137,6 +137,27 @@ export function reactivateScreen(customerId: string, id: string): void {
   writeAll(all);
 }
 
+export function clearCustomerScreens(customerId: string): void {
+  const all = readAll();
+  delete all[customerId];
+  writeAll(all);
+}
+
+export function replaceAll(data: Record<string, AppScreen[]>): void {
+  writeAll(data);
+}
+
+export function mergeAll(incoming: Record<string, AppScreen[]>): void {
+  const all = readAll();
+  for (const [cid, list] of Object.entries(incoming)) {
+    const cur = all[cid] ?? [];
+    const byId = new Map(cur.map((s) => [s.id, s]));
+    for (const s of list) byId.set(s.id, s);
+    all[cid] = Array.from(byId.values());
+  }
+  writeAll(all);
+}
+
 export function newId(): string {
   return `scr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
