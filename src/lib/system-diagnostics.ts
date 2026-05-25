@@ -487,7 +487,7 @@ function checkBackup(alerts: DiagnosticAlert[]): string | null {
 function checkFinanceiro(alerts: DiagnosticAlert[]) {
   const entries = listFinanceEntries();
   const goals = listFinanceGoals();
-  const semValor = entries.filter((e) => !e.value || e.value <= 0).length;
+  const semValor = entries.filter((e) => !e.amount_received || e.amount_received <= 0).length;
   const semTipo = entries.filter((e) => !e.type).length;
   const semData = entries.filter((e) => !e.date).length;
   if (semValor)
