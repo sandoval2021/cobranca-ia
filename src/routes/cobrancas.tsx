@@ -543,10 +543,11 @@ function ChargeCard({
   const callRpc = async (fn: string, success: string, kindBusy: "paid" | "overdue" | "cancel") => {
     if (!supabase) return;
     setBusy(kindBusy);
-    const { error } = await supabase.rpc(fn, { p_charge_id: charge.id });
+    const payload = { p_charge_id: charge.id };
+    const { error } = await supabase.rpc(fn, payload);
     setBusy(null);
     if (error) {
-      toast.error(friendlyRpcError(error.message));
+      toastRpcError(friendlyRpcError(error.message), fn, payload, error);
       return;
     }
     toast.success(success);
