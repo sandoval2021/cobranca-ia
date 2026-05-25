@@ -54,6 +54,7 @@ import {
   appDueDays,
 } from "@/lib/app-screens";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { listActiveServers, SERVER_CATALOG_EVENT } from "@/lib/server-catalog";
 
 export const Route = createFileRoute("/pendencias")({
   component: PendenciasPage,
@@ -248,21 +249,26 @@ function PendenciasPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("todas");
+  const [serverFilter, setServerFilter] = useState<string>("__all__");
   const [showResolved, setShowResolved] = useState(false);
   const [screensVersion, setScreensVersion] = useState(0);
   const [resolvedVersion, setResolvedVersion] = useState(0);
+  const [serversVersion, setServersVersion] = useState(0);
   const [confirmReveal, setConfirmReveal] = useState<null | { screen: AppScreen; customerName: string }>(null);
 
   useEffect(() => {
     const bumpS = () => setScreensVersion((v) => v + 1);
     const bumpR = () => setResolvedVersion((v) => v + 1);
+    const bumpSrv = () => setServersVersion((v) => v + 1);
     window.addEventListener("app-screens:changed", bumpS);
     window.addEventListener("campaign-copy:changed", bumpR);
     window.addEventListener("pending-resolved:changed", bumpR);
+    window.addEventListener(SERVER_CATALOG_EVENT, bumpSrv);
     return () => {
       window.removeEventListener("app-screens:changed", bumpS);
       window.removeEventListener("campaign-copy:changed", bumpR);
       window.removeEventListener("pending-resolved:changed", bumpR);
+      window.removeEventListener(SERVER_CATALOG_EVENT, bumpSrv);
     };
   }, []);
 
@@ -512,6 +518,16 @@ function PendenciasPage() {
     return pendings.filter((p) => {
       if (!showResolved && resolved[p.key]) return false;
       if (!match(p)) return false;
+      // Filtro por servidor
+      if (serverFilter !== "__all__") {
+        const sids = p.screen?.server_ids ?? [];
+        if (serverFilter === "__none__") {
+          // Sem servidor: pendência sem tela OU tela sem vínculo
+          if (p.screen && sids.length > 0) return false;
+        } else {
+          if (!p.screen || !sids.includes(serverFilter)) return false;
+        }
+      }
       if (!q) return true;
       const c = p.customer;
       const s = p.screen;
@@ -526,7 +542,24 @@ function PendenciasPage() {
         (s?.route ?? "").toLowerCase().includes(q);
       return inText;
     });
-  }, [pendings, filter, query, resolved, showResolved]);
+  }, [pendings, filter, serverFilter, query, resolved, showResolved]);
+
+  // Contadores por servidor (respeita "Mostrar resolvidas")
+  const serverCounts = useMemo(() => {
+    void serversVersion;
+    const active = listActiveServers();
+    const out = active.map((s) => ({ id: s.id, name: s.name, color: s.color, count: 0 }));
+    let none = 0;
+    let total = 0;
+    for (const p of pendings) {
+      if (!showResolved && resolved[p.key]) continue;
+      total += 1;
+      const sids = p.screen?.server_ids ?? [];
+      if (!p.screen || sids.length === 0) none += 1;
+      for (const o of out) if (sids.includes(o.id)) o.count += 1;
+    }
+    return { servers: out, none, total };
+  }, [pendings, resolved, showResolved, serversVersion]);
 
   const ordered = useMemo(
     () => [...filtered].sort((a, b) => TYPE_META[a.type].priority - TYPE_META[b.type].priority),
@@ -707,6 +740,29 @@ function PendenciasPage() {
         <Chip active={filter === "app_pago_30d"} onClick={() => setFilter("app_pago_30d")} label="App pago 30 dias" count={counts.app_pago_30d} dim={counts.app_pago_30d === 0} />
         <Chip active={filter === "app_sem_venc"} onClick={() => setFilter("app_sem_venc")} label="Sem vencimento do app" count={counts.app_sem_venc} dim={counts.app_sem_venc === 0} />
         <Chip active={filter === "app_sem_mackey"} onClick={() => setFilter("app_sem_mackey")} label="App sem MAC/Key" count={counts.app_sem_mackey} dim={counts.app_sem_mackey === 0} />
+      </div>
+
+      {/* Filtros por servidor */}
+      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <Chip active={serverFilter === "__all__"} onClick={() => setServerFilter("__all__")} label="Todos servidores" count={serverCounts.total} />
+        <Chip active={serverFilter === "__none__"} onClick={() => setServerFilter("__none__")} label="Sem servidor" count={serverCounts.none} dim={serverCounts.none === 0} />
+        {serverCounts.servers.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setServerFilter(s.id)}
+            className={cn(
+              "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition",
+              serverFilter === s.id
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-foreground hover:bg-muted",
+              s.count === 0 && serverFilter !== s.id && "opacity-60",
+            )}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} aria-hidden />
+            {s.name} <span className={cn("ml-0.5 tabular-nums", serverFilter === s.id ? "opacity-90" : "text-muted-foreground")}>({s.count})</span>
+          </button>
+        ))}
       </div>
 
       {/* Estados */}

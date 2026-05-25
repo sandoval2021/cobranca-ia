@@ -168,6 +168,16 @@ export function ImportAgendaSection({
               Editar regras
             </Link>
           </p>
+          {items.length > 0 && (
+            <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="rounded-full border border-dashed border-border bg-muted/40 px-2 py-0.5 text-[10px]">
+                Sem servidor
+              </span>
+              <span>
+                A agenda da importação não possui vínculo seguro com tela/servidor; mantido como “Sem servidor” para evitar erro.
+              </span>
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">

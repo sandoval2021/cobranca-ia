@@ -50,7 +50,7 @@ import {
   ROUTE_OPTIONS,
 } from "@/lib/app-screens";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
-import { buildServerVarsForScreen } from "@/lib/server-catalog";
+import { buildServerVarsForScreen, listActiveServers, SERVER_CATALOG_EVENT } from "@/lib/server-catalog";
 
 export const Route = createFileRoute("/campanhas-manuais")({
   component: CampanhasManuaisPage,
@@ -296,7 +296,11 @@ function renderTemplate(
 }
 
 function hasSensitiveVars(body: string): boolean {
-  return /\{(senha|password|key|mac|usuario)\}/i.test(body);
+  return /\{(senha|password|key|mac|usuario|senha_painel|senha_lista)\}/i.test(body);
+}
+
+function hasServerSecretVars(body: string): boolean {
+  return /\{(senha_painel|senha_lista)\}/i.test(body);
 }
 
 // ---------- "público" (publico) selecionável ----------
@@ -511,6 +515,7 @@ function CampanhasManuaisPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [audience, setAudience] = useState<Audience>("hoje");
+  const [serverFilter, setServerFilter] = useState<string>("__all__");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [templateKey, setTemplateKey] = useState<TemplateKey>("lembrete");
@@ -520,20 +525,25 @@ function CampanhasManuaisPage() {
   const [editingBody, setEditingBody] = useState<string | null>(null); // override do modelo selecionado
   const [screensVersion, setScreensVersion] = useState(0);
   const [copyVersion, setCopyVersion] = useState(0);
+  const [serversVersion, setServersVersion] = useState(0);
   const [confirmSensitive, setConfirmSensitive] = useState<null | {
     text: string;
     label: string;
     itemKey: string;
+    serverSecrets?: boolean;
   }>(null);
 
   useEffect(() => {
     const bumpS = () => setScreensVersion((v) => v + 1);
     const bumpC = () => setCopyVersion((v) => v + 1);
+    const bumpSrv = () => setServersVersion((v) => v + 1);
     window.addEventListener("app-screens:changed", bumpS);
     window.addEventListener("campaign-copy:changed", bumpC);
+    window.addEventListener(SERVER_CATALOG_EVENT, bumpSrv);
     return () => {
       window.removeEventListener("app-screens:changed", bumpS);
       window.removeEventListener("campaign-copy:changed", bumpC);
+      window.removeEventListener(SERVER_CATALOG_EVENT, bumpSrv);
     };
   }, []);
 
@@ -612,6 +622,14 @@ function CampanhasManuaisPage() {
     const q = query.trim().toLowerCase();
     return publicAll.filter((p) => {
       if (!matchesAudience(p, audience)) return false;
+      if (serverFilter !== "__all__") {
+        const sids = p.screen?.server_ids ?? [];
+        if (serverFilter === "__none__") {
+          if (p.screen && sids.length > 0) return false;
+        } else {
+          if (!p.screen || !sids.includes(serverFilter)) return false;
+        }
+      }
       if (!q) return true;
       const c = p.customer;
       const phone = onlyDigits(c.whatsapp ?? "");
@@ -623,7 +641,22 @@ function CampanhasManuaisPage() {
       ) return true;
       return false;
     });
-  }, [publicAll, audience, query]);
+  }, [publicAll, audience, serverFilter, query]);
+
+  // Contadores por servidor (sobre o público já filtrado por audience)
+  const serverCounts = useMemo(() => {
+    void serversVersion;
+    const audiencePool = publicAll.filter((p) => matchesAudience(p, audience));
+    const active = listActiveServers();
+    const out = active.map((s) => ({ id: s.id, name: s.name, color: s.color, count: 0 }));
+    let none = 0;
+    for (const p of audiencePool) {
+      const sids = p.screen?.server_ids ?? [];
+      if (!p.screen || sids.length === 0) none += 1;
+      for (const o of out) if (sids.includes(o.id)) o.count += 1;
+    }
+    return { servers: out, none, total: audiencePool.length };
+  }, [publicAll, audience, serversVersion]);
 
   // Quando trocar filtro/busca, manter apenas selecionados que ainda aparecem
   useEffect(() => {
@@ -648,6 +681,7 @@ function CampanhasManuaisPage() {
     : (templateKey === "personalizado" ? customBody : currentTemplate.body);
 
   const sensitiveBody = hasSensitiveVars(effectiveBody);
+  const serverSecretsBody = hasServerSecretVars(effectiveBody);
 
   // Resumo
   const summary = useMemo(() => {
@@ -789,6 +823,31 @@ function CampanhasManuaisPage() {
         <Chip active={audience === "app_sem_venc"} onClick={() => setAudience("app_sem_venc")} label="Sem vencimento do app" count={counts.app_sem_venc} dim={counts.app_sem_venc === 0} />
         <Chip active={audience === "app_sem_mackey"} onClick={() => setAudience("app_sem_mackey")} label="Sem MAC/Key" count={counts.app_sem_mackey} dim={counts.app_sem_mackey === 0} />
       </div>
+
+      {/* Filtros por servidor */}
+      <div className="mb-2 text-xs font-medium text-muted-foreground">Servidor</div>
+      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <Chip active={serverFilter === "__all__"} onClick={() => setServerFilter("__all__")} label="Todos servidores" count={serverCounts.total} />
+        <Chip active={serverFilter === "__none__"} onClick={() => setServerFilter("__none__")} label="Sem servidor" count={serverCounts.none} dim={serverCounts.none === 0} />
+        {serverCounts.servers.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setServerFilter(s.id)}
+            className={cn(
+              "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition",
+              serverFilter === s.id
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-foreground hover:bg-muted",
+              s.count === 0 && serverFilter !== s.id && "opacity-60",
+            )}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} aria-hidden />
+            {s.name} <span className={cn("ml-0.5 tabular-nums", serverFilter === s.id ? "opacity-90" : "text-muted-foreground")}>({s.count})</span>
+          </button>
+        ))}
+      </div>
+
 
       {/* Busca */}
       <div className="relative mb-3">
@@ -948,6 +1007,13 @@ function CampanhasManuaisPage() {
                           Atualizar servidor
                         </span>
                       )}
+                      {p.screen && (
+                        (p.screen.server_ids ?? []).length > 0
+                          ? (p.screen.server_ids ?? []).map((sid) => (
+                              <ServerBadge key={sid} serverId={sid} size="xs" />
+                            ))
+                          : <SemServidorBadge />
+                      )}
                       {mark && isToday(mark.at) && (
                         <span className="rounded-md border border-emerald-400/60 bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                           Copiado às {new Date(mark.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
@@ -992,6 +1058,27 @@ function CampanhasManuaisPage() {
                               Copiar com dados sensíveis
                             </Button>
                           )}
+                          {serverSecretsBody && p.screen && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const openText = renderTemplate(
+                                  effectiveBody,
+                                  buildValues(p, { revealSecrets: true }),
+                                );
+                                setConfirmSensitive({
+                                  text: openText,
+                                  label: "Mensagem com senhas do servidor",
+                                  itemKey: k,
+                                  serverSecrets: true,
+                                });
+                              }}
+                              className="text-amber-700 dark:text-amber-300"
+                            >
+                              Copiar com senhas do servidor
+                            </Button>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1007,10 +1094,15 @@ function CampanhasManuaisPage() {
       <AlertDialog open={!!confirmSensitive} onOpenChange={(o) => !o && setConfirmSensitive(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Copiar com dados sensíveis?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {confirmSensitive?.serverSecrets
+                ? "Copiar com senhas do painel/lista?"
+                : "Copiar com dados sensíveis?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Essa mensagem pode conter dados sensíveis (senha, key, MAC, usuário) em texto aberto.
-              Cole apenas em um lugar seguro.
+              {confirmSensitive?.serverSecrets
+                ? "Esse texto inclui senhas do painel/lista do servidor. Deseja copiar mesmo assim?"
+                : "Essa mensagem pode conter dados sensíveis (senha, key, MAC, usuário) em texto aberto. Cole apenas em um lugar seguro."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1023,7 +1115,7 @@ function CampanhasManuaisPage() {
                 setConfirmSensitive(null);
               }}
             >
-              Copiar mesmo assim
+              {confirmSensitive?.serverSecrets ? "Copiar com senhas" : "Copiar mesmo assim"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
