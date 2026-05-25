@@ -518,6 +518,16 @@ function PendenciasPage() {
     return pendings.filter((p) => {
       if (!showResolved && resolved[p.key]) return false;
       if (!match(p)) return false;
+      // Filtro por servidor
+      if (serverFilter !== "__all__") {
+        const sids = p.screen?.server_ids ?? [];
+        if (serverFilter === "__none__") {
+          // Sem servidor: pendência sem tela OU tela sem vínculo
+          if (p.screen && sids.length > 0) return false;
+        } else {
+          if (!p.screen || !sids.includes(serverFilter)) return false;
+        }
+      }
       if (!q) return true;
       const c = p.customer;
       const s = p.screen;
@@ -532,7 +542,24 @@ function PendenciasPage() {
         (s?.route ?? "").toLowerCase().includes(q);
       return inText;
     });
-  }, [pendings, filter, query, resolved, showResolved]);
+  }, [pendings, filter, serverFilter, query, resolved, showResolved]);
+
+  // Contadores por servidor (respeita "Mostrar resolvidas")
+  const serverCounts = useMemo(() => {
+    void serversVersion;
+    const active = listActiveServers();
+    const out = active.map((s) => ({ id: s.id, name: s.name, color: s.color, count: 0 }));
+    let none = 0;
+    let total = 0;
+    for (const p of pendings) {
+      if (!showResolved && resolved[p.key]) continue;
+      total += 1;
+      const sids = p.screen?.server_ids ?? [];
+      if (!p.screen || sids.length === 0) none += 1;
+      for (const o of out) if (sids.includes(o.id)) o.count += 1;
+    }
+    return { servers: out, none, total };
+  }, [pendings, resolved, showResolved, serversVersion]);
 
   const ordered = useMemo(
     () => [...filtered].sort((a, b) => TYPE_META[a.type].priority - TYPE_META[b.type].priority),
