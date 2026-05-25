@@ -773,9 +773,17 @@ function PendenciasPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <div className="mt-4">
+        <ImportAgendaSection
+          title="Pendências da agenda da importação"
+          subtitle="Disparos pendentes, bloqueados e itens para revisar da última importação."
+          hideWhenEmpty
+        />
+      </div>
     </PageContainer>
   );
 }
+
 
 // ---------- subcomponents ----------
 function Mini({
