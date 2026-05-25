@@ -35,6 +35,7 @@ import {
   getCompanyStatus,
   daysUntilDue,
 } from "@/lib/companies";
+import { getCompanyUsage } from "@/lib/plan-limits";
 
 function OwnerRoleNotice() {
   const { isOwner, user } = useLocalAuth();
