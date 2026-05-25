@@ -181,7 +181,8 @@ type Filter =
   | "todos" | "ativo" | "expirado" | "arquivado"
   | "hoje" | "7d" | "vencidos"
   | "app_bob" | "app_xciptv" | "app_ibo"
-  | "acc_mac_key" | "acc_user_pass";
+  | "acc_mac_key" | "acc_user_pass"
+  | "needs_update";
 
 function ClientesPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
