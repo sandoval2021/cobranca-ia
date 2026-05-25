@@ -25,6 +25,9 @@ import {
   bonusDescription, renderReferralMessage,
   type Referral, type ReferralRules, type BonusType,
 } from "@/lib/referrals";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+
 
 export const Route = createFileRoute("/indicacoes")({
   component: IndicacoesPage,
