@@ -20,6 +20,7 @@ import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as CobrancasRouteImport } from './routes/cobrancas'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
 import { Route as IndexRouteImport } from './routes/index'
 
 const RelatorioRoute = RelatorioRouteImport.update({
@@ -77,6 +78,11 @@ const ClientesRoute = ClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CampanhasManuaisRoute = CampanhasManuaisRouteImport.update({
+  id: '/campanhas-manuais',
+  path: '/campanhas-manuais',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -85,6 +91,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -114,6 +122,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/clientes': typeof ClientesRoute
   '/cobrancas': typeof CobrancasRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/campanhas-manuais'
     | '/clientes'
     | '/cobrancas'
     | '/configuracoes'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/campanhas-manuais'
     | '/clientes'
     | '/cobrancas'
     | '/configuracoes'
@@ -158,6 +169,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/campanhas-manuais'
     | '/clientes'
     | '/cobrancas'
     | '/configuracoes'
@@ -173,6 +185,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CampanhasManuaisRoute: typeof CampanhasManuaisRoute
   ClientesRoute: typeof ClientesRoute
   CobrancasRoute: typeof CobrancasRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
@@ -265,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/campanhas-manuais': {
+      id: '/campanhas-manuais'
+      path: '/campanhas-manuais'
+      fullPath: '/campanhas-manuais'
+      preLoaderRoute: typeof CampanhasManuaisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -277,6 +297,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CampanhasManuaisRoute: CampanhasManuaisRoute,
   ClientesRoute: ClientesRoute,
   CobrancasRoute: CobrancasRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
