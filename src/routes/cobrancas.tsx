@@ -149,15 +149,22 @@ const parseBRLToCents = (s: string): number | null => {
 };
 
 type ChargeKind = "pendente" | "paga" | "vencida" | "cancelada" | "outro";
+/**
+ * Mapeia o status amigável da UI para o valor real do enum charge_status no banco.
+ * Enum aceito: pendente | aprovado | falhou | cancelado | expirado.
+ * Retorna null se o valor for desconhecido (chamador deve abortar a RPC).
+ */
 const toChargeRpcStatus = (status: string | null | undefined): string | null => {
   const v = (status ?? "").trim().toLowerCase();
-  if (!v) return null;
-  if (["pendente", "pending", "open", "created", "new"].includes(v)) return "pendente";
-  if (["paga", "paid", "approved", "success", "confirmed"].includes(v)) return "paga";
-  if (["vencida", "overdue", "expired"].includes(v)) return "vencida";
-  if (["cancelada", "canceled", "cancelled", "cancelado"].includes(v)) return "cancelada";
-  return v;
+  if (!v) return "pendente";
+  if (["pendente", "pending", "open", "created", "new", "aberta"].includes(v)) return "pendente";
+  if (["paga", "paid", "approved", "aprovado", "success", "confirmed"].includes(v)) return "aprovado";
+  if (["vencida", "vencido", "overdue", "expired", "expirado"].includes(v)) return "expirado";
+  if (["cancelada", "cancelado", "canceled", "cancelled"].includes(v)) return "cancelado";
+  if (["falhou", "falha", "failed", "error"].includes(v)) return "falhou";
+  return null;
 };
+
 const classifyCharge = (s: string | null | undefined): ChargeKind => {
   const v = (s ?? "").toLowerCase();
   if (!v) return "outro";
