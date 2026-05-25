@@ -356,18 +356,23 @@ const SUPPORT_DEFS: { key: SupportKey; label: string; description: string; gen: 
   { key: "fora_horario",        label: "Suporte fora do horário", description: "Aviso de horário de atendimento",     gen: genForaHorario },
 ];
 
-const QUICK_MESSAGES: { key: QuickKey; label: string; text: string }[] = [
-  { key: "bom_dia",                label: "Bom dia, como posso ajudar?",       text: "Bom dia! 😊 Como posso te ajudar hoje?" },
-  { key: "pedir_print",            label: "Por favor, envie print do erro",    text: "Por favor, me envia um print da tela com o erro para eu te ajudar?" },
-  { key: "informar_app",           label: "Informe qual app você usa",         text: "Você consegue me informar qual aplicativo está usando na sua TV?" },
-  { key: "informar_mac_key",       label: "Informe MAC e Key",                 text: "Para te ajudar, me informa por favor o MAC e a Key do seu aparelho." },
-  { key: "informar_user_pass",     label: "Informe usuário e senha",           text: "Para te ajudar, me informa por favor o usuário e a senha cadastrados no app." },
-  { key: "encerrado",              label: "Atendimento encerrado",             text: "Tudo certo então! Qualquer coisa estou à disposição. 😊" },
-  { key: "horario",                label: "Horário de atendimento",            text: "Nosso horário de atendimento é de segunda a sábado, das 09h às 21h. 🕘" },
-  { key: "renovacao_disponivel",   label: "Mensalidade disponível para renovação", text: "Sua mensalidade já está disponível para renovação. Quando puder, me confirme o pagamento. Obrigado!" },
-  { key: "acesso_vencido",         label: "Seu acesso está vencido",           text: "Identifiquei que seu acesso está vencido. Para evitar interrupção, por favor regularize quando possível." },
-  { key: "vou_verificar",          label: "Vou verificar sua tela",            text: "Vou verificar sua tela aqui e já te retorno, ok? 😊" },
-];
+function buildQuickMessages(): { key: QuickKey; label: string; text: string }[] {
+  const rev = getRevendaSettings();
+  const a = rev.atendimento;
+  const horarioFallback = "Nosso horário de atendimento é de segunda a sábado, das 09h às 21h. 🕘";
+  return [
+    { key: "bom_dia",                label: "Bom dia, como posso ajudar?",       text: "Bom dia! 😊 Como posso te ajudar hoje?" },
+    { key: "pedir_print",            label: "Por favor, envie print do erro",    text: a.texto_pedir_print?.trim() || "Por favor, me envia um print da tela com o erro para eu te ajudar?" },
+    { key: "informar_app",           label: "Informe qual app você usa",         text: a.texto_pedir_nome_app?.trim() || "Você consegue me informar qual aplicativo está usando na sua TV?" },
+    { key: "informar_mac_key",       label: "Informe MAC e Key",                 text: "Para te ajudar, me informa por favor o MAC e a Key do seu aparelho." },
+    { key: "informar_user_pass",     label: "Informe usuário e senha",           text: "Para te ajudar, me informa por favor o usuário e a senha cadastrados no app." },
+    { key: "encerrado",              label: "Atendimento encerrado",             text: "Tudo certo então! Qualquer coisa estou à disposição. 😊" },
+    { key: "horario",                label: "Horário de atendimento",            text: a.horario_semana?.trim() ? `Nosso horário de atendimento: ${a.horario_semana}. 🕘` : horarioFallback },
+    { key: "renovacao_disponivel",   label: "Mensalidade disponível para renovação", text: "Sua mensalidade já está disponível para renovação. Quando puder, me confirme o pagamento. Obrigado!" },
+    { key: "acesso_vencido",         label: "Seu acesso está vencido",           text: "Identifiquei que seu acesso está vencido. Para evitar interrupção, por favor regularize quando possível." },
+    { key: "vou_verificar",          label: "Vou verificar sua tela",            text: "Vou verificar sua tela aqui e já te retorno, ok? 😊" },
+  ];
+}
 
 // ------- componente -------
 
