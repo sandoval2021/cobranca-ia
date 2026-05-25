@@ -439,6 +439,16 @@ export function AppScreensSection({
                       </p>
                     )}
 
+                    {s.status !== "arquivada" && (
+                      <Button
+                        size="sm"
+                        className="w-full gap-1.5"
+                        onClick={() => { setRenewInitialScreenId(s.id); setRenewOpen(true); }}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" /> Renovar tela
+                      </Button>
+                    )}
+
                     <div className="grid grid-cols-2 gap-2">
                       <Button size="sm" variant="outline" className="gap-1.5" onClick={() => copyScreen(s, false)}>
                         <Copy className="h-3.5 w-3.5" /> Copiar esta tela
@@ -469,6 +479,23 @@ export function AppScreensSection({
                         </Button>
                       )}
                     </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <RenewalHistorySection customerId={customerId} customerName={customerName} />
+
+      <RenewScreensWizard
+        open={renewOpen}
+        onClose={() => { setRenewOpen(false); setRenewInitialScreenId(null); }}
+        customerId={customerId}
+        customerName={customerName}
+        initialScreenId={renewInitialScreenId}
+      />
                   </div>
                 )}
               </li>
