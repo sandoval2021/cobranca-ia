@@ -60,6 +60,7 @@ import { getCurrentCompanyAdmin, listCustomersAdmin } from "@/lib/rpc-admin";
 import {
   APP_CATALOG, AppKey, AppScreen, listAllScreens, listScreens,
   nextDueDays, urgencyFromDays, urgencyClass, urgencyLabel,
+  paidAppAlerts, paidAlertClass, PAID_ALERT_LABEL, appDueDays, isPaidApp,
 } from "@/lib/app-screens";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
