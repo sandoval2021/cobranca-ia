@@ -757,6 +757,11 @@ function checkMultiTenant(alerts: DiagnosticAlert[]) {
       cobranca_ia_finance_goals_v1: { area: "financeiro", label: "Objetivos financeiros", to: "/financeiro" },
       cobranca_ia_trial_leads_v1: { area: "testes", label: "Testes/Leads", to: "/testes" },
       cobranca_ia_referrals_v1: { area: "indicacoes", label: "Indicações", to: "/indicacoes" },
+      cobranca_ia_manual_renewal_history_v1: { area: "clientes", label: "Histórico de renovações", to: "/clientes" },
+      cobranca_ia_import_schedule_items_v1: { area: "operacao", label: "Agenda da importação", to: "/importar-clientes" },
+      cobranca_ia_quick_support_history_v1: { area: "clientes", label: "Atendimento rápido", to: "/clientes" },
+      cobranca_ia_campaign_copied_v1: { area: "operacao", label: "Campanhas copiadas", to: "/campanhas-manuais" },
+      cobranca_ia_pending_resolved_v1: { area: "operacao", label: "Pendências resolvidas", to: "/pendencias" },
     };
     for (const p of summary.preview) {
       const map = moduleAreaMap[p.key];
