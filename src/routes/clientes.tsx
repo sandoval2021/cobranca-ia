@@ -346,7 +346,7 @@ function ClientesPage() {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por nome ou WhatsApp"
+          placeholder="Buscar por nome, WhatsApp, tela, app, MAC, usuário…"
           className="h-11 pl-9 pr-9"
           inputMode="search"
         />
