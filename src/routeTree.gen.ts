@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TestesRouteImport } from './routes/testes'
-import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
 import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
@@ -38,6 +37,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const TestesRoute = TestesRouteImport.update({
   id: '/testes',
   path: '/testes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDnsRotasRoute = AdminDnsRotasRouteImport.update({
+  id: '/admin-dns-rotas',
+  path: '/admin-dns-rotas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SegurancaLocalRoute = SegurancaLocalRouteImport.update({
