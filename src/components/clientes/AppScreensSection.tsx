@@ -585,6 +585,7 @@ function ScreenSheet({
 }) {
   const [name, setName] = useState("");
   const [app, setApp] = useState<AppKey>("xciptv");
+  const [tier, setTier] = useState<AppTier>("gratis");
   const [accessType, setAccessType] = useState<AccessType>("user_pass");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -594,6 +595,8 @@ function ScreenSheet({
   const [appKey, setAppKey] = useState("");
   const [portalUrl, setPortalUrl] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [appDueDate, setAppDueDate] = useState("");
+  const [appRenewalValue, setAppRenewalValue] = useState("");
   const [status, setStatus] = useState<ScreenStatus>("ativa");
   const [route, setRoute] = useState<RouteKind | "">("");
   const [needsUpdate, setNeedsUpdate] = useState(false);
@@ -605,6 +608,7 @@ function ScreenSheet({
     if (initial) {
       setName(initial.name);
       setApp(initial.app);
+      setTier(initial.tier ?? APP_CATALOG[initial.app]?.tier ?? "desconhecido");
       setAccessType(initial.access_type);
       setUsername(initial.username ?? "");
       setPassword(initial.password ?? "");
@@ -614,23 +618,31 @@ function ScreenSheet({
       setAppKey(initial.app_key ?? "");
       setPortalUrl(initial.portal_url ?? "");
       setDueDate(initial.due_date ?? "");
+      setAppDueDate(initial.app_due_date ?? "");
+      setAppRenewalValue(initial.app_renewal_value ?? "");
       setStatus(initial.status);
       setRoute(initial.route ?? "");
       setNeedsUpdate(!!initial.needs_server_update);
       setNotes(initial.notes ?? "");
     } else {
+      const def = APP_CATALOG.xciptv;
       setName("");
       setApp("xciptv");
-      setAccessType(APP_CATALOG.xciptv.access);
+      setTier(def.tier);
+      setAccessType(def.access);
       setUsername(""); setPassword(""); setServer(""); setPort("");
       setMac(""); setAppKey(""); setPortalUrl(""); setDueDate("");
+      setAppDueDate(""); setAppRenewalValue("");
       setStatus("ativa"); setRoute(""); setNeedsUpdate(false); setNotes("");
     }
   }, [open, initial]);
 
+  // Sugerir tier/acesso quando troca o app (mas usuário pode mudar)
   useEffect(() => {
-    const def = APP_CATALOG[app]?.access ?? "outro";
-    if (def !== "outro") setAccessType(def);
+    const def = APP_CATALOG[app];
+    if (!def) return;
+    setTier(def.tier);
+    setAccessType(def.access);
   }, [app]);
 
   const submit = (e: React.FormEvent) => {
@@ -643,6 +655,7 @@ function ScreenSheet({
       customer_id: customerId,
       name: name.trim(),
       app,
+      tier,
       access_type: accessType,
       username: username.trim() || undefined,
       password: password || undefined,
@@ -652,6 +665,8 @@ function ScreenSheet({
       app_key: appKey.trim() || undefined,
       portal_url: portalUrl.trim() || undefined,
       due_date: dueDate || undefined,
+      app_due_date: appDueDate || undefined,
+      app_renewal_value: appRenewalValue.trim() || undefined,
       status,
       route: route || undefined,
       needs_server_update: needsUpdate || undefined,
@@ -665,6 +680,10 @@ function ScreenSheet({
     onClose();
   };
 
+  const showUserPass = accessType === "user_pass";
+  const showMac = accessType === "mac" || accessType === "mac_key";
+  const showKey = accessType === "mac_key";
+
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md">
@@ -673,16 +692,16 @@ function ScreenSheet({
             {initial ? "Editar tela" : "Adicionar tela/app"}
           </SheetTitle>
           <SheetDescription className="text-xs">
-            Dados salvos localmente neste navegador.
+            Apenas Nome da tela e Aplicativo são obrigatórios. Os demais campos são opcionais.
           </SheetDescription>
         </SheetHeader>
 
         <form onSubmit={submit} className="flex-1 space-y-4 p-4">
-          <Field label="Nome da tela" hint="Use para separar quando o cliente tem mais de uma TV ou aparelho.">
+          <Field label="Nome da tela *" hint="Use para separar quando o cliente tem mais de uma TV ou aparelho.">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tela 1, TV Sala…" maxLength={60} required />
           </Field>
 
-          <Field label="Aplicativo" hint="Escolha o app que o cliente usa na TV ou celular.">
+          <Field label="Aplicativo *" hint="Escolha o app que o cliente usa.">
             <select
               value={app}
               onChange={(e) => setApp(e.target.value as AppKey)}
@@ -694,49 +713,68 @@ function ScreenSheet({
             </select>
           </Field>
 
-          <Field label="Tipo de acesso">
-            <select
-              value={accessType}
-              onChange={(e) => setAccessType(e.target.value as AccessType)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-            >
-              <option value="user_pass">Usuário e senha</option>
-              <option value="mac_key">MAC e Key</option>
-              <option value="outro">Outro</option>
-            </select>
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Tipo do app">
+              <select
+                value={tier}
+                onChange={(e) => setTier(e.target.value as AppTier)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
+                <option value="gratis">{TIER_LABEL.gratis}</option>
+                <option value="pago">{TIER_LABEL.pago}</option>
+                <option value="desconhecido">{TIER_LABEL.desconhecido}</option>
+              </select>
+            </Field>
+            <Field label="Tipo de acesso">
+              <select
+                value={accessType}
+                onChange={(e) => setAccessType(e.target.value as AccessType)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
+                <option value="user_pass">{ACCESS_LABEL.user_pass}</option>
+                <option value="mac">{ACCESS_LABEL.mac}</option>
+                <option value="mac_key">{ACCESS_LABEL.mac_key}</option>
+                <option value="outro">{ACCESS_LABEL.outro}</option>
+                <option value="nao_informado">{ACCESS_LABEL.nao_informado}</option>
+              </select>
+            </Field>
+          </div>
 
-          {accessType === "user_pass" && (
+          {showUserPass && (
             <div className="space-y-3 rounded-lg border border-border bg-surface p-3">
-              <Field label="Usuário"><Input value={username} onChange={(e) => setUsername(e.target.value)} maxLength={120} /></Field>
-              <Field label="Senha"><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={200} /></Field>
-              <Field label="Servidor / link" hint="Link usado no aplicativo do cliente."><Input value={server} onChange={(e) => setServer(e.target.value)} maxLength={300} placeholder="http://servidor:porta" /></Field>
+              <Field label="Usuário (opcional)"><Input value={username} onChange={(e) => setUsername(e.target.value)} maxLength={120} /></Field>
+              <Field label="Senha (opcional)"><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={200} /></Field>
+              <Field label="Servidor / link (opcional)"><Input value={server} onChange={(e) => setServer(e.target.value)} maxLength={300} placeholder="http://servidor:porta" /></Field>
               <Field label="Porta (opcional)"><Input value={port} onChange={(e) => setPort(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" /></Field>
             </div>
           )}
 
-          {accessType === "mac_key" && (
+          {(showMac || showKey) && (
             <div className="space-y-3 rounded-lg border border-border bg-surface p-3">
-              <Field label="MAC" hint="Código do aparelho usado em apps como Bob Player e IBO.">
-                <Input value={mac} onChange={(e) => setMac(e.target.value)} placeholder="00:1A:2B:3C:4D:5E" maxLength={32} />
-              </Field>
-              <Field label="Key" hint="Chave do aplicativo. Alguns apps pedem MAC e Key para ativação.">
-                <Input value={appKey} onChange={(e) => setAppKey(e.target.value)} maxLength={200} />
-              </Field>
-              <Field label="Link do portal" hint="Portal do aplicativo, abre em nova aba.">
+              {showMac && (
+                <Field label="MAC (opcional)" hint="Código do aparelho usado em apps pagos.">
+                  <Input value={mac} onChange={(e) => setMac(e.target.value)} placeholder="00:1A:2B:3C:4D:5E" maxLength={32} />
+                </Field>
+              )}
+              {showKey && (
+                <Field label="Key (opcional)" hint="Chave do aplicativo.">
+                  <Input value={appKey} onChange={(e) => setAppKey(e.target.value)} maxLength={200} />
+                </Field>
+              )}
+              <Field label="Link do portal (opcional)">
                 <Input value={portalUrl} onChange={(e) => setPortalUrl(e.target.value)} placeholder="https://…" maxLength={500} />
               </Field>
             </div>
           )}
 
-          {accessType === "outro" && (
+          {(accessType === "outro" || accessType === "nao_informado") && (
             <Field label="Link do portal (opcional)">
               <Input value={portalUrl} onChange={(e) => setPortalUrl(e.target.value)} placeholder="https://…" maxLength={500} />
             </Field>
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Vencimento da tela">
+            <Field label="Vencimento da lista (opcional)" hint="Mensalidade da lista do cliente.">
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </Field>
             <Field label="Status">
@@ -754,7 +792,23 @@ function ScreenSheet({
             </Field>
           </div>
 
-          <Field label="Rota / servidor usado" hint="Identifica qual rota o cliente está usando hoje.">
+          {tier === "pago" && (
+            <div className="space-y-3 rounded-lg border border-amber-300/40 bg-amber-50/40 p-3 dark:bg-amber-500/5">
+              <p className="text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                Licença do aplicativo (separada da mensalidade da lista)
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Vencimento do app (opcional)" hint="Geralmente anual.">
+                  <Input type="date" value={appDueDate} onChange={(e) => setAppDueDate(e.target.value)} />
+                </Field>
+                <Field label="Valor da renovação (opcional)">
+                  <Input value={appRenewalValue} onChange={(e) => setAppRenewalValue(e.target.value)} placeholder="R$ 50" maxLength={40} />
+                </Field>
+              </div>
+            </div>
+          )}
+
+          <Field label="Rota / servidor usado (opcional)" hint="Identifica qual rota o cliente está usando hoje.">
             <select
               value={route}
               onChange={(e) => setRoute(e.target.value as RouteKind | "")}
@@ -784,7 +838,7 @@ function ScreenSheet({
             </span>
           </label>
 
-          <Field label="Observações">
+          <Field label="Observações (opcional)">
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={1000} />
           </Field>
 
