@@ -46,6 +46,8 @@ function IndicacoesPage() {
   const [rulesOpen, setRulesOpen] = useState(false);
   const [msgFor, setMsgFor] = useState<string | null>(null); // indicator key
   const [applyForId, setApplyForId] = useState<string | null>(null);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
+
 
   const reload = () => {
     setRefs(listReferrals());
