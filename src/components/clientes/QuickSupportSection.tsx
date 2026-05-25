@@ -87,10 +87,11 @@ function pushHistory(item: Omit<HistoryItem, "id" | "at">) {
 
 function copyText(text: string, label: string, meta?: Omit<HistoryItem, "id" | "at" | "text">) {
   if (!text) return;
+  const finalText = applyRevendaVariables(text);
   try {
-    navigator.clipboard?.writeText(text);
+    navigator.clipboard?.writeText(finalText);
     toast.success(`${label} copiado`);
-    if (meta) pushHistory({ ...meta, text });
+    if (meta) pushHistory({ ...meta, text: finalText });
   } catch {
     toast.error("Não foi possível copiar");
   }
