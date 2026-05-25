@@ -138,7 +138,7 @@ function CatalogoServidoresPage() {
       <SectionHeader
         title="Servidores"
         subtitle="Configure os servidores e painéis usados nas telas dos clientes."
-      />
+      <PlanLimitNotice moduleKey="servidores" />
 
 
       <div className="mb-3 rounded-md border border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">
