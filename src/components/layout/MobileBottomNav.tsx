@@ -9,7 +9,7 @@ export function MobileBottomNav() {
   const items = filterNavByRole(ownerBottomNav, role);
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur safe-bottom md:hidden">
-      <ul className={cn("grid", `grid-cols-${Math.max(items.length, 1)}`)}>
+      <ul className="grid" style={{ gridTemplateColumns: `repeat(${Math.max(items.length, 1)}, minmax(0, 1fr))` }}>
         {items.map((item) => {
           const active =
             item.to === "/" ? pathname === "/" : pathname === item.to || pathname.startsWith(item.to + "/");
