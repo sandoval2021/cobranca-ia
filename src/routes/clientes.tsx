@@ -64,6 +64,8 @@ import {
 } from "@/lib/app-screens";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
+import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { getServerById } from "@/lib/server-catalog";
 import { Tv } from "lucide-react";
 
 export const Route = createFileRoute("/clientes")({ component: ClientesPage });
