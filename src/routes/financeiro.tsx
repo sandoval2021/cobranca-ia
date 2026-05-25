@@ -41,6 +41,7 @@ import {
 } from "@/lib/financeiro-local";
 import { listServers, listActiveServers } from "@/lib/server-catalog";
 import { APP_CATALOG, APP_OPTIONS } from "@/lib/app-screens";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 
 export const Route = createFileRoute("/financeiro")({
   head: () => ({
