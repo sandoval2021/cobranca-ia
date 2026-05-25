@@ -345,7 +345,10 @@ function Dashboard() {
   const [diag, setDiag] = useState(() => getDiagnosticsSummary());
 
   useEffect(() => {
-    const refresh = () => setProtectedMode(isProtectedModeActive());
+    const refresh = () => {
+      setProtectedMode(isProtectedModeActive());
+      setDiag(getDiagnosticsSummary());
+    };
     refresh();
     window.addEventListener(LOCAL_SECURITY_EVENT, refresh);
     window.addEventListener("storage", refresh);
