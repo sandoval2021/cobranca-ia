@@ -24,6 +24,8 @@ import {
   ShieldCheck,
   Network,
   Database,
+  Wand2,
+
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
