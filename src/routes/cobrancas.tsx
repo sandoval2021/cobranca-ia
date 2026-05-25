@@ -785,7 +785,7 @@ function ChargeSheet({
       p_charge_id: charge.id,
       p_amount_cents: cents,
       p_due_at: due,
-      p_status: status || null,
+      p_status: toChargeRpcStatus(status),
     };
     const { error } = await supabase.rpc("update_charge_admin", payload);
     setSaving(false);
@@ -854,13 +854,13 @@ function ChargeSheet({
               </div>
               <div>
                 <Label className="text-xs">Status</Label>
-                <Select value={status || "pending"} onValueChange={setStatus}>
+                <Select value={toChargeRpcStatus(status) ?? "pendente"} onValueChange={setStatus}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Pendente</SelectItem>
-                    <SelectItem value="paid">Paga</SelectItem>
-                    <SelectItem value="overdue">Vencida</SelectItem>
-                    <SelectItem value="canceled">Cancelada</SelectItem>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="paga">Paga</SelectItem>
+                    <SelectItem value="vencida">Vencida</SelectItem>
+                    <SelectItem value="cancelada">Cancelada</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
