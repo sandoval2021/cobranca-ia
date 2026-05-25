@@ -296,7 +296,11 @@ function renderTemplate(
 }
 
 function hasSensitiveVars(body: string): boolean {
-  return /\{(senha|password|key|mac|usuario)\}/i.test(body);
+  return /\{(senha|password|key|mac|usuario|senha_painel|senha_lista)\}/i.test(body);
+}
+
+function hasServerSecretVars(body: string): boolean {
+  return /\{(senha_painel|senha_lista)\}/i.test(body);
 }
 
 // ---------- "público" (publico) selecionável ----------
