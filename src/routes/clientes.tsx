@@ -426,11 +426,13 @@ function FilterPill({
   onClick,
   label,
   count,
+  hideCount,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   count: number;
+  hideCount?: boolean;
 }) {
   return (
     <button
@@ -444,10 +446,11 @@ function FilterPill({
       )}
     >
       {label}
-      <span
-        className={cn(
-          "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-          active ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground",
+      {!hideCount && (
+        <span
+          className={cn(
+            "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+            active ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground",
         )}
       >
         {count}
