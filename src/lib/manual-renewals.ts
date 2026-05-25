@@ -39,6 +39,7 @@ export type RenewalScreenLog = {
 
 export type RenewalRecord = {
   id: string;
+  company_id?: string | null;
   created_at: string;
   customer_id: string;
   customer_name: string;
@@ -75,11 +76,31 @@ function writeAll(data: Record<string, RenewalRecord[]>): void {
   }
 }
 
+// Escopo local por empresa
+import { getCurrentRole } from "./local-auth";
+import { getActiveCompanyId } from "./company-scope";
+
+function inScope(r: RenewalRecord): boolean {
+  const role = getCurrentRole();
+  const activeId = getActiveCompanyId();
+  if (role === "super_admin" && !activeId) return true;
+  if (!activeId) return false;
+  return r.company_id === activeId;
+}
+
 export function listRenewals(customerId: string): RenewalRecord[] {
   const all = readAll();
-  return (all[customerId] ?? []).slice().sort((a, b) =>
-    b.created_at.localeCompare(a.created_at),
-  );
+  return (all[customerId] ?? [])
+    .filter(inScope)
+    .slice()
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+export function listAllRenewalsRaw(): RenewalRecord[] {
+  const all = readAll();
+  const out: RenewalRecord[] = [];
+  for (const list of Object.values(all)) out.push(...list);
+  return out;
 }
 
 export function newRenewalId(): string {
@@ -187,6 +208,7 @@ export function applyRenewal(draft: RenewalDraft): RenewalRecord {
 
   const rec: RenewalRecord = {
     id: newRenewalId(),
+    company_id: getActiveCompanyId() ?? null,
     created_at: now,
     customer_id: draft.customer_id,
     customer_name: draft.customer_name,
