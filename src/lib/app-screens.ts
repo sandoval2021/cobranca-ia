@@ -21,6 +21,15 @@ export type ScreenStatus =
   | "pausada"
   | "arquivada";
 
+export type RouteKind = "principal" | "alternativa" | "teste" | "outro";
+
+export const ROUTE_OPTIONS: { value: RouteKind; label: string }[] = [
+  { value: "principal", label: "Principal" },
+  { value: "alternativa", label: "Alternativa" },
+  { value: "teste", label: "Teste" },
+  { value: "outro", label: "Outro" },
+];
+
 export type AppScreen = {
   id: string;
   customer_id: string;
@@ -36,6 +45,8 @@ export type AppScreen = {
   portal_url?: string;
   due_date?: string; // YYYY-MM-DD
   status: ScreenStatus;
+  route?: RouteKind;
+  needs_server_update?: boolean;
   notes?: string;
   created_at: string;
   updated_at: string;
