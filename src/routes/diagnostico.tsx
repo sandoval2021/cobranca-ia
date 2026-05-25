@@ -26,6 +26,7 @@ import {
   type DiagnosticsReport,
 } from "@/lib/system-diagnostics";
 import { LOCAL_SECURITY_EVENT } from "@/lib/local-security";
+import { getSetupProgress, SETUP_WIZARD_EVENT } from "@/lib/setup-wizard";
 
 export const Route = createFileRoute("/diagnostico")({ component: DiagnosticoPage });
 
