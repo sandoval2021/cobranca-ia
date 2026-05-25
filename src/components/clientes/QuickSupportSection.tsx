@@ -112,7 +112,7 @@ function isUserPassApp(s: AppScreen): boolean {
   return s.access_type === "user_pass";
 }
 function isMacKeyApp(s: AppScreen): boolean {
-  return s.access_type === "mac_key";
+  return s.access_type === "mac_key" || s.access_type === "mac";
 }
 
 // ------- geradores de texto -------
