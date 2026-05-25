@@ -158,6 +158,7 @@ function IndicacoesPage() {
     <PageContainer>
       <div className="mb-1"><ProtectedModeBadge /></div>
       <CompanyScopeNotice moduleKey="cobranca_ia_referrals_v1" />
+      <PlanLimitNotice moduleKey="indicacoes" />
       <SectionHeader
 
         title="Indicações"
