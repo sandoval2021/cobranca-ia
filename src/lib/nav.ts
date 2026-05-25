@@ -14,7 +14,9 @@ import {
   Megaphone,
   AlertCircle,
   BookOpen,
+  SlidersHorizontal,
 } from "lucide-react";
+
 import type { LucideIcon } from "lucide-react";
 
 export type NavItem = {
