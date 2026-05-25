@@ -67,13 +67,22 @@ function BackupGeralPage() {
   }, [refresh]);
 
   const handleExport = () => {
-    try {
-      const b = exportFullBackup();
-      toast.success(`Backup gerado com ${b.modules.length} módulo(s).`);
-    } catch {
-      toast.error("Não foi possível gerar o backup.");
-    }
+    guard({
+      kind: "backup",
+      title: "Exportar backup geral",
+      description: "O arquivo conterá dados sensíveis. Confirme com PIN.",
+      actionLabel: "Exportar",
+      onConfirm: () => {
+        try {
+          const b = exportFullBackup();
+          toast.success(`Backup gerado com ${b.modules.length} módulo(s).`);
+        } catch {
+          toast.error("Não foi possível gerar o backup.");
+        }
+      },
+    });
   };
+
 
   const handleReport = () => {
     try {
