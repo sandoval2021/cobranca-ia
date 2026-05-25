@@ -306,14 +306,23 @@ function ClientesPage() {
         (c.whatsapp ?? "").toLowerCase().includes(q)
       ) return true;
       // busca dentro das telas
-      return screens.some((s) =>
-        s.name.toLowerCase().includes(q) ||
-        (APP_CATALOG[s.app]?.label.toLowerCase().includes(q) ?? false) ||
-        (s.mac ?? "").toLowerCase().includes(q) ||
-        (s.app_key ?? "").toLowerCase().includes(q) ||
-        (s.username ?? "").toLowerCase().includes(q) ||
-        (s.server ?? "").toLowerCase().includes(q)
-      );
+      return screens.some((s) => {
+        const serverNames = (s.server_ids ?? [])
+          .map((id) => getServerById(id)?.name?.toLowerCase() ?? "")
+          .join(" ");
+        return (
+          s.name.toLowerCase().includes(q) ||
+          (APP_CATALOG[s.app]?.label.toLowerCase().includes(q) ?? false) ||
+          (s.mac ?? "").toLowerCase().includes(q) ||
+          (s.app_key ?? "").toLowerCase().includes(q) ||
+          (s.username ?? "").toLowerCase().includes(q) ||
+          (s.server ?? "").toLowerCase().includes(q) ||
+          serverNames.includes(q) ||
+          (s.list_server_url ?? "").toLowerCase().includes(q) ||
+          (s.list_username ?? "").toLowerCase().includes(q) ||
+          (s.server_notes ?? "").toLowerCase().includes(q)
+        );
+      });
     });
   }, [items, query, filter, allScreens]);
 
