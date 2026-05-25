@@ -113,6 +113,11 @@ type TemplateKey =
   | "pedir_dados"
   | "instavel"
   | "renovacao"
+  | "app_vencendo"
+  | "app_vencido"
+  | "app_renovado"
+  | "pedir_mac_key"
+  | "explicar_app_vs_lista"
   | "personalizado";
 
 type Template = {
@@ -120,7 +125,7 @@ type Template = {
   label: string;
   hint: string;
   body: string;
-  sensitive: boolean; // se usa variáveis que podem expor senha/key
+  sensitive: boolean;
 };
 
 const TEMPLATES: Template[] = [
@@ -174,7 +179,7 @@ Se for por MAC/Key, me manda o MAC. Se for por usuário/senha, me manda o usuár
   {
     key: "instavel",
     label: "App instável",
-    hint: "Explicar que pode ser instabilidade do app e pedir print.",
+    hint: "Explicar instabilidade do app e pedir print.",
     sensitive: false,
     body:
 `Oi {nome}! Às vezes o {app} fica instável por alguns minutos.
@@ -192,6 +197,70 @@ Tela: {tela} · App: {app} · Vencimento: {vencimento}.
 Quer que eu já envie o PIX para você renovar?`,
   },
   {
+    key: "app_vencendo",
+    label: "App pago vencendo",
+    hint: "Aviso de licença do app pago perto do vencimento.",
+    sensitive: false,
+    body:
+`Olá {nome}, tudo bem? 😊
+O aplicativo {app} da sua {tela} vence em {dias_app} dia(s).
+📱 App: {app}
+📺 Tela: {tela}
+🔐 MAC: {mac}
+📅 Vencimento do app: {vencimento_app}
+💰 Renovação do app: {valor_app}
+Essa renovação é da licença do aplicativo, separada da mensalidade da lista.`,
+  },
+  {
+    key: "app_vencido",
+    label: "App pago vencido",
+    hint: "Licença do app pago vencida.",
+    sensitive: false,
+    body:
+`Olá {nome}, tudo bem? 😊
+A licença do aplicativo {app} da sua {tela} está vencida.
+Por isso o app pode parar de abrir ou pedir renovação.
+📱 App: {app}
+📺 Tela: {tela}
+📅 Vencimento: {vencimento_app}
+Me chama aqui que te ajudo com a renovação.`,
+  },
+  {
+    key: "app_renovado",
+    label: "App pago renovado",
+    hint: "Confirmação após renovar a licença do app.",
+    sensitive: false,
+    body:
+`Pronto ✅
+O aplicativo {app} da sua {tela} foi renovado.
+📅 Novo vencimento: {vencimento_app}
+⏳ Validade: 1 ano
+Guarde essa informação para acompanhar a licença do app.`,
+  },
+  {
+    key: "pedir_mac_key",
+    label: "Solicitar MAC/Key",
+    hint: "Pedir dados de aplicativo pago.",
+    sensitive: false,
+    body:
+`Olá {nome}! Para te ajudar com o {app}, pode me enviar o MAC do aparelho?
+Se o app também pedir Key, me manda junto.
+Esses dados são usados só para configurar a sua tela. 🙂`,
+  },
+  {
+    key: "explicar_app_vs_lista",
+    label: "App pago x Lista (explicação)",
+    hint: "Explica a diferença entre licença do app e mensalidade da lista.",
+    sensitive: false,
+    body:
+`Oi {nome}! Esclarecendo rapidinho 🙂
+
+🧾 Mensalidade da lista: é o serviço que eu te entrego todo mês.
+📱 Licença do aplicativo {app}: é uma cobrança do próprio app (geralmente 1x por ano).
+
+São duas coisas separadas. Qualquer dúvida me chama!`,
+  },
+  {
     key: "personalizado",
     label: "Personalizado",
     hint: "Você escreve a mensagem usando as variáveis disponíveis.",
@@ -205,6 +274,7 @@ Quer que eu já envie o PIX para você renovar?`,
 const VARS = [
   "nome", "whatsapp", "tela", "app", "vencimento", "dias", "rota",
   "servidor", "mac", "key", "usuario",
+  "vencimento_app", "dias_app", "valor_app", "tipo_app", "portal_app",
 ] as const;
 
 type VarKey = (typeof VARS)[number];
