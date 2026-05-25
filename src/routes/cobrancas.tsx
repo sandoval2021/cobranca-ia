@@ -874,7 +874,7 @@ function ChargeSheet({
               </div>
               <div>
                 <Label className="text-xs">Status</Label>
-                <Select value={classifyCharge(status) === "outro" ? "pendente" : classifyCharge(status)} onValueChange={setStatus}>
+                <Select value={chargeUiKey(status)} onValueChange={setStatus}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pendente">Pendente</SelectItem>
