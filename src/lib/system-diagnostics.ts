@@ -619,8 +619,8 @@ function checkTestesIndicacoes(alerts: DiagnosticAlert[]) {
     });
 
   const refs = listReferrals();
-  const semIndicador = refs.filter((r) => !r.indicador_nome && !r.indicador_id).length;
-  const bonifPend = refs.filter((r) => r.status === "bonificacao_pendente").length;
+  const semIndicador = refs.filter((r) => !r.indicador_nome && !r.indicador_cliente_id).length;
+  const bonifPend = refs.filter((r) => r.status === "Bonificação pendente").length;
   if (semIndicador)
     alerts.push({
       id: "ref-sem-indicador",
