@@ -628,6 +628,7 @@ export function AppScreensSection({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </div>
   );
 }
