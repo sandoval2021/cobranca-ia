@@ -18,6 +18,7 @@ import {
   Server,
   Beaker,
   Gift,
+  Wallet,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -46,6 +47,7 @@ export const ownerNav: NavItem[] = [
   { to: "/catalogo-servidores", label: "Servidores", icon: Server, hint: "Servidores e painéis usados nas telas" },
   { to: "/testes", label: "Testes", icon: Beaker, hint: "Pessoas em teste/leads" },
   { to: "/indicacoes", label: "Indicações", icon: Gift, hint: "Indicações e bonificações" },
+  { to: "/financeiro", label: "Financeiro", icon: Wallet, hint: "Receitas, custos, lucro e objetivos" },
   { to: "/regras-disparo", label: "Regras de disparo", icon: SlidersHorizontal, hint: "Quando sugerir mensagens manuais" },
   { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente" },
   { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Testes de conexão" },
