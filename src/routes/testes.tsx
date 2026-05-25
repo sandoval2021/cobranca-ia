@@ -268,9 +268,11 @@ function TestesPage() {
 
   return (
     <PageContainer>
+      <div className="mb-1"><ProtectedModeBadge /></div>
       <SectionHeader
-        title={<span className="inline-flex items-center gap-2">Testes <ProtectedModeBadge /></span>}
+        title="Testes"
         subtitle="Acompanhe pessoas que pediram teste e ainda não viraram clientes."
+
 
         action={
           <div className="flex flex-wrap gap-2">
