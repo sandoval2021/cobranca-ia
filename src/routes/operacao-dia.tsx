@@ -599,6 +599,15 @@ function OperacaoDiaPage() {
         <FilterChip active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={summary.mackey} dim={summary.mackey === 0} />
         <FilterChip active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={summary.userpass} dim={summary.userpass === 0} />
         <FilterChip active={filter === "sem_app"} onClick={() => setFilter("sem_app")} label="Sem app" count={summary.semApp} dim={summary.semApp === 0} />
+        <FilterChip active={filter === "app_pago_vencendo"} onClick={() => setFilter("app_pago_vencendo")} label="App pago vencendo" count={summary.paidVenc30} dim={summary.paidVenc30 === 0} />
+        <FilterChip active={filter === "app_pago_7d"} onClick={() => setFilter("app_pago_7d")} label="App pago 7 dias" count={summary.paidVenc7} dim={summary.paidVenc7 === 0} />
+        <FilterChip active={filter === "app_pago_vencido"} onClick={() => setFilter("app_pago_vencido")} label="App pago vencido" count={summary.paidVencido} dim={summary.paidVencido === 0} />
+        <FilterChip active={filter === "app_sem_venc"} onClick={() => setFilter("app_sem_venc")} label="Sem vencimento do app" count={summary.paidSemVenc} dim={summary.paidSemVenc === 0} />
+        <FilterChip active={filter === "app_sem_mackey"} onClick={() => setFilter("app_sem_mackey")} label="Sem MAC/Key" count={summary.paidSemMacKey} dim={summary.paidSemMacKey === 0} />
+        <FilterChip active={filter === "app_eagle"} onClick={() => setFilter("app_eagle")} label="Eagle Play" count={summary.eagle} dim={summary.eagle === 0} />
+        <FilterChip active={filter === "app_duplex"} onClick={() => setFilter("app_duplex")} label="Duplex Play" count={summary.duplex} dim={summary.duplex === 0} />
+        <FilterChip active={filter === "app_set"} onClick={() => setFilter("app_set")} label="Set IPTV" count={summary.setiptv} dim={summary.setiptv === 0} />
+        <FilterChip active={filter === "app_smartone"} onClick={() => setFilter("app_smartone")} label="SmartOne" count={summary.smartone} dim={summary.smartone === 0} />
       </div>
 
       {/* exportar */}
