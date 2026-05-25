@@ -36,6 +36,7 @@ import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
 
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { ScreenServerRoutes } from "@/components/clientes/ScreenServerRoutes";
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
   ativa: "Ativa",
@@ -470,6 +471,10 @@ export function AppScreensSection({
                         {s.notes}
                       </p>
                     )}
+
+                    <ScreenServerRoutes screen={s} onChanged={() => { /* lista re-renderiza via evento */ }} />
+
+
 
                     {s.status !== "arquivada" && (
                       <Button

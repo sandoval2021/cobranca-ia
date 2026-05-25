@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { applyRevendaVariables } from "@/lib/revenda-settings";
+import { getDnsVariablesForServer } from "@/lib/dns-routes";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/use-auth";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
@@ -51,6 +52,7 @@ import {
   ROUTE_OPTIONS,
 } from "@/lib/app-screens";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { ServerRouteInfo } from "@/components/servers/ServerRouteInfo";
 import { buildServerVarsForScreen, listActiveServers, SERVER_CATALOG_EVENT } from "@/lib/server-catalog";
 
 export const Route = createFileRoute("/campanhas-manuais")({
@@ -282,6 +284,7 @@ const VARS = [
   "vencimento_app", "dias_app", "valor_app", "tipo_app", "portal_app",
   "painel", "usuario_painel", "senha_painel",
   "link_lista", "usuario_lista", "senha_lista",
+  "dominio", "subdominio", "rota_publica", "servidor_rota", "link_publico",
 ] as const;
 
 type VarKey = (typeof VARS)[number];
@@ -385,6 +388,12 @@ function buildValues(
   const serverVars = s
     ? buildServerVarsForScreen(s, { revealSecrets: !!opts.revealSecrets })
     : { servidor: "", painel: "", usuario_painel: "", senha_painel: "", link_lista: "", usuario_lista: "", senha_lista: "" };
+  const sidsForDns = s?.server_ids ?? [];
+  const dnsServerId =
+    (s?.primary_server_id && sidsForDns.includes(s.primary_server_id))
+      ? s.primary_server_id
+      : sidsForDns[0];
+  const dnsVars = getDnsVariablesForServer(dnsServerId);
   return {
     nome: firstName(it.customer.name),
     whatsapp: prettyPhone(it.customer.whatsapp) ?? "",
@@ -408,6 +417,11 @@ function buildValues(
     link_lista: serverVars.link_lista,
     usuario_lista: serverVars.usuario_lista,
     senha_lista: serverVars.senha_lista,
+    dominio: dnsVars.dominio,
+    subdominio: dnsVars.subdominio,
+    rota_publica: dnsVars.rota_publica,
+    servidor_rota: dnsVars.servidor_rota,
+    link_publico: dnsVars.link_publico,
   };
 }
 
@@ -1034,6 +1048,13 @@ function CampanhasManuaisPage() {
                         </span>
                       )}
                     </div>
+                    {p.screen && (p.screen.server_ids ?? []).length > 0 && (
+                      <ServerRouteInfo
+                        serverIds={p.screen.server_ids}
+                        primaryServerId={p.screen.primary_server_id}
+                        className="mt-1"
+                      />
+                    )}
                     <div className="mt-1 text-xs text-muted-foreground">
                       {prettyPhone(p.customer.whatsapp) ?? "Sem WhatsApp"}
                       {p.screen ? (

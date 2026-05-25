@@ -66,6 +66,7 @@ import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
+import { getPrimaryRouteForServer } from "@/lib/dns-routes";
 import { Tv } from "lucide-react";
 
 export const Route = createFileRoute("/clientes")({ component: ClientesPage });
@@ -315,6 +316,13 @@ function ClientesPage() {
         const serverNames = (s.server_ids ?? [])
           .map((id) => getServerById(id)?.name?.toLowerCase() ?? "")
           .join(" ");
+        const routeHaystack = (s.server_ids ?? [])
+          .map((sid) => {
+            const r = getPrimaryRouteForServer(sid);
+            if (!r) return "";
+            return [r.host, r.subdomain, r.value].filter(Boolean).join(" ").toLowerCase();
+          })
+          .join(" ");
         return (
           s.name.toLowerCase().includes(q) ||
           (APP_CATALOG[s.app]?.label.toLowerCase().includes(q) ?? false) ||
@@ -323,6 +331,7 @@ function ClientesPage() {
           (s.username ?? "").toLowerCase().includes(q) ||
           (s.server ?? "").toLowerCase().includes(q) ||
           serverNames.includes(q) ||
+          routeHaystack.includes(q) ||
           (s.list_server_url ?? "").toLowerCase().includes(q) ||
           (s.list_username ?? "").toLowerCase().includes(q) ||
           (s.server_notes ?? "").toLowerCase().includes(q)
@@ -657,21 +666,41 @@ function ClientCard({
                 const app = APP_CATALOG[s.app];
                 const sids = s.server_ids ?? [];
                 return (
-                  <div key={s.id} className="flex flex-wrap items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onOpen(); }}
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
-                        app.badgeClass,
-                      )}
-                      title={`${s.name} · ${app.label}`}
-                    >
-                      {s.name} · {app.label}
-                    </button>
-                    {sids.length > 0
-                      ? sids.map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
-                      : <SemServidorBadge />}
+                  <div key={s.id} className="space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
+                          app.badgeClass,
+                        )}
+                        title={`${s.name} · ${app.label}`}
+                      >
+                        {s.name} · {app.label}
+                      </button>
+                      {sids.length > 0
+                        ? sids.map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
+                        : <SemServidorBadge />}
+                    </div>
+                    {sids.length > 0 && (
+                      <div className="text-[10px] text-muted-foreground pl-1">
+                        {sids.map((sid) => {
+                          const r = getPrimaryRouteForServer(sid);
+                          const srv = getServerById(sid);
+                          return (
+                            <div key={sid} className="truncate">
+                              {srv?.name ?? "Servidor"}:{" "}
+                              {r?.host ? (
+                                <span className="font-mono text-foreground/80">{r.host}</span>
+                              ) : (
+                                <span>Servidor sem rota</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
