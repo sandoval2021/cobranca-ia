@@ -35,9 +35,7 @@ import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
-import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as IndexRouteImport } from './routes/index'
-
 
 const TestesRoute = TestesRouteImport.update({
   id: '/testes',
