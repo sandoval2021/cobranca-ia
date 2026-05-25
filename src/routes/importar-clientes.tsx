@@ -862,9 +862,13 @@ function ImportScheduleSection({ rows }: { rows: ValidatedRow[] }) {
   function clearStatuses() {
     if (!window.confirm("Limpar status locais da agenda? Isso não apaga clientes.")) return;
     clearSchedPersisted();
-    setItems(baseItems.map((it) => ({ ...it })));
+    clearImportScheduleItems();
+    const next = baseItems.map((it) => ({ ...it }));
+    setItems(next);
+    saveImportScheduleItems(next);
     toast.success("Status locais limpos");
   }
+
 
   const groupsOrder: { key: DispatchGroup; title: string }[] = [
     { key: "hoje", title: GROUP_LABEL.hoje },
