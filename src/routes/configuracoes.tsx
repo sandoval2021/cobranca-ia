@@ -35,6 +35,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { flags } from "@/lib/flags";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
+import {
+  getCurrentCompanyAdmin,
+  listChargesForSelectAdmin,
+} from "@/lib/rpc-admin";
 import type { LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/configuracoes")({ component: ConfiguracoesPage });
@@ -252,20 +256,19 @@ function CollectionRulesBlock() {
     }
     let alive = true;
     (async () => {
-      const res = await supabase!.from("companies").select("id").limit(1);
+      const { companyId: id, error } = await getCurrentCompanyAdmin();
       if (!alive) return;
-      if (res.error) {
-        setLoadErr(friendlyErr(res.error.message));
+      if (error) {
+        setLoadErr(friendlyErr(error.message ?? ""));
         setLoadingCompany(false);
         return;
       }
-      const id = (res.data?.[0] as Row | undefined)?.id;
       if (!id) {
         setLoadErr("Nenhuma empresa autorizada encontrada.");
         setLoadingCompany(false);
         return;
       }
-      setCompanyId(String(id));
+      setCompanyId(id);
       setLoadingCompany(false);
     })();
     return () => { alive = false; };
