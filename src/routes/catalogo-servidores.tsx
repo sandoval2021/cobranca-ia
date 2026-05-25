@@ -83,18 +83,27 @@ function CatalogoServidoresPage() {
   const openEdit = (s: ServerEntry) => { setEditing(s); setSheetOpen(true); };
 
   const handleExport = () => {
-    const data = exportServers();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `catalogo-servidores-cobranca-ia-${todayStamp()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast.success("Catálogo exportado.");
+    guard({
+      kind: "backup",
+      title: "Exportar catálogo de servidores",
+      description: "Inclui senhas dos painéis. Confirme com PIN.",
+      actionLabel: "Exportar",
+      onConfirm: () => {
+        const data = exportServers();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `catalogo-servidores-cobranca-ia-${todayStamp()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        toast.success("Catálogo exportado.");
+      },
+    });
   };
+
 
   const handleImportClick = () => fileInput.current?.click();
 
