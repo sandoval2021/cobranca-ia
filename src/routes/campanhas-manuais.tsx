@@ -800,6 +800,11 @@ function CampanhasManuaisPage() {
         </span>
       </div>
 
+      <div className="mb-3 text-[11px] text-muted-foreground">
+        Variáveis da revenda disponíveis ({"{nome_revenda}, {pix}, {valor_mensal}…"}).{" "}
+        <Link to="/configuracoes-revenda" className="underline">Editar Minha Revenda</Link>
+      </div>
+
       {/* Resumo */}
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <Mini label="Encontrados" value={summary.found} />
