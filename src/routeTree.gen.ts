@@ -187,7 +187,6 @@ export interface FileRoutesByFullPath {
   '/relatorio': typeof RelatorioRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
-  '/preparacao-backend': typeof PreparacaoBackendRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
