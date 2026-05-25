@@ -941,6 +941,13 @@ function PendingCard({
               ? (s.server_ids ?? []).map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
               : <SemServidorBadge />)}
           </div>
+          {s && (s.server_ids ?? []).length > 0 && (
+            <ServerRouteInfo
+              serverIds={s.server_ids}
+              primaryServerId={s.primary_server_id}
+              className="mt-1"
+            />
+          )}
           <div className="mt-1 text-xs text-muted-foreground">
             {c && <>{prettyPhone(c.whatsapp) ?? "Sem WhatsApp"}</>}
             {s && <>{c ? " · " : ""}{s.name}{s.due_date ? <> · vence {fmtDateBR(s.due_date)}</> : null}{s.route ? <> · {ROUTE_OPTIONS.find((o) => o.value === s.route)?.label}</> : null}</>}
