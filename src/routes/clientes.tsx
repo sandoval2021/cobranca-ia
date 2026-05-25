@@ -447,12 +447,14 @@ function FilterPill({
   label,
   count,
   hideCount,
+  dim,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   count: number;
   hideCount?: boolean;
+  dim?: boolean;
 }) {
   return (
     <button
@@ -462,7 +464,9 @@ function FilterPill({
         "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
         active
           ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-card text-foreground hover:bg-muted",
+          : dim
+            ? "border-border/60 bg-card/60 text-muted-foreground hover:bg-muted"
+            : "border-border bg-card text-foreground hover:bg-muted",
       )}
     >
       {label}
