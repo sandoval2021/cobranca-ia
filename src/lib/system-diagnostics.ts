@@ -708,7 +708,73 @@ function checkOperacao(alerts: DiagnosticAlert[]) {
     });
 }
 
+import { listCompanies, getCurrentCompanyId } from "@/lib/companies";
+import { getCompanyScopeSummary } from "@/lib/company-scope";
+
+function checkMultiTenant(alerts: DiagnosticAlert[]) {
+  const companies = listCompanies();
+  const summary = getCompanyScopeSummary();
+  if (companies.length === 0) {
+    alerts.push({
+      id: "mt-no-companies",
+      area: "dados",
+      level: "atencao",
+      title: "Nenhuma empresa cadastrada",
+      description: "O sistema simula multi-tenant, mas não há empresas locais.",
+      action: "Cadastre em /empresas.",
+      to: "/empresas",
+      ctaLabel: "Abrir Empresas",
+    });
+  }
+  for (const c of companies) {
+    if (!c.dono_email) {
+      alerts.push({
+        id: `mt-no-owner-${c.id}`,
+        area: "dados",
+        level: "atencao",
+        title: `Empresa "${c.nome}" sem dono`,
+        description: "Vincule um dono à empresa.",
+        to: "/empresas",
+        ctaLabel: "Abrir Empresas",
+      });
+    }
+  }
+  if (summary.modulosComPendencia > 0) {
+    alerts.push({
+      id: "mt-unscoped",
+      area: "dados",
+      level: "atencao",
+      title: `${summary.totalSemEmpresa} registro(s) sem empresa`,
+      description: "Existem dados locais sem company_id em módulos não-globais.",
+      action: "Use Migração Empresa para vincular.",
+      to: "/migracao-empresa",
+      ctaLabel: "Abrir Migração",
+    });
+  }
+  if (!getCurrentCompanyId() && companies.length > 0) {
+    alerts.push({
+      id: "mt-no-current",
+      area: "dados",
+      level: "atencao",
+      title: "Super Admin sem empresa ativa",
+      description: "Visualização global. Selecione uma empresa em /empresas para escopo local.",
+      to: "/empresas",
+      ctaLabel: "Abrir Empresas",
+    });
+  }
+  alerts.push({
+    id: "mt-rls-pending",
+    area: "dados",
+    level: "atencao",
+    title: "Isolamento real pendente",
+    description: "Multi-tenant local é apenas protótipo. Real exige Supabase + RLS + policies.",
+    to: "/preparacao-backend",
+    ctaLabel: "Preparar backend",
+  });
+}
+
 // ---------- API pública ----------
+
 
 export function runSystemDiagnostics(): DiagnosticsReport {
   const alerts: DiagnosticAlert[] = [];
@@ -720,6 +786,7 @@ export function runSystemDiagnostics(): DiagnosticsReport {
   checkFinanceiro(alerts);
   checkTestesIndicacoes(alerts);
   checkOperacao(alerts);
+  checkMultiTenant(alerts);
 
   const sec = getLocalSecuritySettings();
   const rev = getRevendaSettings();

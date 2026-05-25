@@ -68,6 +68,7 @@ export const ownerNav: NavItem[] = [
   { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente", superAdminOnly: true },
   { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Saúde dos dados, segurança, rotas, financeiro e operação local", superAdminOnly: true },
   { to: "/preparacao-backend", label: "Preparação Backend", icon: Database, hint: "Mapeie dados locais e prepare a futura migração segura para banco de dados", superAdminOnly: true },
+  { to: "/migracao-empresa", label: "Migração Empresa", icon: Database, hint: "Vincule dados locais antigos a uma empresa", superAdminOnly: true },
   { to: "/ajuda", label: "Ajuda", icon: LifeBuoy, hint: "Aprenda como usar cada parte do sistema" },
 ];
 
