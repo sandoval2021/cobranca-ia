@@ -51,6 +51,7 @@ import {
   ROUTE_OPTIONS,
 } from "@/lib/app-screens";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { ServerRouteInfo } from "@/components/servers/ServerRouteInfo";
 import { buildServerVarsForScreen, listActiveServers, SERVER_CATALOG_EVENT } from "@/lib/server-catalog";
 
 export const Route = createFileRoute("/campanhas-manuais")({
