@@ -434,7 +434,22 @@ export function QuickSupportSection({
 
   const selected = activeScreens.find((s) => s.id === selectedId) ?? null;
 
-  const askReveal = (fn: () => void) => setConfirmReveal({ onConfirm: fn });
+  const askReveal = (fn: () => void) =>
+    setConfirmReveal({
+      onConfirm: () => {
+        const kind: ProtectedActionKind = selected && isMacKeyApp(selected)
+          ? "app_key"
+          : "server_password";
+        guard({
+          kind,
+          title: "Revelar dados sensíveis",
+          description: "Esta ação revela ou copia senha/key real. Confirme com PIN se exigido.",
+          actionLabel: "Continuar",
+          onConfirm: fn,
+        });
+      },
+    });
+
 
   const copyAndLog = (text: string, label: string, kind: string) => {
     copyText(text, label, {
