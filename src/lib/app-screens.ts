@@ -3,16 +3,28 @@
 
 export type AppKey =
   | "xciptv"
+  | "smarters"
+  | "smarters_player"
   | "bob_player"
   | "bob_play"
   | "ibo_player"
   | "ibo_pro"
   | "ibo_mix"
   | "vu_player"
-  | "smarters"
+  | "eagle_play"
+  | "duplex_play"
+  | "set_iptv"
+  | "smart_one"
   | "outro";
 
-export type AccessType = "user_pass" | "mac_key" | "outro";
+export type AccessType =
+  | "user_pass"
+  | "mac"
+  | "mac_key"
+  | "outro"
+  | "nao_informado";
+
+export type AppTier = "gratis" | "pago" | "desconhecido";
 
 export type ScreenStatus =
   | "ativa"
@@ -35,6 +47,7 @@ export type AppScreen = {
   customer_id: string;
   name: string;
   app: AppKey;
+  tier?: AppTier;
   access_type: AccessType;
   username?: string;
   password?: string;
@@ -43,7 +56,9 @@ export type AppScreen = {
   mac?: string;
   app_key?: string;
   portal_url?: string;
-  due_date?: string; // YYYY-MM-DD
+  due_date?: string; // YYYY-MM-DD — vencimento da LISTA
+  app_due_date?: string; // YYYY-MM-DD — vencimento da LICENÇA do app pago
+  app_renewal_value?: string; // valor da renovação (texto livre)
   status: ScreenStatus;
   route?: RouteKind;
   needs_server_update?: boolean;
@@ -54,23 +69,52 @@ export type AppScreen = {
 
 export const APP_CATALOG: Record<
   AppKey,
-  { label: string; access: AccessType; badgeClass: string }
+  { label: string; access: AccessType; tier: AppTier; badgeClass: string }
 > = {
-  xciptv:     { label: "XCIPTV",      access: "user_pass", badgeClass: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 border border-blue-300/40" },
-  bob_player: { label: "Bob Player",  access: "mac_key",   badgeClass: "bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300 border border-purple-300/40" },
-  bob_play:   { label: "BobPlay",     access: "mac_key",   badgeClass: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-500/15 dark:text-fuchsia-300 border border-fuchsia-300/40" },
-  ibo_player: { label: "IBO Player",  access: "mac_key",   badgeClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-300/40" },
-  ibo_pro:    { label: "IBO Pro",     access: "mac_key",   badgeClass: "bg-green-200 text-green-800 dark:bg-green-600/20 dark:text-green-300 border border-green-500/40" },
-  ibo_mix:    { label: "IBO Mix",     access: "mac_key",   badgeClass: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300 border border-orange-300/40" },
-  vu_player:  { label: "Vu Player",   access: "mac_key",   badgeClass: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 border border-red-300/40" },
-  smarters:   { label: "Smarters",    access: "user_pass", badgeClass: "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300 border border-slate-400/40" },
-  outro:      { label: "Outro",       access: "outro",     badgeClass: "bg-muted text-muted-foreground border border-border" },
+  xciptv:          { label: "XCIPTV",          access: "user_pass", tier: "gratis", badgeClass: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 border border-blue-300/40" },
+  smarters:        { label: "IPTV Smarters",   access: "user_pass", tier: "gratis", badgeClass: "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300 border border-slate-400/40" },
+  smarters_player: { label: "Smarters Player", access: "user_pass", tier: "gratis", badgeClass: "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300 border border-slate-400/40" },
+  bob_player:      { label: "Bob Player",      access: "mac_key",   tier: "pago",   badgeClass: "bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300 border border-purple-300/40" },
+  bob_play:        { label: "BobPlay",         access: "mac_key",   tier: "pago",   badgeClass: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-500/15 dark:text-fuchsia-300 border border-fuchsia-300/40" },
+  ibo_player:      { label: "IBO Player",      access: "mac_key",   tier: "pago",   badgeClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-300/40" },
+  ibo_pro:         { label: "IBO Pro",         access: "mac_key",   tier: "pago",   badgeClass: "bg-green-200 text-green-800 dark:bg-green-600/20 dark:text-green-300 border border-green-500/40" },
+  ibo_mix:         { label: "IBO Mix",         access: "mac_key",   tier: "pago",   badgeClass: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300 border border-orange-300/40" },
+  vu_player:       { label: "Vu Player",       access: "mac_key",   tier: "pago",   badgeClass: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 border border-red-300/40" },
+  eagle_play:      { label: "Eagle Play",      access: "mac_key",   tier: "pago",   badgeClass: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-300/40" },
+  duplex_play:     { label: "Duplex Play",     access: "mac_key",   tier: "pago",   badgeClass: "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300 border border-cyan-300/40" },
+  set_iptv:        { label: "Set IPTV",        access: "mac_key",   tier: "pago",   badgeClass: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300 border border-indigo-300/40" },
+  smart_one:       { label: "SmartOne",        access: "mac_key",   tier: "pago",   badgeClass: "bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300 border border-teal-300/40" },
+  outro:           { label: "Outro",           access: "nao_informado", tier: "desconhecido", badgeClass: "bg-muted text-muted-foreground border border-border" },
 };
 
 export const APP_OPTIONS: AppKey[] = [
-  "xciptv", "bob_player", "bob_play", "ibo_player", "ibo_pro",
-  "ibo_mix", "vu_player", "smarters", "outro",
+  "xciptv", "smarters", "smarters_player",
+  "bob_player", "bob_play",
+  "ibo_player", "ibo_pro", "ibo_mix",
+  "vu_player", "eagle_play", "duplex_play",
+  "set_iptv", "smart_one", "outro",
 ];
+
+export const TIER_LABEL: Record<AppTier, string> = {
+  gratis: "Grátis",
+  pago: "Pago",
+  desconhecido: "Desconhecido",
+};
+
+export const ACCESS_LABEL: Record<AccessType, string> = {
+  user_pass: "Usuário e senha",
+  mac: "MAC",
+  mac_key: "MAC e Key",
+  outro: "Outro",
+  nao_informado: "Não informado",
+};
+
+// Vencimento da LICENÇA do app pago (somente)
+export function appDueDays(s: AppScreen): number | null {
+  const tier = s.tier ?? APP_CATALOG[s.app]?.tier ?? "desconhecido";
+  if (tier !== "pago") return null;
+  return daysUntil(s.app_due_date);
+}
 
 const STORAGE_KEY = "cobranca_ia_app_screens_v1";
 
