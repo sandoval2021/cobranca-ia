@@ -78,20 +78,16 @@ import { cn } from "@/lib/utils";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
-import { flags } from "@/lib/flags";
+import {
+  getCurrentCompanyAdmin,
+  listChargesAdmin,
+  listCustomersForSelectAdmin,
+  toastRpcError as _toastRpcError,
+  type RpcErr,
+} from "@/lib/rpc-admin";
 
-type RpcErr = { message?: string; details?: string | null; hint?: string | null; code?: string | null };
-function stagingRpcDetail(rpc: string, payload: unknown, err: RpcErr) {
-  if (flags.appEnv === "production") return undefined;
-  try {
-    return `RPC: ${rpc}\nPayload: ${JSON.stringify(payload)}\nmessage: ${err.message ?? ""}\ndetails: ${err.details ?? ""}\nhint: ${err.hint ?? ""}\ncode: ${err.code ?? ""}`;
-  } catch {
-    return `RPC: ${rpc} — ${err.message ?? ""}`;
-  }
-}
 function toastRpcError(friendlyMsg: string, rpc: string, payload: unknown, err: RpcErr) {
-  const description = stagingRpcDetail(rpc, payload, err);
-  toast.error(friendlyMsg, description ? { description, duration: 12000 } : undefined);
+  _toastRpcError(friendlyMsg, rpc, payload, err);
 }
 
 export const Route = createFileRoute("/cobrancas")({ component: CobrancasPage });
@@ -278,14 +274,35 @@ function CobrancasPage() {
     setLoading(true);
     setErrorMsg(null);
     (async () => {
-      const chargesRes = await supabase!
-        .from("customer_charges")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200);
+      const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
+      if (!alive) return;
+      if (companyErr || !companyId) {
+        setErrorMsg(
+          companyErr
+            ? "Não foi possível identificar a empresa."
+            : "Nenhuma empresa autorizada encontrada.",
+        );
+        setItems(null);
+        setLoading(false);
+        return;
+      }
+
+      const chargesRes = await listChargesAdmin({
+        p_company_id: companyId,
+        p_status: null,
+        p_search: null,
+        p_limit: 200,
+        p_offset: 0,
+      });
       if (!alive) return;
       if (chargesRes.error) {
-        setErrorMsg(friendlyRpcError(chargesRes.error.message));
+        setErrorMsg(friendlyRpcError(chargesRes.error.message ?? ""));
+        toastRpcError(
+          friendlyRpcError(chargesRes.error.message ?? ""),
+          "list_charges_admin",
+          chargesRes.payload,
+          chargesRes.error,
+        );
         setItems(null);
         setLoading(false);
         return;
@@ -293,61 +310,56 @@ function CobrancasPage() {
       const charges = ((chargesRes.data ?? []) as Row[]).map(normalizeCharge);
       setItems(charges);
 
-      // Coleta customer_ids (como string) presentes nas cobranças
-      const customerIds = Array.from(
-        new Set(
-          charges
-            .map((c) => (c.customer_id != null ? String(c.customer_id) : null))
-            .filter((v): v is string => !!v),
-        ),
-      );
-
-      // Busca defensiva de customers com fallback de colunas
-      const selectFallbacks = [
-        "id,name,nome,full_name,whatsapp_e164,whatsapp,phone,telefone",
-        "id,name,nome,full_name,whatsapp,phone,telefone",
-        "*",
-      ];
-      let customersData: Row[] = [];
-      for (const cols of selectFallbacks) {
-        const res = await supabase!.from("customers").select(cols).limit(500);
-        if (!res.error) {
-          customersData = (res.data ?? []) as unknown as Row[];
-          break;
-        }
-        console.warn("[cobrancas] customers select falhou:", cols, res.error.message);
-      }
-
-      // Garante que todo customer_id referenciado seja buscado, mesmo fora do limit
-      const haveIds = new Set(customersData.map((c) => String(c.id ?? "")));
-      const missing = customerIds.filter((id) => !haveIds.has(id));
-      if (missing.length > 0) {
-        for (const cols of selectFallbacks) {
-          const res = await supabase!
-            .from("customers")
-            .select(cols)
-            .in("id", missing);
-          if (!res.error) {
-            customersData = customersData.concat((res.data ?? []) as unknown as Row[]);
-            break;
-          }
-          console.warn("[cobrancas] customers .in() falhou:", cols, res.error.message);
-        }
-      }
-
+      const custRes = await listCustomersForSelectAdmin({
+        p_company_id: companyId,
+        p_search: null,
+        p_limit: 500,
+      });
       if (!alive) return;
       const map: Record<string, CustomerLite> = {};
       const list: CustomerLite[] = [];
-      for (const c of customersData) {
-        const id = String(c.id ?? "");
-        if (!id) continue;
+      if (!custRes.error) {
+        const customersData = (custRes.data ?? []) as Row[];
+        for (const c of customersData) {
+          const id = String(c.id ?? c.customer_id ?? "");
+          if (!id) continue;
+          const lite: CustomerLite = {
+            id,
+            name: str(c, ["name", "nome", "full_name", "customer_name"]) ?? "Cliente",
+            whatsapp: str(c, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) ?? null,
+          };
+          if (!map[id]) list.push(lite);
+          map[id] = lite;
+        }
+      } else {
+        toastRpcError(
+          "Não foi possível carregar a lista de clientes agora.",
+          "list_customers_for_select_admin",
+          custRes.payload,
+          custRes.error,
+        );
+      }
+      // Fallback de nome a partir das próprias cobranças (campos podem vir agregados na RPC de cobranças)
+      for (const r of (chargesRes.data ?? []) as Row[]) {
+        const cid = String(r.customer_id ?? "");
+        if (!cid || map[cid]) continue;
+        const name =
+          (r.customer_name as string) ??
+          (r.name as string) ??
+          (r.nome as string) ??
+          null;
+        if (!name) continue;
         const lite: CustomerLite = {
-          id,
-          name: str(c, ["name", "nome", "full_name"]) ?? "Cliente",
-          whatsapp: str(c, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) ?? null,
+          id: cid,
+          name,
+          whatsapp:
+            (r.whatsapp_e164 as string) ??
+            (r.whatsapp as string) ??
+            (r.phone as string) ??
+            null,
         };
-        if (!map[id]) list.push(lite);
-        map[id] = lite;
+        map[cid] = lite;
+        list.push(lite);
       }
       setCustomers(map);
       setCustomerList(list.sort((a, b) => a.name.localeCompare(b.name)));

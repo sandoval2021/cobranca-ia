@@ -28,8 +28,11 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
-import { useSupabaseList } from "@/lib/use-supabase";
 import { useAuth } from "@/lib/use-auth";
+import {
+  useCurrentCompany,
+  getImportCustomerDedupAdmin,
+} from "@/lib/rpc-admin";
 
 import { flags } from "@/lib/flags";
 import {
@@ -60,10 +63,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 
 function ImportarClientesPage() {
   const { user, isAuthenticated } = useAuth();
-  const companies = useSupabaseList<Company>("companies", {
-    limit: 100,
-    deps: [user?.id ?? null],
-  });
+  const companyState = useCurrentCompany();
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
@@ -82,19 +82,14 @@ function ImportarClientesPage() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  // Auto-select single company
+  // Auto-seleciona a empresa atual da sessão (mantém UI igual).
   useEffect(() => {
-    if (
-      companies.status === "ready" &&
-      companies.data.length === 1 &&
-      !companyId
-    ) {
-      const only = companies.data[0] as Record<string, unknown>;
-      if (typeof only.id === "string") setCompanyId(only.id);
+    if (companyState.status === "ready" && !companyId) {
+      setCompanyId(companyState.companyId);
     }
-  }, [companies, companyId]);
+  }, [companyState, companyId]);
 
-  // Reset selection on user change
+  // Reset on user change
   useEffect(() => {
     setCompanyId(null);
     setResult(null);
@@ -104,13 +99,13 @@ function ImportarClientesPage() {
   const [lookupBump, setLookupBump] = useState(0);
   const [lookupReady, setLookupReady] = useState(false);
 
-  // Lookup existing customers by WhatsApp for the selected company
+  // Dedup via RPC segura: get_import_customer_dedup_admin
   useEffect(() => {
     let cancelled = false;
     async function run() {
       setExistingMap({});
       setLookupReady(false);
-      if (!supabase || !supabaseConfigured) return;
+      if (!supabaseConfigured) return;
       if (!isAuthenticated || !companyId || !rows || rows.length === 0) return;
       const e164s = Array.from(
         new Set(rows.map((r) => r.whatsapp_e164).filter((x): x is string => !!x)),
@@ -121,40 +116,16 @@ function ImportarClientesPage() {
       }
       setLookupLoading(true);
 
-      // Try wide projection first; if a column doesn't exist (e.g. whatsapp_e164),
-      // retry with a safe minimal projection. Either way, normalize client-side.
-      const tryFetch = async (cols: string) => {
-        return supabase!
-          .from("customers")
-          .select(cols)
-          .eq("company_id", companyId)
-          .limit(5000);
-      };
-
-      let rawData: Array<Record<string, unknown>> | null = null;
-      try {
-        let res = await tryFetch("id,name,nome,full_name,phone,telefone,whatsapp,whatsapp_e164");
-        if (res.error) {
-          res = await tryFetch("id,name,nome,full_name,phone,telefone,whatsapp");
-        }
-        if (res.error) {
-          res = await tryFetch("*");
-        }
-        if (!res.error && res.data) {
-          rawData = res.data as unknown as Array<Record<string, unknown>>;
-        } else if (res.error) {
-          console.warn("[importar-clientes] lookup failed", res.error);
-        }
-      } catch (err) {
-        console.warn("[importar-clientes] lookup threw", err);
-      }
-
+      const res = await getImportCustomerDedupAdmin({
+        p_company_id: companyId,
+        p_whatsapp_e164_values: e164s,
+      });
       if (cancelled) return;
 
       const map: Record<string, { name?: string }> = {};
-      if (rawData) {
+      if (!res.error && res.data) {
         const want = new Set(e164s);
-        for (const c of rawData) {
+        for (const c of res.data as Array<Record<string, unknown>>) {
           const candidates = [
             c.whatsapp_e164,
             c.whatsapp,
@@ -175,6 +146,8 @@ function ImportarClientesPage() {
             }
           }
         }
+      } else if (res.error) {
+        console.warn("[importar-clientes] dedup falhou", res.error);
       }
       setExistingMap(map);
       setLookupReady(true);
@@ -184,7 +157,7 @@ function ImportarClientesPage() {
     return () => {
       cancelled = true;
     };
-  }, [rows, companyId, isAuthenticated, lookupBump]);
+  }, [rows, companyId, isAuthenticated]);
 
   const rowKind = (r: ValidatedRow): RowKind | "pending" => {
     if (r.status === "invalid") return "error";
@@ -388,52 +361,24 @@ function ImportarClientesPage() {
         </div>
         {!isAuthenticated && (
           <p className="text-sm text-muted-foreground">
-            Entre para ver as empresas autorizadas para a sua conta.
+            Entre para ver a empresa autorizada para a sua conta.
           </p>
         )}
-        {isAuthenticated && companies.status === "loading" && (
-          <p className="text-sm text-muted-foreground">Carregando empresas…</p>
+        {isAuthenticated && companyState.status === "loading" && (
+          <p className="text-sm text-muted-foreground">Carregando empresa…</p>
         )}
-        {isAuthenticated && companies.status === "not_configured" && (
+        {isAuthenticated && companyState.status === "not_configured" && (
           <p className="text-sm text-muted-foreground">
             Conexão não configurada.
           </p>
         )}
-        {isAuthenticated && companies.status === "error" && (
-          <p className="text-sm text-destructive">
-            {/permiss/i.test(companies.message)
-              ? "Sua conta não tem permissão para listar empresas."
-              : companies.message}
-          </p>
+        {isAuthenticated && companyState.status === "error" && (
+          <p className="text-sm text-destructive">{companyState.message}</p>
         )}
-        {isAuthenticated &&
-          companies.status === "ready" &&
-          companies.data.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              Sua conta ainda não tem empresa autorizada para importação.
-            </p>
-          )}
-        {isAuthenticated &&
-          companies.status === "ready" &&
-          companies.data.length > 0 && (
-          <Select
-            value={companyId ?? undefined}
-            onValueChange={(v) => setCompanyId(v)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione a empresa" />
-            </SelectTrigger>
-            <SelectContent>
-              {companies.data.map((c) => {
-                const id = c.id as string;
-                return (
-                  <SelectItem key={id} value={id}>
-                    {companyLabel(c)}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+        {isAuthenticated && companyState.status === "ready" && (
+          <p className="text-sm text-muted-foreground">
+            Importando para a empresa autorizada da sua conta.
+          </p>
         )}
       </Card>
 

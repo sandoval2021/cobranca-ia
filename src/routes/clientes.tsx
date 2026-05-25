@@ -56,6 +56,7 @@ import { AISuggestionsPanel } from "@/components/ai/ai-analysis";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
+import { getCurrentCompanyAdmin, listCustomersAdmin } from "@/lib/rpc-admin";
 
 export const Route = createFileRoute("/clientes")({ component: ClientesPage });
 
@@ -197,17 +198,31 @@ function ClientesPage() {
     setLoading(true);
     setErrorMsg(null);
     (async () => {
-      const { data, error } = await supabase!
-        .from("customers")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200);
+      const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
       if (!alive) return;
-      if (error) {
-        setErrorMsg(friendlyRpcError(error.message));
+      if (companyErr || !companyId) {
+        setErrorMsg(
+          companyErr
+            ? "Não foi possível identificar a empresa."
+            : "Nenhuma empresa autorizada encontrada.",
+        );
+        setItems(null);
+        setLoading(false);
+        return;
+      }
+      const res = await listCustomersAdmin({
+        p_company_id: companyId,
+        p_status: null,
+        p_search: null,
+        p_limit: 200,
+        p_offset: 0,
+      });
+      if (!alive) return;
+      if (res.error) {
+        setErrorMsg(friendlyRpcError(res.error.message ?? ""));
         setItems(null);
       } else {
-        setItems(((data ?? []) as Row[]).map(normalize));
+        setItems(((res.data ?? []) as Row[]).map(normalize));
       }
       setLoading(false);
     })();

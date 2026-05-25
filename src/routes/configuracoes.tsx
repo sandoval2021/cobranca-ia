@@ -35,6 +35,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { flags } from "@/lib/flags";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
+import {
+  getCurrentCompanyAdmin,
+  listChargesForSelectAdmin,
+} from "@/lib/rpc-admin";
 import type { LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/configuracoes")({ component: ConfiguracoesPage });
@@ -252,20 +256,19 @@ function CollectionRulesBlock() {
     }
     let alive = true;
     (async () => {
-      const res = await supabase!.from("companies").select("id").limit(1);
+      const { companyId: id, error } = await getCurrentCompanyAdmin();
       if (!alive) return;
-      if (res.error) {
-        setLoadErr(friendlyErr(res.error.message));
+      if (error) {
+        setLoadErr(friendlyErr(error.message ?? ""));
         setLoadingCompany(false);
         return;
       }
-      const id = (res.data?.[0] as Row | undefined)?.id;
       if (!id) {
         setLoadErr("Nenhuma empresa autorizada encontrada.");
         setLoadingCompany(false);
         return;
       }
-      setCompanyId(String(id));
+      setCompanyId(id);
       setLoadingCompany(false);
     })();
     return () => { alive = false; };
@@ -853,54 +856,24 @@ function SchedulePreview({ companyId }: { companyId: string }) {
   const [items, setItems] = useState<PreviewItem[] | null>(null);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase || !companyId) return;
     let alive = true;
     (async () => {
       setLoadingList(true);
       setListErr(null);
-      const chargesRes = await supabase!
-        .from("customer_charges")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
+      const res = await listChargesForSelectAdmin({
+        p_company_id: companyId,
+        p_status: null,
+        p_limit: 100,
+      });
       if (!alive) return;
-      if (chargesRes.error) {
+      if (res.error) {
         setListErr("Não foi possível carregar as cobranças agora.");
         setLoadingList(false);
         return;
       }
-      const rows = (chargesRes.data ?? []) as Row[];
-      const ids = Array.from(new Set(rows.map((r) => String(r.customer_id ?? "")).filter(Boolean)));
-      let custMap: Record<string, { name: string; whatsapp: string | null }> = {};
-      if (ids.length) {
-        const fb = [
-          "id,name,nome,full_name,whatsapp_e164,whatsapp,phone,telefone",
-          "id,name,nome,full_name,whatsapp,phone,telefone",
-          "*",
-        ];
-        for (const cols of fb) {
-          const r = await supabase!.from("customers").select(cols).in("id", ids);
-          if (!r.error) {
-            for (const c of (r.data ?? []) as unknown as Row[]) {
-              const cid = String(c.id ?? "");
-              if (!cid) continue;
-              custMap[cid] = {
-                name: (c.name as string) ?? (c.nome as string) ?? (c.full_name as string) ?? "Cliente",
-                whatsapp:
-                  (c.whatsapp_e164 as string) ??
-                  (c.whatsapp as string) ??
-                  (c.phone as string) ??
-                  (c.telefone as string) ??
-                  null,
-              };
-            }
-            break;
-          }
-        }
-      }
+      const rows = (res.data ?? []) as Row[];
       const list: ChargeLite[] = rows.map((r) => {
-        const cid = r.customer_id ? String(r.customer_id) : "";
-        const cust = custMap[cid];
         const amount =
           r.amount_cents != null
             ? Number(r.amount_cents)
@@ -908,9 +881,18 @@ function SchedulePreview({ companyId }: { companyId: string }) {
               ? Math.round(Number(r.amount) * 100)
               : null;
         return {
-          id: String(r.id ?? ""),
-          customer_name: cust?.name ?? "Cliente",
-          whatsapp: cust?.whatsapp ?? null,
+          id: String(r.id ?? r.charge_id ?? ""),
+          customer_name:
+            (r.customer_name as string) ??
+            (r.name as string) ??
+            (r.nome as string) ??
+            "Cliente",
+          whatsapp:
+            (r.whatsapp_e164 as string) ??
+            (r.whatsapp as string) ??
+            (r.phone as string) ??
+            (r.telefone as string) ??
+            null,
           amount_cents: Number.isFinite(amount) ? amount : null,
           due_date: (r.due_date as string) ?? null,
           status: (r.status as string) ?? null,
@@ -920,7 +902,7 @@ function SchedulePreview({ companyId }: { companyId: string }) {
       setLoadingList(false);
     })();
     return () => { alive = false; };
-  }, []);
+  }, [companyId]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

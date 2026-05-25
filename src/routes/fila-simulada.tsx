@@ -39,6 +39,7 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 import { toast } from "sonner";
+import { getCurrentCompanyAdmin } from "@/lib/rpc-admin";
 
 const IS_STAGING = flags.appEnv !== "production";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -376,20 +377,19 @@ function FilaSimuladaPage() {
     }
     let alive = true;
     (async () => {
-      const r = await supabase!.from("companies").select("id").limit(1);
+      const { companyId: id, error } = await getCurrentCompanyAdmin();
       if (!alive) return;
-      if (r.error) {
+      if (error) {
         setCompanyErr("Não foi possível identificar a empresa.");
         setLoadingCompany(false);
         return;
       }
-      const id = (r.data?.[0] as Row | undefined)?.id;
       if (!id) {
         setCompanyErr("Nenhuma empresa autorizada encontrada.");
         setLoadingCompany(false);
         return;
       }
-      setCompanyId(String(id));
+      setCompanyId(id);
       setLoadingCompany(false);
     })();
     return () => { alive = false; };
