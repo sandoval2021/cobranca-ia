@@ -1087,7 +1087,7 @@ function CreateChargeDialog({
   const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
   const [due, setDue] = useState("");
-  const [status, setStatus] = useState("pending");
+  const [status, setStatus] = useState("pendente");
   const [ref, setRef] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -1096,7 +1096,7 @@ function CreateChargeDialog({
       setCustomerId("");
       setAmount("");
       setDue("");
-      setStatus("pending");
+      setStatus("pendente");
       setRef("");
     }
   }, [open]);
@@ -1121,7 +1121,7 @@ function CreateChargeDialog({
       p_customer_id: customerId,
       p_amount_cents: cents,
       p_due_at: due,
-      p_status: status,
+      p_status: toChargeRpcStatus(status),
       p_external_reference: ref.trim() || null,
     };
     const { error } = await supabase.rpc("create_charge_admin", payload);
@@ -1168,10 +1168,10 @@ function CreateChargeDialog({
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="paid">Paga</SelectItem>
-                <SelectItem value="overdue">Vencida</SelectItem>
-                <SelectItem value="canceled">Cancelada</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="paga">Paga</SelectItem>
+                <SelectItem value="vencida">Vencida</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
               </SelectContent>
             </Select>
           </div>
