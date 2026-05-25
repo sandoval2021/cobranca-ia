@@ -196,12 +196,24 @@ function FinanceiroPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (deleteId) { deleteFinanceEntry(deleteId); setDeleteId(null); reload(); toast.success("Entrada excluída"); } }}>
+            <AlertDialogAction onClick={() => {
+              if (!deleteId) return;
+              const id = deleteId;
+              setDeleteId(null);
+              guard({
+                kind: "delete",
+                title: "Excluir entrada financeira",
+                description: "Esta ação não pode ser desfeita.",
+                actionLabel: "Excluir",
+                onConfirm: () => { deleteFinanceEntry(id); reload(); toast.success("Entrada excluída"); },
+              });
+            }}>
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </PageContainer>
   );
 }
