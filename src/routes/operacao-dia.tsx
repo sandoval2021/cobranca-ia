@@ -58,6 +58,7 @@ import {
   PAID_ALERT_LABEL,
 } from "@/lib/app-screens";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { ServerRouteInfo } from "@/components/servers/ServerRouteInfo";
 import { listActiveServers, screensHaveServer } from "@/lib/server-catalog";
 
 export const Route = createFileRoute("/operacao-dia")({
