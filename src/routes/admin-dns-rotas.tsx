@@ -853,11 +853,7 @@ function ImpactDialog({
   onClose: () => void;
 }) {
   const open = !!route;
-  if (!open || !route) {
-    return (
-      <AlertDialog open={false}><AlertDialogContent /></AlertDialog>
-    );
-  }
+  if (!open || !route) return null;
   const impact = computeRouteImpact(route);
   const srv = route.server_id ? servers.find((s) => s.id === route.server_id) : null;
 
