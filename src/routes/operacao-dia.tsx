@@ -57,6 +57,8 @@ import {
   paidAlertClass,
   PAID_ALERT_LABEL,
 } from "@/lib/app-screens";
+import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { listActiveServers, screensHaveServer } from "@/lib/server-catalog";
 
 export const Route = createFileRoute("/operacao-dia")({
   component: OperacaoDiaPage,
@@ -267,6 +269,7 @@ function OperacaoDiaPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<OpFilter>("hoje");
+  const [serverFilter, setServerFilter] = useState<string>("__all__");
   const [screensVersion, setScreensVersion] = useState(0);
   const [confirmReveal, setConfirmReveal] = useState<
     | null
@@ -437,6 +440,14 @@ function OperacaoDiaPage() {
     };
     return priorities.filter((p) => {
       if (!matchesFilter(p)) return false;
+      if (serverFilter !== "__all__") {
+        if (serverFilter === "__none__") {
+          if (p.screen && (p.screen.server_ids ?? []).length > 0) return false;
+        } else {
+          if (!p.screen) return false;
+          if (!(p.screen.server_ids ?? []).includes(serverFilter)) return false;
+        }
+      }
       if (!q) return true;
       const c = p.customer;
       const phone = onlyDigits(c.whatsapp ?? "");
@@ -457,7 +468,20 @@ function OperacaoDiaPage() {
         (s.route ?? "").toLowerCase().includes(q)
       );
     });
-  }, [priorities, filter, query]);
+  }, [priorities, filter, serverFilter, query]);
+
+  // Contadores por servidor para a barra de filtros
+  const serverCounts = useMemo(() => {
+    const active = listActiveServers();
+    const out = active.map((s) => ({ id: s.id, name: s.name, color: s.color, count: 0 }));
+    let none = 0;
+    for (const p of priorities) {
+      const sids = p.screen?.server_ids ?? [];
+      if (p.screen && sids.length === 0) none += 1;
+      for (const o of out) if (sids.includes(o.id)) o.count += 1;
+    }
+    return { servers: out, none };
+  }, [priorities, screensVersion]);
 
   const ordered = useMemo(
     () => [...filtered].sort((a, b) => rank(a) - rank(b)),
@@ -611,6 +635,31 @@ function OperacaoDiaPage() {
         <FilterChip active={filter === "app_set"} onClick={() => setFilter("app_set")} label="Set IPTV" count={summary.setiptv} dim={summary.setiptv === 0} />
         <FilterChip active={filter === "app_smartone"} onClick={() => setFilter("app_smartone")} label="SmartOne" count={summary.smartone} dim={summary.smartone === 0} />
       </div>
+
+      {/* Filtros por servidor */}
+      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <FilterChip active={serverFilter === "__all__"} onClick={() => setServerFilter("__all__")} label="Todos servidores" count={priorities.length} />
+        <FilterChip active={serverFilter === "__none__"} onClick={() => setServerFilter("__none__")} label="Sem servidor" count={serverCounts.none} dim={serverCounts.none === 0} />
+        {serverCounts.servers.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setServerFilter(s.id)}
+            className={cn(
+              "shrink-0 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition inline-flex items-center gap-1.5",
+              serverFilter === s.id
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-foreground hover:bg-muted",
+              s.count === 0 && serverFilter !== s.id && "opacity-60",
+            )}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} aria-hidden />
+            {s.name} <span className={cn("ml-0.5 tabular-nums", serverFilter === s.id ? "opacity-90" : "text-muted-foreground")}>({s.count})</span>
+          </button>
+        ))}
+      </div>
+
+
 
       {/* exportar */}
       <div className="mb-3 flex items-center justify-between">
@@ -926,6 +975,9 @@ function PriorityCard({
                 Renovação: {s.app_renewal_value}
               </span>
             )}
+            {s && ((s.server_ids ?? []).length > 0
+              ? (s.server_ids ?? []).map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
+              : <SemServidorBadge />)}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
             {phone ?? "Sem WhatsApp"}

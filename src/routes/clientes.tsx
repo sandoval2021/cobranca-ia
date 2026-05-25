@@ -65,7 +65,7 @@ import {
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
-import { getServerById } from "@/lib/server-catalog";
+import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
 import { Tv } from "lucide-react";
 
 export const Route = createFileRoute("/clientes")({ component: ClientesPage });
@@ -195,6 +195,7 @@ function ClientesPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("todos");
+  const [serverFilter, setServerFilter] = useState<string>("__all__");
   const [screensVersion, setScreensVersion] = useState(0);
   useEffect(() => {
     const bump = () => setScreensVersion((v) => v + 1);
@@ -287,6 +288,10 @@ function ClientesPage() {
     return items.filter((c) => {
       const kind = classifyStatus(c.status);
       const screens = allScreens[c.id] ?? [];
+      if (serverFilter !== "__all__") {
+        const active = screens.filter((s) => s.status !== "arquivada");
+        if (!screensHaveServer(active, serverFilter)) return false;
+      }
       if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
         if (kind !== filter) return false;
       } else if (filter === "hoje" || filter === "7d" || filter === "vencidos") {
@@ -324,7 +329,30 @@ function ClientesPage() {
         );
       });
     });
-  }, [items, query, filter, allScreens]);
+  }, [items, query, filter, serverFilter, allScreens]);
+
+  // Contadores por servidor (catálogo ativo) e "sem servidor"
+  const serverCounts = useMemo(() => {
+    const activeServers = listActiveServers();
+    const out: { id: string; name: string; color: string; count: number }[] =
+      activeServers.map((s) => ({ id: s.id, name: s.name, color: s.color, count: 0 }));
+    let none = 0;
+    if (items) {
+      for (const it of items) {
+        const screens = (allScreens[it.id] ?? []).filter((s) => s.status !== "arquivada");
+        const ids = new Set<string>();
+        let hasNone = false;
+        for (const s of screens) {
+          const sids = s.server_ids ?? [];
+          if (sids.length === 0) hasNone = true;
+          for (const id of sids) ids.add(id);
+        }
+        for (const o of out) if (ids.has(o.id)) o.count += 1;
+        if (hasNone) none += 1;
+      }
+    }
+    return { servers: out, none };
+  }, [items, allScreens, screensVersion]);
 
   // Ordenação por vencimento mais próximo; vencidos vão pro fim
   const ordered = useMemo(() => {
@@ -420,6 +448,47 @@ function ClientesPage() {
         <FilterPill active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={counts.acc_mac_key} dim={counts.acc_mac_key === 0} />
         <FilterPill active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={counts.acc_user_pass} dim={counts.acc_user_pass === 0} />
       </div>
+
+      {/* Filtros por servidor */}
+      <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <FilterPill
+          active={serverFilter === "__all__"}
+          onClick={() => setServerFilter("__all__")}
+          label="Todos servidores"
+          count={items?.length ?? 0}
+        />
+        <FilterPill
+          active={serverFilter === "__none__"}
+          onClick={() => setServerFilter("__none__")}
+          label="Sem servidor"
+          count={serverCounts.none}
+          dim={serverCounts.none === 0}
+        />
+        {serverCounts.servers.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setServerFilter(s.id)}
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              serverFilter === s.id
+                ? "border-primary bg-primary text-primary-foreground"
+                : s.count === 0
+                  ? "border-border/60 bg-card/60 text-muted-foreground hover:bg-muted"
+                  : "border-border bg-card text-foreground hover:bg-muted",
+            )}
+            title={`Servidor ${s.name}`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} aria-hidden />
+            {s.name}
+            <span className={cn(
+              "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+              serverFilter === s.id ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground",
+            )}>{s.count}</span>
+          </button>
+        ))}
+      </div>
+
 
       {/* Estados */}
       {!isAuthenticated && !authLoading && (

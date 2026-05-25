@@ -53,6 +53,7 @@ import {
   isPaidApp,
   appDueDays,
 } from "@/lib/app-screens";
+import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 
 export const Route = createFileRoute("/pendencias")({
   component: PendenciasPage,
@@ -879,6 +880,9 @@ function PendingCard({
                 Resolvida
               </span>
             )}
+            {s && ((s.server_ids ?? []).length > 0
+              ? (s.server_ids ?? []).map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
+              : <SemServidorBadge />)}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
             {c && <>{prettyPhone(c.whatsapp) ?? "Sem WhatsApp"}</>}

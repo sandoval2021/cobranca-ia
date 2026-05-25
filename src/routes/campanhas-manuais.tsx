@@ -49,6 +49,8 @@ import {
   mask,
   ROUTE_OPTIONS,
 } from "@/lib/app-screens";
+import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
+import { buildServerVarsForScreen } from "@/lib/server-catalog";
 
 export const Route = createFileRoute("/campanhas-manuais")({
   component: CampanhasManuaisPage,
@@ -277,6 +279,8 @@ const VARS = [
   "nome", "whatsapp", "tela", "app", "vencimento", "dias", "rota",
   "servidor", "mac", "key", "usuario",
   "vencimento_app", "dias_app", "valor_app", "tipo_app", "portal_app",
+  "painel", "usuario_painel", "senha_painel",
+  "link_lista", "usuario_lista", "senha_lista",
 ] as const;
 
 type VarKey = (typeof VARS)[number];
@@ -365,6 +369,9 @@ function buildValues(
     const diff = Math.floor((+d - +t) / 86400000);
     return diff < 0 ? `${Math.abs(diff)} (vencido)` : String(diff);
   })() : "";
+  const serverVars = s
+    ? buildServerVarsForScreen(s, { revealSecrets: !!opts.revealSecrets })
+    : { servidor: "", painel: "", usuario_painel: "", senha_painel: "", link_lista: "", usuario_lista: "", senha_lista: "" };
   return {
     nome: firstName(it.customer.name),
     whatsapp: prettyPhone(it.customer.whatsapp) ?? "",
@@ -373,7 +380,7 @@ function buildValues(
     vencimento: venc,
     dias,
     rota: route,
-    servidor: s?.server ?? "",
+    servidor: serverVars.servidor || (s?.server ?? ""),
     mac: s?.mac ?? "",
     key: opts.revealSecrets ? (s?.app_key ?? "") : (s?.app_key ? mask(s.app_key) : ""),
     usuario: s?.username ?? "",
@@ -382,6 +389,12 @@ function buildValues(
     valor_app: s?.app_renewal_value ?? "",
     tipo_app: s?.tier ?? (s ? APP_CATALOG[s.app]?.tier ?? "" : ""),
     portal_app: s?.portal_url ?? "",
+    painel: serverVars.painel,
+    usuario_painel: serverVars.usuario_painel,
+    senha_painel: serverVars.senha_painel,
+    link_lista: serverVars.link_lista,
+    usuario_lista: serverVars.usuario_lista,
+    senha_lista: serverVars.senha_lista,
   };
 }
 
