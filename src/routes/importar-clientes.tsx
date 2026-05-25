@@ -668,10 +668,14 @@ function ImportarClientesPage() {
                 <p>
                   {result.duplicated} linhas duplicadas no arquivo foram ignoradas.
                 </p>
-              )}
-              {(result.imported ?? 0) === 0 && (result.updated ?? 0) === 0 && (
-                <p>Importação concluída sem alterações.</p>
-              )}
+      )}
+
+      {/* Agenda de Disparos (local/simulada) */}
+      {rows && rows.length > 0 && (
+        <ImportScheduleSection rows={rows} />
+      )}
+
+
               <p className="opacity-80">
                 Se o cliente já existia, o sistema atualiza os dados em vez de duplicar.
               </p>
