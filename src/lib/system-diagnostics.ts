@@ -750,6 +750,27 @@ function checkMultiTenant(alerts: DiagnosticAlert[]) {
       to: "/migracao-empresa",
       ctaLabel: "Abrir Migração",
     });
+    // alertas por módulo principal
+    const moduleAreaMap: Record<string, { area: DiagnosticArea; label: string; to: string }> = {
+      cobranca_ia_app_screens_v1: { area: "clientes", label: "Clientes/Telas", to: "/clientes" },
+      cobranca_ia_finance_entries_v1: { area: "financeiro", label: "Financeiro", to: "/financeiro" },
+      cobranca_ia_finance_goals_v1: { area: "financeiro", label: "Objetivos financeiros", to: "/financeiro" },
+      cobranca_ia_trial_leads_v1: { area: "testes", label: "Testes/Leads", to: "/testes" },
+      cobranca_ia_referrals_v1: { area: "indicacoes", label: "Indicações", to: "/indicacoes" },
+    };
+    for (const p of summary.preview) {
+      const map = moduleAreaMap[p.key];
+      if (!map || p.sem_empresa === 0) continue;
+      alerts.push({
+        id: `mt-unscoped-${p.key}`,
+        area: map.area,
+        level: "atencao",
+        title: `${p.sem_empresa} ${map.label} sem company_id`,
+        description: "Registros antigos não estão vinculados a uma empresa.",
+        to: "/migracao-empresa",
+        ctaLabel: "Migrar agora",
+      });
+    }
   }
   if (!getCurrentCompanyId() && companies.length > 0) {
     alerts.push({

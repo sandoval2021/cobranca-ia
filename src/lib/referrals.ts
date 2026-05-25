@@ -15,6 +15,7 @@ export type ReferralStatus = (typeof REFERRAL_STATUSES)[number];
 
 export type Referral = {
   id: string;
+  company_id?: string | null;
   indicador_cliente_id?: string;
   indicador_nome: string;
   indicador_whatsapp: string;
@@ -68,7 +69,22 @@ function write<T>(key: string, value: T) {
   }
 }
 
+import { getCurrentRole } from "./local-auth";
+import { getActiveCompanyId } from "./company-scope";
+
+function scopedFilter<T extends { company_id?: string | null }>(list: T[]): T[] {
+  const role = getCurrentRole();
+  const activeId = getActiveCompanyId();
+  if (role === "super_admin" && !activeId) return list;
+  if (!activeId) return [];
+  return list.filter((r) => r.company_id === activeId);
+}
+
 export function listReferrals(): Referral[] {
+  return scopedFilter(read<Referral[]>(STORAGE_KEY, []));
+}
+
+export function listAllReferralsRaw(): Referral[] {
   return read<Referral[]>(STORAGE_KEY, []);
 }
 
@@ -78,10 +94,12 @@ export function saveReferral(input: Partial<Referral> & {
   indicado_nome: string;
   indicado_whatsapp: string;
 }): Referral {
-  const list = listReferrals();
+  const list = listAllReferralsRaw();
   const now = new Date().toISOString();
+  const activeId = getActiveCompanyId();
   const ref: Referral = {
     id: uid(),
+    company_id: input.company_id ?? activeId ?? null,
     indicador_cliente_id: input.indicador_cliente_id,
     indicador_nome: input.indicador_nome,
     indicador_whatsapp: input.indicador_whatsapp,
@@ -100,16 +118,16 @@ export function saveReferral(input: Partial<Referral> & {
 }
 
 export function updateReferral(id: string, patch: Partial<Referral>): Referral | null {
-  const list = listReferrals();
+  const list = listAllReferralsRaw();
   const idx = list.findIndex((r) => r.id === id);
   if (idx < 0) return null;
-  list[idx] = { ...list[idx], ...patch };
+  list[idx] = { ...list[idx], ...patch, company_id: patch.company_id ?? list[idx].company_id };
   write(STORAGE_KEY, list);
   return list[idx];
 }
 
 export function updateReferralByLead(leadId: string, patch: Partial<Referral>) {
-  const list = listReferrals();
+  const list = listAllReferralsRaw();
   let changed = false;
   for (let i = 0; i < list.length; i++) {
     if (list[i].lead_id === leadId) {

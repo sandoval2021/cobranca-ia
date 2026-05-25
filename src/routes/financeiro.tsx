@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import { PageContainer } from "@/components/layout/PageContainer";
+import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,6 +115,8 @@ function FinanceiroPage() {
         title="Financeiro"
         subtitle="Controle receitas, custos, lucro e objetivos do seu negócio."
       />
+
+      <CompanyScopeNotice moduleKey="cobranca_ia_finance_entries_v1" />
 
 
       <Card className="p-3 border-dashed bg-muted/30 mb-4 flex items-start gap-2">

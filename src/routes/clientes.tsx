@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
 import { ListCardSkeleton } from "@/components/ui-premium/Skeletons";
@@ -418,6 +419,7 @@ function ClientesPage() {
         subtitle="Gerencie sua base de clientes"
         hint="Edite, arquive e consulte o histórico de cada cliente com segurança."
       />
+      <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
 
       {/* Busca */}
       <div className="relative mb-3">

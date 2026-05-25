@@ -33,6 +33,7 @@ export type TrialInterest = (typeof TRIAL_INTERESTS)[number];
 
 export type TrialLead = {
   id: string;
+  company_id?: string | null;
   nome?: string;
   whatsapp: string;
   origem: TrialOrigin;
@@ -108,7 +109,22 @@ function write<T>(key: string, items: T[]) {
   }
 }
 
+import { getCurrentRole } from "./local-auth";
+import { getActiveCompanyId } from "./company-scope";
+
+function scopedFilter<T extends { company_id?: string | null }>(list: T[]): T[] {
+  const role = getCurrentRole();
+  const activeId = getActiveCompanyId();
+  if (role === "super_admin" && !activeId) return list;
+  if (!activeId) return [];
+  return list.filter((r) => r.company_id === activeId);
+}
+
 export function listTrialLeads(): TrialLead[] {
+  return scopedFilter(read<TrialLead>(STORAGE_KEY));
+}
+
+export function listAllTrialLeadsRaw(): TrialLead[] {
   return read<TrialLead>(STORAGE_KEY);
 }
 
@@ -153,10 +169,12 @@ function addDays(d: Date, n: number) {
 export function saveTrialLead(
   input: Partial<TrialLead> & { whatsapp: string },
 ): TrialLead {
-  const list = listTrialLeads();
+  const list = listAllTrialLeadsRaw();
   const now = new Date().toISOString();
+  const activeId = getActiveCompanyId();
   const lead: TrialLead = {
     id: uid(),
+    company_id: input.company_id ?? activeId ?? null,
     nome: input.nome,
     whatsapp: input.whatsapp,
     origem: (input.origem as TrialOrigin) ?? "Outro",
@@ -176,7 +194,6 @@ export function saveTrialLead(
   };
   list.unshift(lead);
   write(STORAGE_KEY, list);
-  // create followup schedule
   const fups = listFollowUps();
   fups.push(...buildTrialFollowUpSchedule(lead));
   saveAllFollowUps(fups);
@@ -184,10 +201,16 @@ export function saveTrialLead(
 }
 
 export function updateTrialLead(id: string, patch: Partial<TrialLead>): TrialLead | null {
-  const list = listTrialLeads();
+  const list = listAllTrialLeadsRaw();
   const idx = list.findIndex((l) => l.id === id);
   if (idx < 0) return null;
-  const updated = { ...list[idx], ...patch, atualizado_em: new Date().toISOString() };
+  const prev = list[idx];
+  const updated = {
+    ...prev,
+    ...patch,
+    company_id: patch.company_id ?? prev.company_id,
+    atualizado_em: new Date().toISOString(),
+  };
   list[idx] = updated;
   write(STORAGE_KEY, list);
   return updated;

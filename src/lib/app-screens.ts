@@ -45,6 +45,7 @@ export const ROUTE_OPTIONS: { value: RouteKind; label: string }[] = [
 export type AppScreen = {
   id: string;
   customer_id: string;
+  company_id?: string | null;
   name: string;
   app: AppKey;
   tier?: AppTier;
@@ -56,14 +57,13 @@ export type AppScreen = {
   mac?: string;
   app_key?: string;
   portal_url?: string;
-  due_date?: string; // YYYY-MM-DD — vencimento da LISTA
-  app_due_date?: string; // YYYY-MM-DD — vencimento da LICENÇA do app pago
-  app_renewal_value?: string; // valor da renovação (texto livre)
+  due_date?: string;
+  app_due_date?: string;
+  app_renewal_value?: string;
   status: ScreenStatus;
   route?: RouteKind;
   needs_server_update?: boolean;
   notes?: string;
-  // Servidores/painéis vinculados (IDs do catálogo local de servidores)
   server_ids?: string[];
   primary_server_id?: string;
   list_server_url?: string;
@@ -147,12 +147,38 @@ function writeAll(data: Record<string, AppScreen[]>): void {
   }
 }
 
+// ----- escopo local por empresa -----
+import { getCurrentRole } from "./local-auth";
+import { getActiveCompanyId } from "./company-scope";
+
+function filterScreensByScope(list: AppScreen[]): AppScreen[] {
+  const role = getCurrentRole();
+  const activeId = getActiveCompanyId();
+  if (role === "super_admin" && !activeId) return list;
+  if (!activeId) return [];
+  return list.filter((s) => s.company_id === activeId);
+}
+
 export function listScreens(customerId: string): AppScreen[] {
   const all = readAll();
-  return all[customerId] ?? [];
+  return filterScreensByScope(all[customerId] ?? []);
 }
 
 export function listAllScreens(): Record<string, AppScreen[]> {
+  const all = readAll();
+  const role = getCurrentRole();
+  const activeId = getActiveCompanyId();
+  if (role === "super_admin" && !activeId) return all;
+  const out: Record<string, AppScreen[]> = {};
+  for (const [cid, list] of Object.entries(all)) {
+    const filtered = filterScreensByScope(list);
+    if (filtered.length > 0) out[cid] = filtered;
+  }
+  return out;
+}
+
+// Acesso raw (sem filtro) — uso interno de backup/diagnóstico.
+export function listAllScreensRaw(): Record<string, AppScreen[]> {
   return readAll();
 }
 
@@ -160,8 +186,15 @@ export function upsertScreen(s: AppScreen): void {
   const all = readAll();
   const list = all[s.customer_id] ?? [];
   const idx = list.findIndex((x) => x.id === s.id);
-  if (idx >= 0) list[idx] = s;
-  else list.push(s);
+  let next = s;
+  if (idx < 0 && !s.company_id) {
+    const activeId = getActiveCompanyId();
+    if (activeId) next = { ...s, company_id: activeId };
+  } else if (idx >= 0 && !s.company_id && list[idx].company_id) {
+    next = { ...s, company_id: list[idx].company_id };
+  }
+  if (idx >= 0) list[idx] = next;
+  else list.push(next);
   all[s.customer_id] = list;
   writeAll(all);
 }
