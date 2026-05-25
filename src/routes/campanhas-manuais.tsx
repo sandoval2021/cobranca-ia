@@ -1094,10 +1094,15 @@ function CampanhasManuaisPage() {
       <AlertDialog open={!!confirmSensitive} onOpenChange={(o) => !o && setConfirmSensitive(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Copiar com dados sensíveis?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {confirmSensitive?.serverSecrets
+                ? "Copiar com senhas do painel/lista?"
+                : "Copiar com dados sensíveis?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Essa mensagem pode conter dados sensíveis (senha, key, MAC, usuário) em texto aberto.
-              Cole apenas em um lugar seguro.
+              {confirmSensitive?.serverSecrets
+                ? "Esse texto inclui senhas do painel/lista do servidor. Deseja copiar mesmo assim?"
+                : "Essa mensagem pode conter dados sensíveis (senha, key, MAC, usuário) em texto aberto. Cole apenas em um lugar seguro."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1110,7 +1115,7 @@ function CampanhasManuaisPage() {
                 setConfirmSensitive(null);
               }}
             >
-              Copiar mesmo assim
+              {confirmSensitive?.serverSecrets ? "Copiar com senhas" : "Copiar mesmo assim"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
