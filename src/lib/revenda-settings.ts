@@ -237,9 +237,11 @@ export function applyRevendaVariables(
 ): string {
   if (!text) return "";
   const vars = buildRevendaVariables(settings, context);
-  return text.replace(/\{([a-zA-Z0-9_]+)\}/g, (_m, name: string) => {
+  // Não destrutivo: substitui apenas tokens conhecidos (revenda + contexto).
+  // Placeholders desconhecidos permanecem intactos para outros renderizadores.
+  return text.replace(/\{([a-zA-Z0-9_]+)\}/g, (match, name: string) => {
     const v = vars[name];
-    return v !== undefined ? v : "não informado";
+    return v !== undefined ? v : match;
   });
 }
 
