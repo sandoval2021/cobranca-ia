@@ -144,6 +144,15 @@ function msgPedirApp(name: string) {
 function msgPedirWhats(name: string) {
   return `Olá ${firstName(name)}! Não tenho seu WhatsApp salvo. Pode me confirmar o número com DDD para que eu te atenda por aqui? 🙂`;
 }
+function msgAppPagoVencendo(name: string, app: string, tela: string, dias: number, venc: string, valor?: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nO aplicativo ${app} da sua ${tela} vence em ${dias} dia(s).\n\n📱 App: ${app}\n📺 Tela: ${tela}\n📅 Vencimento do app: ${venc}${valor ? `\n💰 Renovação: ${valor}` : ""}\n\nEssa renovação é da licença do aplicativo, separada da mensalidade da lista.`;
+}
+function msgAppPagoVencido(name: string, app: string, tela: string, venc: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nA licença do aplicativo ${app} da sua ${tela} está vencida.\n\n📱 App: ${app}\n📺 Tela: ${tela}\n📅 Vencimento: ${venc}\n\nQuando a licença vence, o app pode parar de abrir ou pedir renovação.`;
+}
+function msgPedirMacKeyApp(name: string, app: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nPara eu conferir o app ${app}, preciso que você me envie o MAC e a Key que aparecem na tela do aplicativo.\n\nSe puder, mande também um print da tela.`;
+}
 
 // ----- pendências técnicas (fixas) -----
 type TechItem = { id: string; title: string; description: string };
