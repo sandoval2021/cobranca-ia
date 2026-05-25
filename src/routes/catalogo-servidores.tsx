@@ -188,9 +188,13 @@ function CatalogoServidoresPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
-              restoreDefaultServers();
               setConfirmRestore(false);
-              toast.success("Padrões restaurados.");
+              guard({
+                kind: "delete",
+                title: "Restaurar servidores padrões",
+                actionLabel: "Restaurar",
+                onConfirm: () => { restoreDefaultServers(); toast.success("Padrões restaurados."); },
+              });
             }}>
               Restaurar
             </AlertDialogAction>
@@ -209,18 +213,31 @@ function CatalogoServidoresPage() {
           <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <Button variant="outline" onClick={() => {
-              if (importPreview) importServers(importPreview, "merge");
+              const items = importPreview;
               setImportPreview(null);
-              toast.success("Catálogo mesclado.");
+              if (!items) return;
+              guard({
+                kind: "backup",
+                title: "Mesclar catálogo importado",
+                actionLabel: "Mesclar",
+                onConfirm: () => { importServers(items, "merge"); toast.success("Catálogo mesclado."); },
+              });
             }}>
               Mesclar
             </Button>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                if (importPreview) importServers(importPreview, "replace");
+                const items = importPreview;
                 setImportPreview(null);
-                toast.success("Catálogo substituído.");
+                if (!items) return;
+                guard({
+                  kind: "delete",
+                  title: "Substituir catálogo de servidores",
+                  description: "Esta ação remove os servidores atuais e usa os importados.",
+                  actionLabel: "Substituir",
+                  onConfirm: () => { importServers(items, "replace"); toast.success("Catálogo substituído."); },
+                });
               }}
             >
               Substituir
@@ -228,6 +245,7 @@ function CatalogoServidoresPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {securityDialog}
     </PageContainer>
   );
 }
