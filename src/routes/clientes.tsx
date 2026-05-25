@@ -195,6 +195,7 @@ function ClientesPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("todos");
+  const [serverFilter, setServerFilter] = useState<string>("__all__");
   const [screensVersion, setScreensVersion] = useState(0);
   useEffect(() => {
     const bump = () => setScreensVersion((v) => v + 1);
