@@ -230,13 +230,21 @@ function buildPriorities(
 }
 
 function rank(p: Priority): number {
+  const s = p.screen;
+  const paid = s ? isPaidApp(s) : false;
+  const ad = s && paid ? appDueDays(s) : null;
   if (p.urgency === "hoje") return 0;
-  if (p.urgency === "3d") return 100 + (p.days ?? 0);
-  if (p.urgency === "7d") return 200 + (p.days ?? 0);
-  if (p.needsUpdate) return 250;
+  if (p.urgency === "vencido") return 50 + Math.abs(p.days ?? 0);
+  if (paid && ad != null && ad < 0) return 60 + Math.abs(ad);
+  if (paid && ad != null && ad <= 7) return 80 + ad;
+  if (p.needsUpdate) return 100;
+  if (p.urgency === "3d") return 120 + (p.days ?? 0);
+  if (p.urgency === "7d") return 140 + (p.days ?? 0);
+  if (paid && ad != null && ad <= 30) return 200 + ad;
+  if (paid && ad == null) return 260;
+  if (paid && s && ((s.access_type === "mac" || s.access_type === "mac_key") && (!s.mac || (s.access_type === "mac_key" && !s.app_key)))) return 280;
   if (p.urgency === "em_dia") return 400 + (p.days ?? 0);
   if (p.urgency === "sem_data") return 700;
-  if (p.urgency === "vencido") return 1000 + Math.abs(p.days ?? 0);
   return 800;
 }
 
@@ -244,7 +252,10 @@ function rank(p: Priority): number {
 type OpFilter =
   | "todos" | "hoje" | "3d" | "7d" | "vencidos" | "needs_update"
   | "app_bob" | "app_xciptv" | "app_ibo" | "app_vu"
-  | "acc_mac_key" | "acc_user_pass" | "sem_app";
+  | "app_eagle" | "app_duplex" | "app_set" | "app_smartone"
+  | "acc_mac_key" | "acc_user_pass" | "sem_app"
+  | "app_pago_vencendo" | "app_pago_7d" | "app_pago_vencido"
+  | "app_sem_venc" | "app_sem_mackey";
 
 function OperacaoDiaPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
