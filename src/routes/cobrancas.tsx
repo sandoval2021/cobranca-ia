@@ -787,12 +787,17 @@ function ChargeSheet({
       toast.error("Informe uma data de vencimento válida.");
       return;
     }
+    const rpcStatus = toChargeRpcStatus(status);
+    if (!rpcStatus) {
+      toast.error("Selecione um status válido para a cobrança.");
+      return;
+    }
     setSaving(true);
     const payload = {
       p_charge_id: charge.id,
       p_amount_cents: cents,
       p_due_at: due,
-      p_status: toChargeRpcStatus(status),
+      p_status: rpcStatus,
     };
     const { error } = await supabase.rpc("update_charge_admin", payload);
     setSaving(false);
