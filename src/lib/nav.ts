@@ -9,6 +9,7 @@ import {
   Activity,
   Upload,
   ListChecks,
+  BarChart3,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
