@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { applyRevendaVariables } from "@/lib/revenda-settings";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen, Plus, Pencil, Trash2, Download, Upload, RotateCcw,
