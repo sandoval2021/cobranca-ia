@@ -635,15 +635,22 @@ function ChartsSection({ summary, goals }: { summary: ReturnType<typeof calculat
 function ExportImportSection({ summary, mainGoal, onReload }: { summary: ReturnType<typeof calculateFinanceSummary>; mainGoal?: FinanceGoal; onReload: () => void }) {
   const [importText, setImportText] = useState("");
   const [mode, setMode] = useState<"merge" | "replace">("merge");
+  const { guard, dialog } = useSecurityGuard();
 
-  const doExport = () => {
-    const data = exportFinanceData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `financeiro-cobranca-ia-${todayDate()}.json`; a.click();
-    URL.revokeObjectURL(url);
-  };
+  const doExport = () => guard({
+    kind: "finance",
+    title: "Exportar financeiro",
+    description: "Confirme com PIN para exportar dados financeiros.",
+    actionLabel: "Exportar",
+    onConfirm: () => {
+      const data = exportFinanceData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `financeiro-cobranca-ia-${todayDate()}.json`; a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
 
   const doExportTxt = () => {
     const text = buildSummaryText(summary, mainGoal);
@@ -657,11 +664,18 @@ function ExportImportSection({ summary, mainGoal, onReload }: { summary: ReturnT
   const doImport = () => {
     if (!importText.trim()) { toast.error("Cole o JSON exportado"); return; }
     if (mode === "replace" && !confirm("Substituir TODOS os dados financeiros locais?")) return;
-    const r = importFinanceData(importText, mode);
-    if (!r.ok) { toast.error(r.error || "Falha na importação"); return; }
-    setImportText("");
-    onReload();
-    toast.success(`Importação ok (${r.counts?.entries ?? 0} entradas, ${r.counts?.goals ?? 0} objetivos)`);
+    guard({
+      kind: mode === "replace" ? "delete" : "finance",
+      title: mode === "replace" ? "Substituir dados financeiros" : "Importar financeiro",
+      actionLabel: mode === "replace" ? "Substituir" : "Importar",
+      onConfirm: () => {
+        const r = importFinanceData(importText, mode);
+        if (!r.ok) { toast.error(r.error || "Falha na importação"); return; }
+        setImportText("");
+        onReload();
+        toast.success(`Importação ok (${r.counts?.entries ?? 0} entradas, ${r.counts?.goals ?? 0} objetivos)`);
+      },
+    });
   };
 
   return (
@@ -687,9 +701,11 @@ function ExportImportSection({ summary, mainGoal, onReload }: { summary: ReturnT
           <Button size="sm" onClick={doImport}><Upload className="h-4 w-4 mr-1" />Importar</Button>
         </div>
       </Card>
+      {dialog}
     </div>
   );
 }
+
 
 // ---------- Entry Sheet ----------
 function EntrySheet({ draft, goals, onClose, onSaved }: { draft: FinanceDraft; goals: FinanceGoal[]; onClose: () => void; onSaved: () => void }) {
