@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
-  Wallet, Plus, Trash2, Download, Upload, Copy, Target, Calculator,
+  Plus, Trash2, Download, Upload, Copy, Target, Calculator,
   TrendingUp, Receipt, Settings as SettingsIcon, Info,
 } from "lucide-react";
 
