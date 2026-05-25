@@ -48,6 +48,8 @@ import {
   daysUntil,
   formatScreenAsText,
   ROUTE_OPTIONS,
+  isPaidApp,
+  appDueDays,
 } from "@/lib/app-screens";
 
 export const Route = createFileRoute("/pendencias")({
@@ -142,6 +144,15 @@ function msgPedirApp(name: string) {
 function msgPedirWhats(name: string) {
   return `Olá ${firstName(name)}! Não tenho seu WhatsApp salvo. Pode me confirmar o número com DDD para que eu te atenda por aqui? 🙂`;
 }
+function msgAppPagoVencendo(name: string, app: string, tela: string, dias: number, venc: string, valor?: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nO aplicativo ${app} da sua ${tela} vence em ${dias} dia(s).\n\n📱 App: ${app}\n📺 Tela: ${tela}\n📅 Vencimento do app: ${venc}${valor ? `\n💰 Renovação: ${valor}` : ""}\n\nEssa renovação é da licença do aplicativo, separada da mensalidade da lista.`;
+}
+function msgAppPagoVencido(name: string, app: string, tela: string, venc: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nA licença do aplicativo ${app} da sua ${tela} está vencida.\n\n📱 App: ${app}\n📺 Tela: ${tela}\n📅 Vencimento: ${venc}\n\nQuando a licença vence, o app pode parar de abrir ou pedir renovação.`;
+}
+function msgPedirMacKeyApp(name: string, app: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nPara eu conferir o app ${app}, preciso que você me envie o MAC e a Key que aparecem na tela do aplicativo.\n\nSe puder, mande também um print da tela.`;
+}
 
 // ----- pendências técnicas (fixas) -----
 type TechItem = { id: string; title: string; description: string };
@@ -162,17 +173,25 @@ const TECH_PENDING: TechItem[] = [
 type PendingType =
   | "hoje" | "vencido" | "7d"
   | "sem_app" | "sem_whats" | "atualizar_servidor"
+  | "app_pago_vencido" | "app_pago_7d" | "app_pago_30d"
+  | "app_sem_venc" | "app_sem_mackey" | "app_sem_valor"
   | "campanha_pendente" | "tecnica";
 
 const TYPE_META: Record<PendingType, { label: string; tone: string; icon: typeof AlertCircle; priority: number }> = {
   hoje:                { label: "Vence hoje",          tone: "border-red-400/60 bg-red-50/60 dark:border-red-500/40 dark:bg-red-500/10",            icon: AlertCircle, priority: 0 },
   vencido:             { label: "Vencido",             tone: "border-red-500/60 bg-red-100/60 dark:border-red-600/40 dark:bg-red-700/15",           icon: AlertCircle, priority: 1 },
-  atualizar_servidor:  { label: "Atualizar servidor",  tone: "border-violet-400/60 bg-violet-50/60 dark:border-violet-500/40 dark:bg-violet-500/10", icon: RefreshCcw,  priority: 2 },
-  sem_whats:           { label: "Sem WhatsApp",        tone: "border-amber-400/60 bg-amber-50/60 dark:border-amber-500/40 dark:bg-amber-500/10",    icon: PhoneOff,    priority: 3 },
-  sem_app:             { label: "Sem app cadastrado",  tone: "border-slate-300/60 bg-muted/40",                                                      icon: Tv,          priority: 4 },
-  "7d":                { label: "Próximos 7 dias",     tone: "border-amber-300/50 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10",    icon: AlertTriangle, priority: 5 },
-  campanha_pendente:   { label: "Campanha não copiada",tone: "border-orange-300/50 bg-orange-50/60 dark:border-orange-500/30 dark:bg-orange-500/10",icon: Copy,        priority: 6 },
-  tecnica:             { label: "Pendência técnica",   tone: "border-border bg-card",                                                                icon: Wrench,      priority: 7 },
+  app_pago_vencido:    { label: "App pago vencido",    tone: "border-red-500/60 bg-red-100/60 dark:border-red-600/40 dark:bg-red-700/15",           icon: AlertCircle, priority: 2 },
+  atualizar_servidor:  { label: "Atualizar servidor",  tone: "border-violet-400/60 bg-violet-50/60 dark:border-violet-500/40 dark:bg-violet-500/10", icon: RefreshCcw,  priority: 3 },
+  app_pago_7d:         { label: "App pago vence 7d",   tone: "border-orange-400/50 bg-orange-50/60 dark:border-orange-500/30 dark:bg-orange-500/10",icon: AlertTriangle, priority: 4 },
+  sem_whats:           { label: "Sem WhatsApp",        tone: "border-amber-400/60 bg-amber-50/60 dark:border-amber-500/40 dark:bg-amber-500/10",    icon: PhoneOff,    priority: 5 },
+  sem_app:             { label: "Sem app cadastrado",  tone: "border-slate-300/60 bg-muted/40",                                                      icon: Tv,          priority: 6 },
+  "7d":                { label: "Próximos 7 dias",     tone: "border-amber-300/50 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10",    icon: AlertTriangle, priority: 7 },
+  app_pago_30d:        { label: "App pago vence 30d",  tone: "border-amber-300/50 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10",    icon: AlertTriangle, priority: 8 },
+  app_sem_venc:        { label: "App pago sem vencimento", tone: "border-slate-300/60 bg-muted/40",                                                  icon: Tv,          priority: 9 },
+  app_sem_mackey:      { label: "App pago sem MAC/Key",tone: "border-violet-300/50 bg-violet-50/60 dark:border-violet-500/30 dark:bg-violet-500/10",icon: Wrench,      priority: 10 },
+  app_sem_valor:       { label: "App pago sem valor de renovação", tone: "border-border bg-card",                                                    icon: Wrench,      priority: 11 },
+  campanha_pendente:   { label: "Campanha não copiada",tone: "border-orange-300/50 bg-orange-50/60 dark:border-orange-500/30 dark:bg-orange-500/10",icon: Copy,        priority: 12 },
+  tecnica:             { label: "Pendência técnica",   tone: "border-border bg-card",                                                                icon: Wrench,      priority: 13 },
 };
 
 type PendingItem = {
@@ -215,7 +234,8 @@ function readCampaignCopied(): Record<string, { at: string }> {
 // ============================================================
 type FilterKey =
   | "todas" | "criticas" | "hoje" | "vencidos" | "7d"
-  | "sem_app" | "sem_whats" | "atualizar_servidor" | "tecnicas";
+  | "sem_app" | "sem_whats" | "atualizar_servidor" | "tecnicas"
+  | "app_pago_vencido" | "app_pago_7d" | "app_pago_30d" | "app_sem_venc" | "app_sem_mackey";
 
 function PendenciasPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -347,6 +367,52 @@ function PendenciasPage() {
               recommended: "Atualize a rota/servidor e avise o cliente.",
             });
           }
+
+          // ----- App pago -----
+          if (isPaidApp(s)) {
+            const ad = appDueDays(s);
+            const appLabel = APP_CATALOG[s.app]?.label ?? s.app;
+            if (ad == null) {
+              out.push({
+                key: `appnov::${c.id}::${s.id}`, type: "app_sem_venc", customer: c, screen: s,
+                description: `App pago ${appLabel} sem vencimento cadastrado.`,
+                recommended: "Cadastre o vencimento da licença do app.",
+              });
+            } else if (ad < 0) {
+              out.push({
+                key: `appvenc::${c.id}::${s.id}`, type: "app_pago_vencido", customer: c, screen: s, days: ad,
+                description: `Licença do app ${appLabel} vencida há ${Math.abs(ad)} dia(s).`,
+                recommended: "Envie aviso de renovação do app.",
+              });
+            } else if (ad <= 7) {
+              out.push({
+                key: `app7::${c.id}::${s.id}`, type: "app_pago_7d", customer: c, screen: s, days: ad,
+                description: `App ${appLabel} vence em ${ad} dia(s).`,
+                recommended: "Avise o cliente sobre a renovação da licença.",
+              });
+            } else if (ad <= 30) {
+              out.push({
+                key: `app30::${c.id}::${s.id}`, type: "app_pago_30d", customer: c, screen: s, days: ad,
+                description: `App ${appLabel} vence em ${ad} dia(s).`,
+                recommended: "Programe lembrete de renovação do app.",
+              });
+            }
+            const at = s.access_type;
+            if ((at === "mac" || at === "mac_key") && (!s.mac || (at === "mac_key" && !s.app_key))) {
+              out.push({
+                key: `appmac::${c.id}::${s.id}`, type: "app_sem_mackey", customer: c, screen: s,
+                description: `App pago ${appLabel} sem MAC/Key.`,
+                recommended: "Peça o MAC e a Key ao cliente.",
+              });
+            }
+            if (ad != null && ad <= 30 && !(s.app_renewal_value && s.app_renewal_value.trim())) {
+              out.push({
+                key: `appval::${c.id}::${s.id}`, type: "app_sem_valor", customer: c, screen: s,
+                description: `App ${appLabel} sem valor de renovação.`,
+                recommended: "Cadastre o valor da renovação para usar nas mensagens.",
+              });
+            }
+          }
         }
       }
     }
@@ -381,6 +447,8 @@ function PendenciasPage() {
       todas: 0, criticas: 0, hoje: 0, vencidos: 0, d7: 0,
       sem_app: 0, sem_whats: 0, atualizar_servidor: 0, tecnicas: 0,
       campanha_pendente: 0,
+      app_pago_vencido: 0, app_pago_7d: 0, app_pago_30d: 0,
+      app_sem_venc: 0, app_sem_mackey: 0,
     };
     for (const p of pendings) {
       if (resolved[p.key] && !showResolved) continue;
@@ -393,6 +461,11 @@ function PendenciasPage() {
       if (p.type === "atualizar_servidor") { c.atualizar_servidor++; c.criticas++; }
       if (p.type === "tecnica") c.tecnicas++;
       if (p.type === "campanha_pendente") c.campanha_pendente++;
+      if (p.type === "app_pago_vencido") { c.app_pago_vencido++; c.criticas++; }
+      if (p.type === "app_pago_7d") c.app_pago_7d++;
+      if (p.type === "app_pago_30d") c.app_pago_30d++;
+      if (p.type === "app_sem_venc") c.app_sem_venc++;
+      if (p.type === "app_sem_mackey") c.app_sem_mackey++;
     }
     return c;
   }, [pendings, resolved, showResolved]);
@@ -426,6 +499,11 @@ function PendenciasPage() {
         case "sem_whats": return p.type === "sem_whats";
         case "atualizar_servidor": return p.type === "atualizar_servidor";
         case "tecnicas": return p.type === "tecnica";
+        case "app_pago_vencido": return p.type === "app_pago_vencido";
+        case "app_pago_7d": return p.type === "app_pago_7d";
+        case "app_pago_30d": return p.type === "app_pago_30d";
+        case "app_sem_venc": return p.type === "app_sem_venc";
+        case "app_sem_mackey": return p.type === "app_sem_mackey";
       }
     };
     return pendings.filter((p) => {
@@ -484,12 +562,19 @@ function PendenciasPage() {
 
   const buildLembrete = (p: PendingItem): string => {
     const name = p.customer?.name ?? "cliente";
+    const s = p.screen;
+    const appLabel = s ? APP_CATALOG[s.app]?.label ?? s.app : "";
+    const venc = s?.app_due_date ? fmtDateBR(s.app_due_date) : "—";
     if (p.type === "hoje") return msgVenceHoje(name);
     if (p.type === "vencido") return msgVencido(name, Math.abs(p.days ?? 0));
     if (p.type === "7d") return msgProx7(name, p.days ?? 0);
     if (p.type === "atualizar_servidor") return msgAtualizarServidor(name);
     if (p.type === "sem_app") return msgPedirApp(name);
     if (p.type === "sem_whats") return msgPedirWhats(name);
+    if (p.type === "app_pago_vencido" && s) return msgAppPagoVencido(name, appLabel, s.name, venc);
+    if ((p.type === "app_pago_7d" || p.type === "app_pago_30d") && s)
+      return msgAppPagoVencendo(name, appLabel, s.name, p.days ?? 0, venc, s.app_renewal_value);
+    if (p.type === "app_sem_mackey" && s) return msgPedirMacKeyApp(name, appLabel);
     return p.description;
   };
 
@@ -614,6 +699,11 @@ function PendenciasPage() {
         <Chip active={filter === "sem_whats"} onClick={() => setFilter("sem_whats")} label="Sem WhatsApp" count={counts.sem_whats} dim={counts.sem_whats === 0} />
         <Chip active={filter === "atualizar_servidor"} onClick={() => setFilter("atualizar_servidor")} label="Atualizar servidor" count={counts.atualizar_servidor} dim={counts.atualizar_servidor === 0} />
         <Chip active={filter === "tecnicas"} onClick={() => setFilter("tecnicas")} label="Técnicas" count={counts.tecnicas} />
+        <Chip active={filter === "app_pago_vencido"} onClick={() => setFilter("app_pago_vencido")} label="App pago vencido" count={counts.app_pago_vencido} dim={counts.app_pago_vencido === 0} />
+        <Chip active={filter === "app_pago_7d"} onClick={() => setFilter("app_pago_7d")} label="App pago 7 dias" count={counts.app_pago_7d} dim={counts.app_pago_7d === 0} />
+        <Chip active={filter === "app_pago_30d"} onClick={() => setFilter("app_pago_30d")} label="App pago 30 dias" count={counts.app_pago_30d} dim={counts.app_pago_30d === 0} />
+        <Chip active={filter === "app_sem_venc"} onClick={() => setFilter("app_sem_venc")} label="Sem vencimento do app" count={counts.app_sem_venc} dim={counts.app_sem_venc === 0} />
+        <Chip active={filter === "app_sem_mackey"} onClick={() => setFilter("app_sem_mackey")} label="App sem MAC/Key" count={counts.app_sem_mackey} dim={counts.app_sem_mackey === 0} />
       </div>
 
       {/* Estados */}

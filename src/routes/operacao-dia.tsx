@@ -49,6 +49,11 @@ import {
   mask,
   formatScreenAsText,
   ROUTE_OPTIONS,
+  isPaidApp,
+  appDueDays,
+  paidAppAlerts,
+  paidAlertClass,
+  PAID_ALERT_LABEL,
 } from "@/lib/app-screens";
 
 export const Route = createFileRoute("/operacao-dia")({
@@ -151,6 +156,17 @@ function msgAvisoSimulado() {
   return `(Aviso interno) Este é um ambiente de testes. Nenhuma mensagem foi enviada automaticamente para o cliente.`;
 }
 
+// ----- mensagens de app pago -----
+function msgAppVencendo(name: string, app: string, tela: string, diasApp: number, vencApp: string, valor?: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nO aplicativo ${app} da sua ${tela} vence em ${diasApp} dia(s).\n\n📱 App: ${app}\n📺 Tela: ${tela}\n📅 Vencimento do app: ${vencApp}${valor ? `\n💰 Renovação: ${valor}` : ""}\n\nEssa renovação é da licença do aplicativo, separada da mensalidade da lista.`;
+}
+function msgAppVencido(name: string, app: string, tela: string, vencApp: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nA licença do aplicativo ${app} da sua ${tela} está vencida.\n\n📱 App: ${app}\n📺 Tela: ${tela}\n📅 Vencimento: ${vencApp}\n\nQuando a licença vence, o app pode parar de abrir ou pedir renovação.`;
+}
+function msgPedirMacKeyApp(name: string, app: string) {
+  return `Olá ${firstName(name)}, tudo bem? 😊\n\nPara eu conferir o app ${app}, preciso que você me envie o MAC e a Key que aparecem na tela do aplicativo.\n\nSe puder, mande também um print da tela.`;
+}
+
 // Mensagem de "dados da tela" mascarados
 function copyTelaDados(s: AppScreen, customerName: string) {
   return formatScreenAsText(s, customerName, { revealSecrets: false });
@@ -214,13 +230,21 @@ function buildPriorities(
 }
 
 function rank(p: Priority): number {
+  const s = p.screen;
+  const paid = s ? isPaidApp(s) : false;
+  const ad = s && paid ? appDueDays(s) : null;
   if (p.urgency === "hoje") return 0;
-  if (p.urgency === "3d") return 100 + (p.days ?? 0);
-  if (p.urgency === "7d") return 200 + (p.days ?? 0);
-  if (p.needsUpdate) return 250;
+  if (p.urgency === "vencido") return 50 + Math.abs(p.days ?? 0);
+  if (paid && ad != null && ad < 0) return 60 + Math.abs(ad);
+  if (paid && ad != null && ad <= 7) return 80 + ad;
+  if (p.needsUpdate) return 100;
+  if (p.urgency === "3d") return 120 + (p.days ?? 0);
+  if (p.urgency === "7d") return 140 + (p.days ?? 0);
+  if (paid && ad != null && ad <= 30) return 200 + ad;
+  if (paid && ad == null) return 260;
+  if (paid && s && ((s.access_type === "mac" || s.access_type === "mac_key") && (!s.mac || (s.access_type === "mac_key" && !s.app_key)))) return 280;
   if (p.urgency === "em_dia") return 400 + (p.days ?? 0);
   if (p.urgency === "sem_data") return 700;
-  if (p.urgency === "vencido") return 1000 + Math.abs(p.days ?? 0);
   return 800;
 }
 
@@ -228,7 +252,10 @@ function rank(p: Priority): number {
 type OpFilter =
   | "todos" | "hoje" | "3d" | "7d" | "vencidos" | "needs_update"
   | "app_bob" | "app_xciptv" | "app_ibo" | "app_vu"
-  | "acc_mac_key" | "acc_user_pass" | "sem_app";
+  | "app_eagle" | "app_duplex" | "app_set" | "app_smartone"
+  | "acc_mac_key" | "acc_user_pass" | "sem_app"
+  | "app_pago_vencendo" | "app_pago_7d" | "app_pago_vencido"
+  | "app_sem_venc" | "app_sem_mackey";
 
 function OperacaoDiaPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -324,6 +351,16 @@ function OperacaoDiaPage() {
       xciptv: 0,
       ibo: 0,
       vu: 0,
+      eagle: 0,
+      duplex: 0,
+      setiptv: 0,
+      smartone: 0,
+      // apps pagos
+      paidVenc30: 0,
+      paidVenc7: 0,
+      paidVencido: 0,
+      paidSemVenc: 0,
+      paidSemMacKey: 0,
     };
     for (const p of priorities) {
       if (p.urgency === "hoje") s.hoje++;
@@ -340,6 +377,21 @@ function OperacaoDiaPage() {
         if (a === "xciptv") s.xciptv++;
         if (a === "ibo_player" || a === "ibo_pro" || a === "ibo_mix") s.ibo++;
         if (a === "vu_player") s.vu++;
+        if (a === "eagle_play") s.eagle++;
+        if (a === "duplex_play") s.duplex++;
+        if (a === "set_iptv") s.setiptv++;
+        if (a === "smart_one") s.smartone++;
+        if (isPaidApp(p.screen)) {
+          const d = appDueDays(p.screen);
+          if (d == null) s.paidSemVenc++;
+          else if (d < 0) s.paidVencido++;
+          else if (d <= 7) s.paidVenc7++;
+          if (d != null && d >= 0 && d <= 30) s.paidVenc30++;
+          const at = p.screen.access_type;
+          if ((at === "mac" || at === "mac_key") && (!p.screen.mac || (at === "mac_key" && !p.screen.app_key))) {
+            s.paidSemMacKey++;
+          }
+        }
       }
     }
     return s;
@@ -349,6 +401,9 @@ function OperacaoDiaPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const matchesFilter = (p: Priority): boolean => {
+      const s = p.screen;
+      const paid = s ? isPaidApp(s) : false;
+      const ad = s && paid ? appDueDays(s) : null;
       switch (filter) {
         case "todos": return true;
         case "hoje": return p.urgency === "hoje";
@@ -357,12 +412,25 @@ function OperacaoDiaPage() {
         case "vencidos": return p.urgency === "vencido";
         case "needs_update": return p.needsUpdate;
         case "sem_app": return p.screen == null;
-        case "app_bob": return p.screen?.app === "bob_player" || p.screen?.app === "bob_play";
-        case "app_xciptv": return p.screen?.app === "xciptv";
-        case "app_ibo": return p.screen?.app === "ibo_player" || p.screen?.app === "ibo_pro" || p.screen?.app === "ibo_mix";
-        case "app_vu": return p.screen?.app === "vu_player";
-        case "acc_mac_key": return p.screen?.access_type === "mac_key";
-        case "acc_user_pass": return p.screen?.access_type === "user_pass";
+        case "app_bob": return s?.app === "bob_player" || s?.app === "bob_play";
+        case "app_xciptv": return s?.app === "xciptv";
+        case "app_ibo": return s?.app === "ibo_player" || s?.app === "ibo_pro" || s?.app === "ibo_mix";
+        case "app_vu": return s?.app === "vu_player";
+        case "app_eagle": return s?.app === "eagle_play";
+        case "app_duplex": return s?.app === "duplex_play";
+        case "app_set": return s?.app === "set_iptv";
+        case "app_smartone": return s?.app === "smart_one";
+        case "acc_mac_key": return s?.access_type === "mac_key";
+        case "acc_user_pass": return s?.access_type === "user_pass";
+        case "app_pago_vencendo": return paid && ad != null && ad >= 0 && ad <= 30;
+        case "app_pago_7d": return paid && ad != null && ad >= 0 && ad <= 7;
+        case "app_pago_vencido": return paid && ad != null && ad < 0;
+        case "app_sem_venc": return paid && ad == null;
+        case "app_sem_mackey": {
+          if (!paid || !s) return false;
+          const at = s.access_type;
+          return (at === "mac" || at === "mac_key") && (!s.mac || (at === "mac_key" && !s.app_key));
+        }
       }
     };
     return priorities.filter((p) => {
@@ -481,6 +549,16 @@ function OperacaoDiaPage() {
         <SummaryCard label="Apps Usuário/Senha" value={summary.userpass} tone="blue" />
       </div>
 
+      {/* Cards de app pago */}
+      <div className="mb-2 text-xs font-medium text-muted-foreground">Apps pagos</div>
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <SummaryCard label="App vence 30 dias" value={summary.paidVenc30} tone="amber" />
+        <SummaryCard label="App vence 7 dias" value={summary.paidVenc7} tone="orange" />
+        <SummaryCard label="App vencido" value={summary.paidVencido} tone="redDeep" />
+        <SummaryCard label="App sem vencimento" value={summary.paidSemVenc} tone="slate" />
+        <SummaryCard label="App sem MAC/Key" value={summary.paidSemMacKey} tone="violet" />
+      </div>
+
       {/* Mensagens rápidas */}
       <QuickMessagesBar />
 
@@ -521,6 +599,15 @@ function OperacaoDiaPage() {
         <FilterChip active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={summary.mackey} dim={summary.mackey === 0} />
         <FilterChip active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={summary.userpass} dim={summary.userpass === 0} />
         <FilterChip active={filter === "sem_app"} onClick={() => setFilter("sem_app")} label="Sem app" count={summary.semApp} dim={summary.semApp === 0} />
+        <FilterChip active={filter === "app_pago_vencendo"} onClick={() => setFilter("app_pago_vencendo")} label="App pago vencendo" count={summary.paidVenc30} dim={summary.paidVenc30 === 0} />
+        <FilterChip active={filter === "app_pago_7d"} onClick={() => setFilter("app_pago_7d")} label="App pago 7 dias" count={summary.paidVenc7} dim={summary.paidVenc7 === 0} />
+        <FilterChip active={filter === "app_pago_vencido"} onClick={() => setFilter("app_pago_vencido")} label="App pago vencido" count={summary.paidVencido} dim={summary.paidVencido === 0} />
+        <FilterChip active={filter === "app_sem_venc"} onClick={() => setFilter("app_sem_venc")} label="Sem vencimento do app" count={summary.paidSemVenc} dim={summary.paidSemVenc === 0} />
+        <FilterChip active={filter === "app_sem_mackey"} onClick={() => setFilter("app_sem_mackey")} label="Sem MAC/Key" count={summary.paidSemMacKey} dim={summary.paidSemMacKey === 0} />
+        <FilterChip active={filter === "app_eagle"} onClick={() => setFilter("app_eagle")} label="Eagle Play" count={summary.eagle} dim={summary.eagle === 0} />
+        <FilterChip active={filter === "app_duplex"} onClick={() => setFilter("app_duplex")} label="Duplex Play" count={summary.duplex} dim={summary.duplex === 0} />
+        <FilterChip active={filter === "app_set"} onClick={() => setFilter("app_set")} label="Set IPTV" count={summary.setiptv} dim={summary.setiptv === 0} />
+        <FilterChip active={filter === "app_smartone"} onClick={() => setFilter("app_smartone")} label="SmartOne" count={summary.smartone} dim={summary.smartone === 0} />
       </div>
 
       {/* exportar */}
@@ -790,6 +877,11 @@ function PriorityCard({
     return msgCobrancaHoje(p.customer.name);
   };
 
+  const alerts = s ? paidAppAlerts(s) : [];
+  const paid = s ? isPaidApp(s) : false;
+  const adays = s && paid ? appDueDays(s) : null;
+  const appLabel = appMeta?.label ?? "";
+
   return (
     <div className="rounded-xl border border-border bg-card p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -801,12 +893,27 @@ function PriorityCard({
                 {appMeta.label}
               </span>
             )}
+            {paid && (
+              <span className="rounded-md border border-purple-400/60 bg-purple-100 px-1.5 py-0.5 text-[10px] text-purple-700 dark:bg-purple-500/15 dark:text-purple-300">
+                App pago
+              </span>
+            )}
             <span className={cn("rounded-md px-1.5 py-0.5 text-[10px]", urgencyClass(urgency))}>
               {urgencyLabel(urgency, days)}
             </span>
             {p.needsUpdate && (
               <span className="rounded-md border border-violet-400/60 bg-violet-100 px-1.5 py-0.5 text-[10px] text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
                 Atualizar servidor
+              </span>
+            )}
+            {alerts.map((a) => (
+              <span key={a} className={cn("rounded-md px-1.5 py-0.5 text-[10px]", paidAlertClass(a))}>
+                {a === "vence_7d" && adays != null ? `App vence em ${adays}d` : PAID_ALERT_LABEL[a]}
+              </span>
+            ))}
+            {s?.app_renewal_value && paid && (
+              <span className="rounded-md border border-emerald-400/60 bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                Renovação: {s.app_renewal_value}
               </span>
             )}
           </div>
@@ -816,6 +923,7 @@ function PriorityCard({
               <>
                 {" · "}{s.name}
                 {s.due_date ? <> · vence {fmtDateBR(s.due_date)}</> : null}
+                {s.app_due_date ? <> · app vence {fmtDateBR(s.app_due_date)}</> : null}
                 {s.route ? <> · {ROUTE_OPTIONS.find((o) => o.value === s.route)?.label}</> : null}
               </>
             ) : (
@@ -844,6 +952,24 @@ function PriorityCard({
         >
           <Copy className="h-3.5 w-3.5" /> Cobrança
         </Button>
+        {s && paid && alerts.includes("vencido") && (
+          <Button size="sm" variant="outline" className="gap-1"
+            onClick={() => copy(msgAppVencido(p.customer.name, appLabel, s.name, fmtDateBR(s.app_due_date)), "App vencido")}>
+            <Copy className="h-3.5 w-3.5" /> Aviso app vencido
+          </Button>
+        )}
+        {s && paid && (alerts.includes("vence_7d") || alerts.includes("vence_30d")) && adays != null && (
+          <Button size="sm" variant="outline" className="gap-1"
+            onClick={() => copy(msgAppVencendo(p.customer.name, appLabel, s.name, adays, fmtDateBR(s.app_due_date), s.app_renewal_value), "App vencendo")}>
+            <Copy className="h-3.5 w-3.5" /> Aviso app vencendo
+          </Button>
+        )}
+        {s && paid && alerts.includes("sem_mac_key") && (
+          <Button size="sm" variant="outline" className="gap-1"
+            onClick={() => copy(msgPedirMacKeyApp(p.customer.name, appLabel), "Pedir MAC/Key")}>
+            <Copy className="h-3.5 w-3.5" /> Pedir MAC/Key
+          </Button>
+        )}
         {s && (
           <>
             <Button
