@@ -36,6 +36,9 @@ import {
   saveReferral, updateReferralByLead, summarizeByIndicador, getReferralRules,
   bonusDescription, renderReferralMessage,
 } from "@/lib/referrals";
+import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
+import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+
 
 export const Route = createFileRoute("/testes")({
   component: TestesPage,
