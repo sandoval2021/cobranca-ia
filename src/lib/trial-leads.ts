@@ -266,12 +266,15 @@ export const TRIAL_TEMPLATES: Record<FollowUpType, string> = {
 export const INDICADO_TEMPLATE =
   "Olá {nome}, tudo bem? 😊\n\nVocê veio por indicação, então vou te ajudar a testar da melhor forma.\nSe tiver qualquer dificuldade, me chama por aqui.";
 
+import { applyRevendaVariables } from "./revenda-settings";
+
 export function renderTemplate(tpl: string, lead: TrialLead) {
-  return tpl
+  const base = tpl
     .replaceAll("{nome}", lead.nome?.trim() || "tudo bem")
     .replaceAll("{whatsapp}", lead.whatsapp || "")
     .replaceAll("{app}", lead.app || "")
     .replaceAll("{servidor}", lead.servidor || "");
+  return applyRevendaVariables(base);
 }
 
 export function waLink(whatsapp: string) {
