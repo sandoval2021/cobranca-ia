@@ -134,15 +134,23 @@ export function AppScreensSection({
   // --- copy customer (todas as telas) ---
   const [askRevealCustomer, setAskRevealCustomer] = useState(false);
   const copyCustomer = (revealSecrets: boolean) => {
-    const text = formatCustomerScreensAsText(customerName, screens, { revealSecrets });
-    copyText(text, revealSecrets ? "Dados do cliente (com senha/key)" : "Dados do cliente");
+    const doCopy = () => {
+      const text = formatCustomerScreensAsText(customerName, screens, { revealSecrets });
+      copyText(text, revealSecrets ? "Dados do cliente (com senha/key)" : "Dados do cliente");
+    };
+    if (revealSecrets) guard({ kind: "app_key", title: "Copiar dados com senha/key", actionLabel: "Copiar", onConfirm: doCopy });
+    else doCopy();
   };
 
   // --- copy uma tela ---
   const [askRevealScreen, setAskRevealScreen] = useState<AppScreen | null>(null);
   const copyScreen = (s: AppScreen, revealSecrets: boolean) => {
-    const text = formatScreenAsText(s, customerName, { revealSecrets });
-    copyText(text, revealSecrets ? "Tela (com senha/key)" : "Tela");
+    const doCopy = () => {
+      const text = formatScreenAsText(s, customerName, { revealSecrets });
+      copyText(text, revealSecrets ? "Tela (com senha/key)" : "Tela");
+    };
+    if (revealSecrets) guard({ kind: "app_key", title: "Copiar tela com senha/key", actionLabel: "Copiar", onConfirm: doCopy });
+    else doCopy();
   };
 
   // --- backup ---
