@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus, Pencil, Archive, RotateCcw, Eye, EyeOff, Copy, ExternalLink,
   Tv, Loader2, X, Save, AlertCircle, Download, Upload, Trash2,
-  ServerCog, Share2, ShieldAlert, ChevronDown, ChevronUp, Server,
+  ServerCog, Share2, ShieldAlert, ChevronDown, ChevronUp, Server, RefreshCw,
 } from "lucide-react";
+import { RenewScreensWizard } from "./RenewScreensWizard";
+import { RenewalHistorySection } from "./RenewalHistorySection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,6 +81,8 @@ export function AppScreensSection({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+  const [renewOpen, setRenewOpen] = useState(false);
+  const [renewInitialScreenId, setRenewInitialScreenId] = useState<string | null>(null);
 
   const [alertDismissed, setAlertDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -206,9 +210,21 @@ export function AppScreensSection({
           <Tv className="h-3.5 w-3.5" /> Telas e aplicativos
           <HelpTip text="Use para separar quando o cliente tem mais de uma TV ou aparelho." />
         </h3>
-        <Button size="sm" onClick={openNew} className="h-8 gap-1.5">
-          <Plus className="h-3.5 w-3.5" /> Adicionar tela
-        </Button>
+        <div className="flex items-center gap-1.5">
+          {screens.some((s) => s.status !== "arquivada") && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setRenewInitialScreenId(null); setRenewOpen(true); }}
+              className="h-8 gap-1.5"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Renovar telas
+            </Button>
+          )}
+          <Button size="sm" onClick={openNew} className="h-8 gap-1.5">
+            <Plus className="h-3.5 w-3.5" /> Adicionar tela
+          </Button>
+        </div>
       </div>
 
       {/* Aviso de persistência local */}
@@ -356,6 +372,12 @@ export function AppScreensSection({
                         <SemServidorBadge />
                       )}
                     </div>
+                    <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+                      <div>Lista vence: <span className="font-medium text-foreground">{s.due_date ? new Date(s.due_date + "T00:00:00").toLocaleDateString("pt-BR") : "—"}</span></div>
+                      {s.tier === "pago" && (
+                        <div>App vence: <span className="font-medium text-foreground">{s.app_due_date ? new Date(s.app_due_date + "T00:00:00").toLocaleDateString("pt-BR") : "—"}</span></div>
+                      )}
+                    </div>
                   </div>
                 </button>
 
@@ -417,6 +439,16 @@ export function AppScreensSection({
                       </p>
                     )}
 
+                    {s.status !== "arquivada" && (
+                      <Button
+                        size="sm"
+                        className="w-full gap-1.5"
+                        onClick={() => { setRenewInitialScreenId(s.id); setRenewOpen(true); }}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" /> Renovar tela
+                      </Button>
+                    )}
+
                     <div className="grid grid-cols-2 gap-2">
                       <Button size="sm" variant="outline" className="gap-1.5" onClick={() => copyScreen(s, false)}>
                         <Copy className="h-3.5 w-3.5" /> Copiar esta tela
@@ -454,6 +486,18 @@ export function AppScreensSection({
           })}
         </ul>
       )}
+
+      <RenewalHistorySection customerId={customerId} customerName={customerName} />
+
+      <RenewScreensWizard
+        open={renewOpen}
+        onClose={() => { setRenewOpen(false); setRenewInitialScreenId(null); }}
+        customerId={customerId}
+        customerName={customerName}
+        initialScreenId={renewInitialScreenId}
+      />
+
+
 
       <ScreenSheet
         open={sheetOpen}
