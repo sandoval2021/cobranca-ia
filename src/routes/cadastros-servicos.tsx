@@ -13,6 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import {
   listServices, saveService, updateService, deleteService, formatBRL,
@@ -30,6 +34,7 @@ function CadastrosServicosPage() {
   const [items, setItems] = useState<ServiceItem[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ServiceItem | null>(null);
 
   const reload = () => setItems(listServices());
 
@@ -61,10 +66,11 @@ function CadastrosServicosPage() {
     reload();
   }
 
-  function remove(s: ServiceItem) {
-    if (!confirm(`Excluir o plano "${s.nome}"?`)) return;
-    deleteService(s.id);
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    deleteService(pendingDelete.id);
     toast.success("Plano excluído");
+    setPendingDelete(null);
     reload();
   }
 
@@ -122,7 +128,7 @@ function CadastrosServicosPage() {
               <Button size="sm" variant="outline" onClick={() => openEdit(s)} className="gap-1">
                 <Pencil className="h-3.5 w-3.5" /> Editar
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => remove(s)} className="gap-1 text-destructive">
+              <Button size="sm" variant="ghost" onClick={() => setPendingDelete(s)} className="gap-1 text-destructive">
                 <Trash2 className="h-3.5 w-3.5" /> Excluir
               </Button>
             </div>
@@ -139,6 +145,26 @@ function CadastrosServicosPage() {
           reload();
         }}
       />
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir plano</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <span className="font-semibold text-foreground">"{pendingDelete?.nome}"</span>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }
