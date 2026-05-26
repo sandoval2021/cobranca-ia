@@ -1602,15 +1602,24 @@ function NewCustomerSheet({
   const [serverIdExtra, setServerIdExtra] = useState<string>("__none__");
   const [app, setApp] = useState<AppKey | "__none__">("__none__");
   const [amount, setAmount] = useState("");
-  const [dueDay, setDueDay] = useState("");
+  const [dueDate, setDueDate] = useState(""); // yyyy-mm-dd (data completa do cliente)
   const [notes, setNotes] = useState("");
+  // Campos de app pago — UI agora; persistência segura definitiva virá com backend.
+  const [mac, setMac] = useState("");
+  const [appKey, setAppKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [appDueDate, setAppDueDate] = useState(""); // yyyy-mm-dd
   const [busy, setBusy] = useState(false);
+
+  const paidApp = app !== "__none__" && APP_CATALOG[app]?.tier === "pago";
 
   useEffect(() => {
     if (open) {
       setName(""); setWhatsapp("");
       setServerId("__none__"); setServerIdExtra("__none__");
-      setApp("__none__"); setAmount(""); setDueDay(""); setNotes(""); setBusy(false);
+      setApp("__none__"); setAmount(""); setDueDate(""); setNotes("");
+      setMac(""); setAppKey(""); setShowKey(false); setAppDueDate("");
+      setBusy(false);
     }
   }, [open]);
 
