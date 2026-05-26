@@ -178,17 +178,18 @@ function AgendaDisparoPage() {
             />
           </div>
           <div className="space-y-1 sm:col-span-2">
-            <Label className="text-xs">Pausa entre lotes (segundos)</Label>
+            <div className="flex items-center gap-1">
+              <Label className="text-xs">Pausa entre lotes (segundos)</Label>
+              <HelpTip text="Após enviar o nº de mensagens do lote, o sistema espera esses segundos antes do próximo lote. Ex.: 5 mensagens com 30s entre elas e depois pausa de 300s (5 min)." />
+            </div>
             <Input
               type="number" min={0} max={3600}
               value={cfg.batchPauseSeconds}
               onChange={(e) => update({ batchPauseSeconds: Math.max(0, Number(e.target.value) || 0) })}
               className="h-9"
             />
-            <p className="text-[11px] text-muted-foreground">
-              Ex.: 5 mensagens com 30s entre elas e depois pausa de 300s (5 min).
-            </p>
           </div>
+
         </div>
 
         <div className="space-y-2">
