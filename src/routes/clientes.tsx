@@ -76,7 +76,7 @@ import {
   APP_CATALOG, AppKey, AppScreen, APP_OPTIONS, listAllScreens, listScreens,
   nextDueDays, urgencyFromDays, urgencyClass, urgencyLabel,
   paidAppAlerts, paidAlertClass, PAID_ALERT_LABEL, appDueDays, isPaidApp,
-  APP_WEBSITE, ACCESS_LABEL, mask, upsertScreen, newId,
+  APP_WEBSITE, ACCESS_LABEL, mask, upsertScreen, newId, archiveScreen,
 } from "@/lib/app-screens";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
@@ -1656,6 +1656,219 @@ function extractList(raw: Row, keys: string[]): Row[] {
   return [];
 }
 
+// ---------- inline screens manager (compact) ----------
+function InlineScreensManager({ customerId }: { customerId: string }) {
+  const [screens, setScreens] = useState<AppScreen[]>(() => listScreens(customerId));
+  const [adding, setAdding] = useState(false);
+  const [dueDate, setDueDate] = useState("");
+  const [app, setApp] = useState<AppKey>("xciptv");
+  const [serverId, setServerId] = useState<string>("");
+  const [name, setName] = useState("");
+
+  const refresh = () => setScreens(listScreens(customerId));
+  useEffect(() => {
+    refresh();
+    const onChange = () => refresh();
+    window.addEventListener("app-screens:changed", onChange as EventListener);
+    return () => window.removeEventListener("app-screens:changed", onChange as EventListener);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId]);
+
+  const servers = listActiveServers();
+  const active = screens.filter((s) => s.status !== "arquivada");
+
+  const resetForm = () => {
+    setDueDate("");
+    setApp("xciptv");
+    setServerId("");
+    setName("");
+  };
+
+  const handleAdd = () => {
+    if (!dueDate) {
+      toast.error("Informe a data de vencimento.");
+      return;
+    }
+    const now = new Date().toISOString();
+    const screenName = name.trim() || `Tela ${active.length + 1}`;
+    const meta = APP_CATALOG[app];
+    upsertScreen({
+      id: newId(),
+      customer_id: customerId,
+      name: screenName,
+      app,
+      tier: meta?.tier,
+      access_type: meta?.access ?? "nao_informado",
+      due_date: dueDate,
+      status: "ativa",
+      server_ids: serverId ? [serverId] : [],
+      primary_server_id: serverId || undefined,
+      created_at: now,
+      updated_at: now,
+    });
+    toast.success("Tela adicionada.");
+    refresh();
+    resetForm();
+    setAdding(false);
+  };
+
+  const handleRemove = (id: string) => {
+    if (!window.confirm("Remover esta tela?")) return;
+    archiveScreen(customerId, id);
+    refresh();
+    toast.success("Tela removida.");
+  };
+
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-primary-soft/30 p-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+          <Tv className="h-3 w-3" />
+          Telas e servidores
+          <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
+            {active.length}
+          </span>
+        </div>
+        {!adding && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1 px-2 text-[11px]"
+            onClick={() => setAdding(true)}
+          >
+            <Plus className="h-3 w-3" /> Adicionar tela
+          </Button>
+        )}
+      </div>
+
+      {active.length === 0 && !adding && (
+        <div className="rounded-md bg-card px-2 py-1.5 text-[11px] text-muted-foreground">
+          Nenhuma tela cadastrada. Toque em "+ Adicionar tela".
+        </div>
+      )}
+
+      {active.length > 0 && (
+        <ul className="space-y-1">
+          {active.map((s, i) => {
+            const appLabel = APP_CATALOG[s.app]?.label ?? s.app;
+            const srvName = (s.primary_server_id && getServerById(s.primary_server_id)?.name)
+              || (s.server_ids?.[0] && getServerById(s.server_ids[0])?.name)
+              || s.server
+              || "Sem servidor";
+            const due = s.due_date
+              ? new Date(s.due_date + "T00:00:00").toLocaleDateString("pt-BR")
+              : "—";
+            return (
+              <li
+                key={s.id}
+                className="flex flex-wrap items-center gap-1.5 rounded-md bg-card px-2 py-1.5 text-[11px]"
+              >
+                <span className="shrink-0 rounded-full bg-muted px-1.5 text-[10px] font-bold text-muted-foreground">
+                  T{i + 1}
+                </span>
+                <span className="truncate font-medium text-foreground">{s.name}</span>
+                <span className="shrink-0 rounded-full bg-primary-soft px-1.5 text-[10px] font-medium text-primary">
+                  {appLabel}
+                </span>
+                <span className="shrink-0 text-muted-foreground">·</span>
+                <span className="truncate text-muted-foreground" title={srvName}>{srvName}</span>
+                <span className="ml-auto shrink-0 rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                  {due}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(s.id)}
+                  className="shrink-0 rounded-md p-1 text-destructive hover:bg-destructive/10"
+                  aria-label="Remover tela"
+                  title="Remover tela"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {adding && (
+        <div className="space-y-1.5 rounded-md border border-border bg-card p-2">
+          <div className="grid grid-cols-2 gap-1.5">
+            <Field label="Vencimento">
+              <Input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </Field>
+            <Field label="Nome (opcional)">
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={`Tela ${active.length + 1}`}
+                maxLength={40}
+                className="h-8 text-xs"
+              />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <Field label="Aplicativo">
+              <select
+                value={app}
+                onChange={(e) => setApp(e.target.value as AppKey)}
+                className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                {APP_OPTIONS.map((k) => (
+                  <option key={k} value={k}>{APP_CATALOG[k]?.label ?? k}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Servidor">
+              <select
+                value={serverId}
+                onChange={(e) => setServerId(e.target.value)}
+                className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">Sem servidor</option>
+                {servers.map((srv) => (
+                  <option key={srv.id} value={srv.id}>{srv.name}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <div className="flex gap-1.5 pt-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 flex-1 text-[11px]"
+              onClick={() => { resetForm(); setAdding(false); }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="h-7 flex-1 text-[11px]"
+              onClick={handleAdd}
+            >
+              Adicionar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {active.length >= 2 && (
+        <p className="px-1 text-[10px] text-muted-foreground">
+          Quando as datas de vencimento das telas forem diferentes, as cobranças serão enviadas em cada data, especificando a tela e o aplicativo.
+        </p>
+      )}
+    </div>
+  );
+}
+
+
 // ---------- edit form ----------
 function EditForm({
   customer,
@@ -1825,9 +2038,8 @@ function EditForm({
         />
       </Field>
 
-      <div className="rounded-xl border border-border bg-primary-soft/30 p-2">
-        <AppScreensSection customerId={customer.id} customerName={customer.name} />
-      </div>
+      <InlineScreensManager customerId={customer.id} />
+
 
       <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
         <span>Cadastro: <span className="font-medium text-foreground">{createdAt ? fmtDate(createdAt) : "—"}</span></span>
