@@ -918,6 +918,8 @@ function ClosedDialog({
   const telasNum = parseInt(telas || "0", 10) || 0;
 
   async function confirmar() {
+    if (!lead) return;
+    const currentLead = lead;
     if (effectiveMonths < 1) {
       toast.error("Informe a quantidade de meses (mínimo 1).");
       return;
