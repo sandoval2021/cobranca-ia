@@ -45,6 +45,7 @@ import { listServers, listActiveServers } from "@/lib/server-catalog";
 import { APP_CATALOG, APP_OPTIONS } from "@/lib/app-screens";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+import { FinanceDashboard } from "@/components/financeiro/FinanceDashboard";
 
 
 export const Route = createFileRoute("/financeiro")({
@@ -127,6 +128,9 @@ function FinanceiroPage() {
           Controle local: esses dados ficam neste navegador até existir persistência no servidor. Nenhum pagamento real é feito aqui.
         </p>
       </Card>
+
+      <FinanceDashboard />
+
 
       {/* Period filter */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
