@@ -41,7 +41,7 @@ const sheetVariants = cva(
         left: "inset-y-0 left-0 h-full w-3/4 border-r p-6 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
         // "right" agora renderiza como modal central compacto, com moldura arredondada e visível
         right:
-          "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-1rem)] max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl border-2 border-primary/30 p-3.5 text-sm data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col w-[calc(100vw-1rem)] max-w-md max-h-[calc(100dvh-var(--bottomnav-height)-1.5rem)] md:max-h-[calc(100dvh-2rem)] overflow-hidden rounded-2xl border border-border p-3.5 text-sm data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 [&>*]:min-h-0",
       },
     },
     defaultVariants: {
