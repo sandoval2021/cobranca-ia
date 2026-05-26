@@ -1714,59 +1714,36 @@ function NewCustomerSheet({
     }
 
 
-    const { data, error } = await supabase.rpc("create_customer_admin", {
+    const payload = {
       p_company_id: companyId,
       p_name: name.trim() || "Cliente",
       p_whatsapp_e164: buildE164(countryCode, customDdi, whatsapp),
       p_amount_cents: amt,
       p_due_day: dd,
-      p_status: "ativo",
+      p_status: null as string | null,
       p_notes: notes.trim() || null,
-    });
+    };
+    const { error } = await supabase.rpc("create_customer_admin", payload);
     if (error) {
       setBusy(false);
-      const msg = error.message?.toLowerCase() ?? "";
-      if (msg.includes("could not find") || msg.includes("does not exist") || msg.includes("not found")) {
-        toast.error("Cadastro ainda precisa ser ativado no servidor. Tente novamente após a configuração.");
-      } else {
-        toast.error("Não foi possível salvar. Confira os dados e tente novamente.");
-      }
+      console.warn("[customer-create] error", {
+        code: (error as { code?: string }).code ?? null,
+        message: error.message ?? null,
+        details: (error as { details?: string }).details ?? null,
+        hint: (error as { hint?: string }).hint ?? null,
+      });
+      toast.error("Não foi possível salvar o cliente. Verifique os dados e tente novamente.");
       return;
     }
 
-    try {
-      const row = Array.isArray(data) ? (data[0] as Row | undefined) : (data as Row | null);
-      const newCustomerId = row
-        ? (typeof row.id === "string" ? row.id : typeof row.customer_id === "string" ? row.customer_id : null)
-        : null;
-      const hasNonSensitiveService =
-        serverId !== "__none__" || serverIdExtra !== "__none__" || app !== "__none__";
-      if (newCustomerId && hasNonSensitiveService) {
-        const serverIds: string[] = [];
-        if (serverId !== "__none__") serverIds.push(serverId);
-        if (serverIdExtra !== "__none__" && serverIdExtra !== serverId) serverIds.push(serverIdExtra);
-        const appKeyValue: AppKey = app === "__none__" ? "outro" : app;
-        const access = APP_CATALOG[appKeyValue]?.access ?? "nao_informado";
-        const now = new Date().toISOString();
-        upsertScreen({
-          id: newId(),
-          customer_id: newCustomerId,
-          company_id: companyId,
-          name: "Tela 1",
-          app: appKeyValue,
-          access_type: access,
-          status: "ativa",
-          server_ids: serverIds.length ? serverIds : undefined,
-          primary_server_id: serverIds[0],
-          created_at: now,
-          updated_at: now,
-        });
-        try { window.dispatchEvent(new Event("app-screens:changed")); } catch { /* ignore */ }
-      }
-    } catch { /* ignore */ }
+    const hadServiceSelection =
+      serverId !== "__none__" || serverIdExtra !== "__none__" || app !== "__none__";
 
     setBusy(false);
     toast.success("Cliente cadastrado com sucesso.");
+    if (hadServiceSelection) {
+      toast.message("Cliente cadastrado. Servidor e aplicativo poderão ser vinculados depois.");
+    }
     onCreated();
     onClose();
   };
