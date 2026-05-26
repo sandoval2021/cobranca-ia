@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus, Search, Copy, Check, X, Archive, MessageCircle, ExternalLink,
-  Download, Upload, UserPlus, Pencil, Info,
+  Download, Upload, UserPlus, Pencil, Info, Eye, EyeOff,
 } from "lucide-react";
+import { listActiveServers } from "@/lib/server-catalog";
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
