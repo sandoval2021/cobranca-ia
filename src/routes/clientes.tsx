@@ -1819,8 +1819,10 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                 </button>
                 {(s.plan_value || s.mac || s.app_key || s.app_due_date) && (
                   <div className="basis-full flex flex-wrap gap-1 pt-1 text-[10px] text-muted-foreground">
-                    {s.plan_value && (
-                      <span className="rounded bg-muted px-1.5 py-0.5">R$ {s.plan_value}</span>
+                    {(s.plan_name || s.plan_value) && (
+                      <span className="rounded bg-primary-soft px-1.5 py-0.5 text-primary">
+                        {s.plan_name ?? "Plano"}{s.plan_value ? ` · R$ ${s.plan_value}` : ""}
+                      </span>
                     )}
                     {s.mac && (
                       <span className="rounded bg-muted px-1.5 py-0.5 font-mono">MAC: {s.mac}</span>
