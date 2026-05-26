@@ -354,7 +354,7 @@ export function RenewScreensWizard({
                   const screenLabels = Array.from(selected).map((id) => screens.find((s) => s.id === id)?.app).filter(Boolean).join(", ");
                   openFinanceWithDraft({
                     customer_name: customerName,
-        customer_whatsapp: customerWhatsapp ?? null,
+
                     type: renewApp ? "renovacao_app" : "renovacao_lista",
                     amount_received: Number(amount) || 0,
                     screen_label: screenLabels,
