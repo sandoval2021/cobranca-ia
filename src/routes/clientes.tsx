@@ -860,8 +860,13 @@ function ClientCard({
                 : "Sem valor"}{" "}
               / mês
             </span>
-            {customer.due_day != null && (
+            {customer.due_day != null && !override && (
               <span>Vence dia {customer.due_day}</span>
+            )}
+            {override && (
+              <span className="font-medium text-foreground">
+                Vence em {fmtDateBRFromISO(override)}
+              </span>
             )}
             {days != null && (
               <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>
