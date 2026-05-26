@@ -526,8 +526,14 @@ function ImportarClientesPage() {
             </div>
             <Button
               size="sm"
-              onClick={onConfirm}
-              disabled={!canConfirm}
+              onClick={() => {
+                if (disabledReason) {
+                  toast.error(disabledReason);
+                  return;
+                }
+                onConfirm();
+              }}
+              disabled={confirming}
               className="h-8"
             >
               {confirming ? (
