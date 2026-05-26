@@ -819,8 +819,8 @@ function ClientesPage() {
             <AlertDialogTitle>Excluir este cliente?</AlertDialogTitle>
             <AlertDialogDescription>
               O cliente <strong>{items?.find((c) => c.id === deleteId)?.name ?? ""}</strong> será
-              arquivado e deixará de aparecer na lista ativa. O histórico fica preservado e você
-              pode reativar quando quiser.
+              <strong> deletado permanentemente</strong>, junto com cobranças e histórico
+              relacionados. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -831,15 +831,33 @@ function ClientesPage() {
                 e.preventDefault();
                 if (!supabase || !deleteId) return;
                 setDeleting(true);
-                const { error } = await supabase.rpc("archive_customer_admin", {
+                // 1) Tenta RPC de delete definitivo; 2) fallback p/ delete direto na tabela.
+                let err: { message: string } | null = null;
+                const rpcRes = await supabase.rpc("delete_customer_admin", {
                   p_customer_id: deleteId,
                 });
+                if (rpcRes.error) {
+                  const m = (rpcRes.error.message || "").toLowerCase();
+                  const rpcMissing =
+                    m.includes("does not exist") ||
+                    m.includes("not find function") ||
+                    m.includes("could not find");
+                  if (rpcMissing) {
+                    const del = await supabase
+                      .from("customers")
+                      .delete()
+                      .eq("id", deleteId);
+                    if (del.error) err = { message: del.error.message };
+                  } else {
+                    err = { message: rpcRes.error.message };
+                  }
+                }
                 setDeleting(false);
-                if (error) {
-                  toast.error(friendlyRpcError(error.message));
+                if (err) {
+                  toast.error(friendlyRpcError(err.message));
                   return;
                 }
-                toast.success("Cliente excluído da lista ativa.");
+                toast.success("Cliente deletado permanentemente.");
                 setDeleteId(null);
                 reload();
               }}
