@@ -305,7 +305,13 @@ function ClientesPage() {
         setErrorMsg(friendlyRpcError(res.error.message ?? ""));
         setItems(null);
       } else {
-        setItems(((res.data ?? []) as Row[]).map(normalize));
+        const raw = res.data as unknown;
+        const arr: Row[] = Array.isArray(raw)
+          ? (raw as Row[])
+          : Array.isArray((raw as { customers?: Row[] } | null)?.customers)
+            ? ((raw as { customers: Row[] }).customers)
+            : [];
+        setItems(arr.map(normalize));
       }
       setLoading(false);
     })();
