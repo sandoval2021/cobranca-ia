@@ -82,7 +82,7 @@ import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
 import { AutoDispatchTodayPanel } from "@/components/clientes/AutoDispatchTodayPanel";
 import { computeAutoDispatchQueue, type AutoDispatchQueueItem } from "@/lib/auto-dispatch-queue";
-import { AUTO_DISPATCH_EVENT } from "@/lib/auto-dispatch";
+import { AUTO_DISPATCH_EVENT, fmtHHMM, setCancelled, markSent } from "@/lib/auto-dispatch";
 import { MANUAL_RULES_EVENT } from "@/lib/manual-dispatch-rules";
 import { getCustomerDueOverride, daysFromOverride, fmtDateBRFromISO } from "@/lib/customer-due-override";
 import { getCustomerExtras, setCustomerExtras } from "@/lib/customer-extras";
