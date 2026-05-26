@@ -80,6 +80,7 @@ import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
 import { getCustomerDueOverride, daysFromOverride, fmtDateBRFromISO } from "@/lib/customer-due-override";
+import { getCustomerExtras, setCustomerExtras } from "@/lib/customer-extras";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
 import { getPrimaryRouteForServer } from "@/lib/dns-routes";
