@@ -4,6 +4,7 @@ import {
   Users,
   Search,
   Eye,
+  EyeOff,
   Pencil,
   Archive,
   RotateCcw,
