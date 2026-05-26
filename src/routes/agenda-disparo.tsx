@@ -119,8 +119,10 @@ function AgendaDisparoPage() {
     <PageContainer>
       <SectionHeader
         title="Agenda de disparo automático"
-        subtitle="Configure quando e com que ritmo as mensagens automáticas são enviadas. Você pode definir horários diferentes por valor de serviço."
+        subtitle="Configure quando e como as mensagens automáticas são enviadas."
+        hint="Aqui você define horário de início, intervalo entre mensagens, lotes com pausa, dias permitidos e horário individual por serviço. Tudo é salvo automaticamente neste aparelho e usado já na próxima rodada de disparos."
       />
+
 
       <Card className="p-4 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
