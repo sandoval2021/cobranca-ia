@@ -1664,6 +1664,10 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
   const [app, setApp] = useState<AppKey>("xciptv");
   const [serverId, setServerId] = useState<string>("");
   const [name, setName] = useState("");
+  const [planValue, setPlanValue] = useState("");
+  const [macInput, setMacInput] = useState("");
+  const [keyInput, setKeyInput] = useState("");
+  const [appDueDate, setAppDueDate] = useState("");
 
   const refresh = () => setScreens(listScreens(customerId));
   useEffect(() => {
@@ -1676,17 +1680,26 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
 
   const servers = listActiveServers();
   const active = screens.filter((s) => s.status !== "arquivada");
+  const isPaid = APP_CATALOG[app]?.tier === "pago";
 
   const resetForm = () => {
     setDueDate("");
     setApp("xciptv");
     setServerId("");
     setName("");
+    setPlanValue("");
+    setMacInput("");
+    setKeyInput("");
+    setAppDueDate("");
   };
 
   const handleAdd = () => {
     if (!dueDate) {
       toast.error("Informe a data de vencimento.");
+      return;
+    }
+    if (isPaid && (!macInput.trim() || !keyInput.trim())) {
+      toast.error("Apps pagos exigem MAC e Key.");
       return;
     }
     const now = new Date().toISOString();
@@ -1700,6 +1713,10 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       tier: meta?.tier,
       access_type: meta?.access ?? "nao_informado",
       due_date: dueDate,
+      plan_value: planValue.trim() || undefined,
+      mac: isPaid ? macInput.trim() : undefined,
+      app_key: isPaid ? keyInput.trim() : undefined,
+      app_due_date: isPaid && appDueDate ? appDueDate : undefined,
       status: "ativa",
       server_ids: serverId ? [serverId] : [],
       primary_server_id: serverId || undefined,
