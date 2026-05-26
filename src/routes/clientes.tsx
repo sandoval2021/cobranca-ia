@@ -259,7 +259,8 @@ type Filter =
   | "hoje" | "7d" | "vencidos"
   | "app_bob" | "app_xciptv" | "app_ibo"
   | "acc_mac_key" | "acc_user_pass"
-  | "needs_update";
+  | "needs_update"
+  | "disparo_hoje";
 
 function ClientesPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
