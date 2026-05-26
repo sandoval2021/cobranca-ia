@@ -1718,21 +1718,45 @@ function NewCustomerSheet({
       p_company_id: companyId,
       p_name: name.trim() || "Cliente",
       p_whatsapp_e164: buildE164(countryCode, customDdi, whatsapp),
-      p_amount_cents: amt,
+      p_amount_cents: amt ?? 0,
       p_due_day: dd,
-      p_status: null as string | null,
       p_notes: notes.trim() || null,
     };
+    const safeCompanyMask = typeof companyId === "string" && companyId.length >= 8
+      ? `${companyId.slice(0, 4)}…${companyId.slice(-4)}`
+      : "***";
+    console.info("[customer-create] payload seguro", {
+      companyId: safeCompanyMask,
+      whatsapp_e164: payload.p_whatsapp_e164,
+      amount_cents: payload.p_amount_cents,
+      due_day: payload.p_due_day,
+      name_present: Boolean(name.trim()),
+    });
     const { error } = await supabase.rpc("create_customer_admin", payload);
     if (error) {
       setBusy(false);
+      const e = error as { code?: string; message?: string; details?: string; hint?: string };
       console.warn("[customer-create] error", {
-        code: (error as { code?: string }).code ?? null,
-        message: error.message ?? null,
-        details: (error as { details?: string }).details ?? null,
-        hint: (error as { hint?: string }).hint ?? null,
+        code: e.code ?? null,
+        message: e.message ?? null,
+        details: e.details ?? null,
+        hint: e.hint ?? null,
       });
-      toast.error("Não foi possível salvar o cliente. Verifique os dados e tente novamente.");
+      const msg = (e.message ?? "").toLowerCase();
+      const code = e.code ?? "";
+      let friendly = "Não foi possível salvar o cliente. Verifique os dados e tente novamente.";
+      if (code === "23505" || msg.includes("duplicate key") || msg.includes("unique") || msg.includes("already exists")) {
+        friendly = "Este WhatsApp já está cadastrado.";
+      } else if (code === "22P02" && msg.includes("uuid")) {
+        friendly = "Sua conta ainda não foi preparada corretamente. Saia e entre novamente.";
+      } else if (code === "23502") {
+        friendly = "Algum dado obrigatório não foi preenchido.";
+      } else if (code === "23514") {
+        friendly = "Status do cliente inválido. Tente novamente.";
+      } else if (code === "42501" || msg.includes("permission denied")) {
+        friendly = "Você não tem permissão para cadastrar nessa conta.";
+      }
+      toast.error(friendly);
       return;
     }
 
