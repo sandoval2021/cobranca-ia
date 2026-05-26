@@ -117,6 +117,57 @@ const toE164 = (s: string) => {
   if (!d) return "";
   return d.startsWith("55") ? `+${d}` : `+55${d}`;
 };
+
+// Países suportados no seletor de WhatsApp (DDI + limites locais).
+type CountryOpt = {
+  code: string; // ISO-ish key
+  label: string;
+  dial: string; // sem o "+"
+  localMin: number;
+  localMax: number;
+  example?: string;
+};
+const COUNTRY_LIST: CountryOpt[] = [
+  { code: "BR", label: "Brasil", dial: "55", localMin: 11, localMax: 11, example: "82988936713" },
+  { code: "US", label: "Estados Unidos", dial: "1", localMin: 10, localMax: 10, example: "4155552671" },
+  { code: "PT", label: "Portugal", dial: "351", localMin: 9, localMax: 9, example: "912345678" },
+  { code: "AO", label: "Angola", dial: "244", localMin: 9, localMax: 9 },
+  { code: "MZ", label: "Moçambique", dial: "258", localMin: 9, localMax: 9 },
+  { code: "PY", label: "Paraguai", dial: "595", localMin: 9, localMax: 9 },
+  { code: "AR", label: "Argentina", dial: "54", localMin: 10, localMax: 11 },
+  { code: "OTHER", label: "Outro", dial: "", localMin: 6, localMax: 14 },
+];
+const findCountry = (code: string) => COUNTRY_LIST.find((c) => c.code === code) ?? COUNTRY_LIST[0];
+const buildE164 = (countryCode: string, customDdi: string, local: string) => {
+  const c = findCountry(countryCode);
+  const dial = c.code === "OTHER" ? onlyDigits(customDdi) : c.dial;
+  return `+${dial}${onlyDigits(local)}`;
+};
+const validateWhatsApp = (
+  countryCode: string,
+  customDdi: string,
+  local: string,
+): string | null => {
+  const c = findCountry(countryCode);
+  const localD = onlyDigits(local);
+  if (!localD) return "Informe o número do WhatsApp.";
+  if (c.code === "BR") {
+    if (localD.length !== 11)
+      return "Informe o WhatsApp com DDD e 11 números. Exemplo: 82988936713.";
+    return null;
+  }
+  if (c.code === "OTHER") {
+    const ddi = onlyDigits(customDdi);
+    if (!ddi || ddi.length < 1 || ddi.length > 4) return "Informe o DDI do país (1 a 4 dígitos).";
+    if (localD.length < 6 || localD.length > 14) return "Informe um número válido (6 a 14 dígitos).";
+    if (ddi.length + localD.length > 15) return "Número muito longo para o padrão internacional.";
+    return null;
+  }
+  if (localD.length < c.localMin || localD.length > c.localMax) {
+    return `Informe um número válido para ${c.label} (${c.localMin === c.localMax ? c.localMin : `${c.localMin}-${c.localMax}`} dígitos).`;
+  }
+  return null;
+};
 const prettyPhone = (s: string | null | undefined) => {
   if (!s) return null;
   const d = onlyDigits(s);
