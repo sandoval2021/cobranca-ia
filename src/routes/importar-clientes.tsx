@@ -155,7 +155,7 @@ function ImportarClientesPage() {
       }
       setLookupLoading(true);
 
-      const map: Record<string, { name?: string }> = {};
+      const map: Record<string, { name?: string; id?: string; status?: string }> = {};
       try {
         const res = await getImportCustomerDedupAdmin({
           p_company_id: cid,
