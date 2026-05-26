@@ -281,7 +281,11 @@ const normalize = (r: Row): Customer => {
         ? Math.round((num(r, ["amount", "valor", "value", "monthly_amount"]) as number) * 100)
         : null),
     due_day: num(r, ["due_day", "dia_vencimento", "vencimento_dia"]),
-    due_date: pickDueDateFromRow(r),
+    due_date:
+      pickDueDateFromRow(r) ??
+      getImportedDueByWhatsapp(
+        str(r, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) ?? null,
+      ),
     status: str(r, ["status", "situacao"]),
     notes: str(r, ["notes", "observacoes", "observacao"]),
     raw: r,
