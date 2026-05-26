@@ -19,7 +19,7 @@ import {
 
 const titles: Record<string, string> = {
   "/": "Início",
-  "/empresas": "Empresas",
+  "/empresas": "Minha base",
   "/clientes": "Clientes",
   "/cobrancas": "Cobranças",
   "/mensagens": "Mensagens",
