@@ -1633,9 +1633,16 @@ function NewCustomerSheet({
     if (amount.trim() && (amt == null || Number.isNaN(amt) || amt < 0)) {
       toast.error("Informe um valor válido."); return;
     }
-    const dd = Number(dueDay);
-    if (dueDay.trim() && (Number.isNaN(dd) || dd < 1 || dd > 31)) {
-      toast.error("O dia de vencimento deve ser entre 1 e 31."); return;
+    // Converte data completa (yyyy-mm-dd) para dia do mês (1-31)
+    // Backend atual ainda só persiste p_due_day; data completa virá com backend futuro.
+    let dd: number | null = null;
+    if (dueDate.trim()) {
+      const parsed = new Date(dueDate + "T00:00:00");
+      if (isNaN(+parsed)) {
+        toast.error("Informe uma data de vencimento válida.");
+        return;
+      }
+      dd = parsed.getDate();
     }
     if (!supabase) { toast.error("Conexão indisponível."); return; }
     setBusy(true);
@@ -1650,7 +1657,7 @@ function NewCustomerSheet({
       p_name: name.trim() || "Cliente",
       p_whatsapp_e164: toE164(whatsapp),
       p_amount_cents: amt,
-      p_due_day: dueDay.trim() ? dd : null,
+      p_due_day: dd,
       p_status: "ativo",
       p_notes: notes.trim() || null,
     });
