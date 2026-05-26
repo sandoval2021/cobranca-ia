@@ -189,11 +189,12 @@ export function buildConfirmationMessage(rec: RenewalRecord): string {
     "Olá {cliente_nome}, tudo certo ✅\n\nSua renovação foi registrada.\n📅 Novo vencimento: {vencimento}{telas_linha}\n\nObrigado!";
 
   return applyRevendaVariables(template, {
-    cliente_nome: rec.customer_name,
+    cliente_nome: friendlyGreetingName(rec.customer_name, rec.customer_whatsapp),
     vencimento,
     telas_linha: telasLinha,
     telas: String(rec.screens.length),
   });
+
 }
 
 export function applyRenewal(draft: RenewalDraft): RenewalRecord {
