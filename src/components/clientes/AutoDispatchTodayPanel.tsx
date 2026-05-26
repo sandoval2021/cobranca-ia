@@ -96,7 +96,24 @@ export function AutoDispatchTodayPanel({
   };
 
   const pending = queue.filter((q) => !q.cancelled && !q.sent);
+  const now = new Date();
+  const overdue = pending.filter((q) => q.scheduleTime.getTime() < now.getTime());
   const totalCount = queue.length;
+
+  const sendAllOverdue = () => {
+    if (overdue.length === 0) return;
+    overdue.forEach((q, i) => {
+      const phone = onlyDigits(q.client.whatsapp ?? "");
+      if (!phone) return;
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(q.message)}`;
+      // Pequeno atraso evita bloqueio do popup
+      setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), i * 250);
+      markSent(q.client.id);
+    });
+    setTick((t) => t + 1);
+    toast.success(`Reenviando ${overdue.length} mensagem(ns) atrasada(s).`);
+  };
+
 
   return (
     <Card className="mb-4 overflow-hidden border-primary/30">
