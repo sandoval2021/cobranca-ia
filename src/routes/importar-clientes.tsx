@@ -400,6 +400,26 @@ function ImportarClientesPage() {
         setNotImportedIdx(notImported);
         setSkippedIdx(new Set());
         setForcedIdx(new Set());
+        // Reativa clientes arquivados que voltaram via importação.
+        const toReactivate = new Set<string>();
+        for (const r of validas) {
+          if (!r.whatsapp_e164) continue;
+          const ex = existingMap[r.whatsapp_e164];
+          if (ex?.id && ex.status && /arquiv|inativ|cancel|deleted|removed/i.test(ex.status)) {
+            toReactivate.add(ex.id);
+          }
+        }
+        if (toReactivate.size > 0) {
+          await Promise.all(
+            Array.from(toReactivate).map((id) =>
+              supabase!.rpc("reactivate_customer_admin", { p_customer_id: id }).then(
+                ({ error: e }) => {
+                  if (e) console.warn("[importar-clientes] reativar falhou", id, e);
+                },
+              ),
+            ),
+          );
+        }
         toast.success("Importação concluída.");
         setLookupBump((n) => n + 1);
       }
