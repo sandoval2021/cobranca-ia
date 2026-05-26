@@ -129,6 +129,9 @@ function FinanceiroPage() {
         </p>
       </Card>
 
+      <FinanceDashboard />
+
+
       {/* Period filter */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
