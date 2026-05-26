@@ -118,9 +118,8 @@ function AgendaDisparoPage() {
   return (
     <PageContainer>
       <SectionHeader
-        icon={Clock}
         title="Agenda de disparo automático"
-        description="Configure quando e com que ritmo as mensagens automáticas são enviadas. Você pode definir horários diferentes por valor de serviço."
+        subtitle="Configure quando e com que ritmo as mensagens automáticas são enviadas. Você pode definir horários diferentes por valor de serviço."
       />
 
       <Card className="p-4 space-y-4">

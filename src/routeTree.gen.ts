@@ -39,6 +39,7 @@ import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AjudaRouteImport } from './routes/ajuda'
+import { Route as AgendaDisparoRouteImport } from './routes/agenda-disparo'
 import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as AcessoRestritoRouteImport } from './routes/acesso-restrito'
 import { Route as IndexRouteImport } from './routes/index'
@@ -193,6 +194,11 @@ const AjudaRoute = AjudaRouteImport.update({
   path: '/ajuda',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgendaDisparoRoute = AgendaDisparoRouteImport.update({
+  id: '/agenda-disparo',
+  path: '/agenda-disparo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDnsRotasRoute = AdminDnsRotasRouteImport.update({
   id: '/admin-dns-rotas',
   path: '/admin-dns-rotas',
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/acesso-restrito': typeof AcessoRestritoRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
+  '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/auth': typeof AuthRoute
   '/backup-geral': typeof BackupGeralRoute
@@ -248,6 +255,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/acesso-restrito': typeof AcessoRestritoRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
+  '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/auth': typeof AuthRoute
   '/backup-geral': typeof BackupGeralRoute
@@ -284,6 +292,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/acesso-restrito': typeof AcessoRestritoRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
+  '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/auth': typeof AuthRoute
   '/backup-geral': typeof BackupGeralRoute
@@ -321,6 +330,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acesso-restrito'
     | '/admin-dns-rotas'
+    | '/agenda-disparo'
     | '/ajuda'
     | '/auth'
     | '/backup-geral'
@@ -356,6 +366,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acesso-restrito'
     | '/admin-dns-rotas'
+    | '/agenda-disparo'
     | '/ajuda'
     | '/auth'
     | '/backup-geral'
@@ -391,6 +402,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acesso-restrito'
     | '/admin-dns-rotas'
+    | '/agenda-disparo'
     | '/ajuda'
     | '/auth'
     | '/backup-geral'
@@ -427,6 +439,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AcessoRestritoRoute: typeof AcessoRestritoRoute
   AdminDnsRotasRoute: typeof AdminDnsRotasRoute
+  AgendaDisparoRoute: typeof AgendaDisparoRoute
   AjudaRoute: typeof AjudaRoute
   AuthRoute: typeof AuthRoute
   BackupGeralRoute: typeof BackupGeralRoute
@@ -671,6 +684,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AjudaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agenda-disparo': {
+      id: '/agenda-disparo'
+      path: '/agenda-disparo'
+      fullPath: '/agenda-disparo'
+      preLoaderRoute: typeof AgendaDisparoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin-dns-rotas': {
       id: '/admin-dns-rotas'
       path: '/admin-dns-rotas'
@@ -699,6 +719,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcessoRestritoRoute: AcessoRestritoRoute,
   AdminDnsRotasRoute: AdminDnsRotasRoute,
+  AgendaDisparoRoute: AgendaDisparoRoute,
   AjudaRoute: AjudaRoute,
   AuthRoute: AuthRoute,
   BackupGeralRoute: BackupGeralRoute,
