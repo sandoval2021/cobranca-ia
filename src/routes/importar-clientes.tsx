@@ -128,11 +128,17 @@ function ImportarClientesPage() {
   // Dedup via RPC segura: get_import_customer_dedup_admin
   useEffect(() => {
     let cancelled = false;
+    const cid =
+      companyId ??
+      (companyState.status === "ready" ? companyState.companyId : null);
     async function run() {
       setExistingMap({});
       setLookupReady(false);
       if (!supabaseConfigured) return;
-      if (!isAuthenticated || !companyId || !rows || rows.length === 0) return;
+      if (!isAuthenticated || !cid || !rows || rows.length === 0) {
+        setLookupReady(true);
+        return;
+      }
       const e164s = Array.from(
         new Set(rows.map((r) => r.whatsapp_e164).filter((x): x is string => !!x)),
       );
@@ -143,7 +149,7 @@ function ImportarClientesPage() {
       setLookupLoading(true);
 
       const res = await getImportCustomerDedupAdmin({
-        p_company_id: companyId,
+        p_company_id: cid,
         p_whatsapp_e164_values: e164s,
       });
       if (cancelled) return;
