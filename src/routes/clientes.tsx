@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
+
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
 import { ListCardSkeleton } from "@/components/ui-premium/Skeletons";
@@ -548,10 +548,8 @@ function ClientesPage() {
           </Button>
         }
       />
-      <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-        Versão UI: clientes-v2-testes-v2
-      </div>
-      <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
+
+
 
 
 
@@ -971,8 +969,8 @@ function ClientCard({
       </div>
 
       <div className="divide-y divide-foreground/5">
-        <Row label="Cód. Cliente" value={<span className="font-mono">{codCliente}</span>} />
         <Row label="WhatsApp" value={phone ?? <span className="text-muted-foreground">—</span>} valueClass="font-mono" />
+
         <Row
           label="Serviço"
           value={
@@ -1265,19 +1263,16 @@ function CustomerSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md"
-      >
-        <SheetHeader className="border-b border-border p-4">
-          <SheetTitle className="text-base">{merged.name}</SheetTitle>
-          <SheetDescription className="text-xs">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-0 border-2 border-border shadow-2xl rounded-xl">
+        <DialogHeader className="border-b border-border px-4 py-3 text-left">
+          <DialogTitle className="text-sm">{merged.name}</DialogTitle>
+          <DialogDescription className="text-[11px]">
             {prettyPhone(merged.whatsapp) ?? "Sem WhatsApp cadastrado"}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="flex-1 px-4 py-4">
+        <div className="flex-1 overflow-y-auto px-3 py-3">
           {details.status === "loading" && (
             <div className="flex items-center justify-center py-10 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -1298,7 +1293,6 @@ function CustomerSheet({
                 setMode("view");
                 onChanged();
                 reloadTimeline();
-                // refresh
                 if (!supabase) return;
                 setDetails({ status: "loading" });
                 const { data } = await supabase.rpc("get_customer_details_admin", {
@@ -1313,36 +1307,36 @@ function CustomerSheet({
         </div>
 
         {details.status === "ready" && mode === "view" && (
-          <div className="sticky bottom-0 flex flex-col gap-2 border-t border-border bg-card p-3">
-            <Button onClick={() => setMode("edit")} className="w-full gap-1.5">
-              <Pencil className="h-4 w-4" /> Editar cliente
+          <div className="flex flex-wrap gap-2 border-t border-border bg-card p-2">
+            <Button size="sm" onClick={() => setMode("edit")} className="flex-1 min-w-[120px] gap-1.5">
+              <Pencil className="h-3.5 w-3.5" /> Editar
             </Button>
-            <div className="flex gap-2">
-              {canReactivate && (
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-1.5"
-                  disabled={busy === "reactivate"}
-                  onClick={handleReactivate}
-                >
-                  {busy === "reactivate" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RotateCcw className="h-4 w-4" />
-                  )}
-                  Reativar cliente
-                </Button>
-              )}
-              {kind !== "arquivado" && (
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-1.5 text-danger hover:text-danger"
-                  onClick={() => setConfirmArchive(true)}
-                >
-                  <Archive className="h-4 w-4" /> Arquivar
-                </Button>
-              )}
-            </div>
+            {canReactivate && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 min-w-[100px] gap-1.5"
+                disabled={busy === "reactivate"}
+                onClick={handleReactivate}
+              >
+                {busy === "reactivate" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-3.5 w-3.5" />
+                )}
+                Reativar
+              </Button>
+            )}
+            {kind !== "arquivado" && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 min-w-[100px] gap-1.5 text-danger hover:text-danger"
+                onClick={() => setConfirmArchive(true)}
+              >
+                <Archive className="h-3.5 w-3.5" /> Arquivar
+              </Button>
+            )}
           </div>
         )}
 
@@ -1372,8 +1366,9 @@ function CustomerSheet({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
+
   );
 }
 
@@ -1636,99 +1631,99 @@ function EditForm({
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="space-y-2.5">
       <Field label="Nome">
-        <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
+        <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} className="h-9" />
       </Field>
-      <Field label="WhatsApp" hint="Inclua o DDD. Será salvo no formato internacional.">
+      <Field label="WhatsApp">
         <Input
           value={whatsapp}
           onChange={(e) => setWhatsapp(e.target.value)}
           placeholder="(11) 99999-9999"
           inputMode="tel"
           maxLength={20}
+          className="h-9"
         />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Valor mensal" hint="Cobrança recorrente em reais.">
+      <div className="grid grid-cols-3 gap-2">
+        <Field label="Valor (R$)">
           <Input
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0,00"
             inputMode="decimal"
+            className="h-9"
           />
         </Field>
-        <Field label="Dia de vencimento" hint="Entre 1 e 31.">
+        <Field label="Vence dia">
           <Input
             value={dueDay}
             onChange={(e) => setDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
             placeholder="10"
             inputMode="numeric"
+            className="h-9"
           />
         </Field>
+        <Field label="Status">
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="ativo">Ativo</option>
+            <option value="expirado">Expirado</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+        </Field>
       </div>
-      <Field label="Status" hint="Use ativo, expirado ou arquivado.">
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          <option value="ativo">Ativo</option>
-          <option value="expirado">Expirado</option>
-          <option value="arquivado">Arquivado</option>
-        </select>
-      </Field>
-      <Field label="Observações" hint="Notas internas, não enviadas ao cliente.">
-        <Textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          maxLength={1000}
-        />
-      </Field>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="E-mail" hint="Opcional. Usado para mensagens e relatórios.">
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="E-mail">
           <Input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="cliente@exemplo.com"
             maxLength={120}
+            className="h-9"
           />
         </Field>
-        <Field label="Aniversário" hint="Para mensagens automáticas de parabéns.">
+        <Field label="Aniversário">
           <Input
             type="date"
             value={birthday}
             onChange={(e) => setBirthday(e.target.value)}
+            className="h-9"
           />
         </Field>
       </div>
+      <Field label="Observações">
+        <Textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={2}
+          maxLength={1000}
+          className="resize-none"
+        />
+      </Field>
 
-      <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs space-y-1">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Data de cadastro</span>
-          <span className="font-medium">{createdAt ? fmtDate(createdAt) : "—"}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Telas cadastradas</span>
-          <span className="font-medium">{screensCount}</span>
-        </div>
+      <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+        <span>Cadastro: <span className="font-medium text-foreground">{createdAt ? fmtDate(createdAt) : "—"}</span></span>
+        <span>Telas: <span className="font-medium text-foreground">{screensCount}</span></span>
       </div>
 
-      <div className="flex gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={busy} className="flex-1">
+      <div className="flex gap-2 pt-1">
+        <Button type="button" size="sm" variant="outline" onClick={onCancel} disabled={busy} className="flex-1">
           Cancelar
         </Button>
-        <Button type="submit" disabled={busy} className="flex-1 gap-1.5">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+        <Button type="submit" size="sm" disabled={busy} className="flex-1 gap-1.5">
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           Salvar
         </Button>
       </div>
     </form>
   );
 }
+
 
 function Field({
   label,
