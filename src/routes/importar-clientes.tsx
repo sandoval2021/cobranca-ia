@@ -242,6 +242,9 @@ function ImportarClientesPage() {
   async function onFile(file: File) {
     setParseError(null);
     setResult(null);
+    setNotImportedIdx([]);
+    setSkippedIdx(new Set());
+    setForcedIdx(new Set());
     setRows(null);
     setFileName(file.name);
 
