@@ -541,8 +541,10 @@ export function AppScreensSection({
         onClose={() => { setRenewOpen(false); setRenewInitialScreenId(null); }}
         customerId={customerId}
         customerName={customerName}
+        customerWhatsapp={customerWhatsapp}
         initialScreenId={renewInitialScreenId}
       />
+
 
 
 
