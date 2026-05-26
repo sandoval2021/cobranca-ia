@@ -1668,7 +1668,7 @@ function NewCustomerSheet({
 
   useEffect(() => {
     if (open) {
-      setName(""); setWhatsapp("");
+      setName(""); setWhatsapp(""); setCountryCode("BR"); setCustomDdi("");
       setServerId("__none__"); setServerIdExtra("__none__");
       setApp("__none__"); setAmount(""); setDueDate(""); setNotes("");
       setMac(""); setAppKey(""); setShowKey(false); setAppDueDate("");
