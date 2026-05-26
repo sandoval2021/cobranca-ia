@@ -337,6 +337,80 @@ export function relinkCompanyId(oldId: string, newId: string): Company | null {
   return updated;
 }
 
+const UUID_LOCAL_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Garante que exista uma Company local com o UUID real informado.
+ * Se já houver uma Company local com ID "co_..." (preferindo "TESTANDO"),
+ * faz relink para o UUID. Caso contrário cria nova entrada com o UUID.
+ */
+export function upsertRealCompany(
+  realId: string,
+  defaults: { nome?: string; dono_email?: string; dono_nome?: string; dono_whatsapp?: string } = {},
+): Company | null {
+  if (!realId || !UUID_LOCAL_RE.test(realId)) return null;
+  const list = listCompanies();
+  const existing = list.find((c) => c.id === realId);
+  if (existing) return existing;
+
+  // Relink local "co_..." (prefere TESTANDO, depois primeiro local) para o UUID real.
+  const localCandidate =
+    list.find((c) => c.nome.trim().toUpperCase() === "TESTANDO" && !UUID_LOCAL_RE.test(c.id)) ??
+    list.find((c) => !UUID_LOCAL_RE.test(c.id));
+  if (localCandidate) {
+    return relinkCompanyId(localCandidate.id, realId);
+  }
+
+  const now = new Date().toISOString();
+  const plans = listCompanyPlans();
+  const plan =
+    plans.find((p) => p.id === "plan_admin") ??
+    plans.find((p) => p.id === "plan_premium") ??
+    plans[0]!;
+  const today = now.slice(0, 10);
+  const inOneYear = new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10);
+  const company: Company = {
+    id: realId,
+    nome: defaults.nome ?? "Minha conta",
+    slug: slugify((defaults.nome ?? "minha-conta") + "-" + realId.slice(0, 4)),
+    dono_nome: defaults.dono_nome ?? "Titular",
+    dono_email: defaults.dono_email ?? "",
+    dono_whatsapp: defaults.dono_whatsapp ?? "",
+    status: "ativa",
+    plano_id: plan.id,
+    data_inicio: today,
+    data_vencimento: inOneYear,
+    created_at: now,
+    updated_at: now,
+  };
+  write(COMPANIES_KEY, [...list, company]);
+  emit();
+  return company;
+}
+
+/** Garante vínculo do usuário como owner ativo da empresa. */
+export function ensureOwnerMember(
+  companyId: string,
+  email: string,
+  nome?: string | null,
+  whatsapp?: string | null,
+): CompanyMember | null {
+  if (!companyId || !email) return null;
+  const e = email.toLowerCase();
+  const exists = getCompanyMembers(companyId).find(
+    (m) => m.email.toLowerCase() === e && m.role === "owner",
+  );
+  if (exists) return exists;
+  return saveCompanyMember({
+    company_id: companyId,
+    nome: nome ?? "Titular",
+    email,
+    whatsapp: whatsapp ?? "",
+    role: "owner",
+    status: "ativo",
+  });
+}
+
 // ---------- Membros ----------
 
 export function listAllMembers(): CompanyMember[] {
