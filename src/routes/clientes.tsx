@@ -925,7 +925,7 @@ function ClientCard({
   const initial = customer.name.trim().charAt(0).toUpperCase() || "?";
   const override = getCustomerDueOverride(customer.id);
   const overrideDays = daysFromOverride(override);
-  const baseDays = nextDueDays(customer.due_day, screens);
+  const baseDays = customerDueDays(customer, screens);
   const days = overrideDays != null ? overrideDays : baseDays;
   const urg = urgencyFromDays(days);
   const activeScreens = screens.filter((s) => s.status !== "arquivada").slice(0, 4);
@@ -945,9 +945,12 @@ function ClientCard({
               ? "border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/15"
               : "border-border bg-card";
 
-  // Próxima data de vencimento (ISO) — override tem prioridade; senão calcula a partir de due_day
+  // Próxima data de vencimento (ISO).
+  // Prioridade: override local > due_date importado (data completa) > due_day (mensal).
   const nextDueIso = (() => {
     if (override) return override;
+    const imported = getCustomerDueIso(customer);
+    if (imported) return imported;
     if (customer.due_day != null) {
       const today = new Date();
       const dd = Math.min(customer.due_day, 28);
