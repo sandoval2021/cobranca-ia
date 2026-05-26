@@ -207,6 +207,7 @@ function ClientesPage() {
     return () => window.removeEventListener("app-screens:changed", bump);
   }, []);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [openNew, setOpenNew] = useState(false);
   const [reloadBump, setReloadBump] = useState(0);
 
   useEffect(() => {
@@ -227,11 +228,7 @@ function ClientesPage() {
       const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
       if (!alive) return;
       if (companyErr || !companyId) {
-        setErrorMsg(
-          companyErr
-            ? "Não foi possível identificar a empresa."
-            : "Nenhuma empresa autorizada encontrada.",
-        );
+        setErrorMsg("Não foi possível confirmar sua empresa. Tente novamente.");
         setItems(null);
         setLoading(false);
         return;
