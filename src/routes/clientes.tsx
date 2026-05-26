@@ -792,7 +792,10 @@ function ClientCard({
 }) {
   const phone = prettyPhone(customer.whatsapp);
   const initial = customer.name.trim().charAt(0).toUpperCase() || "?";
-  const days = nextDueDays(customer.due_day, screens);
+  const override = getCustomerDueOverride(customer.id);
+  const overrideDays = daysFromOverride(override);
+  const baseDays = nextDueDays(customer.due_day, screens);
+  const days = overrideDays != null ? overrideDays : baseDays;
   const urg = urgencyFromDays(days);
   const activeScreens = screens.filter((s) => s.status !== "arquivada").slice(0, 4);
   const needsUpdate = screens.some((s) => s.needs_server_update && s.status !== "arquivada");
