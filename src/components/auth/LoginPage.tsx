@@ -36,16 +36,18 @@ export function LoginPage() {
       });
       if (err) {
         setError(friendlyAuthError(err.message));
+        setSubmitting(false);
         return;
       }
-      window.dispatchEvent(new Event(AUTH_REFRESH_EVENT));
+      // Sucesso: onAuthStateChange já vai trocar para o app.
+      // Mantemos `submitting=true` para o botão não piscar antes do unmount.
       toast.success("Bem-vindo!");
     } catch {
       setError("Falha de conexão. Tente novamente.");
-    } finally {
       setSubmitting(false);
     }
   }
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-surface to-primary-soft px-4 py-8 safe-top safe-bottom">
