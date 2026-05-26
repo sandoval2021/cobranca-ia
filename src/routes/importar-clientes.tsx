@@ -189,7 +189,7 @@ function ImportarClientesPage() {
     return () => {
       cancelled = true;
     };
-  }, [rows, companyId, isAuthenticated]);
+  }, [rows, companyId, companyState, isAuthenticated]);
 
   const rowKind = (r: ValidatedRow): RowKind | "pending" => {
     if (r.status === "invalid") return "error";
