@@ -61,6 +61,8 @@ export type AppScreen = {
   app_due_date?: string;
   app_renewal_value?: string;
   plan_value?: string; // valor mensal do serviço desta tela (ex: "29,90")
+  plan_id?: string;    // referência ao ServiceItem (services-catalog) selecionado
+  plan_name?: string;  // nome do serviço/plano (snapshot)
   status: ScreenStatus;
   route?: RouteKind;
   needs_server_update?: boolean;
