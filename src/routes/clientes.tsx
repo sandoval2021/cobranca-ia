@@ -400,7 +400,9 @@ function ClientesPage() {
         const active = screens.filter((s) => s.status !== "arquivada");
         if (!screensHaveServer(active, serverFilter)) return false;
       }
-      if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
+      if (filter === "disparo_hoje") {
+        if (!dispatchQueueById.has(c.id)) return false;
+      } else if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
         if (kind !== filter) return false;
       } else if (filter === "hoje" || filter === "7d" || filter === "vencidos") {
         const d = nextDueDays(c.due_day, screens);
