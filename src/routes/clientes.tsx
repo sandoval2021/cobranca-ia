@@ -417,8 +417,17 @@ function ClientesPage() {
         title="Clientes"
         subtitle="Gerencie sua base de clientes"
         hint="Edite, arquive e consulte o histórico de cada cliente com segurança."
+        action={
+          <Button onClick={() => setOpenNew(true)} className="gap-1.5">
+            <Plus className="h-4 w-4" /> Novo cliente
+          </Button>
+        }
       />
+      <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+        Versão UI: clientes-v2-testes-v2
+      </div>
       <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
+
 
       {/* Busca */}
       <div className="relative mb-3">
@@ -514,16 +523,33 @@ function ClientesPage() {
       )}
 
       {isAuthenticated && !loading && errorMsg && (
-        <EmptyState icon={Users} title="Não foi possível carregar" description={errorMsg} />
+        <div className="space-y-3">
+          <EmptyState icon={Users} title="Não foi possível carregar" description={errorMsg} />
+          <div className="flex justify-center">
+            <Button onClick={() => setOpenNew(true)} className="gap-1.5">
+              <UserPlus className="h-4 w-4" /> Cadastrar primeiro cliente
+            </Button>
+          </div>
+        </div>
       )}
 
       {isAuthenticated && !loading && !errorMsg && ordered.length === 0 && (
-        <EmptyState
-          icon={Users}
-          title="Nenhum cliente encontrado"
-          description={query ? "Tente outra busca." : "Importe clientes para começar."}
-        />
+        <div className="space-y-3">
+          <EmptyState
+            icon={Users}
+            title="Nenhum cliente cadastrado ainda."
+            description={query ? "Tente outra busca." : "Comece cadastrando seu primeiro cliente."}
+          />
+          {!query && (
+            <div className="flex justify-center">
+              <Button onClick={() => setOpenNew(true)} className="gap-1.5">
+                <UserPlus className="h-4 w-4" /> Cadastrar primeiro cliente
+              </Button>
+            </div>
+          )}
+        </div>
       )}
+
 
       {isAuthenticated && !loading && !errorMsg && ordered.length > 0 && (
         <div className="space-y-2">
@@ -544,9 +570,16 @@ function ClientesPage() {
         onClose={() => setOpenId(null)}
         onChanged={reload}
       />
+
+      <NewCustomerSheet
+        open={openNew}
+        onClose={() => setOpenNew(false)}
+        onCreated={reload}
+      />
     </PageContainer>
   );
 }
+
 
 function FilterPill({
   active,
