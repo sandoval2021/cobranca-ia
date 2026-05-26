@@ -84,7 +84,9 @@ export const ownerBottomNav: NavItem[] = [
   { to: "/cadastros-servicos", label: "Cadastro", icon: Tv },
   { to: "/financeiro", label: "Financeiro", icon: Wallet },
   { to: "/catalogo-servidores", label: "Servidores", icon: Server },
+  { to: "/agenda-disparo", label: "Disparo", icon: Send },
 ];
+
 
 export const adminNav: NavItem[] = ownerNav;
 
