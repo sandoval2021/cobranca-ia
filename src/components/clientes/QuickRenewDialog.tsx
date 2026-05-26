@@ -219,12 +219,21 @@ export function QuickRenewDialog({
     }
   };
 
+  const autoSend = (message: string) => {
+    const phone = (whatsappE164 ?? "").replace(/\D/g, "");
+    const text = encodeURIComponent(message);
+    const url = phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`;
+    try {
+      window.open(url, "_blank");
+      toast.success("Mensagem enviada para o cliente no WhatsApp ✅");
+    } catch {
+      toast.message("Renovação registrada. Abra o WhatsApp manualmente.");
+    }
+  };
+
   const sendWhats = () => {
     if (!done) return;
-    const phone = (whatsappE164 ?? "").replace(/\D/g, "");
-    const text = encodeURIComponent(done.msg);
-    const url = phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`;
-    window.open(url, "_blank");
+    autoSend(done.msg);
   };
 
   const copyMsg = async () => {
