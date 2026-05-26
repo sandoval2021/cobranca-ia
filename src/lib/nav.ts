@@ -49,6 +49,7 @@ export const ownerNav: NavItem[] = [
   { to: "/empresas", label: "Contas de donos", icon: Building2, hint: "Gestão SaaS de contas (super admin)", superAdminOnly: true },
   { to: "/meus-dados", label: "Meus dados", icon: UserCog, hint: "Dados da sua conta — editáveis a qualquer momento" },
   { to: "/clientes", label: "Clientes", icon: Users, hint: "Sua base de clientes" },
+  { to: "/cadastros-servicos", label: "Cadastros · Serviços", icon: Tv, hint: "Cadastre seus planos/valores (ex.: 1 tela R$ 12)" },
   { to: "/gestao-servicos", label: "Gestão Serviços", icon: Tv, hint: "Renove, edite e acompanhe cada serviço" },
   { to: "/operacao-dia", label: "Operação do dia", icon: CalendarClock, hint: "Quem precisa de atenção hoje" },
   { to: "/campanhas-manuais", label: "Campanhas manuais", icon: Megaphone, hint: "Monte listas e copie mensagens" },
