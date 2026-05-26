@@ -365,15 +365,30 @@ function ImportarClientesPage() {
     }
   }
 
+  const effectiveCompanyId =
+    companyId ??
+    (companyState.status === "ready" ? companyState.companyId : null);
   const validForImport = (rows ?? []).filter(
     (r) => r.status === "valid" || r.status === "duplicate",
   ).length;
+  const companyBlocker =
+    companyState.status === "loading"
+      ? "Carregando empresa…"
+      : companyState.status === "not_configured"
+        ? "Conexão não configurada."
+        : companyState.status === "unauthenticated"
+          ? "Entre com uma conta autorizada para importar."
+          : companyState.status === "error"
+            ? companyState.message
+            : !effectiveCompanyId
+              ? "Empresa não encontrada para sua conta."
+              : null;
   const disabledReason: string | null = !isAuthenticated
     ? "Entre com uma conta autorizada para importar."
     : flags.appEnv !== "staging"
       ? "A importação só funciona no ambiente de testes."
-      : !companyId
-        ? "Selecione uma empresa."
+      : companyBlocker
+        ? companyBlocker
         : !rows || rows.length === 0
           ? "Envie um arquivo com pelo menos 1 cliente válido."
           : validForImport === 0 && counts.error > 0
