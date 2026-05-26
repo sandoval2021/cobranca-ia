@@ -958,14 +958,16 @@ function CustomerSheet({
   open,
   onClose,
   onChanged,
+  defaultMode = "view",
 }: {
   customer: Customer | null;
   open: boolean;
   onClose: () => void;
   onChanged: () => void;
+  defaultMode?: Mode;
 }) {
   const [details, setDetails] = useState<DetailsState>({ status: "loading" });
-  const [mode, setMode] = useState<Mode>("view");
+  const [mode, setMode] = useState<Mode>(defaultMode);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [busy, setBusy] = useState<null | "save" | "archive" | "reactivate">(null);
   const [timelineBump, setTimelineBump] = useState(0);
@@ -973,7 +975,7 @@ function CustomerSheet({
 
   useEffect(() => {
     if (!open || !customer) return;
-    setMode("view");
+    setMode(defaultMode);
     setDetails({ status: "loading" });
     if (!supabase) return;
     let alive = true;
@@ -992,7 +994,7 @@ function CustomerSheet({
     return () => {
       alive = false;
     };
-  }, [open, customer?.id]);
+  }, [open, customer?.id, defaultMode]);
 
   if (!customer) return null;
 
