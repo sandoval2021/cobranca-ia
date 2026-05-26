@@ -60,6 +60,7 @@ export type AppScreen = {
   due_date?: string;
   app_due_date?: string;
   app_renewal_value?: string;
+  plan_value?: string; // valor mensal do serviço desta tela (ex: "29,90")
   status: ScreenStatus;
   route?: RouteKind;
   needs_server_update?: boolean;
