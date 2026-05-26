@@ -77,6 +77,7 @@ export function QuickRenewDialog({
   const [months, setMonths] = useState(1);
   const [amount, setAmount] = useState("");
   const [appAmount, setAppAmount] = useState("");
+  const [discount, setDiscount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("pix");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
