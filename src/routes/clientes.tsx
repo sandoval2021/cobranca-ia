@@ -358,6 +358,28 @@ function ClientesPage() {
 
   const allScreens = useMemo(() => listAllScreens(), [items, screensVersion]);
 
+  // Re-render quando config/regras de disparo mudam
+  const [dispatchTick, setDispatchTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setDispatchTick((n) => n + 1);
+    window.addEventListener(AUTO_DISPATCH_EVENT, bump);
+    window.addEventListener(MANUAL_RULES_EVENT, bump);
+    return () => {
+      window.removeEventListener(AUTO_DISPATCH_EVENT, bump);
+      window.removeEventListener(MANUAL_RULES_EVENT, bump);
+    };
+  }, []);
+
+  const dispatchQueue = useMemo<AutoDispatchQueueItem[]>(
+    () => computeAutoDispatchQueue(items, allScreens),
+    [items, allScreens, dispatchTick],
+  );
+  const dispatchQueueById = useMemo(() => {
+    const m = new Map<string, AutoDispatchQueueItem>();
+    for (const q of dispatchQueue) m.set(q.client.id, q);
+    return m;
+  }, [dispatchQueue]);
+
   const filtered = useMemo(() => {
     if (!items) return [];
     const q = query.trim().toLowerCase();
