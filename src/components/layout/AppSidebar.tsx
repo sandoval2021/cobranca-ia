@@ -47,7 +47,7 @@ const GROUPS: Group[] = [
     id: "cadastros",
     label: "Cadastros",
     icon: Users,
-    routes: ["/clientes", "/cadastros-servicos", "/gestao-servicos", "/catalogo-servidores", "/testes", "/mensagens", "/importar-clientes"],
+    routes: ["/clientes", "/cadastros-servicos", "/gestao-servicos", "/catalogo-servidores", "/testes", "/mensagens", "/importar-clientes", "/agenda-disparo"],
   },
   {
     id: "operacao",

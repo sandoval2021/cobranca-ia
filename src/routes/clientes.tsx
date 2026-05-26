@@ -27,6 +27,7 @@ import {
   UserPlus,
   Trash2,
   Settings2,
+  Send,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -81,7 +82,7 @@ import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
 import { AutoDispatchTodayPanel } from "@/components/clientes/AutoDispatchTodayPanel";
 import { computeAutoDispatchQueue, type AutoDispatchQueueItem } from "@/lib/auto-dispatch-queue";
-import { AUTO_DISPATCH_EVENT } from "@/lib/auto-dispatch";
+import { AUTO_DISPATCH_EVENT, fmtHHMM, setCancelled, markSent } from "@/lib/auto-dispatch";
 import { MANUAL_RULES_EVENT } from "@/lib/manual-dispatch-rules";
 import { getCustomerDueOverride, daysFromOverride, fmtDateBRFromISO } from "@/lib/customer-due-override";
 import { getCustomerExtras, setCustomerExtras } from "@/lib/customer-extras";
@@ -204,7 +205,7 @@ const statusLabel = (s: string | null | undefined) => {
   if (k === "ativo") return "Ativo";
   if (k === "expirado") return "Expirado";
   if (k === "arquivado") return "Arquivado";
-  return s ?? "—";
+  return (s ?? "—").replace(/_/g, " ");
 };
 const statusClass = (s: string | null | undefined) => {
   const k = classifyStatus(s);
@@ -690,6 +691,8 @@ function ClientesPage() {
               key={c.id}
               customer={c}
               screens={allScreens[c.id] ?? []}
+              dispatchInfo={dispatchQueueById.get(c.id)}
+              onDispatchChanged={() => setDispatchTick((t) => t + 1)}
               onOpen={() => { setOpenMode("edit"); setOpenId(c.id); }}
               onRenew={() => setRenewId(c.id)}
               onApps={() => setAppsId(c.id)}
@@ -832,6 +835,8 @@ function FilterPill({
 function ClientCard({
   customer,
   screens,
+  dispatchInfo,
+  onDispatchChanged,
   onOpen,
   onRenew,
   onApps,
@@ -839,6 +844,8 @@ function ClientCard({
 }: {
   customer: Customer;
   screens: AppScreen[];
+  dispatchInfo?: AutoDispatchQueueItem;
+  onDispatchChanged?: () => void;
   onOpen: () => void;
   onRenew: () => void;
   onApps: () => void;
@@ -1009,7 +1016,87 @@ function ClientCard({
       </div>
 
 
+      {dispatchInfo && (
+        <div className={cn(
+          "mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-[11px]",
+          dispatchInfo.sent && "border-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/20",
+          dispatchInfo.cancelled && "border-muted bg-muted/40 opacity-80",
+          !dispatchInfo.sent && !dispatchInfo.cancelled && "border-primary/30 bg-primary/5",
+        )}>
+          <div className="flex items-center gap-1.5 min-w-0">
+            {dispatchInfo.sent ? (
+              <>
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="font-medium">Enviada hoje</span>
+                <span className="text-muted-foreground font-mono">• {fmtHHMM(dispatchInfo.scheduleTime)}</span>
+              </>
+            ) : dispatchInfo.cancelled ? (
+              <>
+                <Ban className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="font-medium">Envio cancelado</span>
+                <span className="text-muted-foreground font-mono">• era {fmtHHMM(dispatchInfo.scheduleTime)}</span>
+              </>
+            ) : (
+              <>
+                <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="font-medium">Será enviada às</span>
+                <span className="font-mono">{fmtHHMM(dispatchInfo.scheduleTime)}</span>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {dispatchInfo.cancelled ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCancelled(customer.id, false);
+                  onDispatchChanged?.();
+                }}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-0.5 text-[10px] font-medium hover:bg-muted"
+              >
+                <RotateCcw className="h-3 w-3" /> Reativar
+              </button>
+            ) : !dispatchInfo.sent ? (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCancelled(customer.id, true);
+                    onDispatchChanged?.();
+                    toast.success(`Envio cancelado para ${customer.name}`);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-0.5 text-[10px] font-medium hover:bg-muted"
+                >
+                  <Ban className="h-3 w-3" /> Cancelar envio
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const phoneD = onlyDigits(customer.whatsapp ?? "");
+                    if (!phoneD) { toast.error("Cliente sem WhatsApp."); return; }
+                    window.open(
+                      `https://wa.me/${phoneD}?text=${encodeURIComponent(dispatchInfo.message)}`,
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                    markSent(customer.id);
+                    onDispatchChanged?.();
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground hover:opacity-90"
+                >
+                  <Send className="h-3 w-3" /> Enviar agora
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap justify-end gap-1.5">
+
         <button
           type="button"
           onClick={onRenew}
