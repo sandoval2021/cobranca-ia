@@ -46,6 +46,7 @@ export const ownerNav: NavItem[] = [
   { to: "/configuracao-inicial", label: "Configuração Inicial", icon: Wand2, hint: "Configure os passos essenciais antes de usar o sistema" },
   { to: "/empresas", label: "Empresas", icon: Building2, hint: "Empresas cadastradas", superAdminOnly: true },
   { to: "/clientes", label: "Clientes", icon: Users, hint: "Sua base de clientes" },
+  { to: "/gestao-servicos", label: "Gestão Serviços", icon: Tv, hint: "Renove, edite e acompanhe cada serviço" },
   { to: "/operacao-dia", label: "Operação do dia", icon: CalendarClock, hint: "Quem precisa de atenção hoje" },
   { to: "/campanhas-manuais", label: "Campanhas manuais", icon: Megaphone, hint: "Monte listas e copie mensagens" },
   { to: "/pendencias", label: "Pendências", icon: AlertCircle, hint: "Tudo que precisa de atenção" },

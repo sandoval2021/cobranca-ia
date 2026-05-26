@@ -21,6 +21,7 @@ import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as IndicacoesRouteImport } from './routes/indicacoes'
 import { Route as ImportarClientesRouteImport } from './routes/importar-clientes'
 import { Route as IaRouteImport } from './routes/ia'
+import { Route as GestaoServicosRouteImport } from './routes/gestao-servicos'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaSimuladaRouteImport } from './routes/fila-simulada'
 import { Route as EmpresasRouteImport } from './routes/empresas'
@@ -98,6 +99,11 @@ const ImportarClientesRoute = ImportarClientesRouteImport.update({
 const IaRoute = IaRouteImport.update({
   id: '/ia',
   path: '/ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GestaoServicosRoute = GestaoServicosRouteImport.update({
+  id: '/gestao-servicos',
+  path: '/gestao-servicos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FinanceiroRoute = FinanceiroRouteImport.update({
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/empresas': typeof EmpresasRoute
   '/fila-simulada': typeof FilaSimuladaRoute
   '/financeiro': typeof FinanceiroRoute
+  '/gestao-servicos': typeof GestaoServicosRoute
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
@@ -242,6 +249,7 @@ export interface FileRoutesByTo {
   '/empresas': typeof EmpresasRoute
   '/fila-simulada': typeof FilaSimuladaRoute
   '/financeiro': typeof FinanceiroRoute
+  '/gestao-servicos': typeof GestaoServicosRoute
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/empresas': typeof EmpresasRoute
   '/fila-simulada': typeof FilaSimuladaRoute
   '/financeiro': typeof FinanceiroRoute
+  '/gestao-servicos': typeof GestaoServicosRoute
   '/ia': typeof IaRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/fila-simulada'
     | '/financeiro'
+    | '/gestao-servicos'
     | '/ia'
     | '/importar-clientes'
     | '/indicacoes'
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/fila-simulada'
     | '/financeiro'
+    | '/gestao-servicos'
     | '/ia'
     | '/importar-clientes'
     | '/indicacoes'
@@ -373,6 +384,7 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/fila-simulada'
     | '/financeiro'
+    | '/gestao-servicos'
     | '/ia'
     | '/importar-clientes'
     | '/indicacoes'
@@ -406,6 +418,7 @@ export interface RootRouteChildren {
   EmpresasRoute: typeof EmpresasRoute
   FilaSimuladaRoute: typeof FilaSimuladaRoute
   FinanceiroRoute: typeof FinanceiroRoute
+  GestaoServicosRoute: typeof GestaoServicosRoute
   IaRoute: typeof IaRoute
   ImportarClientesRoute: typeof ImportarClientesRoute
   IndicacoesRoute: typeof IndicacoesRoute
@@ -504,6 +517,13 @@ declare module '@tanstack/react-router' {
       path: '/ia'
       fullPath: '/ia'
       preLoaderRoute: typeof IaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gestao-servicos': {
+      id: '/gestao-servicos'
+      path: '/gestao-servicos'
+      fullPath: '/gestao-servicos'
+      preLoaderRoute: typeof GestaoServicosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/financeiro': {
@@ -654,6 +674,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmpresasRoute: EmpresasRoute,
   FilaSimuladaRoute: FilaSimuladaRoute,
   FinanceiroRoute: FinanceiroRoute,
+  GestaoServicosRoute: GestaoServicosRoute,
   IaRoute: IaRoute,
   ImportarClientesRoute: ImportarClientesRoute,
   IndicacoesRoute: IndicacoesRoute,
