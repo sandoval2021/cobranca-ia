@@ -98,6 +98,7 @@ export function QuickRenewDialog({
     setDone(null);
     setBusy(false);
     setAppAmount("");
+    setDiscount("");
     const base = monthlyAmountCents != null ? monthlyAmountCents / 100 : null;
     setAmount(base != null ? base.toFixed(2).replace(".", ",") : "");
   }, [open, customerId, monthlyAmountCents]);
