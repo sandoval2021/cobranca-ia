@@ -55,7 +55,7 @@ export const ownerNav: NavItem[] = [
   { to: "/campanhas-manuais", label: "Campanhas manuais", icon: Megaphone, hint: "Monte listas e copie mensagens" },
   { to: "/pendencias", label: "Pendências", icon: AlertCircle, hint: "Tudo que precisa de atenção" },
   { to: "/importar-clientes", label: "Importar clientes", icon: Upload, hint: "Importar clientes a partir de PDF", superAdminOnly: true },
-  { to: "/agenda-disparo", label: "Agenda de disparo", icon: CalendarClock, hint: "Horário, intervalo e ritmo dos envios automáticos por valor de serviço" },
+  
   { to: "/cobrancas", label: "Cobranças", icon: Receipt, hint: "Cobranças geradas", superAdminOnly: true },
   { to: "/mensagens", label: "Mensagens", icon: MessageCircle, hint: "Mensagens enviadas", superAdminOnly: true },
   { to: "/ia", label: "IA Cobrança", icon: Sparkles, hint: "Mensagens geradas pela IA", superAdminOnly: true },
