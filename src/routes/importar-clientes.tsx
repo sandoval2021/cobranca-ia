@@ -382,6 +382,13 @@ function ImportarClientesPage() {
           duplicated: counts.duplicate_file,
           errored: counts.error,
         });
+        const notImported: number[] = [];
+        (rows ?? []).forEach((row, i) => {
+          if (row.status !== "valid") notImported.push(i);
+        });
+        setNotImportedIdx(notImported);
+        setSkippedIdx(new Set());
+        setForcedIdx(new Set());
         toast.success("Importação concluída.");
         setLookupBump((n) => n + 1);
       }
