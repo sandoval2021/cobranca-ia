@@ -463,6 +463,9 @@ export function formatScreenAsText(
   const r = routeLabel(s.route);
   if (r) lines.push(`Rota: ${r}`);
   if (s.due_date) lines.push(`Vencimento: ${fmtDate(s.due_date)}`);
+  if (s.plan_value) lines.push(`Valor: R$ ${s.plan_value}`);
+  if (s.app_due_date) lines.push(`Vencimento do app: ${fmtDate(s.app_due_date)}`);
+  if (s.app_renewal_value) lines.push(`Renovação do app: R$ ${s.app_renewal_value}`);
   if (s.needs_server_update) lines.push(`⚠ Precisa atualizar servidor`);
   if (s.notes) lines.push(`Observações: ${s.notes}`);
   return lines.join("\n");
