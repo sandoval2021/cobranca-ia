@@ -66,10 +66,11 @@ function CadastrosServicosPage() {
     reload();
   }
 
-  function remove(s: ServiceItem) {
-    if (!confirm(`Excluir o plano "${s.nome}"?`)) return;
-    deleteService(s.id);
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    deleteService(pendingDelete.id);
     toast.success("Plano excluído");
+    setPendingDelete(null);
     reload();
   }
 
