@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   AUTO_DISPATCH_EVENT,
-  computeScheduleTime,
   fmtHHMM,
   getAutoDispatchConfig,
   getCancelled,
@@ -20,33 +19,15 @@ import {
   setCancelled,
   type AutoDispatchConfig,
 } from "@/lib/auto-dispatch";
+import { MANUAL_RULES_EVENT } from "@/lib/manual-dispatch-rules";
+import { type AppScreen } from "@/lib/app-screens";
 import {
-  applyTemplate,
-  listRules,
-  MANUAL_RULES_EVENT,
-  pickRule,
-} from "@/lib/manual-dispatch-rules";
-import { nextDueDays, type AppScreen } from "@/lib/app-screens";
-import { getCustomerDueOverride } from "@/lib/customer-due-override";
+  computeAutoDispatchQueue,
+  type AutoDispatchQueueItem as QueueItem,
+  type QueueClientLike,
+} from "@/lib/auto-dispatch-queue";
 
-type ClientLike = {
-  id: string;
-  name: string;
-  whatsapp: string | null;
-  due_day: number | null;
-  amount_cents: number | null;
-};
-
-type QueueItem = {
-  client: ClientLike;
-  daysUntilDue: number;
-  ruleId: string;
-  ruleName: string;
-  scheduleTime: Date;
-  message: string;
-  cancelled: boolean;
-  sent: boolean;
-};
+type ClientLike = QueueClientLike;
 
 const DAYS = [
   { k: "dom", label: "Dom" }, { k: "seg", label: "Seg" }, { k: "ter", label: "Ter" },
@@ -54,10 +35,6 @@ const DAYS = [
   { k: "sab", label: "Sáb" },
 ] as const;
 
-function fmtBRL(cents: number | null) {
-  if (cents == null) return "—";
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
-}
 function onlyDigits(s: string) { return (s || "").replace(/\D+/g, ""); }
 function fmtDueDateBR(daysUntil: number): string {
   const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + daysUntil);
@@ -67,12 +44,14 @@ function fmtDueDateBR(daysUntil: number): string {
 export function AutoDispatchTodayPanel({
   items,
   allScreens,
+  defaultOpen = false,
 }: {
   items: ClientLike[] | null;
   allScreens: Record<string, AppScreen[]>;
+  defaultOpen?: boolean;
 }) {
   const [cfg, setCfg] = useState<AutoDispatchConfig>(() => getAutoDispatchConfig());
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(defaultOpen);
   const [showCfg, setShowCfg] = useState(false);
   const [tick, setTick] = useState(0);
 
