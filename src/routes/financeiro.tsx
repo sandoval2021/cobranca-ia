@@ -153,13 +153,13 @@ function FinanceiroPage() {
       <SummaryCards summary={summary} />
 
       <Tabs defaultValue="entradas" className="mt-6">
-        <TabsList className="w-full overflow-x-auto flex justify-start gap-1">
-          <TabsTrigger value="entradas"><Receipt className="h-4 w-4 mr-1" />Entradas</TabsTrigger>
-          <TabsTrigger value="custos"><SettingsIcon className="h-4 w-4 mr-1" />Custos</TabsTrigger>
-          <TabsTrigger value="objetivos"><Target className="h-4 w-4 mr-1" />Objetivos</TabsTrigger>
-          <TabsTrigger value="simulador"><Calculator className="h-4 w-4 mr-1" />Simulador</TabsTrigger>
-          <TabsTrigger value="graficos"><TrendingUp className="h-4 w-4 mr-1" />Gráficos</TabsTrigger>
-          <TabsTrigger value="export"><Download className="h-4 w-4 mr-1" />Backup</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-6 gap-1 h-auto">
+          <TabsTrigger value="entradas" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><Receipt className="h-4 w-4" /><span className="truncate">Entradas</span></TabsTrigger>
+          <TabsTrigger value="custos" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><SettingsIcon className="h-4 w-4" /><span className="truncate">Custos</span></TabsTrigger>
+          <TabsTrigger value="objetivos" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><Target className="h-4 w-4" /><span className="truncate">Metas</span></TabsTrigger>
+          <TabsTrigger value="simulador" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><Calculator className="h-4 w-4" /><span className="truncate">Simulador</span></TabsTrigger>
+          <TabsTrigger value="graficos" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><TrendingUp className="h-4 w-4" /><span className="truncate">Gráficos</span></TabsTrigger>
+          <TabsTrigger value="export" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><Download className="h-4 w-4" /><span className="truncate">Backup</span></TabsTrigger>
         </TabsList>
 
         <TabsContent value="entradas" className="mt-4">
