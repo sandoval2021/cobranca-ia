@@ -322,14 +322,6 @@ function AgendaDisparoPage() {
           </div>
         )}
       </Card>
-
-      <p className="mt-4 mb-2 text-[11px] text-muted-foreground inline-flex items-start gap-1 leading-snug">
-        <Save className="h-3 w-3 mt-0.5 shrink-0" />
-        <span>
-          Tudo é salvo automaticamente neste aparelho. Você pode alterar quantas vezes quiser — a
-          próxima rodada de disparos já usa as novas configurações.
-        </span>
-      </p>
     </PageContainer>
   );
 }
