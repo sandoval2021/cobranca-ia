@@ -552,7 +552,7 @@ function ClientesPage() {
       </div>
       <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
 
-      <AutoDispatchTodayPanel items={items} allScreens={allScreens} defaultOpen={false} />
+
 
       {/* Busca */}
       <div className="relative mb-3">
@@ -640,6 +640,10 @@ function ClientesPage() {
           </button>
         ))}
       </div>
+
+      <AutoDispatchTodayPanel items={items} allScreens={allScreens} defaultOpen={false} />
+
+
 
 
       {/* Estados */}

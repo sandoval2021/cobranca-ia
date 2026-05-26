@@ -174,40 +174,44 @@ export function FinanceDashboard() {
     return ((lastTwo[1].revenue - lastTwo[0].revenue) / lastTwo[0].revenue) * 100;
   })();
 
+  const toneRevenue = (v: number) => (v > 0 ? "emerald" : "muted") as Tone;
+  const toneEstimate = (v: number) => (v > 0 ? "indigo" : "muted") as Tone;
+  const toneNew = (v: number) => (v > 0 ? "violet" : "muted") as Tone;
+
   return (
     <div className="space-y-4 mb-4">
       {/* Apurado hoje + renovações */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <Kpi icon={<Wallet className="h-4 w-4" />} label="Apurado hoje" value={formatBRL(periods.apuradoHoje)}
+        <Kpi tone={toneRevenue(periods.apuradoHoje)} icon={<Wallet className="h-4 w-4" />} label="Apurado hoje" value={formatBRL(periods.apuradoHoje)}
           hint={`Lucro ${formatBRL(periods.lucroHoje)} • ${periods.renovHoje} renovação(ões)`} />
-        <Kpi icon={<CalendarRange className="h-4 w-4" />} label="Apurado semana" value={formatBRL(periods.apuradoSemana)}
+        <Kpi tone={toneRevenue(periods.apuradoSemana)} icon={<CalendarRange className="h-4 w-4" />} label="Apurado semana" value={formatBRL(periods.apuradoSemana)}
           hint={`${periods.renovSemana} renovações`} />
-        <Kpi icon={<CalendarRange className="h-4 w-4" />} label="Apurado mês" value={formatBRL(periods.apuradoMes)}
+        <Kpi tone={toneRevenue(periods.apuradoMes)} icon={<CalendarRange className="h-4 w-4" />} label="Apurado mês" value={formatBRL(periods.apuradoMes)}
           hint={`Lucro ${formatBRL(periods.lucroMes)} • ${periods.renovMes} renovações`} />
         <Kpi
+          tone={diffPct == null ? "muted" : diffPct >= 0 ? "emerald" : "rose"}
           icon={diffPct != null && diffPct >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
           label="vs mês anterior"
           value={diffPct == null ? "—" : `${diffPct >= 0 ? "+" : ""}${diffPct.toFixed(1)}%`}
-          accent={diffPct == null ? "" : diffPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}
           hint="Comparativo de receita"
         />
       </div>
 
       {/* Estimativas a receber */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <Kpi icon={<Wallet className="h-4 w-4" />} label="Estimativa hoje" value={formatBRL(clientStats.estHoje / 100)} hint="Vencimentos do dia" />
-        <Kpi icon={<Wallet className="h-4 w-4" />} label="Estimativa 7 dias" value={formatBRL(clientStats.estSemana / 100)} hint="A vencer nesta semana" />
-        <Kpi icon={<Wallet className="h-4 w-4" />} label="Estimativa do mês" value={formatBRL(clientStats.estMes / 100)} hint="A vencer até fim do mês" />
-        <Kpi icon={<UserPlus className="h-4 w-4" />} label="Novos clientes (mês)" value={String(clientStats.novosMes)}
+        <Kpi tone={toneEstimate(clientStats.estHoje)} icon={<Wallet className="h-4 w-4" />} label="Estimativa hoje" value={formatBRL(clientStats.estHoje / 100)} hint="Vencimentos do dia" />
+        <Kpi tone={toneEstimate(clientStats.estSemana)} icon={<Wallet className="h-4 w-4" />} label="Estimativa 7 dias" value={formatBRL(clientStats.estSemana / 100)} hint="A vencer nesta semana" />
+        <Kpi tone={toneEstimate(clientStats.estMes)} icon={<Wallet className="h-4 w-4" />} label="Estimativa do mês" value={formatBRL(clientStats.estMes / 100)} hint="A vencer até fim do mês" />
+        <Kpi tone={toneNew(clientStats.novosMes)} icon={<UserPlus className="h-4 w-4" />} label="Novos clientes (mês)" value={String(clientStats.novosMes)}
           hint={`Hoje ${clientStats.novosHoje} • Semana ${clientStats.novosSemana}`} />
       </div>
 
       {/* Base de clientes */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <Kpi icon={<UserCheck className="h-4 w-4 text-emerald-600" />} label="Clientes ativos" value={String(clientStats.ativos)} accent="text-emerald-600 dark:text-emerald-400" />
-        <Kpi icon={<UserX className="h-4 w-4 text-amber-600" />} label="Clientes vencidos" value={String(clientStats.vencidos)} accent="text-amber-600 dark:text-amber-400" />
-        <Kpi icon={<Users className="h-4 w-4" />} label="Base total" value={String(customers.length)} />
-        <Kpi icon={<UserPlus className="h-4 w-4" />} label="Novos hoje" value={String(clientStats.novosHoje)} />
+        <Kpi tone={clientStats.ativos > 0 ? "emerald" : "muted"} icon={<UserCheck className="h-4 w-4" />} label="Clientes ativos" value={String(clientStats.ativos)} />
+        <Kpi tone={clientStats.vencidos > 0 ? "amber" : "muted"} icon={<UserX className="h-4 w-4" />} label="Clientes vencidos" value={String(clientStats.vencidos)} />
+        <Kpi tone="sky" icon={<Users className="h-4 w-4" />} label="Base total" value={String(customers.length)} />
+        <Kpi tone={toneNew(clientStats.novosHoje)} icon={<UserPlus className="h-4 w-4" />} label="Novos hoje" value={String(clientStats.novosHoje)} />
       </div>
 
       {/* Gráfico comparativo 6 meses */}
@@ -236,14 +240,44 @@ export function FinanceDashboard() {
   );
 }
 
-function Kpi({ icon, label, value, hint, accent }: { icon: React.ReactNode; label: string; value: string; hint?: string; accent?: string }) {
+type Tone = "muted" | "emerald" | "rose" | "amber" | "indigo" | "violet" | "sky";
+const TONE_BG: Record<Tone, string> = {
+  muted: "bg-card border-border",
+  emerald: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/60 dark:border-emerald-900/50",
+  rose: "bg-rose-50 dark:bg-rose-950/30 border-rose-200/60 dark:border-rose-900/50",
+  amber: "bg-amber-50 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-900/50",
+  indigo: "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200/60 dark:border-indigo-900/50",
+  violet: "bg-violet-50 dark:bg-violet-950/30 border-violet-200/60 dark:border-violet-900/50",
+  sky: "bg-sky-50 dark:bg-sky-950/30 border-sky-200/60 dark:border-sky-900/50",
+};
+const TONE_TEXT: Record<Tone, string> = {
+  muted: "text-foreground",
+  emerald: "text-emerald-700 dark:text-emerald-300",
+  rose: "text-rose-700 dark:text-rose-300",
+  amber: "text-amber-700 dark:text-amber-300",
+  indigo: "text-indigo-700 dark:text-indigo-300",
+  violet: "text-violet-700 dark:text-violet-300",
+  sky: "text-sky-700 dark:text-sky-300",
+};
+const TONE_ICON: Record<Tone, string> = {
+  muted: "text-muted-foreground",
+  emerald: "text-emerald-600 dark:text-emerald-400",
+  rose: "text-rose-600 dark:text-rose-400",
+  amber: "text-amber-600 dark:text-amber-400",
+  indigo: "text-indigo-600 dark:text-indigo-400",
+  violet: "text-violet-600 dark:text-violet-400",
+  sky: "text-sky-600 dark:text-sky-400",
+};
+
+function Kpi({ icon, label, value, hint, tone = "muted" }: { icon: React.ReactNode; label: string; value: string; hint?: string; tone?: Tone }) {
   return (
-    <Card className="p-3">
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+    <Card className={cn("p-3 border", TONE_BG[tone])}>
+      <div className={cn("flex items-center gap-1.5 text-[11px]", TONE_ICON[tone])}>
         {icon}<span className="truncate">{label}</span>
       </div>
-      <div className={cn("text-lg sm:text-xl font-semibold mt-1 leading-tight", accent)}>{value}</div>
+      <div className={cn("text-lg sm:text-xl font-semibold mt-1 leading-tight", TONE_TEXT[tone])}>{value}</div>
       {hint && <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{hint}</div>}
     </Card>
   );
 }
+

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Download, Upload, Copy, Target, Calculator,
-  TrendingUp, Receipt, Settings as SettingsIcon, Info,
+  TrendingUp, Receipt, Settings as SettingsIcon, Info, Save,
 } from "lucide-react";
 
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -153,13 +153,13 @@ function FinanceiroPage() {
       <SummaryCards summary={summary} />
 
       <Tabs defaultValue="entradas" className="mt-6">
-        <TabsList className="w-full overflow-x-auto flex justify-start gap-1">
-          <TabsTrigger value="entradas"><Receipt className="h-4 w-4 mr-1" />Entradas</TabsTrigger>
-          <TabsTrigger value="custos"><SettingsIcon className="h-4 w-4 mr-1" />Custos</TabsTrigger>
-          <TabsTrigger value="objetivos"><Target className="h-4 w-4 mr-1" />Objetivos</TabsTrigger>
-          <TabsTrigger value="simulador"><Calculator className="h-4 w-4 mr-1" />Simulador</TabsTrigger>
-          <TabsTrigger value="graficos"><TrendingUp className="h-4 w-4 mr-1" />Gráficos</TabsTrigger>
-          <TabsTrigger value="export"><Download className="h-4 w-4 mr-1" />Backup</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-6 gap-1 h-auto">
+          <TabsTrigger value="entradas" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><Receipt className="h-4 w-4" /><span className="truncate">Entradas</span></TabsTrigger>
+          <TabsTrigger value="custos" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><SettingsIcon className="h-4 w-4" /><span className="truncate">Custos</span></TabsTrigger>
+          <TabsTrigger value="objetivos" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><Target className="h-4 w-4" /><span className="truncate">Metas</span></TabsTrigger>
+          <TabsTrigger value="simulador" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><Calculator className="h-4 w-4" /><span className="truncate">Simulador</span></TabsTrigger>
+          <TabsTrigger value="graficos" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><TrendingUp className="h-4 w-4" /><span className="truncate">Gráficos</span></TabsTrigger>
+          <TabsTrigger value="export" className="flex-col sm:flex-row gap-0.5 sm:gap-1 px-1 py-2 text-[10px] sm:text-xs"><Download className="h-4 w-4" /><span className="truncate">Backup</span></TabsTrigger>
         </TabsList>
 
         <TabsContent value="entradas" className="mt-4">
@@ -319,6 +319,43 @@ function EntriesList({
 // ---------- Costs settings ----------
 function CostsSettings({ settings, onChange }: { settings: ReturnType<typeof getFinanceSettings>; onChange: (p: Partial<ReturnType<typeof getFinanceSettings>>) => void }) {
   const servers = listServers();
+  // estado local — só persiste ao clicar "Salvar"
+  const [biz, setBiz] = useState({
+    default_screen_cost: settings.default_screen_cost,
+    monthly_fixed_cost: settings.monthly_fixed_cost,
+    reserve_mode: settings.reserve_mode,
+    reserve_value: settings.reserve_value,
+  });
+  const [serverCosts, setServerCosts] = useState<Record<string, { monthly: number; per_screen: number }>>(() => {
+    const out: Record<string, { monthly: number; per_screen: number }> = {};
+    servers.forEach((s) => {
+      const c = settings.servers.find((x) => x.server_id === s.id);
+      out[s.id] = { monthly: c?.monthly ?? 0, per_screen: c?.per_screen ?? 0 };
+    });
+    return out;
+  });
+  const [appCosts, setAppCosts] = useState<Record<string, { license_cost: number; suggested_price: number }>>(() => {
+    const out: Record<string, { license_cost: number; suggested_price: number }> = {};
+    APP_OPTIONS.forEach((k) => {
+      if (APP_CATALOG[k].tier !== "pago") return;
+      const c = settings.apps.find((a) => a.app_key === k);
+      out[k] = { license_cost: c?.license_cost ?? 0, suggested_price: c?.suggested_price ?? 0 };
+    });
+    return out;
+  });
+
+  const saveBiz = () => { onChange(biz); toast.success("Custos do negócio salvos"); };
+  const saveServer = (sid: string) => {
+    const v = serverCosts[sid]; if (!v) return;
+    upsertServerCost({ server_id: sid, monthly: v.monthly, per_screen: v.per_screen });
+    toast.success("Custo do servidor salvo");
+  };
+  const saveApp = (k: string) => {
+    const v = appCosts[k]; if (!v) return;
+    upsertAppCost({ app_key: k, license_cost: v.license_cost, suggested_price: v.suggested_price });
+    toast.success("Custo do app salvo");
+  };
+
   return (
     <div className="space-y-4">
       <Card className="p-4 space-y-3">
@@ -326,15 +363,17 @@ function CostsSettings({ settings, onChange }: { settings: ReturnType<typeof get
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label className="text-xs">Custo padrão por tela/lista (R$)</Label>
-            <Input type="number" step="0.01" defaultValue={settings.default_screen_cost} onBlur={(e) => onChange({ default_screen_cost: Number(e.target.value) || 0 })} />
+            <Input type="number" step="0.01" value={biz.default_screen_cost}
+              onChange={(e) => setBiz({ ...biz, default_screen_cost: Number(e.target.value) || 0 })} />
           </div>
           <div>
             <Label className="text-xs">Custo fixo mensal (R$)</Label>
-            <Input type="number" step="0.01" defaultValue={settings.monthly_fixed_cost} onBlur={(e) => onChange({ monthly_fixed_cost: Number(e.target.value) || 0 })} />
+            <Input type="number" step="0.01" value={biz.monthly_fixed_cost}
+              onChange={(e) => setBiz({ ...biz, monthly_fixed_cost: Number(e.target.value) || 0 })} />
           </div>
           <div>
             <Label className="text-xs">Modo de reserva</Label>
-            <Select value={settings.reserve_mode} onValueChange={(v) => onChange({ reserve_mode: v as "percentual" | "valor_fixo" | "desativado" })}>
+            <Select value={biz.reserve_mode} onValueChange={(v) => setBiz({ ...biz, reserve_mode: v as "percentual" | "valor_fixo" | "desativado" })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="percentual">Percentual (%)</SelectItem>
@@ -345,8 +384,12 @@ function CostsSettings({ settings, onChange }: { settings: ReturnType<typeof get
           </div>
           <div>
             <Label className="text-xs">Reserva padrão</Label>
-            <Input type="number" step="0.01" defaultValue={settings.reserve_value} onBlur={(e) => onChange({ reserve_value: Number(e.target.value) || 0 })} />
+            <Input type="number" step="0.01" value={biz.reserve_value}
+              onChange={(e) => setBiz({ ...biz, reserve_value: Number(e.target.value) || 0 })} />
           </div>
+        </div>
+        <div className="flex justify-end">
+          <Button size="sm" onClick={saveBiz}><Save className="h-4 w-4 mr-1" />Salvar</Button>
         </div>
       </Card>
 
@@ -355,19 +398,22 @@ function CostsSettings({ settings, onChange }: { settings: ReturnType<typeof get
         {servers.length === 0 ? (
           <p className="text-xs text-muted-foreground">Nenhum servidor cadastrado. Vá em Servidores para criar.</p>
         ) : servers.map((s) => {
-          const c = settings.servers.find((x) => x.server_id === s.id);
+          const v = serverCosts[s.id] ?? { monthly: 0, per_screen: 0 };
           return (
-            <div key={s.id} className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end border-b last:border-0 pb-2">
+            <div key={s.id} className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end border-b last:border-0 pb-2">
               <div className="text-sm font-medium" style={{ color: s.color }}>{s.name}</div>
               <div>
                 <Label className="text-xs">Custo mensal (R$)</Label>
-                <Input type="number" step="0.01" defaultValue={c?.monthly ?? 0}
-                  onBlur={(e) => upsertServerCost({ server_id: s.id, monthly: Number(e.target.value) || 0, per_screen: c?.per_screen ?? 0, notes: c?.notes })} />
+                <Input type="number" step="0.01" value={v.monthly}
+                  onChange={(e) => setServerCosts({ ...serverCosts, [s.id]: { ...v, monthly: Number(e.target.value) || 0 } })} />
               </div>
               <div>
                 <Label className="text-xs">Custo por tela (R$)</Label>
-                <Input type="number" step="0.01" defaultValue={c?.per_screen ?? 0}
-                  onBlur={(e) => upsertServerCost({ server_id: s.id, monthly: c?.monthly ?? 0, per_screen: Number(e.target.value) || 0, notes: c?.notes })} />
+                <Input type="number" step="0.01" value={v.per_screen}
+                  onChange={(e) => setServerCosts({ ...serverCosts, [s.id]: { ...v, per_screen: Number(e.target.value) || 0 } })} />
+              </div>
+              <div className="flex justify-end">
+                <Button size="sm" variant="outline" onClick={() => saveServer(s.id)}><Save className="h-4 w-4 mr-1" />Salvar</Button>
               </div>
             </div>
           );
@@ -379,19 +425,22 @@ function CostsSettings({ settings, onChange }: { settings: ReturnType<typeof get
         {APP_OPTIONS.map((appKey) => {
           const meta = APP_CATALOG[appKey];
           if (meta.tier !== "pago") return null;
-          const c = settings.apps.find((a) => a.app_key === appKey);
+          const v = appCosts[appKey] ?? { license_cost: 0, suggested_price: 0 };
           return (
-            <div key={appKey} className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end border-b last:border-0 pb-2">
+            <div key={appKey} className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end border-b last:border-0 pb-2">
               <div className="text-sm font-medium">{meta.label}</div>
               <div>
                 <Label className="text-xs">Licença (R$)</Label>
-                <Input type="number" step="0.01" defaultValue={c?.license_cost ?? 0}
-                  onBlur={(e) => upsertAppCost({ app_key: appKey, license_cost: Number(e.target.value) || 0, suggested_price: c?.suggested_price ?? 0 })} />
+                <Input type="number" step="0.01" value={v.license_cost}
+                  onChange={(e) => setAppCosts({ ...appCosts, [appKey]: { ...v, license_cost: Number(e.target.value) || 0 } })} />
               </div>
               <div>
                 <Label className="text-xs">Preço sugerido (R$)</Label>
-                <Input type="number" step="0.01" defaultValue={c?.suggested_price ?? 0}
-                  onBlur={(e) => upsertAppCost({ app_key: appKey, license_cost: c?.license_cost ?? 0, suggested_price: Number(e.target.value) || 0 })} />
+                <Input type="number" step="0.01" value={v.suggested_price}
+                  onChange={(e) => setAppCosts({ ...appCosts, [appKey]: { ...v, suggested_price: Number(e.target.value) || 0 } })} />
+              </div>
+              <div className="flex justify-end">
+                <Button size="sm" variant="outline" onClick={() => saveApp(appKey)}><Save className="h-4 w-4 mr-1" />Salvar</Button>
               </div>
             </div>
           );
