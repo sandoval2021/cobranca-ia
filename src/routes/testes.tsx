@@ -829,3 +829,281 @@ function ConvertDialog({
     </Dialog>
   );
 }
+
+// --- ClosedDialog: converts trial lead into active customer ---
+function toE164FromLead(raw: string): string {
+  const trimmed = (raw || "").trim();
+  const digits = trimmed.replace(/\D/g, "");
+  if (!digits) return "";
+  if (trimmed.startsWith("+")) return `+${digits}`;
+  if (digits.length === 10 || digits.length === 11) return `+55${digits}`;
+  return `+${digits}`;
+}
+
+function addDaysDate(base: Date, days: number) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function fmtBR(d: Date) {
+  return d.toLocaleDateString("pt-BR");
+}
+
+function buildClosedMessage(opts: {
+  vencimento: Date;
+  app?: string;
+  usuario?: string;
+  telas?: number;
+  servidor?: string;
+}) {
+  const lines: string[] = [];
+  lines.push("Olá, tudo bem? 😊");
+  lines.push("");
+  lines.push("Muito obrigado por fechar conosco!");
+  lines.push(`Seu acesso ficou ativo até: ${fmtBR(opts.vencimento)}.`);
+  lines.push("Vamos te lembrar 3 dias antes do vencimento para você não ficar sem acesso.");
+  const info: string[] = [];
+  if (opts.app && opts.app.trim()) info.push(`App: ${opts.app.trim()}`);
+  if (opts.usuario && opts.usuario.trim()) info.push(`Usuário: ${opts.usuario.trim()}`);
+  if (opts.telas && opts.telas > 0) info.push(`Telas: ${opts.telas}`);
+  if (opts.servidor && opts.servidor.trim()) info.push(`Servidor: ${opts.servidor.trim()}`);
+  if (info.length) {
+    lines.push("");
+    lines.push("Informações do seu acesso:");
+    lines.push(...info);
+  }
+  lines.push("");
+  lines.push("Qualquer dúvida, é só chamar por aqui.");
+  return lines.join("\n");
+}
+
+function ClosedDialog({
+  lead, onClose, onConverted,
+}: {
+  lead: TrialLead | null;
+  onClose: () => void;
+  onConverted: (l: TrialLead) => void;
+}) {
+  const [months, setMonths] = useState<number>(1);
+  const [customMonths, setCustomMonths] = useState<string>("");
+  const [valor, setValor] = useState<string>("");
+  const [telas, setTelas] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState<null | { msg: string; waLink: string }>(null);
+
+  useEffect(() => {
+    if (lead) {
+      setMonths(1);
+      setCustomMonths("");
+      setValor(lead.valor_cents ? (lead.valor_cents / 100).toFixed(2).replace(".", ",") : "");
+      setTelas("");
+      setDone(null);
+      setBusy(false);
+    }
+  }, [lead]);
+
+  if (!lead) return null;
+
+  const effectiveMonths = months === -1
+    ? Math.max(1, Math.min(36, parseInt(customMonths || "0", 10) || 0))
+    : months;
+  const today = new Date();
+  const vencimento = addDaysDate(today, effectiveMonths * 30);
+  const valorCents = (() => {
+    const n = parseFloat((valor || "").replace(/\./g, "").replace(",", "."));
+    if (!isFinite(n) || n <= 0) return lead.valor_cents ?? 0;
+    return Math.round(n * 100);
+  })();
+  const telasNum = parseInt(telas || "0", 10) || 0;
+
+  async function confirmar() {
+    if (effectiveMonths < 1) {
+      toast.error("Informe a quantidade de meses (mínimo 1).");
+      return;
+    }
+    if (!supabase) {
+      toast.error("Conexão indisponível.");
+      return;
+    }
+    setBusy(true);
+    const { accountId: companyId, error: companyErr } = await getActiveAccountId();
+    if (!companyId) {
+      setBusy(false);
+      console.warn("[fechou] sem UUID de conta", companyErr);
+      toast.error("Não foi possível preparar sua conta. Saia e entre novamente.");
+      return;
+    }
+    const e164 = toE164FromLead(lead.whatsapp);
+    if (!e164) {
+      setBusy(false);
+      toast.error("WhatsApp inválido neste teste.");
+      return;
+    }
+    const payload = {
+      p_company_id: companyId,
+      p_name: (lead.nome || "").trim() || "Cliente",
+      p_whatsapp_e164: e164,
+      p_amount_cents: valorCents,
+      p_due_day: vencimento.getDate(),
+      p_notes: `Convertido do teste em ${fmtBR(today)} — ${effectiveMonths} mês(es). Vencimento ${fmtBR(vencimento)}.`,
+    };
+    const { error } = await supabase.rpc("create_customer_admin", payload);
+    if (error) {
+      setBusy(false);
+      const e = error as { code?: string; message?: string };
+      const msg = (e.message ?? "").toLowerCase();
+      if (e.code === "23505" || msg.includes("duplicate") || msg.includes("unique")) {
+        toast.error("Este WhatsApp já está cadastrado em Clientes.");
+      } else {
+        toast.error("Não foi possível converter o teste. Tente novamente.");
+      }
+      console.warn("[fechou] error", { code: e.code, message: e.message });
+      return;
+    }
+    const finalMsg = buildClosedMessage({
+      vencimento,
+      app: lead.app,
+      usuario: lead.usuario,
+      telas: telasNum > 0 ? telasNum : undefined,
+      servidor: lead.servidor,
+    });
+    const waDigits = e164.replace(/\D/g, "");
+    const waHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(finalMsg)}`;
+    setBusy(false);
+    setDone({ msg: finalMsg, waLink: waHref });
+    toast.success("Cliente convertido com sucesso.");
+    onConverted(lead);
+  }
+
+  const lembrete = addDaysDate(vencimento, -3);
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Cliente fechou?</DialogTitle>
+          <DialogDescription>
+            Escolha por quantos meses o cliente contratou. O vencimento será calculado automaticamente (30 dias por mês).
+          </DialogDescription>
+        </DialogHeader>
+
+        {!done ? (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMonths(m)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-sm",
+                    months === m ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface hover:bg-surface-muted",
+                  )}
+                >{m} {m === 1 ? "mês" : "meses"}</button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setMonths(-1)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-sm",
+                  months === -1 ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface hover:bg-surface-muted",
+                )}
+              >Personalizado</button>
+            </div>
+            {months === -1 && (
+              <div>
+                <Label className="text-xs">Quantidade de meses</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={36}
+                  value={customMonths}
+                  onChange={(e) => setCustomMonths(e.target.value)}
+                  placeholder="Ex.: 6"
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Data de início</Label>
+                <div className="rounded-md border border-border bg-surface-muted px-3 py-2 text-sm">{fmtBR(today)}</div>
+              </div>
+              <div>
+                <Label className="text-xs">Vencimento</Label>
+                <div className="rounded-md border border-border bg-surface-muted px-3 py-2 text-sm font-medium">{fmtBR(vencimento)}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Valor mensal (R$)</Label>
+                <Input
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={valor}
+                  onChange={(e) => setValor(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Telas (opcional)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={telas}
+                  onChange={(e) => setTelas(e.target.value)}
+                  placeholder="Ex.: 1"
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Lembrete previsto para: {fmtBR(lembrete)}
+            </p>
+
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
+              <Button onClick={confirmar} disabled={busy}>
+                {busy ? "Convertendo…" : "Confirmar fechamento"}
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm">
+              Cliente convertido. Vencimento em <strong>{fmtBR(vencimento)}</strong>.
+            </p>
+            <Textarea
+              value={done.msg}
+              readOnly
+              className="min-h-[180px] text-sm"
+            />
+            <DialogFooter className="flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(done.msg);
+                  toast.success("Mensagem copiada");
+                }}
+                className="gap-1"
+              >
+                <Copy className="h-3.5 w-3.5" /> Copiar mensagem
+              </Button>
+              <Button asChild className="gap-1">
+                <a href={done.waLink} target="_blank" rel="noreferrer">
+                  <MessageCircle className="h-3.5 w-3.5" /> Abrir WhatsApp
+                </a>
+              </Button>
+              <Button asChild variant="outline" className="gap-1">
+                <Link to="/clientes">
+                  <ExternalLink className="h-3.5 w-3.5" /> Ver cliente
+                </Link>
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
