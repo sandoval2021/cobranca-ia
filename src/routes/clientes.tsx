@@ -1785,6 +1785,11 @@ function NewCustomerSheet({
           {/* Serviço */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
             <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Serviço</h3>
+            {(usuario.trim() || senha.trim() || mac.trim() || appKey.trim()) && (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700 dark:text-amber-300">
+                Credenciais ainda não possuem armazenamento seguro configurado. Salve o cliente agora e adicione essas informações quando a proteção estiver ativada.
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">Servidor</Label>
