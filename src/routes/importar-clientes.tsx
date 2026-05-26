@@ -729,34 +729,17 @@ function ImportarClientesPage() {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-4">
             <p className="text-xs text-muted-foreground">
               {counts.new} novos, {counts.existing} já cadastrados (serão atualizados),{" "}
               {counts.duplicate_file} duplicados no arquivo, {counts.error} com erro.
               {" "}Clientes já cadastrados serão atualizados, não duplicados.
             </p>
-            <div className="flex flex-col items-stretch gap-1 sm:items-end">
-              <Button
-                size="lg"
-                onClick={onConfirm}
-                disabled={!canConfirm}
-                className="w-full sm:w-auto"
-              >
-                {confirming ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Importando…
-                  </>
-                ) : (
-                  <>Confirmar importação</>
-                )}
-              </Button>
-              {disabledReason && (
-                <p className="text-[11px] text-muted-foreground sm:text-right">
-                  {disabledReason}
-                </p>
-              )}
-            </div>
+            {disabledReason && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {disabledReason}
+              </p>
+            )}
           </div>
 
         </Card>
