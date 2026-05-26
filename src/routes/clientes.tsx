@@ -87,6 +87,7 @@ import { computeAutoDispatchQueue, type AutoDispatchQueueItem } from "@/lib/auto
 import { AUTO_DISPATCH_EVENT, fmtHHMM, setCancelled, markSent } from "@/lib/auto-dispatch";
 import { MANUAL_RULES_EVENT } from "@/lib/manual-dispatch-rules";
 import { getCustomerDueOverride, daysFromOverride, fmtDateBRFromISO } from "@/lib/customer-due-override";
+import { getImportedDueByWhatsapp } from "@/lib/imported-due-dates";
 import { getCustomerExtras, setCustomerExtras } from "@/lib/customer-extras";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
@@ -281,7 +282,11 @@ const normalize = (r: Row): Customer => {
         ? Math.round((num(r, ["amount", "valor", "value", "monthly_amount"]) as number) * 100)
         : null),
     due_day: num(r, ["due_day", "dia_vencimento", "vencimento_dia"]),
-    due_date: pickDueDateFromRow(r),
+    due_date:
+      pickDueDateFromRow(r) ??
+      getImportedDueByWhatsapp(
+        str(r, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) ?? null,
+      ),
     status: str(r, ["status", "situacao"]),
     notes: str(r, ["notes", "observacoes", "observacao"]),
     raw: r,
