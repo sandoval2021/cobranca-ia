@@ -34,6 +34,7 @@ function CadastrosServicosPage() {
   const [items, setItems] = useState<ServiceItem[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ServiceItem | null>(null);
 
   const reload = () => setItems(listServices());
 
