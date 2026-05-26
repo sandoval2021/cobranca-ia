@@ -1773,7 +1773,10 @@ function NewCustomerSheet({
                 <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="(11) 99999-9999" inputMode="tel" maxLength={20} required />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Aniversário</Label>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Aniversário</Label>
+                  <HelpTip text="Aniversário depende de atualização no backend para ser salvo." />
+                </div>
                 <Input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
               </div>
             </div>
