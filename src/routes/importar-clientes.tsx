@@ -106,6 +106,10 @@ function ImportarClientesPage() {
   } | null>(null);
   const [existingMap, setExistingMap] = useState<Record<string, { name?: string }>>({});
   const [lookupLoading, setLookupLoading] = useState(false);
+  const [notImportedIdx, setNotImportedIdx] = useState<number[]>([]);
+  const [skippedIdx, setSkippedIdx] = useState<Set<number>>(new Set());
+  const [forcedIdx, setForcedIdx] = useState<Set<number>>(new Set());
+  const [forcingIdx, setForcingIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   // Auto-seleciona a empresa atual da sessão (mantém UI igual).
@@ -238,6 +242,9 @@ function ImportarClientesPage() {
   async function onFile(file: File) {
     setParseError(null);
     setResult(null);
+    setNotImportedIdx([]);
+    setSkippedIdx(new Set());
+    setForcedIdx(new Set());
     setRows(null);
     setFileName(file.name);
 
@@ -378,6 +385,13 @@ function ImportarClientesPage() {
           duplicated: counts.duplicate_file,
           errored: counts.error,
         });
+        const notImported: number[] = [];
+        (rows ?? []).forEach((row, i) => {
+          if (row.status !== "valid") notImported.push(i);
+        });
+        setNotImportedIdx(notImported);
+        setSkippedIdx(new Set());
+        setForcedIdx(new Set());
         toast.success("Importação concluída.");
         setLookupBump((n) => n + 1);
       }
@@ -386,6 +400,65 @@ function ImportarClientesPage() {
       toast.error("Falha ao importar: " + msg);
     } finally {
       setConfirming(false);
+    }
+  }
+
+  async function forceImportRow(idx: number) {
+    if (!supabase || !supabaseConfigured) return;
+    const r = rows?.[idx];
+    if (!r) return;
+    const effCompany =
+      companyId ??
+      (companyState.status === "ready" ? companyState.companyId : null);
+    if (!effCompany) {
+      toast.error("Empresa não encontrada.");
+      return;
+    }
+    if (!r.whatsapp_e164 && !r.customer_name) {
+      toast.error("Linha sem WhatsApp e sem nome — não dá para importar.");
+      return;
+    }
+    setForcingIdx(idx);
+    try {
+      const e = enrichments[idx];
+      const payload = [
+        {
+          external_code: r.external_code,
+          external_customer_code: r.external_customer_code,
+          customer_name: r.customer_name,
+          whatsapp_e164: r.whatsapp_e164,
+          service_name: r.service_name,
+          amount_cents: r.amount_cents,
+          expires_at: r.expires_at,
+          situation: r.situation,
+          raw_row: {
+            ...r.raw_row,
+            forced: true,
+            matched_service_id: e?.matched_service_id ?? null,
+            plan_label: e?.plan_label ?? null,
+            message_label: e?.message_label ?? null,
+            group_size: e?.group_size ?? 1,
+            group_conflict: e?.group_conflict ?? null,
+            observation: e?.observation ?? null,
+          },
+        },
+      ];
+      const { error } = await supabase.rpc(
+        "staging_import_customers_from_rows",
+        { p_company_id: effCompany, p_rows: payload as unknown as object },
+      );
+      if (error) {
+        toast.error("Não foi possível importar: " + error.message);
+        return;
+      }
+      toast.success("Cliente importado mesmo assim.");
+      setForcedIdx((prev) => {
+        const next = new Set(prev);
+        next.add(idx);
+        return next;
+      });
+    } finally {
+      setForcingIdx(null);
     }
   }
 
@@ -527,7 +600,7 @@ function ImportarClientesPage() {
       </Card>
 
       {/* Prévia */}
-      {rows && rows.length > 0 && (
+      {rows && rows.length > 0 && !result && (
         <Card className="mb-4 p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
@@ -835,6 +908,102 @@ function ImportarClientesPage() {
             <ResultCard label="Cobranças" value={result.charges ?? 0} />
             <ResultCard label="Duplicados" value={result.duplicated ?? 0} />
             <ResultCard label="Com erro" value={result.errored ?? 0} />
+          </div>
+        </Card>
+      )}
+
+      {/* Clientes não importados — ação por linha */}
+      {result && !result.message && rows && notImportedIdx.length > 0 && (
+        <Card className="mt-4 p-4">
+          <div className="mb-2 flex items-center gap-1.5">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-medium">Clientes não importados</span>
+          </div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Estes clientes foram pulados (duplicados no arquivo ou com erro).
+            Você pode importar mesmo assim ou ignorar.
+          </p>
+          <div className="space-y-2">
+            {notImportedIdx.map((i) => {
+              const r = rows[i];
+              const forced = forcedIdx.has(i);
+              const skipped = skippedIdx.has(i);
+              const isLoading = forcingIdx === i;
+              return (
+                <div
+                  key={i}
+                  className={`rounded-xl border p-3 text-xs ${
+                    forced
+                      ? "border-emerald-300/50 bg-emerald-50/50 dark:bg-emerald-950/20"
+                      : skipped
+                        ? "border-border bg-muted/30 opacity-60"
+                        : "border-border bg-card/50"
+                  }`}
+                >
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <KindPill kind={rowKind(r)} errors={r.errors} />
+                    <span className="text-[10px] text-muted-foreground">
+                      {r.external_code ?? ""}
+                    </span>
+                  </div>
+                  <p className="truncate text-sm font-semibold">
+                    {r.customer_name ?? "—"}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {r.whatsapp_e164 ?? "sem WhatsApp"} ·{" "}
+                    {r.service_name ?? "—"}
+                  </p>
+                  {r.errors.length > 0 && (
+                    <p className="mt-1 text-[11px] text-destructive">
+                      {r.errors.join(", ")}
+                    </p>
+                  )}
+                  {!forced && !skipped && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={isLoading}
+                        onClick={() => forceImportRow(i)}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Importando…
+                          </>
+                        ) : (
+                          "Importar mesmo assim"
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() =>
+                          setSkippedIdx((prev) => {
+                            const next = new Set(prev);
+                            next.add(i);
+                            return next;
+                          })
+                        }
+                      >
+                        Ignorar
+                      </Button>
+                    </div>
+                  )}
+                  {forced && (
+                    <p className="mt-1 text-[11px] text-emerald-700 dark:text-emerald-300">
+                      Importado mesmo assim.
+                    </p>
+                  )}
+                  {skipped && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Ignorado.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </Card>
       )}
