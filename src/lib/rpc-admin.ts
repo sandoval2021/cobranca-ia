@@ -3,6 +3,13 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 import { toast } from "sonner";
+import {
+  getCurrentCompany,
+  getCurrentCompanyId,
+  listCompanies,
+  ensureLocalAccount,
+} from "@/lib/companies";
+
 
 export type RpcErr = {
   message?: string;
