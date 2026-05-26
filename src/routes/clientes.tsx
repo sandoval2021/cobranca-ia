@@ -78,7 +78,6 @@ import {
 } from "@/lib/app-screens";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
-import { RenewScreensWizard } from "@/components/clientes/RenewScreensWizard";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
