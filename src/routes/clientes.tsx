@@ -1596,61 +1596,23 @@ function NewCustomerSheet({
 }) {
   const servers = useMemo(() => listActiveServers(), [open]);
 
-  // Bloco 1 — Dados do cliente
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [birthday, setBirthday] = useState("");
-
-  // Bloco 2 — Serviço
   const [serverId, setServerId] = useState<string>("__none__");
   const [serverIdExtra, setServerIdExtra] = useState<string>("__none__");
-  const [usuario, setUsuario] = useState("");
-  const [senha, setSenha] = useState("");
-  const [showSenha, setShowSenha] = useState(false);
-  const [telas, setTelas] = useState("1");
   const [app, setApp] = useState<AppKey | "__none__">("__none__");
-  const [mac, setMac] = useState("");
-  const [appKey, setAppKey] = useState("");
-  const [appDueDateStr, setAppDueDateStr] = useState(""); // dd/mm/aaaa
-
-  // Bloco 3 — Cobrança
   const [amount, setAmount] = useState("");
-  const [dueDateStr, setDueDateStr] = useState(""); // dd/mm/aaaa
-
-  // Bloco 4 — Observações
+  const [dueDay, setDueDay] = useState("");
   const [notes, setNotes] = useState("");
-
   const [busy, setBusy] = useState(false);
-
-  const appIsPaid = app !== "__none__" && APP_CATALOG[app as AppKey]?.tier === "pago";
 
   useEffect(() => {
     if (open) {
-      setName(""); setWhatsapp(""); setBirthday("");
+      setName(""); setWhatsapp("");
       setServerId("__none__"); setServerIdExtra("__none__");
-      setUsuario(""); setSenha(""); setShowSenha(false);
-      setTelas("1"); setApp("__none__"); setMac(""); setAppKey(""); setAppDueDateStr("");
-      setAmount(""); setDueDateStr(""); setNotes(""); setBusy(false);
+      setApp("__none__"); setAmount(""); setDueDay(""); setNotes(""); setBusy(false);
     }
   }, [open]);
-
-  // Máscara dd/mm/aaaa
-  const maskDate = (raw: string) => {
-    const d = raw.replace(/\D/g, "").slice(0, 8);
-    if (d.length >= 5) return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
-    if (d.length >= 3) return `${d.slice(0, 2)}/${d.slice(2)}`;
-    return d;
-  };
-  // dd/mm/aaaa → ISO yyyy-mm-dd
-  const parseDateBR = (s: string): { iso: string | null; day: number | null; ok: boolean } => {
-    const t = s.trim();
-    if (!t) return { iso: null, day: null, ok: true };
-    const m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (!m) return { iso: null, day: null, ok: false };
-    const day = Number(m[1]), month = Number(m[2]), year = Number(m[3]);
-    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900) return { iso: null, day: null, ok: false };
-    return { iso: `${m[3]}-${m[2]}-${m[1]}`, day, ok: true };
-  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1662,11 +1624,10 @@ function NewCustomerSheet({
     if (amount.trim() && (amt == null || Number.isNaN(amt) || amt < 0)) {
       toast.error("Informe um valor válido."); return;
     }
-    const due = parseDateBR(dueDateStr);
-    if (!due.ok) { toast.error("Vencimento inválido (dd/mm/aaaa)."); return; }
-    const appDue = parseDateBR(appDueDateStr);
-    if (!appDue.ok) { toast.error("Vencimento do app inválido (dd/mm/aaaa)."); return; }
-    const telasNum = telas.trim() ? Math.max(1, Math.min(99, Number(telas) || 1)) : 1;
+    const dd = Number(dueDay);
+    if (dueDay.trim() && (Number.isNaN(dd) || dd < 1 || dd > 31)) {
+      toast.error("O dia de vencimento deve ser entre 1 e 31."); return;
+    }
     if (!supabase) { toast.error("Conexão indisponível."); return; }
     setBusy(true);
     const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
@@ -1680,30 +1641,28 @@ function NewCustomerSheet({
       p_name: name.trim() || "Cliente",
       p_whatsapp_e164: toE164(whatsapp),
       p_amount_cents: amt,
-      p_due_day: due.day,
+      p_due_day: dueDay.trim() ? dd : null,
       p_status: "ativo",
       p_notes: notes.trim() || null,
     });
     if (error) {
       setBusy(false);
-      toast.error("Não foi possível salvar. Confira os dados e tente novamente.");
+      const msg = error.message?.toLowerCase() ?? "";
+      if (msg.includes("could not find") || msg.includes("does not exist") || msg.includes("not found")) {
+        toast.error("Cadastro ainda precisa ser ativado no servidor. Tente novamente após a configuração.");
+      } else {
+        toast.error("Não foi possível salvar. Confira os dados e tente novamente.");
+      }
       return;
     }
-
-    // Campos sensíveis: NÃO persistir (sem armazenamento seguro disponível).
-    const hasSensitive = !!(usuario.trim() || senha.trim() || mac.trim() || appKey.trim());
-    const hasBirthday = !!birthday.trim();
-    const hasTelasExtra = telasNum > 1;
 
     try {
       const row = Array.isArray(data) ? (data[0] as Row | undefined) : (data as Row | null);
       const newCustomerId = row
         ? (typeof row.id === "string" ? row.id : typeof row.customer_id === "string" ? row.customer_id : null)
         : null;
-      // Apenas dados NÃO sensíveis: servidores, app e vencimentos.
       const hasNonSensitiveService =
-        serverId !== "__none__" || serverIdExtra !== "__none__" ||
-        app !== "__none__" || appDue.iso || due.iso;
+        serverId !== "__none__" || serverIdExtra !== "__none__" || app !== "__none__";
       if (newCustomerId && hasNonSensitiveService) {
         const serverIds: string[] = [];
         if (serverId !== "__none__") serverIds.push(serverId);
@@ -1721,28 +1680,15 @@ function NewCustomerSheet({
           status: "ativa",
           server_ids: serverIds.length ? serverIds : undefined,
           primary_server_id: serverIds[0],
-          due_date: due.iso ?? undefined,
-          app_due_date: appDue.iso ?? undefined,
           created_at: now,
           updated_at: now,
-          // Credenciais (usuário/senha/MAC/Key) intencionalmente omitidas — sem armazenamento seguro.
         });
         try { window.dispatchEvent(new Event("app-screens:changed")); } catch { /* ignore */ }
       }
     } catch { /* ignore */ }
 
     setBusy(false);
-    if (hasSensitive) {
-      toast.success("Cliente cadastrado. Dados sensíveis (usuário, senha, MAC, Key) não foram salvos porque a proteção ainda não está ativada.");
-    } else {
-      toast.success("Cliente cadastrado com sucesso.");
-    }
-    if (hasBirthday) {
-      toast.message("Aniversário depende de atualização no backend para ser salvo.");
-    }
-    if (hasTelasExtra) {
-      toast.message("Quantidade de telas depende de persistência no backend.");
-    }
+    toast.success("Cliente cadastrado com sucesso.");
     onCreated();
     onClose();
   };
@@ -1763,21 +1709,14 @@ function NewCustomerSheet({
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1 col-span-2">
                 <Label className="text-xs">Nome</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="Nome do cliente (opcional)" />
+                <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="Nome do cliente" />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 col-span-2">
                 <div className="flex items-center gap-1">
                   <Label className="text-xs">WhatsApp *</Label>
                   <HelpTip text="Inclua o DDD." />
                 </div>
                 <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="(11) 99999-9999" inputMode="tel" maxLength={20} required />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Aniversário</Label>
-                  <HelpTip text="Aniversário depende de atualização no backend para ser salvo." />
-                </div>
-                <Input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
               </div>
             </div>
           </section>
@@ -1785,11 +1724,6 @@ function NewCustomerSheet({
           {/* Serviço */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
             <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Serviço</h3>
-            {(usuario.trim() || senha.trim() || mac.trim() || appKey.trim()) && (
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700 dark:text-amber-300">
-                Credenciais ainda não possuem armazenamento seguro configurado. Salve o cliente agora e adicione essas informações quando a proteção estiver ativada.
-              </div>
-            )}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">Servidor</Label>
@@ -1811,33 +1745,7 @@ function NewCustomerSheet({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Usuário</Label>
-                  <HelpTip text="Credenciais ainda não possuem armazenamento seguro configurado. Salve o cliente agora e adicione essas informações quando a proteção estiver ativada." />
-                </div>
-                <Input value={usuario} onChange={(e) => setUsuario(e.target.value)} placeholder="usuário" autoComplete="off" maxLength={120} />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Senha</Label>
-                  <HelpTip text="Credenciais ainda não possuem armazenamento seguro configurado. Salve o cliente agora e adicione essas informações quando a proteção estiver ativada." />
-                </div>
-                <div className="relative">
-                  <Input type={showSenha ? "text" : "password"} value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="••••••" autoComplete="new-password" maxLength={120} className="pr-9" />
-                  <button type="button" onClick={() => setShowSenha((v) => !v)} aria-label={showSenha ? "Ocultar" : "Mostrar"} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted">
-                    {showSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Telas</Label>
-                  <HelpTip text="Quantidade de telas depende de persistência no backend." />
-                </div>
-                <Input value={telas} onChange={(e) => setTelas(e.target.value.replace(/\D/g, "").slice(0, 2))} placeholder="1" inputMode="numeric" />
-              </div>
-              <div className="space-y-1">
+              <div className="space-y-1 col-span-2">
                 <Label className="text-xs">Aplicativo</Label>
                 <Select value={app} onValueChange={(v) => setApp(v as AppKey | "__none__")}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar app" /></SelectTrigger>
@@ -1851,31 +1759,6 @@ function NewCustomerSheet({
                   </SelectContent>
                 </Select>
               </div>
-              {appIsPaid && (
-                <>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <Label className="text-xs">MAC</Label>
-                      <HelpTip text="Credenciais ainda não possuem armazenamento seguro configurado. Salve o cliente agora e adicione essas informações quando a proteção estiver ativada." />
-                    </div>
-                    <Input value={mac} onChange={(e) => setMac(e.target.value)} placeholder="00:1A:79:..." autoComplete="off" maxLength={32} />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <Label className="text-xs">Key</Label>
-                      <HelpTip text="Credenciais ainda não possuem armazenamento seguro configurado. Salve o cliente agora e adicione essas informações quando a proteção estiver ativada." />
-                    </div>
-                    <Input value={appKey} onChange={(e) => setAppKey(e.target.value)} placeholder="chave" autoComplete="off" maxLength={64} />
-                  </div>
-                  <div className="space-y-1 col-span-2">
-                    <div className="flex items-center gap-1">
-                      <Label className="text-xs">Vencimento do app</Label>
-                      <HelpTip text="Para receber lembrete quando estiver perto de vencer." />
-                    </div>
-                    <Input value={appDueDateStr} onChange={(e) => setAppDueDateStr(maskDate(e.target.value))} placeholder="dd/mm/aaaa" inputMode="numeric" maxLength={10} />
-                  </div>
-                </>
-              )}
             </div>
           </section>
 
@@ -1888,8 +1771,8 @@ function NewCustomerSheet({
                 <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" inputMode="decimal" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Vencimento</Label>
-                <Input value={dueDateStr} onChange={(e) => setDueDateStr(maskDate(e.target.value))} placeholder="dd/mm/aaaa" inputMode="numeric" maxLength={10} />
+                <Label className="text-xs">Dia de vencimento</Label>
+                <Input value={dueDay} onChange={(e) => setDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))} placeholder="1–31" inputMode="numeric" />
               </div>
             </div>
           </section>
