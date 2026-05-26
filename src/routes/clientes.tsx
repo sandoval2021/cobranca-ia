@@ -472,8 +472,22 @@ function ClientesPage() {
     return { servers: out, none };
   }, [items, allScreens, screensVersion]);
 
-  // Ordenação por vencimento mais próximo; vencidos vão pro fim
+  // Ordenação por vencimento mais próximo; vencidos vão pro fim.
+  // No filtro "disparo_hoje": pendentes em cima (na ordem de envio), enviados embaixo.
   const ordered = useMemo(() => {
+    if (filter === "disparo_hoje") {
+      return [...filtered].sort((a, b) => {
+        const qa = dispatchQueueById.get(a.id);
+        const qb = dispatchQueueById.get(b.id);
+        const rank = (q?: AutoDispatchQueueItem) => {
+          if (!q) return 9999;
+          if (q.sent) return 5000 + q.order;     // enviados no fim, mantendo ordem
+          if (q.cancelled) return 4000 + q.order; // cancelados antes dos enviados
+          return q.order;                          // pendentes em cima na ordem de envio
+        };
+        return rank(qa) - rank(qb);
+      });
+    }
     return [...filtered].sort((a, b) => {
       const da = nextDueDays(a.due_day, allScreens[a.id] ?? []);
       const db = nextDueDays(b.due_day, allScreens[b.id] ?? []);
@@ -484,7 +498,7 @@ function ClientesPage() {
       };
       return rank(da) - rank(db);
     });
-  }, [filtered, allScreens]);
+  }, [filtered, allScreens, filter, dispatchQueueById]);
 
   const counts = useMemo(() => {
     const c = {
