@@ -180,18 +180,18 @@ function PlanEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Editar plano</DialogTitle>
-          <DialogDescription className="text-xs">
-            Defina o valor e as mensagens. Variáveis: <code>{"{nome}"}</code>, <code>{"{plano}"}</code>, <code>{"{valor}"}</code>, <code>{"{telas}"}</code>, <code>{"{meses}"}</code>, <code>{"{vencimento}"}</code>.
+      <DialogContent className="max-w-3xl">
+        <DialogHeader className="space-y-0.5">
+          <DialogTitle className="text-base">Editar plano</DialogTitle>
+          <DialogDescription className="text-[11px]">
+            Variáveis: <code>{"{nome}"}</code>, <code>{"{plano}"}</code>, <code>{"{valor}"}</code>, <code>{"{telas}"}</code>, <code>{"{meses}"}</code>, <code>{"{vencimento}"}</code>.
           </DialogDescription>
         </DialogHeader>
 
         <PlanInfoEditor service={service} onSaved={onClose} />
 
-        <div className="mt-4">
-          <h3 className="mb-2 text-sm font-semibold">Mensagens do plano</h3>
+        <div>
+          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mensagens do plano</h3>
           <MessagesList
             service={service}
             selectedId={selectedMsgId}
@@ -207,8 +207,8 @@ function PlanEditorDialog({
           />
         )}
 
-        <DialogFooter>
-          <Button onClick={onClose}>Fechar</Button>
+        <DialogFooter className="pt-1">
+          <Button size="sm" onClick={onClose}>Fechar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
