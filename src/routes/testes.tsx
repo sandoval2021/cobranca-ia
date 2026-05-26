@@ -30,20 +30,22 @@ import { cn } from "@/lib/utils";
 import {
   listTrialLeads, saveTrialLead, updateTrialLead, archiveTrialLead,
   markTrialLeadClosed, markTrialLeadLost, listFollowUps, updateFollowUpStatus,
-  exportTrialLeads, importTrialLeads, TRIAL_ORIGINS, TRIAL_STATUSES, TRIAL_INTERESTS,
+  exportTrialLeads, importTrialLeads, TRIAL_ORIGINS, TRIAL_STATUSES,
   TRIAL_TEMPLATES, INDICADO_TEMPLATE, FOLLOWUP_LABEL, renderTemplate, waLink,
-  type TrialLead, type TrialOrigin, type TrialInterest, type FollowUpStatus,
+  type TrialLead, type TrialOrigin, type FollowUpStatus,
 } from "@/lib/trial-leads";
 import {
   saveReferral, updateReferralByLead, summarizeByIndicador, getReferralRules,
-  bonusDescription, renderReferralMessage,
+  bonusDescription, renderReferralMessage, applyBonusForIndicator,
 } from "@/lib/referrals";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
 import { canCreateTrialLead } from "@/lib/plan-limits";
 import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 import { supabase } from "@/integrations/supabase/client";
-import { getActiveAccountId } from "@/lib/rpc-admin";
+import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
+import { validateWhatsapp, maskBR, maskIntl, onlyDigits } from "@/lib/whatsapp-validation";
+import { listActiveServices, formatBRL, type ServiceItem } from "@/lib/services-catalog";
 
 
 export const Route = createFileRoute("/testes")({
