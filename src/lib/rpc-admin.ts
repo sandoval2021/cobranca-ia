@@ -82,6 +82,44 @@ export async function getCurrentCompanyAdmin() {
   return { companyId: id ? String(id) : null, error: null as RpcErr | null };
 }
 
+const ACCOUNT_CACHE_KEY = "cobranca_ia_active_account_id_v1";
+
+/**
+ * Helper único — obtém o id da conta ativa do usuário sem expor "empresa" na UI.
+ * Usa cache de sessão para evitar round-trips em cada tela.
+ */
+export async function getActiveAccountId(): Promise<{
+  accountId: string | null;
+  error: RpcErr | null;
+}> {
+  if (typeof window !== "undefined") {
+    try {
+      const cached = window.sessionStorage.getItem(ACCOUNT_CACHE_KEY);
+      if (cached) return { accountId: cached, error: null };
+    } catch {
+      /* ignore */
+    }
+  }
+  const { companyId, error } = await getCurrentCompanyAdmin();
+  if (companyId && typeof window !== "undefined") {
+    try {
+      window.sessionStorage.setItem(ACCOUNT_CACHE_KEY, companyId);
+    } catch {
+      /* ignore */
+    }
+  }
+  return { accountId: companyId, error };
+}
+
+export function clearActiveAccountCache() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(ACCOUNT_CACHE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export type CurrentCompanyState =
   | { status: "loading" }
   | { status: "not_configured" }
