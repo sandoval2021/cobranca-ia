@@ -1702,10 +1702,11 @@ function NewCustomerSheet({
     const { accountId: companyId, error: companyErr } = await getActiveAccountId();
     if (!companyId) {
       setBusy(false);
-      console.warn("[novo cliente] sem conta ativa", companyErr);
-      toast.error("Selecione uma conta para continuar.");
+      console.warn("[novo cliente] sem UUID real de conta", companyErr);
+      toast.error("Sua conta de teste ainda não está vinculada ao servidor. Atualize a página ou selecione uma conta válida.");
       return;
     }
+
     const { data, error } = await supabase.rpc("create_customer_admin", {
       p_company_id: companyId,
       p_name: name.trim() || "Cliente",
