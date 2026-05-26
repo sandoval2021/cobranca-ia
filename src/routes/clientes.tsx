@@ -78,7 +78,7 @@ import {
 } from "@/lib/app-screens";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
-import { RenewScreensWizard } from "@/components/clientes/RenewScreensWizard";
+import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
 import { getPrimaryRouteForServer } from "@/lib/dns-routes";
@@ -273,6 +273,7 @@ function ClientesPage() {
     return () => window.removeEventListener("app-screens:changed", bump);
   }, []);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [openMode, setOpenMode] = useState<"view" | "edit">("view");
   const [openNew, setOpenNew] = useState(false);
   const [renewId, setRenewId] = useState<string | null>(null);
   const [appsId, setAppsId] = useState<string | null>(null);
@@ -337,6 +338,7 @@ function ClientesPage() {
     try {
       const id = window.sessionStorage.getItem("cobranca_ia_open_customer_id");
       if (id && items.some((c) => c.id === id)) {
+        setOpenMode("view");
         setOpenId(id);
         window.sessionStorage.removeItem("cobranca_ia_open_customer_id");
       }
@@ -634,7 +636,7 @@ function ClientesPage() {
               key={c.id}
               customer={c}
               screens={allScreens[c.id] ?? []}
-              onOpen={() => setOpenId(c.id)}
+              onOpen={() => { setOpenMode("edit"); setOpenId(c.id); }}
               onRenew={() => setRenewId(c.id)}
               onApps={() => setAppsId(c.id)}
               onDelete={() => setDeleteId(c.id)}
@@ -648,16 +650,25 @@ function ClientesPage() {
         open={!!opened}
         onClose={() => setOpenId(null)}
         onChanged={reload}
+        defaultMode={openMode}
       />
 
-      {renewId && (
-        <RenewScreensWizard
-          open={!!renewId}
-          onClose={() => setRenewId(null)}
-          customerId={renewId}
-          customerName={items?.find((c) => c.id === renewId)?.name ?? "Cliente"}
-        />
-      )}
+      {renewId && (() => {
+        const c = items?.find((x) => x.id === renewId);
+        if (!c) return null;
+        return (
+          <QuickRenewDialog
+            open={!!renewId}
+            onClose={() => setRenewId(null)}
+            customerId={renewId}
+            customerName={c.name}
+            customerDueDay={c.due_day}
+            monthlyAmountCents={c.amount_cents}
+            whatsappE164={c.whatsapp}
+            onRenewed={reload}
+          />
+        );
+      })()}
 
       <AppsDialog
         customer={appsId ? items?.find((c) => c.id === appsId) ?? null : null}
@@ -666,6 +677,7 @@ function ClientesPage() {
         onClose={() => setAppsId(null)}
         onOpenFull={() => {
           if (appsId) {
+            setOpenMode("view");
             setOpenId(appsId);
             setAppsId(null);
           }
@@ -958,14 +970,16 @@ function CustomerSheet({
   open,
   onClose,
   onChanged,
+  defaultMode = "view",
 }: {
   customer: Customer | null;
   open: boolean;
   onClose: () => void;
   onChanged: () => void;
+  defaultMode?: Mode;
 }) {
   const [details, setDetails] = useState<DetailsState>({ status: "loading" });
-  const [mode, setMode] = useState<Mode>("view");
+  const [mode, setMode] = useState<Mode>(defaultMode);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [busy, setBusy] = useState<null | "save" | "archive" | "reactivate">(null);
   const [timelineBump, setTimelineBump] = useState(0);
@@ -973,7 +987,7 @@ function CustomerSheet({
 
   useEffect(() => {
     if (!open || !customer) return;
-    setMode("view");
+    setMode(defaultMode);
     setDetails({ status: "loading" });
     if (!supabase) return;
     let alive = true;
@@ -992,7 +1006,7 @@ function CustomerSheet({
     return () => {
       alive = false;
     };
-  }, [open, customer?.id]);
+  }, [open, customer?.id, defaultMode]);
 
   if (!customer) return null;
 
