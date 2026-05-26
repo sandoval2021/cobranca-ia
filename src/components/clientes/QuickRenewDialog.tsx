@@ -444,15 +444,31 @@ export function QuickRenewDialog({
 
         {done && (
           <div className="space-y-3 py-1">
-            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-              <Check className="h-4 w-4" /> Renovação registrada com sucesso.
+            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300 space-y-1">
+              <div className="flex items-center gap-2 font-medium">
+                <Check className="h-4 w-4" /> Renovação confirmada
+              </div>
+              {done.newDue && (
+                <div className="flex items-center gap-1.5 pl-6">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>Novo vencimento: <strong>{fmtDateBR(done.newDue)}</strong></span>
+                </div>
+              )}
+              {done.sent && (
+                <div className="pl-6 text-[11px]">
+                  ✅ Mensagem enviada para o cliente no WhatsApp.
+                </div>
+              )}
             </div>
-            <Textarea
-              value={done.msg}
-              readOnly
-              rows={10}
-              className="resize-none text-xs font-mono"
-            />
+            <div>
+              <Label className="text-xs">Mensagem enviada</Label>
+              <Textarea
+                value={done.msg}
+                readOnly
+                rows={8}
+                className="resize-none text-xs font-mono mt-1"
+              />
+            </div>
           </div>
         )}
 
@@ -475,7 +491,7 @@ export function QuickRenewDialog({
                 <Copy className="h-4 w-4" /> Copiar
               </Button>
               <Button onClick={sendWhats} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5">
-                Enviar no WhatsApp
+                Reenviar no WhatsApp
               </Button>
               <Button variant="ghost" onClick={onClose}>Fechar</Button>
             </>
