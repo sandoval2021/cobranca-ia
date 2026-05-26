@@ -8,6 +8,7 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 // Map Lovable Cloud secrets (without VITE_ prefix) to VITE_* frontend env vars.
 // Falls back to VITE_*-prefixed env if already provided that way.
+// Rebuild trigger: inject secrets URL_SUPABASE / ANON_KEY_SUPABASE into published bundle.
 const env = process.env;
 const pick = (...keys: string[]) => {
   for (const k of keys) {
