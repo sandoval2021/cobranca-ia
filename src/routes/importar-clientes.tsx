@@ -104,7 +104,7 @@ function ImportarClientesPage() {
     errored?: number;
     message?: string;
   } | null>(null);
-  const [existingMap, setExistingMap] = useState<Record<string, { name?: string }>>({});
+  const [existingMap, setExistingMap] = useState<Record<string, { name?: string; id?: string; status?: string }>>({});
   const [lookupLoading, setLookupLoading] = useState(false);
   const [notImportedIdx, setNotImportedIdx] = useState<number[]>([]);
   const [skippedIdx, setSkippedIdx] = useState<Set<number>>(new Set());
@@ -155,7 +155,7 @@ function ImportarClientesPage() {
       }
       setLookupLoading(true);
 
-      const map: Record<string, { name?: string }> = {};
+      const map: Record<string, { name?: string; id?: string; status?: string }> = {};
       try {
         const res = await getImportCustomerDedupAdmin({
           p_company_id: cid,
@@ -188,7 +188,15 @@ function ImportarClientesPage() {
                   (typeof c.nome === "string" && c.nome) ||
                   (typeof c.full_name === "string" && c.full_name) ||
                   undefined;
-                map[norm] = { name: name || undefined };
+                const id =
+                  (typeof c.id === "string" && c.id) ||
+                  (typeof c.customer_id === "string" && c.customer_id) ||
+                  undefined;
+                const status =
+                  (typeof c.status === "string" && c.status) ||
+                  (typeof c.situacao === "string" && c.situacao) ||
+                  undefined;
+                map[norm] = { name: name || undefined, id, status };
                 break;
               }
             }
@@ -392,6 +400,26 @@ function ImportarClientesPage() {
         setNotImportedIdx(notImported);
         setSkippedIdx(new Set());
         setForcedIdx(new Set());
+        // Reativa clientes arquivados que voltaram via importação.
+        const toReactivate = new Set<string>();
+        for (const r of validas) {
+          if (!r.whatsapp_e164) continue;
+          const ex = existingMap[r.whatsapp_e164];
+          if (ex?.id && ex.status && /arquiv|inativ|cancel|deleted|removed/i.test(ex.status)) {
+            toReactivate.add(ex.id);
+          }
+        }
+        if (toReactivate.size > 0) {
+          await Promise.all(
+            Array.from(toReactivate).map((id) =>
+              supabase!.rpc("reactivate_customer_admin", { p_customer_id: id }).then(
+                ({ error: e }) => {
+                  if (e) console.warn("[importar-clientes] reativar falhou", id, e);
+                },
+              ),
+            ),
+          );
+        }
         toast.success("Importação concluída.");
         setLookupBump((n) => n + 1);
       }
