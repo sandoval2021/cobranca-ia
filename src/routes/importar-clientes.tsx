@@ -43,6 +43,7 @@ import {
   validateRows,
   type ValidatedRow,
 } from "@/lib/import-parse";
+import { setImportedDueBulk } from "@/lib/imported-due-dates";
 import {
   buildSchedule,
   applyPersistedStatus,
