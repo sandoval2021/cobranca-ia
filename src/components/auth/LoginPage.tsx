@@ -152,11 +152,15 @@ export function LoginPage() {
 
 export function SessionLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Carregando sua sessão…
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-primary-soft/40 via-background to-background px-4">
+      <div className="flex flex-col items-center gap-3 rounded-3xl border border-border/70 bg-card/80 px-8 py-7 shadow-pop backdrop-blur-xl">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" strokeWidth={2.5} />
+        <div className="text-center">
+          <p className="text-sm font-semibold text-foreground">Carregando sua sessão…</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Aguarde um momento.</p>
+        </div>
       </div>
     </div>
   );
 }
+
