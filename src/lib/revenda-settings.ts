@@ -53,12 +53,17 @@ export type RevendaRegras = {
   inativo_apos_60: boolean;
 };
 
+export type RevendaMensagens = {
+  renovacao_confirmada: string;
+};
+
 export type RevendaSettings = {
   dados: RevendaDados;
   atendimento: RevendaAtendimento;
   pagamento: RevendaPagamento;
   planos: RevendaPlanos;
   regras: RevendaRegras;
+  mensagens: RevendaMensagens;
   updated_at?: string;
 };
 
