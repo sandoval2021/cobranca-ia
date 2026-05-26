@@ -132,6 +132,11 @@ export function reactivateServer(id: string): void {
   writeRaw(list);
 }
 
+export function deleteServer(id: string): void {
+  const list = listServers().filter((s) => s.id !== id);
+  writeRaw(list);
+}
+
 export function restoreDefaultServers(): void {
   const cur = listServers();
   const byName = new Map(cur.map((s) => [s.name.toLowerCase(), s]));
