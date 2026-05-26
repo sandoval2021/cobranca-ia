@@ -530,17 +530,67 @@ function NewTrialSheet({
   onSave: (input: Partial<TrialLead> & { whatsapp: string }) => void;
 }) {
   const [form, setForm] = useState<Partial<TrialLead> & { whatsapp: string }>({
-    whatsapp: "", origem: "Outro", interesse: "Morno",
+    whatsapp: "", origem: "Outro", interesse: "Morno", horas_teste: 2,
   });
+  const [showSenha, setShowSenha] = useState(false);
+  const [valorStr, setValorStr] = useState("");
+  const servers = useMemo(() => listActiveServers(), [open]);
+
+  function nowLocalIso() {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  }
+  function addHoursIso(startIso: string | undefined, hours: number) {
+    const base = startIso ? new Date(startIso) : new Date();
+    if (Number.isNaN(base.getTime())) return "";
+    const end = new Date(base.getTime() + hours * 3600 * 1000);
+    end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
+    return end.toISOString().slice(0, 16);
+  }
 
   useEffect(() => {
-    if (editing) setForm(editing);
-    else setForm({ whatsapp: "", origem: "Outro", interesse: "Morno", data_inicio: todayIso() });
+    if (editing) {
+      setForm(editing);
+      setValorStr(editing.valor_cents != null ? (editing.valor_cents / 100).toFixed(2).replace(".", ",") : "");
+    } else {
+      const inicio = nowLocalIso();
+      setForm({
+        whatsapp: "", origem: "Outro", interesse: "Morno",
+        data_inicio: inicio, horas_teste: 2, data_fim: addHoursIso(inicio, 2),
+      });
+      setValorStr("");
+    }
+    setShowSenha(false);
   }, [editing, open]);
+
+  // Recalcula Fim do teste sempre que Início ou Horas mudarem
+  useEffect(() => {
+    if (form.data_inicio && form.horas_teste != null) {
+      const novo = addHoursIso(form.data_inicio, form.horas_teste);
+      if (novo && novo !== form.data_fim) {
+        setForm((f) => ({ ...f, data_fim: novo }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.data_inicio, form.horas_teste]);
 
   function submit() {
     if (!form.whatsapp?.trim()) { toast.error("WhatsApp é obrigatório"); return; }
-    onSave(form);
+    if (!form.servidor?.trim()) { toast.error("Selecione um servidor"); return; }
+    if (form.usuario?.trim() && !form.senha?.trim()) { toast.error("Informe a senha para esse usuário"); return; }
+    if (form.senha?.trim() && !form.usuario?.trim()) { toast.error("Informe o usuário para essa senha"); return; }
+    const horas = Number(form.horas_teste);
+    if (!horas || horas <= 0) { toast.error("Informe as horas do teste"); return; }
+    const valorNum = valorStr.trim() ? Number(valorStr.replace(/\./g, "").replace(",", ".")) : null;
+    if (valorStr.trim() && (valorNum == null || Number.isNaN(valorNum) || valorNum < 0)) {
+      toast.error("Informe um valor válido");
+      return;
+    }
+    onSave({
+      ...form,
+      valor_cents: valorNum != null ? Math.round(valorNum * 100) : undefined,
+    });
   }
 
   return (
@@ -548,14 +598,14 @@ function NewTrialSheet({
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{editing ? "Editar teste" : "Novo teste"}</SheetTitle>
-          <SheetDescription>Cadastro rápido — só WhatsApp é obrigatório.</SheetDescription>
+          <SheetDescription>Preencha os dados do teste. Nada é enviado automaticamente.</SheetDescription>
         </SheetHeader>
         <div className="mt-4 space-y-3">
           <Field label="Nome">
             <Input value={form.nome ?? ""} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Opcional" />
           </Field>
           <Field label="WhatsApp *">
-            <Input value={form.whatsapp ?? ""} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="(00) 00000-0000" />
+            <Input value={form.whatsapp ?? ""} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="(00) 00000-0000" inputMode="tel" />
           </Field>
           <Field label="Origem">
             <select className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
@@ -568,25 +618,97 @@ function NewTrialSheet({
               <Input value={form.indicado_por_nome ?? ""} onChange={(e) => setForm({ ...form, indicado_por_nome: e.target.value })} placeholder="Opcional" />
             </Field>
             <Field label="WhatsApp indicador">
-              <Input value={form.indicado_por_whatsapp ?? ""} onChange={(e) => setForm({ ...form, indicado_por_whatsapp: e.target.value })} placeholder="Opcional" />
+              <Input value={form.indicado_por_whatsapp ?? ""} onChange={(e) => setForm({ ...form, indicado_por_whatsapp: e.target.value })} placeholder="Opcional" inputMode="tel" />
             </Field>
           </div>
+
+          <Field label="Servidor *">
+            <select
+              className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              value={form.servidor ?? ""}
+              onChange={(e) => setForm({ ...form, servidor: e.target.value })}
+            >
+              <option value="">Selecione um servidor…</option>
+              {servers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Servidor adicional">
+            <select
+              className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              value={form.servidor_adicional ?? ""}
+              onChange={(e) => setForm({ ...form, servidor_adicional: e.target.value })}
+            >
+              <option value="">Nenhum (opcional)</option>
+              {servers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+            </select>
+          </Field>
+
           <div className="grid grid-cols-2 gap-2">
-            <Field label="App sugerido">
-              <Input value={form.app ?? ""} onChange={(e) => setForm({ ...form, app: e.target.value })} placeholder="Opcional" />
+            <Field label="Usuário">
+              <Input value={form.usuario ?? ""} onChange={(e) => setForm({ ...form, usuario: e.target.value })} autoComplete="off" />
             </Field>
-            <Field label="Servidor sugerido">
-              <Input value={form.servidor ?? ""} onChange={(e) => setForm({ ...form, servidor: e.target.value })} placeholder="Opcional" />
+            <Field label="Senha">
+              <div className="relative">
+                <Input
+                  type={showSenha ? "text" : "password"}
+                  value={form.senha ?? ""}
+                  onChange={(e) => setForm({ ...form, senha: e.target.value })}
+                  autoComplete="new-password"
+                  className="pr-9"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSenha((v) => !v)}
+                  aria-label={showSenha ? "Ocultar senha" : "Mostrar senha"}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted"
+                >
+                  {showSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </Field>
           </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Valor do teste (R$)">
+              <Input
+                value={valorStr}
+                onChange={(e) => setValorStr(e.target.value)}
+                placeholder="0,00"
+                inputMode="decimal"
+              />
+            </Field>
+            <Field label="Horas de teste">
+              <Input
+                type="number"
+                min={1}
+                max={720}
+                value={form.horas_teste ?? 2}
+                onChange={(e) => setForm({ ...form, horas_teste: Number(e.target.value) })}
+              />
+            </Field>
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             <Field label="Início do teste">
-              <Input type="date" value={form.data_inicio?.slice(0, 10) ?? ""} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} />
+              <Input
+                type="datetime-local"
+                value={form.data_inicio?.slice(0, 16) ?? ""}
+                onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
+              />
             </Field>
-            <Field label="Fim do teste">
-              <Input type="date" value={form.data_fim?.slice(0, 10) ?? ""} onChange={(e) => setForm({ ...form, data_fim: e.target.value })} />
+            <Field label="Fim do teste (auto)">
+              <Input
+                type="datetime-local"
+                value={form.data_fim?.slice(0, 16) ?? ""}
+                readOnly
+                className="bg-muted/40"
+              />
             </Field>
           </div>
+
+          <Field label="App sugerido">
+            <Input value={form.app ?? ""} onChange={(e) => setForm({ ...form, app: e.target.value })} placeholder="Opcional" />
+          </Field>
           <Field label="Status">
             <select className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
               value={form.status ?? "Teste solicitado"} onChange={(e) => setForm({ ...form, status: e.target.value as TrialLead["status"] })}>
