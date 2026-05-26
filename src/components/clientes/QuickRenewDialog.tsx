@@ -191,24 +191,26 @@ export function QuickRenewDialog({
     try {
       // Caso 1: cliente sem telas — registra renovação geral
       if (!hasScreens) {
+        const finalDue = newDueOverride || customerNewDue;
         const rec = applyRenewal({
           customer_id: customerId,
           customer_name: customerName,
-          new_due_date: customerNewDue,
+          new_due_date: finalDue,
           amount: amount ? `R$ ${amount}` : undefined,
           payment_method: method,
           notes: notes.trim() || `Renovação de ${months} ${months === 1 ? "mês" : "meses"}`,
           renew_app: false,
           screens: [],
         });
-        setCustomerDueOverride(customerId, customerNewDue);
+        setCustomerDueOverride(customerId, finalDue);
         const msg = rec.confirmation_message || buildConfirmationMessage(rec);
-        autoSend(msg);
-        setDone({ msg, newDue: customerNewDue, sent: true });
+        if (sendReceipt) autoSend(msg);
+        setDone({ msg, newDue: finalDue, sent: sendReceipt });
       } else {
+        const usingOverride = !!newDueOverride;
         const groups = new Map<string, AppScreen[]>();
         for (const s of selectedScreens) {
-          const newDue = addMonthsISO(baseFromScreen(s), months);
+          const newDue = usingOverride ? newDueOverride : addMonthsISO(baseFromScreen(s), months);
           if (!groups.has(newDue)) groups.set(newDue, []);
           groups.get(newDue)!.push(s);
         }
@@ -260,8 +262,8 @@ export function QuickRenewDialog({
         }
         if (maxDue) setCustomerDueOverride(customerId, maxDue);
         const fullMsg = messages.join("\n\n———\n\n");
-        autoSend(fullMsg);
-        setDone({ msg: fullMsg, newDue: maxDue, sent: true });
+        if (sendReceipt) autoSend(fullMsg);
+        setDone({ msg: fullMsg, newDue: maxDue, sent: sendReceipt });
       }
       onRenewed?.();
     } catch (e) {
