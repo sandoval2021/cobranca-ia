@@ -314,6 +314,29 @@ export function archiveCompany(id: string) {
   updateCompany(id, { status: "cancelada" });
 }
 
+/**
+ * Substitui o ID local (ex. "co_...") de uma empresa pelo UUID real do Supabase.
+ * Mantém os campos da empresa, migra vínculos de membros e atualiza a seleção corrente.
+ */
+export function relinkCompanyId(oldId: string, newId: string): Company | null {
+  if (!oldId || !newId || oldId === newId) return null;
+  const list = listCompanies();
+  const existing = list.find((c) => c.id === oldId);
+  if (!existing) return null;
+  const collision = list.find((c) => c.id === newId);
+  const updated: Company = { ...existing, id: newId, updated_at: new Date().toISOString() };
+  const nextList = list
+    .filter((c) => c.id !== oldId && (!collision || c.id !== newId))
+    .concat(updated);
+  write(COMPANIES_KEY, nextList);
+  const members = listAllMembers();
+  const nextMembers = members.map((m) => (m.company_id === oldId ? { ...m, company_id: newId } : m));
+  write(MEMBERS_KEY, nextMembers);
+  if (getCurrentCompanyId() === oldId) write(CURRENT_KEY, newId);
+  emit();
+  return updated;
+}
+
 // ---------- Membros ----------
 
 export function listAllMembers(): CompanyMember[] {
