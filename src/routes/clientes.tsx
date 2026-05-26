@@ -1671,12 +1671,22 @@ function EditForm({
   const [amount, setAmount] = useState(
     customer.amount_cents != null ? (customer.amount_cents / 100).toFixed(2).replace(".", ",") : "",
   );
-  const [dueDay, setDueDay] = useState(customer.due_day != null ? String(customer.due_day) : "");
+  const initialDueDate =
+    initialExtras.dueDate ??
+    customer.due_date ??
+    (customer.due_day != null
+      ? (() => {
+          const today = new Date();
+          const dd = Math.min(Math.max(customer.due_day, 1), 28);
+          const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+          return iso;
+        })()
+      : "");
+  const [dueDate, setDueDate] = useState(initialDueDate);
   const [status, setStatus] = useState(customer.status ?? "ativo");
   const [notes, setNotes] = useState(customer.notes ?? "");
   const createdAt = str(customer.raw, ["created_at", "cadastrado_em", "data_cadastro", "inserted_at"]);
-  const screensList = useMemo(() => listScreens(customer.id), [customer.id]);
-  const screensCount = screensList.length;
+
 
   const validate = (): string | null => {
     if (!name.trim()) return "Informe o nome do cliente.";
