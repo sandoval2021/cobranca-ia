@@ -80,6 +80,9 @@ import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
 import { AutoDispatchTodayPanel } from "@/components/clientes/AutoDispatchTodayPanel";
+import { computeAutoDispatchQueue, type AutoDispatchQueueItem } from "@/lib/auto-dispatch-queue";
+import { AUTO_DISPATCH_EVENT } from "@/lib/auto-dispatch";
+import { MANUAL_RULES_EVENT } from "@/lib/manual-dispatch-rules";
 import { getCustomerDueOverride, daysFromOverride, fmtDateBRFromISO } from "@/lib/customer-due-override";
 import { getCustomerExtras, setCustomerExtras } from "@/lib/customer-extras";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
@@ -259,7 +262,8 @@ type Filter =
   | "hoje" | "7d" | "vencidos"
   | "app_bob" | "app_xciptv" | "app_ibo"
   | "acc_mac_key" | "acc_user_pass"
-  | "needs_update";
+  | "needs_update"
+  | "disparo_hoje";
 
 function ClientesPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -354,6 +358,28 @@ function ClientesPage() {
 
   const allScreens = useMemo(() => listAllScreens(), [items, screensVersion]);
 
+  // Re-render quando config/regras de disparo mudam
+  const [dispatchTick, setDispatchTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setDispatchTick((n) => n + 1);
+    window.addEventListener(AUTO_DISPATCH_EVENT, bump);
+    window.addEventListener(MANUAL_RULES_EVENT, bump);
+    return () => {
+      window.removeEventListener(AUTO_DISPATCH_EVENT, bump);
+      window.removeEventListener(MANUAL_RULES_EVENT, bump);
+    };
+  }, []);
+
+  const dispatchQueue = useMemo<AutoDispatchQueueItem[]>(
+    () => computeAutoDispatchQueue(items, allScreens),
+    [items, allScreens, dispatchTick],
+  );
+  const dispatchQueueById = useMemo(() => {
+    const m = new Map<string, AutoDispatchQueueItem>();
+    for (const q of dispatchQueue) m.set(q.client.id, q);
+    return m;
+  }, [dispatchQueue]);
+
   const filtered = useMemo(() => {
     if (!items) return [];
     const q = query.trim().toLowerCase();
@@ -374,7 +400,9 @@ function ClientesPage() {
         const active = screens.filter((s) => s.status !== "arquivada");
         if (!screensHaveServer(active, serverFilter)) return false;
       }
-      if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
+      if (filter === "disparo_hoje") {
+        if (!dispatchQueueById.has(c.id)) return false;
+      } else if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
         if (kind !== filter) return false;
       } else if (filter === "hoje" || filter === "7d" || filter === "vencidos") {
         const d = nextDueDays(c.due_day, screens);
@@ -419,7 +447,7 @@ function ClientesPage() {
         );
       });
     });
-  }, [items, query, filter, serverFilter, allScreens]);
+  }, [items, query, filter, serverFilter, allScreens, dispatchQueueById]);
 
   // Contadores por servidor (catálogo ativo) e "sem servidor"
   const serverCounts = useMemo(() => {
@@ -444,8 +472,22 @@ function ClientesPage() {
     return { servers: out, none };
   }, [items, allScreens, screensVersion]);
 
-  // Ordenação por vencimento mais próximo; vencidos vão pro fim
+  // Ordenação por vencimento mais próximo; vencidos vão pro fim.
+  // No filtro "disparo_hoje": pendentes em cima (na ordem de envio), enviados embaixo.
   const ordered = useMemo(() => {
+    if (filter === "disparo_hoje") {
+      return [...filtered].sort((a, b) => {
+        const qa = dispatchQueueById.get(a.id);
+        const qb = dispatchQueueById.get(b.id);
+        const rank = (q?: AutoDispatchQueueItem) => {
+          if (!q) return 9999;
+          if (q.sent) return 5000 + q.order;     // enviados no fim, mantendo ordem
+          if (q.cancelled) return 4000 + q.order; // cancelados antes dos enviados
+          return q.order;                          // pendentes em cima na ordem de envio
+        };
+        return rank(qa) - rank(qb);
+      });
+    }
     return [...filtered].sort((a, b) => {
       const da = nextDueDays(a.due_day, allScreens[a.id] ?? []);
       const db = nextDueDays(b.due_day, allScreens[b.id] ?? []);
@@ -456,7 +498,7 @@ function ClientesPage() {
       };
       return rank(da) - rank(db);
     });
-  }, [filtered, allScreens]);
+  }, [filtered, allScreens, filter, dispatchQueueById]);
 
   const counts = useMemo(() => {
     const c = {
@@ -509,7 +551,7 @@ function ClientesPage() {
       </div>
       <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
 
-      <AutoDispatchTodayPanel items={items} allScreens={allScreens} />
+      <AutoDispatchTodayPanel items={items} allScreens={allScreens} defaultOpen={false} />
 
       {/* Busca */}
       <div className="relative mb-3">
@@ -534,9 +576,16 @@ function ClientesPage() {
         )}
       </div>
 
-      {/* Filtros */}
+      {/* Filtros (única barra de rolagem) */}
       <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         <FilterPill active={filter === "todos"} onClick={() => setFilter("todos")} label="Todos" count={counts.todos} />
+        <FilterPill
+          active={filter === "disparo_hoje"}
+          onClick={() => setFilter("disparo_hoje")}
+          label="Disparo hoje"
+          count={dispatchQueue.length}
+          dim={dispatchQueue.length === 0}
+        />
         <FilterPill active={filter === "hoje"} onClick={() => setFilter("hoje")} label="Vencem hoje" count={counts.hoje} />
         <FilterPill active={filter === "7d"} onClick={() => setFilter("7d")} label="Próx. 7 dias" count={counts.d7} />
         <FilterPill active={filter === "vencidos"} onClick={() => setFilter("vencidos")} label="Vencidos" count={counts.vencidos} />
@@ -549,10 +598,10 @@ function ClientesPage() {
         <FilterPill active={filter === "app_ibo"} onClick={() => setFilter("app_ibo")} label="IBO" count={counts.app_ibo} dim={counts.app_ibo === 0} />
         <FilterPill active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={counts.acc_mac_key} dim={counts.acc_mac_key === 0} />
         <FilterPill active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={counts.acc_user_pass} dim={counts.acc_user_pass === 0} />
-      </div>
 
-      {/* Filtros por servidor */}
-      <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {/* Separador visual entre filtros gerais e servidores */}
+        <div className="mx-1 shrink-0 self-center h-6 w-px bg-border" aria-hidden />
+
         <FilterPill
           active={serverFilter === "__all__"}
           onClick={() => setServerFilter("__all__")}
