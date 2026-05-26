@@ -92,8 +92,13 @@ export async function getCurrentCompanyAdmin() {
 const ACCOUNT_CACHE_KEY = "cobranca_ia_active_account_id_v1";
 
 /**
- * Helper único — obtém o id da conta ativa do usuário sem expor "empresa" na UI.
- * Usa cache de sessão para evitar round-trips em cada tela.
+ * Helper único — obtém o id da conta ativa.
+ * Prioridade:
+ *  1) Conta selecionada em "Visualizando como" (local).
+ *  2) Conta TESTANDO (ambiente staging/teste).
+ *  3) Primeira conta local disponível.
+ *  4) RPC backend get_current_company_admin.
+ *  5) ensureLocalAccount cria "Minha conta" como fallback final.
  */
 export async function getActiveAccountId(): Promise<{
   accountId: string | null;
@@ -107,16 +112,67 @@ export async function getActiveAccountId(): Promise<{
       /* ignore */
     }
   }
-  const { companyId, error } = await getCurrentCompanyAdmin();
-  if (companyId && typeof window !== "undefined") {
-    try {
-      window.sessionStorage.setItem(ACCOUNT_CACHE_KEY, companyId);
-    } catch {
-      /* ignore */
+
+  const cacheAndReturn = (id: string) => {
+    if (typeof window !== "undefined") {
+      try {
+        window.sessionStorage.setItem(ACCOUNT_CACHE_KEY, id);
+      } catch {
+        /* ignore */
+      }
     }
+    return { accountId: id, error: null as RpcErr | null };
+  };
+
+  // 1) "Visualizando como"
+  try {
+    const currentId = getCurrentCompanyId();
+    const current = getCurrentCompany();
+    if (currentId && current) {
+      console.info("[account] usando conta selecionada:", current.nome);
+      return cacheAndReturn(currentId);
+    }
+  } catch (e) {
+    console.warn("[account] getCurrentCompany falhou:", e);
   }
-  return { accountId: companyId, error };
+
+  // 2) TESTANDO em staging/local
+  try {
+    const all = listCompanies();
+    console.info("[account] contas locais encontradas:", all.length);
+    const testando = all.find((c) => c.nome.trim().toUpperCase() === "TESTANDO");
+    if (testando) {
+      console.info("[account] usando conta TESTANDO");
+      return cacheAndReturn(testando.id);
+    }
+    // 3) primeira conta disponível
+    if (all.length > 0) {
+      console.info("[account] usando primeira conta local:", all[0]!.nome);
+      return cacheAndReturn(all[0]!.id);
+    }
+  } catch (e) {
+    console.warn("[account] listCompanies falhou:", e);
+  }
+
+  // 4) backend
+  const { companyId, error } = await getCurrentCompanyAdmin();
+  if (companyId) return cacheAndReturn(companyId);
+  if (error) console.warn("[account] get_current_company_admin erro:", error.code, error.message);
+
+  // 5) ensureLocalAccount como último fallback
+  try {
+    const ensured = ensureLocalAccount(undefined, undefined, undefined);
+    if (ensured) {
+      console.info("[account] fallback ensureLocalAccount:", ensured.nome);
+      return cacheAndReturn(ensured.id);
+    }
+  } catch (e) {
+    console.warn("[account] ensureLocalAccount falhou:", e);
+  }
+
+  return { accountId: null, error };
 }
+
 
 export function clearActiveAccountCache() {
   if (typeof window === "undefined") return;
