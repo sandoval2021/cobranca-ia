@@ -637,16 +637,12 @@ function ClientesPage() {
 
   return (
     <PageContainer>
-      <SectionHeader
-        title="Clientes"
-        subtitle="Gerencie sua base de clientes"
-        hint="Edite, arquive e consulte o histórico de cada cliente com segurança."
-        action={
-          <Button onClick={() => setOpenNew(true)} className="gap-1.5">
-            <Plus className="h-4 w-4" /> Novo cliente
-          </Button>
-        }
-      />
+      <div className="flex items-center justify-end mb-4">
+        <Button onClick={() => setOpenNew(true)} className="gap-1.5">
+          <Plus className="h-4 w-4" /> Novo cliente
+        </Button>
+      </div>
+
 
 
 
