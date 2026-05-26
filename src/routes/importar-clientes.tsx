@@ -545,7 +545,6 @@ function ImportarClientesPage() {
                 <>Confirmar importação</>
               )}
             </Button>
-            </Button>
           </div>
 
           <div className="mb-3 flex flex-wrap gap-1.5 text-xs">
