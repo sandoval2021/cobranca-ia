@@ -82,6 +82,10 @@ export function QuickRenewDialog({
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<null | { msg: string; newDue: string; sent: boolean }>(null);
+  const [newDueOverride, setNewDueOverride] = useState<string>("");
+  const [dataReceber, setDataReceber] = useState<string>("");
+  const [sendReceipt, setSendReceipt] = useState(true);
+  const [renovarPrazo, setRenovarPrazo] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -99,6 +103,12 @@ export function QuickRenewDialog({
     setBusy(false);
     setAppAmount("");
     setDiscount("");
+    setSendReceipt(true);
+    setRenovarPrazo(false);
+    const today = new Date();
+    const p = (n: number) => String(n).padStart(2, "0");
+    setDataReceber(`${today.getFullYear()}-${p(today.getMonth() + 1)}-${p(today.getDate())}`);
+    setNewDueOverride("");
     const base = monthlyAmountCents != null ? monthlyAmountCents / 100 : null;
     setAmount(base != null ? base.toFixed(2).replace(".", ",") : "");
   }, [open, customerId, monthlyAmountCents]);
@@ -145,9 +155,23 @@ export function QuickRenewDialog({
   const amountNum = parseBR(amount);
   const appAmountNum = parseBR(appAmount);
   const discountNum = parseBR(discount);
-  const totalNum = Math.max(0, amountNum + appAmountNum - discountNum);
+  const totalServicos = amountNum + appAmountNum;
+  const totalNum = Math.max(0, totalServicos - discountNum);
   const fmtMoney = (n: number) =>
     `R$ ${n.toFixed(2).replace(".", ",")}`;
+
+  // Vencimento final calculado (telas ou cliente)
+  const computedNewDue = useMemo(() => {
+    if (hasScreens && selectedScreens.length) {
+      return selectedScreens
+        .map((s) => addMonthsISO(baseFromScreen(s), months))
+        .sort()
+        .reverse()[0];
+    }
+    return customerNewDue;
+  }, [hasScreens, selectedScreens, months, customerNewDue]);
+
+  const effectiveNewDue = newDueOverride || computedNewDue;
 
   const toggle = (id: string, patch: Partial<ScreenChoice>) =>
     setChoices((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
@@ -167,24 +191,26 @@ export function QuickRenewDialog({
     try {
       // Caso 1: cliente sem telas — registra renovação geral
       if (!hasScreens) {
+        const finalDue = newDueOverride || customerNewDue;
         const rec = applyRenewal({
           customer_id: customerId,
           customer_name: customerName,
-          new_due_date: customerNewDue,
+          new_due_date: finalDue,
           amount: amount ? `R$ ${amount}` : undefined,
           payment_method: method,
           notes: notes.trim() || `Renovação de ${months} ${months === 1 ? "mês" : "meses"}`,
           renew_app: false,
           screens: [],
         });
-        setCustomerDueOverride(customerId, customerNewDue);
+        setCustomerDueOverride(customerId, finalDue);
         const msg = rec.confirmation_message || buildConfirmationMessage(rec);
-        autoSend(msg);
-        setDone({ msg, newDue: customerNewDue, sent: true });
+        if (sendReceipt) autoSend(msg);
+        setDone({ msg, newDue: finalDue, sent: sendReceipt });
       } else {
+        const usingOverride = !!newDueOverride;
         const groups = new Map<string, AppScreen[]>();
         for (const s of selectedScreens) {
-          const newDue = addMonthsISO(baseFromScreen(s), months);
+          const newDue = usingOverride ? newDueOverride : addMonthsISO(baseFromScreen(s), months);
           if (!groups.has(newDue)) groups.set(newDue, []);
           groups.get(newDue)!.push(s);
         }
@@ -236,8 +262,8 @@ export function QuickRenewDialog({
         }
         if (maxDue) setCustomerDueOverride(customerId, maxDue);
         const fullMsg = messages.join("\n\n———\n\n");
-        autoSend(fullMsg);
-        setDone({ msg: fullMsg, newDue: maxDue, sent: true });
+        if (sendReceipt) autoSend(fullMsg);
+        setDone({ msg: fullMsg, newDue: maxDue, sent: sendReceipt });
       }
       onRenewed?.();
     } catch (e) {
@@ -479,51 +505,82 @@ export function QuickRenewDialog({
               />
             </div>
 
-            {/* Resumo antes da confirmação */}
-            <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs space-y-1.5">
-              <div className="font-semibold text-foreground flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" /> Resumo da renovação
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Vencimento atual</span>
-                <span className="font-medium">{oldDue ? fmtDateBR(oldDue) : "—"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Novo vencimento</span>
-                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                  {fmtDateBR(hasScreens && selectedScreens.length
-                    ? selectedScreens
-                        .map((s) => addMonthsISO(baseFromScreen(s), months))
-                        .sort()
-                        .reverse()[0]
-                    : customerNewDue)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Período</span>
-                <span className="font-medium">{months} {months === 1 ? "mês" : "meses"}</span>
-              </div>
-              <div className="border-t border-border/60 pt-1.5 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Valor do plano</span>
-                  <span>{fmtMoney(amountNum)}</span>
+            {/* Resumo financeiro estilo recibo */}
+            <div className="rounded-lg border bg-card overflow-hidden">
+              {/* Cabeçalho */}
+              <div className="flex items-center gap-3 px-3 py-3 bg-muted/40 border-b">
+                <div className="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                  <Calendar className="h-5 w-5" />
                 </div>
-                {appAmountNum > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Valor do app</span>
-                    <span>{fmtMoney(appAmountNum)}</span>
+                <div className="min-w-0">
+                  <div className="font-semibold text-sm truncate">{customerName}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {hasScreens && selectedScreens.length === 1
+                      ? `${selectedScreens[0].name || "Tela"} • ${APP_CATALOG[selectedScreens[0].app]?.label ?? ""}`
+                      : hasScreens
+                        ? `${selectedScreens.length} tela(s) selecionada(s)`
+                        : "Renovação geral"}
+                    {monthlyAmountCents != null && ` • ${fmtMoney(monthlyAmountCents / 100)}/mês`}
                   </div>
-                )}
-                {discountNum > 0 && (
-                  <div className="flex items-center justify-between text-rose-600 dark:text-rose-400">
-                    <span>Desconto</span>
-                    <span>- {fmtMoney(discountNum)}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between font-semibold text-foreground">
-                  <span>Total a receber</span>
-                  <span>{fmtMoney(totalNum)}</span>
                 </div>
+              </div>
+
+              {/* Linhas financeiras */}
+              <div className="px-3 py-2 space-y-2 text-sm">
+                <FinanceRow label="RENOVAÇÕES" op="×" value={String(months)} />
+                <FinanceRow label="TOTAL SERVIÇOS" op="=" value={fmtMoney(totalServicos)} muted />
+                <FinanceRow label="DESCONTO" op="−" value={fmtMoney(discountNum)} />
+                <div className="border-t pt-2">
+                  <FinanceRow label="TOTAL A RECEBER" op="=" value={fmtMoney(totalNum)} strong />
+                </div>
+              </div>
+
+              {/* Datas */}
+              <div className="grid grid-cols-2 gap-3 px-3 py-3 border-t bg-muted/20">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold">Expiração Atual</Label>
+                  <Input
+                    value={oldDue ? fmtDateBR(oldDue) : "—"}
+                    readOnly
+                    className="h-8 text-xs bg-muted/60"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold">
+                    <span className="text-rose-500">*</span> Nova Data Expiração
+                  </Label>
+                  <Input
+                    type="date"
+                    value={newDueOverride || computedNewDue}
+                    onChange={(e) => setNewDueOverride(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1 col-span-2 sm:col-span-1">
+                  <Label className="text-[11px] font-semibold">Data Contas a Receber</Label>
+                  <Input
+                    type="date"
+                    value={dataReceber}
+                    onChange={(e) => setDataReceber(e.target.value)}
+                    disabled={!renovarPrazo}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="col-span-2 flex flex-col gap-1.5 pt-1">
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <Checkbox checked={sendReceipt} onCheckedChange={(v) => setSendReceipt(!!v)} />
+                    Enviar Recibo no WhatsApp
+                  </label>
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <Checkbox checked={renovarPrazo} onCheckedChange={(v) => setRenovarPrazo(!!v)} />
+                    Renovar a Prazo
+                  </label>
+                </div>
+              </div>
+
+              <div className="px-3 pb-3 text-[10px] text-muted-foreground">
+                Resumo: {fmtMoney(amountNum)} (plano){appAmountNum > 0 && ` + ${fmtMoney(appAmountNum)} (app)`}{discountNum > 0 && ` − ${fmtMoney(discountNum)} (desconto)`} = <strong className="text-foreground">{fmtMoney(totalNum)}</strong>
+                {effectiveNewDue && <> · Novo vencimento: <strong className="text-foreground">{fmtDateBR(effectiveNewDue)}</strong></>}
               </div>
             </div>
           </div>
@@ -586,5 +643,26 @@ export function QuickRenewDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function FinanceRow({
+  label, op, value, strong, muted,
+}: { label: string; op: string; value: string; strong?: boolean; muted?: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className={cn("flex-1 text-[11px] tracking-wide", muted ? "text-muted-foreground" : "text-foreground/80", strong && "font-semibold text-foreground")}>
+        {label}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border bg-muted text-xs font-semibold">{op}</span>
+        <div className={cn(
+          "inline-flex h-7 min-w-[110px] items-center justify-end rounded-md border px-2 text-xs tabular-nums",
+          strong ? "bg-primary/10 text-primary font-bold border-primary/40" : "bg-background"
+        )}>
+          {value}
+        </div>
+      </div>
+    </div>
   );
 }
