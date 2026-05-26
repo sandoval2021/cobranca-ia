@@ -909,6 +909,102 @@ function ImportarClientesPage() {
         </Card>
       )}
 
+      {/* Clientes não importados — ação por linha */}
+      {result && !result.message && rows && notImportedIdx.length > 0 && (
+        <Card className="mt-4 p-4">
+          <div className="mb-2 flex items-center gap-1.5">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-medium">Clientes não importados</span>
+          </div>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Estes clientes foram pulados (duplicados no arquivo ou com erro).
+            Você pode importar mesmo assim ou ignorar.
+          </p>
+          <div className="space-y-2">
+            {notImportedIdx.map((i) => {
+              const r = rows[i];
+              const forced = forcedIdx.has(i);
+              const skipped = skippedIdx.has(i);
+              const isLoading = forcingIdx === i;
+              return (
+                <div
+                  key={i}
+                  className={`rounded-xl border p-3 text-xs ${
+                    forced
+                      ? "border-emerald-300/50 bg-emerald-50/50 dark:bg-emerald-950/20"
+                      : skipped
+                        ? "border-border bg-muted/30 opacity-60"
+                        : "border-border bg-card/50"
+                  }`}
+                >
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <KindPill kind={rowKind(r)} errors={r.errors} />
+                    <span className="text-[10px] text-muted-foreground">
+                      {r.external_code ?? ""}
+                    </span>
+                  </div>
+                  <p className="truncate text-sm font-semibold">
+                    {r.customer_name ?? "—"}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {r.whatsapp_e164 ?? "sem WhatsApp"} ·{" "}
+                    {r.service_name ?? "—"}
+                  </p>
+                  {r.errors.length > 0 && (
+                    <p className="mt-1 text-[11px] text-destructive">
+                      {r.errors.join(", ")}
+                    </p>
+                  )}
+                  {!forced && !skipped && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={isLoading}
+                        onClick={() => forceImportRow(i)}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Importando…
+                          </>
+                        ) : (
+                          "Importar mesmo assim"
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() =>
+                          setSkippedIdx((prev) => {
+                            const next = new Set(prev);
+                            next.add(i);
+                            return next;
+                          })
+                        }
+                      >
+                        Ignorar
+                      </Button>
+                    </div>
+                  )}
+                  {forced && (
+                    <p className="mt-1 text-[11px] text-emerald-700 dark:text-emerald-300">
+                      Importado mesmo assim.
+                    </p>
+                  )}
+                  {skipped && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Ignorado.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
 
       {!rows && !parsing && !parseError && (
         <EmptyState
