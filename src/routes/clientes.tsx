@@ -1585,7 +1585,8 @@ function EditForm({
   const [status, setStatus] = useState(customer.status ?? "ativo");
   const [notes, setNotes] = useState(customer.notes ?? "");
   const createdAt = str(customer.raw, ["created_at", "cadastrado_em", "data_cadastro", "inserted_at"]);
-  const screensCount = useMemo(() => listScreens(customer.id).length, [customer.id]);
+  const screensList = useMemo(() => listScreens(customer.id), [customer.id]);
+  const screensCount = screensList.length;
 
   const validate = (): string | null => {
     if (!name.trim()) return "Informe o nome do cliente.";
@@ -1705,6 +1706,47 @@ function EditForm({
           className="resize-none"
         />
       </Field>
+
+      <div className="space-y-1.5 rounded-xl border border-border bg-primary-soft/30 p-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+            <Tv className="h-3 w-3" />
+            Telas e servidores
+            <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
+              {screensCount}
+            </span>
+          </div>
+          <span className="text-[10px] text-muted-foreground">Use o botão de TV para adicionar</span>
+        </div>
+        {screensCount === 0 ? (
+          <div className="rounded-md bg-card px-2 py-1.5 text-[11px] text-muted-foreground">
+            Nenhuma tela cadastrada ainda.
+          </div>
+        ) : (
+          <ul className="space-y-1">
+            {screensList.map((s) => {
+              const appLabel = APP_CATALOG[s.app]?.label ?? s.app;
+              const serverIds = s.server_ids?.length ? s.server_ids : (s.primary_server_id ? [s.primary_server_id] : []);
+              const serverNames = serverIds.map((id) => getServerById(id)?.name).filter(Boolean) as string[];
+              const serverText = serverNames.length ? serverNames.join(", ") : (s.server || "Sem servidor");
+              return (
+                <li
+                  key={s.id}
+                  className="flex items-center gap-1.5 rounded-md bg-card px-2 py-1 text-[11px]"
+                >
+                  <span className="truncate font-medium text-foreground">{s.name}</span>
+                  <span className="shrink-0 rounded-full bg-primary-soft px-1.5 text-[10px] font-medium text-primary">
+                    {appLabel}
+                  </span>
+                  <span className="ml-auto truncate text-muted-foreground" title={serverText}>
+                    {serverText}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
       <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
         <span>Cadastro: <span className="font-medium text-foreground">{createdAt ? fmtDate(createdAt) : "—"}</span></span>
