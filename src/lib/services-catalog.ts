@@ -176,13 +176,14 @@ export function addServiceMessage(
   const all = read();
   const idx = all.findIndex((s) => s.id === serviceId);
   if (idx < 0) return null;
-  const days = input.kind === "cobranca" ? 0 : Math.max(1, Math.round(input.offset_days ?? 30));
+  const days = Math.round(Number(input.offset_days ?? 0));
+  const kind: ServiceMessageKind = days === 0 ? "cobranca" : "acompanhamento";
   const msg: ServiceMessage = {
     id: uid("msg"),
-    kind: input.kind,
+    kind,
     offset_days: days,
-    label: input.label?.trim() || labelFor(input.kind, days),
-    template: input.template ?? (input.kind === "cobranca" ? DEFAULT_COBRANCA : DEFAULT_ACOMP),
+    label: input.label?.trim() || labelFor(kind, days),
+    template: input.template ?? (kind === "cobranca" ? DEFAULT_COBRANCA : DEFAULT_ACOMP),
   };
   all[idx] = { ...all[idx], messages: [...all[idx].messages, msg] };
   write(all);
