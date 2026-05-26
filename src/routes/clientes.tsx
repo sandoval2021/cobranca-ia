@@ -1594,17 +1594,47 @@ function NewCustomerSheet({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const servers = useMemo(() => listActiveServers(), [open]);
+
+  // Bloco 1 — Dados do cliente
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [birthday, setBirthday] = useState("");
+
+  // Bloco 2 — Serviço
+  const [serverId, setServerId] = useState<string>("__none__");
+  const [serverIdExtra, setServerIdExtra] = useState<string>("__none__");
+  const [usuario, setUsuario] = useState("");
+  const [senha, setSenha] = useState("");
+  const [showSenha, setShowSenha] = useState(false);
+  const [telas, setTelas] = useState("1");
+  const [app, setApp] = useState<AppKey | "__none__">("__none__");
+  const [mac, setMac] = useState("");
+  const [appKey, setAppKey] = useState("");
+
+  // Bloco 3 — Cobrança
   const [amount, setAmount] = useState("");
   const [dueDay, setDueDay] = useState("");
+
+  // Bloco 4 — Observações
   const [notes, setNotes] = useState("");
+
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (open) {
       setName("");
       setWhatsapp("");
+      setBirthday("");
+      setServerId("__none__");
+      setServerIdExtra("__none__");
+      setUsuario("");
+      setSenha("");
+      setShowSenha(false);
+      setTelas("1");
+      setApp("__none__");
+      setMac("");
+      setAppKey("");
       setAmount("");
       setDueDay("");
       setNotes("");
@@ -1619,7 +1649,7 @@ function NewCustomerSheet({
       return;
     }
     const d = onlyDigits(whatsapp);
-    if (d && d.length < 10) {
+    if (!d || d.length < 10) {
       toast.error("Revise o WhatsApp informado.");
       return;
     }
@@ -1635,6 +1665,7 @@ function NewCustomerSheet({
       toast.error("O dia de vencimento deve ser entre 1 e 31.");
       return;
     }
+    const telasNum = telas.trim() ? Math.max(1, Math.min(99, Number(telas) || 1)) : 1;
     if (!supabase) {
       toast.error("Conexão indisponível. Tente novamente em instantes.");
       return;
@@ -1646,20 +1677,70 @@ function NewCustomerSheet({
       toast.error("Não foi possível confirmar sua empresa. Tente novamente.");
       return;
     }
-    const { error } = await supabase.rpc("create_customer_admin", {
+    const { data, error } = await supabase.rpc("create_customer_admin", {
       p_company_id: companyId,
       p_name: name.trim(),
-      p_whatsapp_e164: whatsapp.trim() ? toE164(whatsapp) : null,
+      p_whatsapp_e164: toE164(whatsapp),
       p_amount_cents: amt,
       p_due_day: dd,
       p_status: "ativo",
       p_notes: notes.trim() || null,
     });
-    setBusy(false);
     if (error) {
-      toast.error(friendlyRpcError(error.message));
+      setBusy(false);
+      toast.error("Não foi possível salvar. Confira os dados e tente novamente.");
       return;
     }
+
+    // Persistência local opcional de "Telas e aplicativos" (preview-only,
+    // mesmo storage usado em AppScreensSection). Só cria se o usuário
+    // informou algum dado de serviço.
+    try {
+      const row = Array.isArray(data) ? (data[0] as Row | undefined) : (data as Row | null);
+      const newCustomerId = row
+        ? (typeof row.id === "string" ? row.id : typeof row.customer_id === "string" ? row.customer_id : null)
+        : null;
+      const hasService =
+        serverId !== "__none__" ||
+        serverIdExtra !== "__none__" ||
+        usuario.trim() ||
+        senha.trim() ||
+        mac.trim() ||
+        appKey.trim() ||
+        app !== "__none__";
+      if (newCustomerId && hasService) {
+        const serverIds: string[] = [];
+        if (serverId !== "__none__") serverIds.push(serverId);
+        if (serverIdExtra !== "__none__" && serverIdExtra !== serverId) serverIds.push(serverIdExtra);
+        const appKeyValue: AppKey = app === "__none__" ? "outro" : app;
+        const access = APP_CATALOG[appKeyValue]?.access ?? "nao_informado";
+        const now = new Date().toISOString();
+        for (let i = 0; i < telasNum; i++) {
+          upsertScreen({
+            id: newId(),
+            customer_id: newCustomerId,
+            company_id: companyId,
+            name: telasNum > 1 ? `Tela ${i + 1}` : "Tela 1",
+            app: appKeyValue,
+            access_type: access,
+            username: usuario.trim() || undefined,
+            password: senha.trim() || undefined,
+            mac: mac.trim() || undefined,
+            app_key: appKey.trim() || undefined,
+            status: "ativa",
+            server_ids: serverIds.length ? serverIds : undefined,
+            primary_server_id: serverIds[0],
+            created_at: now,
+            updated_at: now,
+          });
+        }
+        try { window.dispatchEvent(new Event("app-screens:changed")); } catch { /* ignore */ }
+      }
+    } catch {
+      /* ignore — persistência extra é best-effort */
+    }
+
+    setBusy(false);
     toast.success("Cliente cadastrado com sucesso.");
     onCreated();
     onClose();
@@ -1674,60 +1755,222 @@ function NewCustomerSheet({
             Cadastre rapidamente um novo cliente na sua base.
           </SheetDescription>
         </SheetHeader>
-        <form onSubmit={submit} className="flex-1 space-y-4 px-4 py-4">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1">
+        <form onSubmit={submit} className="flex-1 space-y-5 px-4 py-4">
+          {/* Bloco 1 — Dados do cliente */}
+          <section className="space-y-3 rounded-lg border border-border bg-card/40 p-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Dados do cliente
+            </h3>
+            <div className="space-y-1.5">
               <Label className="text-xs">Nome *</Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                maxLength={120}
+                placeholder="Nome do cliente"
+              />
             </div>
-            <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} placeholder="Nome do cliente" />
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1">
-              <Label className="text-xs">WhatsApp</Label>
-              <HelpTip text="Inclua o DDD. Será salvo no formato internacional." />
-            </div>
-            <Input
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              placeholder="(11) 99999-9999"
-              inputMode="tel"
-              maxLength={20}
-              autoComplete="off"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <div className="flex items-center gap-1">
+                <Label className="text-xs">WhatsApp *</Label>
+                <HelpTip text="Inclua o DDD. Será salvo no formato internacional." />
+              </div>
+              <Input
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="(11) 99999-9999"
+                inputMode="tel"
+                maxLength={20}
+                autoComplete="off"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Data de aniversário</Label>
+              <Input
+                type="date"
+                value={birthday}
+                onChange={(e) => setBirthday(e.target.value)}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Campo visual — persistência depende de coluna no backend.
+              </p>
+            </div>
+          </section>
+
+          {/* Bloco 2 — Serviço */}
+          <section className="space-y-3 rounded-lg border border-border bg-card/40 p-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Serviço
+            </h3>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs">Servidor</Label>
+                <HelpTip text="Escolha o servidor principal usado pelo cliente." />
+              </div>
+              <Select value={serverId} onValueChange={setServerId}>
+                <SelectTrigger><SelectValue placeholder="Selecionar servidor" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Selecionar servidor</SelectItem>
+                  {servers.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Servidor adicional</Label>
+              <Select value={serverIdExtra} onValueChange={setServerIdExtra}>
+                <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhum</SelectItem>
+                  {servers.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Usuário</Label>
+                  <HelpTip text="Login do cliente no painel/servidor." />
+                </div>
+                <Input
+                  value={usuario}
+                  onChange={(e) => setUsuario(e.target.value)}
+                  placeholder="usuário"
+                  autoComplete="off"
+                  maxLength={120}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Senha</Label>
+                  <HelpTip text="Senha do cliente no painel/servidor." />
+                </div>
+                <div className="relative">
+                  <Input
+                    type={showSenha ? "text" : "password"}
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="••••••"
+                    autoComplete="new-password"
+                    maxLength={120}
+                    className="pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSenha((v) => !v)}
+                    aria-label={showSenha ? "Ocultar senha" : "Mostrar senha"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted"
+                  >
+                    {showSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Telas</Label>
+                  <HelpTip text="Quantidade de telas/conexões simultâneas." />
+                </div>
+                <Input
+                  value={telas}
+                  onChange={(e) => setTelas(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                  placeholder="1"
+                  inputMode="numeric"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">App usado</Label>
+                <Select value={app} onValueChange={(v) => setApp(v as AppKey | "__none__")}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar app" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Não informar</SelectItem>
+                    {APP_OPTIONS.map((k) => (
+                      <SelectItem key={k} value={k}>{APP_CATALOG[k].label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">MAC</Label>
+                  <HelpTip text="Endereço MAC do app (ex.: IBO, Bob, Vu)." />
+                </div>
+                <Input
+                  value={mac}
+                  onChange={(e) => setMac(e.target.value)}
+                  placeholder="00:1A:79:..."
+                  autoComplete="off"
+                  maxLength={32}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Key</Label>
+                  <HelpTip text="Chave/licença do app, quando aplicável." />
+                </div>
+                <Input
+                  value={appKey}
+                  onChange={(e) => setAppKey(e.target.value)}
+                  placeholder="chave"
+                  autoComplete="off"
+                  maxLength={64}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Bloco 3 — Cobrança */}
+          <section className="space-y-3 rounded-lg border border-border bg-card/40 p-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Cobrança
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
                 <Label className="text-xs">Valor mensal</Label>
-                <HelpTip text="Cobrança recorrente em reais." />
+                <Input
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0,00"
+                  inputMode="decimal"
+                />
               </div>
-              <Input
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0,00"
-                inputMode="decimal"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
-                <Label className="text-xs">Dia de vencimento</Label>
-                <HelpTip text="Entre 1 e 31." />
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Dia de vencimento</Label>
+                  <HelpTip text="Dia do mês entre 1 e 31." />
+                </div>
+                <Input
+                  value={dueDay}
+                  onChange={(e) => setDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                  placeholder="10"
+                  inputMode="numeric"
+                />
               </div>
-              <Input
-                value={dueDay}
-                onChange={(e) => setDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                placeholder="10"
-                inputMode="numeric"
-              />
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1">
-              <Label className="text-xs">Observações</Label>
-              <HelpTip text="Notas internas, não enviadas ao cliente." />
-            </div>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={1000} />
-          </div>
+          </section>
+
+          {/* Bloco 4 — Observações */}
+          <section className="space-y-3 rounded-lg border border-border bg-card/40 p-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Observações
+            </h3>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="Notas internas, não enviadas ao cliente."
+            />
+          </section>
+
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={busy} className="flex-1">
               Cancelar
