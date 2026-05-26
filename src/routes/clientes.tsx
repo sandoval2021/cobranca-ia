@@ -1649,6 +1649,8 @@ function NewCustomerSheet({
 
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [countryCode, setCountryCode] = useState<string>("BR");
+  const [customDdi, setCustomDdi] = useState("");
   const [serverId, setServerId] = useState<string>("__none__");
   const [serverIdExtra, setServerIdExtra] = useState<string>("__none__");
   const [app, setApp] = useState<AppKey | "__none__">("__none__");
