@@ -47,6 +47,7 @@ import {
   importCompanies,
   listCompanies,
   listCompanyPlans,
+  relinkCompanyId,
   saveCompany,
   saveCompanyMember,
   saveCompanyPlan,
@@ -56,6 +57,7 @@ import {
   type CompanyPlan,
   type CompanyStatus,
 } from "@/lib/companies";
+import { getCurrentCompanyAdmin, isUuid } from "@/lib/rpc-admin";
 
 export const Route = createFileRoute("/empresas")({ component: EmpresasPage });
 
@@ -284,6 +286,15 @@ function EmpresasContent() {
                           <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", STATUS_TONE[status])}>
                             {STATUS_LABEL[status]}
                           </span>
+                          {isUuid(c.id) ? (
+                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
+                              Servidor
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                              Local
+                            </span>
+                          )}
                           {isCurrent && (
                             <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
                               Visualizando
@@ -296,15 +307,49 @@ function EmpresasContent() {
                         <p className="mt-0.5 truncate text-xs text-muted-foreground">
                           {plan?.nome ?? "Sem plano"} · venc. {c.data_vencimento || "—"} · {members.length} membro(s)
                         </p>
+                        {!isUuid(c.id) && (
+                          <p className="mt-1 text-[11px] text-amber-700">
+                            Conta de teste ainda não está ativa no servidor.
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-1.5">
+                      {!isUuid(c.id) && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={async () => {
+                            const { companyId, error } = await getCurrentCompanyAdmin();
+                            if (!companyId || !isUuid(companyId)) {
+                              toast.error("Conta de teste ainda não está ativa no servidor.");
+                              console.warn("[empresas] ativar conta — sem UUID real:", error);
+                              return;
+                            }
+                            const updated = relinkCompanyId(c.id, companyId);
+                            if (updated) {
+                              setCurrentCompany(companyId);
+                              toast.success(`Conta vinculada ao servidor (${companyId.slice(0, 8)}…).`);
+                            } else {
+                              toast.error("Não foi possível vincular esta conta agora.");
+                            }
+                          }}
+                        >
+                          Ativar conta de teste
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={!isUuid(c.id)}
+                        title={isUuid(c.id) ? undefined : "Ative a conta no servidor primeiro."}
                         onClick={() => {
+                          if (!isUuid(c.id)) {
+                            toast.error("Selecione uma conta válida para continuar.");
+                            return;
+                          }
                           setCurrentCompany(c.id);
-                          toast.success(`Visualizando como ${c.nome}`);
+                          toast.success(`Conta ativa: ${c.nome}`);
                         }}
                       >
                         <Eye className="h-3.5 w-3.5" />
@@ -331,6 +376,7 @@ function EmpresasContent() {
                       )}
                     </div>
                   </li>
+
                 );
               })}
             </ul>
