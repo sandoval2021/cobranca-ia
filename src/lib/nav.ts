@@ -82,7 +82,7 @@ export const ownerBottomNav: NavItem[] = [
   { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/testes", label: "Testes", icon: Beaker },
   { to: "/cadastros-servicos", label: "Cadastro", icon: Tv },
-  { to: "/gestao-servicos", label: "Gestão", icon: ListChecks },
+  { to: "/financeiro", label: "Financeiro", icon: Wallet },
   { to: "/catalogo-servidores", label: "Servidores", icon: Server },
 ];
 
