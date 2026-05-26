@@ -38,8 +38,8 @@ function fmtBRL(cents: number): string {
 
 function AgendaDisparoPage() {
   const [cfg, setCfg] = useState<AutoDispatchConfig>(() => getAutoDispatchConfig());
-  const [newAmount, setNewAmount] = useState<string>("");
-  const [newHour, setNewHour] = useState<string>("09:00");
+  const [services, setServices] = useState(() => listActiveServices());
+  const [bulkHour, setBulkHour] = useState<string>("09:00");
 
   useEffect(() => {
     const sync = () => setCfg(getAutoDispatchConfig());
