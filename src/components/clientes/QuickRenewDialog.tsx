@@ -505,51 +505,82 @@ export function QuickRenewDialog({
               />
             </div>
 
-            {/* Resumo antes da confirmação */}
-            <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs space-y-1.5">
-              <div className="font-semibold text-foreground flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" /> Resumo da renovação
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Vencimento atual</span>
-                <span className="font-medium">{oldDue ? fmtDateBR(oldDue) : "—"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Novo vencimento</span>
-                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                  {fmtDateBR(hasScreens && selectedScreens.length
-                    ? selectedScreens
-                        .map((s) => addMonthsISO(baseFromScreen(s), months))
-                        .sort()
-                        .reverse()[0]
-                    : customerNewDue)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Período</span>
-                <span className="font-medium">{months} {months === 1 ? "mês" : "meses"}</span>
-              </div>
-              <div className="border-t border-border/60 pt-1.5 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Valor do plano</span>
-                  <span>{fmtMoney(amountNum)}</span>
+            {/* Resumo financeiro estilo recibo */}
+            <div className="rounded-lg border bg-card overflow-hidden">
+              {/* Cabeçalho */}
+              <div className="flex items-center gap-3 px-3 py-3 bg-muted/40 border-b">
+                <div className="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                  <Calendar className="h-5 w-5" />
                 </div>
-                {appAmountNum > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Valor do app</span>
-                    <span>{fmtMoney(appAmountNum)}</span>
+                <div className="min-w-0">
+                  <div className="font-semibold text-sm truncate">{customerName}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {hasScreens && selectedScreens.length === 1
+                      ? `${selectedScreens[0].name || "Tela"} • ${APP_CATALOG[selectedScreens[0].app]?.label ?? ""}`
+                      : hasScreens
+                        ? `${selectedScreens.length} tela(s) selecionada(s)`
+                        : "Renovação geral"}
+                    {monthlyAmountCents != null && ` • ${fmtMoney(monthlyAmountCents / 100)}/mês`}
                   </div>
-                )}
-                {discountNum > 0 && (
-                  <div className="flex items-center justify-between text-rose-600 dark:text-rose-400">
-                    <span>Desconto</span>
-                    <span>- {fmtMoney(discountNum)}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between font-semibold text-foreground">
-                  <span>Total a receber</span>
-                  <span>{fmtMoney(totalNum)}</span>
                 </div>
+              </div>
+
+              {/* Linhas financeiras */}
+              <div className="px-3 py-2 space-y-2 text-sm">
+                <FinanceRow label="RENOVAÇÕES" op="×" value={String(months)} />
+                <FinanceRow label="TOTAL SERVIÇOS" op="=" value={fmtMoney(totalServicos)} muted />
+                <FinanceRow label="DESCONTO" op="−" value={fmtMoney(discountNum)} />
+                <div className="border-t pt-2">
+                  <FinanceRow label="TOTAL A RECEBER" op="=" value={fmtMoney(totalNum)} strong />
+                </div>
+              </div>
+
+              {/* Datas */}
+              <div className="grid grid-cols-2 gap-3 px-3 py-3 border-t bg-muted/20">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold">Expiração Atual</Label>
+                  <Input
+                    value={oldDue ? fmtDateBR(oldDue) : "—"}
+                    readOnly
+                    className="h-8 text-xs bg-muted/60"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold">
+                    <span className="text-rose-500">*</span> Nova Data Expiração
+                  </Label>
+                  <Input
+                    type="date"
+                    value={newDueOverride || computedNewDue}
+                    onChange={(e) => setNewDueOverride(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1 col-span-2 sm:col-span-1">
+                  <Label className="text-[11px] font-semibold">Data Contas a Receber</Label>
+                  <Input
+                    type="date"
+                    value={dataReceber}
+                    onChange={(e) => setDataReceber(e.target.value)}
+                    disabled={!renovarPrazo}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="col-span-2 flex flex-col gap-1.5 pt-1">
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <Checkbox checked={sendReceipt} onCheckedChange={(v) => setSendReceipt(!!v)} />
+                    Enviar Recibo no WhatsApp
+                  </label>
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <Checkbox checked={renovarPrazo} onCheckedChange={(v) => setRenovarPrazo(!!v)} />
+                    Renovar a Prazo
+                  </label>
+                </div>
+              </div>
+
+              <div className="px-3 pb-3 text-[10px] text-muted-foreground">
+                Resumo: {fmtMoney(amountNum)} (plano){appAmountNum > 0 && ` + ${fmtMoney(appAmountNum)} (app)`}{discountNum > 0 && ` − ${fmtMoney(discountNum)} (desconto)`} = <strong className="text-foreground">{fmtMoney(totalNum)}</strong>
+                {effectiveNewDue && <> · Novo vencimento: <strong className="text-foreground">{fmtDateBR(effectiveNewDue)}</strong></>}
               </div>
             </div>
           </div>
