@@ -20,6 +20,7 @@ import {
   type AutoDispatchConfig,
   type AmountSchedule,
 } from "@/lib/auto-dispatch";
+import { listActiveServices, SERVICES_EVENT, formatBRL as fmtBRLsvc } from "@/lib/services-catalog";
 
 export const Route = createFileRoute("/agenda-disparo")({
   component: AgendaDisparoPage,
