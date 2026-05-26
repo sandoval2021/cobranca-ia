@@ -496,28 +496,44 @@ function ImportarClientesPage() {
               <HelpTip text="“Já cadastrado” significa que o WhatsApp já existe nesta empresa e será atualizado, não duplicado." />
               {lookupLoading && (
                 <span className="text-[10px] text-muted-foreground">
-                  verificando cadastrados…
+                  verificando…
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap gap-1.5 text-xs">
-              <Badge variant="secondary" className="gap-1">
-                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                {counts.new} novos
-              </Badge>
-              <Badge variant="secondary" className="gap-1">
-                <CheckCircle2 className="h-3 w-3 text-amber-600" />
-                {counts.existing} já cadastrados
-              </Badge>
-              <Badge variant="secondary" className="gap-1">
-                <CopyIcon className="h-3 w-3 text-orange-600" />
-                {counts.duplicate_file} duplicados no arquivo
-              </Badge>
-              <Badge variant="secondary" className="gap-1">
-                <XCircle className="h-3 w-3 text-destructive" />
-                {counts.error} com erro
-              </Badge>
-            </div>
+            <Button
+              size="sm"
+              onClick={onConfirm}
+              disabled={!canConfirm}
+              className="h-8"
+            >
+              {confirming ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Importando…
+                </>
+              ) : (
+                <>Confirmar importação</>
+              )}
+            </Button>
+          </div>
+
+          <div className="mb-3 flex flex-wrap gap-1.5 text-xs">
+            <Badge variant="secondary" className="gap-1">
+              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+              {counts.new} novos
+            </Badge>
+            <Badge variant="secondary" className="gap-1">
+              <CheckCircle2 className="h-3 w-3 text-amber-600" />
+              {counts.existing} já cadastrados
+            </Badge>
+            <Badge variant="secondary" className="gap-1">
+              <CopyIcon className="h-3 w-3 text-orange-600" />
+              {counts.duplicate_file} duplicados no arquivo
+            </Badge>
+            <Badge variant="secondary" className="gap-1">
+              <XCircle className="h-3 w-3 text-destructive" />
+              {counts.error} com erro
+            </Badge>
           </div>
 
           {summary && (
