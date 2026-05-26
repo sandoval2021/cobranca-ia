@@ -584,7 +584,7 @@ function ClientesPage() {
         else if (k === "expirado") c.expirado++;
         else if (k === "arquivado") c.arquivado++;
         const screens = allScreens[it.id] ?? [];
-        const d = nextDueDays(it.due_day, screens);
+        const d = customerDueDays(it, screens);
         if (d != null) {
           if (d === 0) c.hoje++;
           if (d >= 0 && d <= 7) c.d7++;
