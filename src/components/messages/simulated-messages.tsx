@@ -31,6 +31,16 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  listActiveServices,
+  formatBRL as fmtBRLCents,
+  type ServiceItem,
+} from "@/lib/services-catalog";
+import {
+  getCustomerPlanId,
+  setCustomerPlan,
+  CUSTOMER_PLANS_EVENT,
+} from "@/lib/customer-plans";
 
 type Row = Record<string, unknown>;
 
@@ -205,6 +215,7 @@ export function GenerateMessageDialog({
   open,
   onClose,
   chargeId,
+  customerId = null,
   customerName,
   whatsappPretty,
   amountBRL,
@@ -216,6 +227,7 @@ export function GenerateMessageDialog({
   open: boolean;
   onClose: () => void;
   chargeId: string | null;
+  customerId?: string | null;
   customerName: string;
   whatsappPretty: string | null;
   amountBRL: string | null;
@@ -231,6 +243,54 @@ export function GenerateMessageDialog({
   const [preview, setPreview] = useState<string>("");
   const [generatedTone, setGeneratedTone] = useState<string>("amigavel");
   const [copyOk, setCopyOk] = useState(false);
+
+  // Plano do cliente (catálogo local) — escolhe qual mensagem usar.
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [planId, setPlanId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const reload = () => {
+      setServices(listActiveServices());
+      setPlanId(getCustomerPlanId(customerId));
+    };
+    reload();
+    window.addEventListener(CUSTOMER_PLANS_EVENT, reload);
+    return () => window.removeEventListener(CUSTOMER_PLANS_EVENT, reload);
+  }, [open, customerId]);
+
+  const selectedPlan = useMemo(
+    () => services.find((s) => s.id === planId) ?? null,
+    [services, planId],
+  );
+
+  function applyPlanTemplate() {
+    if (!selectedPlan) {
+      toast.error("Selecione um plano cadastrado para este cliente.");
+      return;
+    }
+    const tpl =
+      selectedPlan.mensagem_cobranca?.trim() ||
+      "Olá {nome}, sua mensalidade do plano *{plano}* ({telas} tela/s · {meses} mês/es) no valor de *{valor}* vence em {vencimento}.";
+    const vars: Record<string, string> = {
+      nome: customerName || "cliente",
+      plano: selectedPlan.nome,
+      valor: amountBRL || fmtBRLCents(selectedPlan.preco_cents),
+      telas: String(selectedPlan.telas),
+      meses: String(selectedPlan.meses),
+      vencimento: dueDatePretty || "—",
+    };
+    const out = tpl.replace(/\{(\w+)\}/g, (_m, k) => vars[k] ?? `{${k}}`);
+    setPreview(out);
+    setGeneratedTone(tone);
+    setStage("preview");
+  }
+
+  function handlePickPlan(id: string) {
+    const v = id === "__none__" ? null : id;
+    setPlanId(v);
+    if (customerId) setCustomerPlan(customerId, v);
+  }
 
   useEffect(() => {
     if (open) {
