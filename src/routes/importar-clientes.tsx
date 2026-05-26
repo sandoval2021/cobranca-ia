@@ -287,17 +287,31 @@ function ImportarClientesPage() {
     setConfirming(true);
     setResult(null);
     try {
-      const payload = validas.map((r) => ({
-        external_code: r.external_code,
-        external_customer_code: r.external_customer_code,
-        customer_name: r.customer_name,
-        whatsapp_e164: r.whatsapp_e164,
-        service_name: r.service_name,
-        amount_cents: r.amount_cents,
-        expires_at: r.expires_at,
-        situation: r.situation,
-        raw_row: r.raw_row,
-      }));
+      const idxByRef = new Map(rows!.map((r, i) => [r, i] as const));
+      const payload = validas.map((r) => {
+        const idx = idxByRef.get(r);
+        const e = idx != null ? enrichments[idx] : undefined;
+        return {
+          external_code: r.external_code,
+          external_customer_code: r.external_customer_code,
+          customer_name: r.customer_name,
+          whatsapp_e164: r.whatsapp_e164,
+          service_name: r.service_name,
+          amount_cents: r.amount_cents,
+          expires_at: r.expires_at,
+          situation: r.situation,
+          raw_row: {
+            ...r.raw_row,
+            matched_service_id: e?.matched_service_id ?? null,
+            plan_label: e?.plan_label ?? null,
+            message_label: e?.message_label ?? null,
+            group_size: e?.group_size ?? 1,
+            group_conflict: e?.group_conflict ?? null,
+            observation: e?.observation ?? null,
+          },
+        };
+      });
+
 
       const { data, error } = await supabase.rpc(
         "staging_import_customers_from_rows",
