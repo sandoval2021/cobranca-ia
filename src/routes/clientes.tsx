@@ -79,6 +79,7 @@ import {
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
+import { getCustomerDueOverride, daysFromOverride, fmtDateBRFromISO } from "@/lib/customer-due-override";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
 import { getPrimaryRouteForServer } from "@/lib/dns-routes";
@@ -792,7 +793,10 @@ function ClientCard({
 }) {
   const phone = prettyPhone(customer.whatsapp);
   const initial = customer.name.trim().charAt(0).toUpperCase() || "?";
-  const days = nextDueDays(customer.due_day, screens);
+  const override = getCustomerDueOverride(customer.id);
+  const overrideDays = daysFromOverride(override);
+  const baseDays = nextDueDays(customer.due_day, screens);
+  const days = overrideDays != null ? overrideDays : baseDays;
   const urg = urgencyFromDays(days);
   const activeScreens = screens.filter((s) => s.status !== "arquivada").slice(0, 4);
   const needsUpdate = screens.some((s) => s.needs_server_update && s.status !== "arquivada");
@@ -856,8 +860,13 @@ function ClientCard({
                 : "Sem valor"}{" "}
               / mês
             </span>
-            {customer.due_day != null && (
+            {customer.due_day != null && !override && (
               <span>Vence dia {customer.due_day}</span>
+            )}
+            {override && (
+              <span className="font-medium text-foreground">
+                Vence em {fmtDateBRFromISO(override)}
+              </span>
             )}
             {days != null && (
               <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>

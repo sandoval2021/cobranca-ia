@@ -15,6 +15,7 @@ import {
   applyRenewal, buildConfirmationMessage, fmtDateBR,
   PAYMENT_LABEL, PaymentMethod,
 } from "@/lib/manual-renewals";
+import { setCustomerDueOverride } from "@/lib/customer-due-override";
 
 function addMonthsISO(base: Date, months: number): string {
   const d = new Date(base);
@@ -79,7 +80,7 @@ export function QuickRenewDialog({
   const [method, setMethod] = useState<PaymentMethod>("pix");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<null | { msg: string }>(null);
+  const [done, setDone] = useState<null | { msg: string; newDue: string; sent: boolean }>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -148,13 +149,11 @@ export function QuickRenewDialog({
           renew_app: false,
           screens: [],
         });
-        setDone({ msg: rec.confirmation_message || buildConfirmationMessage(rec) });
+        setCustomerDueOverride(customerId, customerNewDue);
+        const msg = rec.confirmation_message || buildConfirmationMessage(rec);
+        autoSend(msg);
+        setDone({ msg, newDue: customerNewDue, sent: true });
       } else {
-        // Caso 2: renova as telas selecionadas (cada uma com sua base)
-        // applyRenewal usa um único new_due_date global, então fazemos 1 renovação por data distinta agrupada,
-        // mas para simplificar e manter uma única mensagem, calculamos a maior nova data como referência
-        // e atualizamos cada tela individualmente em registros separados quando datas diferem.
-        // Aqui agrupamos por nova data para ter mensagens limpas.
         const groups = new Map<string, AppScreen[]>();
         for (const s of selectedScreens) {
           const newDue = addMonthsISO(baseFromScreen(s), months);
@@ -163,8 +162,10 @@ export function QuickRenewDialog({
         }
         const messages: string[] = [];
         const orderedGroups = [...groups.entries()];
+        let maxDue = "";
         for (let i = 0; i < orderedGroups.length; i++) {
           const [newDue, list] = orderedGroups[i];
+          if (newDue > maxDue) maxDue = newDue;
           const draftScreens = list.map((s) => {
             const renewApp = choices[s.id]?.renewApp ?? false;
             return {
@@ -174,10 +175,7 @@ export function QuickRenewDialog({
               _appNewDue: renewApp ? addMonthsISO(parseISO(s.app_due_date) ?? new Date(), months) : undefined,
             };
           });
-          // applyRenewal aceita renew_app global; chamamos uma vez por tela com app a renovar separadamente,
-          // garantindo a data correta de app por tela.
           const appsToRenew = draftScreens.filter((d) => d._renewApp);
-          // 1) Renovação principal (telas + serviço)
           const rec = applyRenewal({
             customer_id: customerId,
             customer_name: customerName,
@@ -191,7 +189,6 @@ export function QuickRenewDialog({
             screens: draftScreens.map((d) => ({ screen_id: d.screen_id, servers: d.servers })),
           });
           messages.push(rec.confirmation_message || buildConfirmationMessage(rec));
-          // 2) Para cada tela com app marcado, registra renovação adicional do app
           for (const a of appsToRenew) {
             if (!a._appNewDue) continue;
             const appRec = applyRenewal({
@@ -209,7 +206,10 @@ export function QuickRenewDialog({
             messages.push(buildConfirmationMessage(appRec));
           }
         }
-        setDone({ msg: messages.join("\n\n———\n\n") });
+        if (maxDue) setCustomerDueOverride(customerId, maxDue);
+        const fullMsg = messages.join("\n\n———\n\n");
+        autoSend(fullMsg);
+        setDone({ msg: fullMsg, newDue: maxDue, sent: true });
       }
       onRenewed?.();
     } catch (e) {
@@ -219,12 +219,21 @@ export function QuickRenewDialog({
     }
   };
 
+  const autoSend = (message: string) => {
+    const phone = (whatsappE164 ?? "").replace(/\D/g, "");
+    const text = encodeURIComponent(message);
+    const url = phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`;
+    try {
+      window.open(url, "_blank");
+      toast.success("Mensagem enviada para o cliente no WhatsApp ✅");
+    } catch {
+      toast.message("Renovação registrada. Abra o WhatsApp manualmente.");
+    }
+  };
+
   const sendWhats = () => {
     if (!done) return;
-    const phone = (whatsappE164 ?? "").replace(/\D/g, "");
-    const text = encodeURIComponent(done.msg);
-    const url = phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`;
-    window.open(url, "_blank");
+    autoSend(done.msg);
   };
 
   const copyMsg = async () => {
@@ -435,15 +444,31 @@ export function QuickRenewDialog({
 
         {done && (
           <div className="space-y-3 py-1">
-            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-              <Check className="h-4 w-4" /> Renovação registrada com sucesso.
+            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300 space-y-1">
+              <div className="flex items-center gap-2 font-medium">
+                <Check className="h-4 w-4" /> Renovação confirmada
+              </div>
+              {done.newDue && (
+                <div className="flex items-center gap-1.5 pl-6">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>Novo vencimento: <strong>{fmtDateBR(done.newDue)}</strong></span>
+                </div>
+              )}
+              {done.sent && (
+                <div className="pl-6 text-[11px]">
+                  ✅ Mensagem enviada para o cliente no WhatsApp.
+                </div>
+              )}
             </div>
-            <Textarea
-              value={done.msg}
-              readOnly
-              rows={10}
-              className="resize-none text-xs font-mono"
-            />
+            <div>
+              <Label className="text-xs">Mensagem enviada</Label>
+              <Textarea
+                value={done.msg}
+                readOnly
+                rows={8}
+                className="resize-none text-xs font-mono mt-1"
+              />
+            </div>
           </div>
         )}
 
@@ -466,7 +491,7 @@ export function QuickRenewDialog({
                 <Copy className="h-4 w-4" /> Copiar
               </Button>
               <Button onClick={sendWhats} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5">
-                Enviar no WhatsApp
+                Reenviar no WhatsApp
               </Button>
               <Button variant="ghost" onClick={onClose}>Fechar</Button>
             </>
