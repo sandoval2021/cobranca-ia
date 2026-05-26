@@ -630,6 +630,9 @@ function ImportarClientesPage() {
                     <th className="p-2 text-right font-medium">Valor</th>
                     <th className="p-2 text-left font-medium">Expira</th>
                     <th className="p-2 text-left font-medium">Situação</th>
+                    <th className="p-2 text-left font-medium">Mensagem</th>
+                    <th className="p-2 text-left font-medium">Grupo</th>
+
                   </tr>
                 </thead>
                 <tbody>
