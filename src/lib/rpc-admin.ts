@@ -286,24 +286,19 @@ export function useCurrentCompany(): CurrentCompanyState {
     let alive = true;
     setState({ status: "loading" });
     (async () => {
-      const { companyId, error } = await getCurrentCompanyAdmin();
+      const { accountId, error } = await getActiveAccountId();
       if (!alive) return;
-      if (error) {
-        setState({
-          status: "error",
-          message: "Não foi possível preparar sua conta. Tente entrar novamente.",
-          tech: stagingRpcDetail("get_current_company_admin", {}, error),
-        });
+      if (accountId) {
+        setState({ status: "ready", companyId: accountId });
         return;
       }
-      if (!companyId) {
-        setState({
-          status: "error",
-          message: "Não foi possível preparar sua conta. Tente entrar novamente.",
-        });
-        return;
-      }
-      setState({ status: "ready", companyId });
+      setState({
+        status: "error",
+        message: "Não foi possível preparar sua conta. Tente entrar novamente.",
+        tech: error
+          ? stagingRpcDetail("get_current_company_admin", {}, error)
+          : undefined,
+      });
     })();
     return () => {
       alive = false;
