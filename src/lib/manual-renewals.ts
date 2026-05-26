@@ -148,6 +148,7 @@ export type RenewalDraftScreen = {
 export type RenewalDraft = {
   customer_id: string;
   customer_name: string;
+  customer_whatsapp?: string | null;
   new_due_date: string; // YYYY-MM-DD
   amount?: string;
   payment_method?: PaymentMethod;
@@ -157,6 +158,7 @@ export type RenewalDraft = {
   app_amount?: string;
   screens: RenewalDraftScreen[];
 };
+
 
 export function buildConfirmationMessage(rec: RenewalRecord): string {
   let telasLinha = "";
