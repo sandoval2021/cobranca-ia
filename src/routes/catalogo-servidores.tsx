@@ -23,8 +23,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   ServerEntry, listServers, saveServer, archiveServer, reactivateServer,
-  restoreDefaultServers, exportServers, parseServerBackup, importServers,
-  newServerId, serverBadgeStyle, maskSecret, formatServerAsText,
+  deleteServer, restoreDefaultServers, exportServers, parseServerBackup,
+  importServers, newServerId, serverBadgeStyle, maskSecret, formatServerAsText,
   SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
