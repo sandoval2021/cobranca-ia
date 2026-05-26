@@ -1,11 +1,19 @@
 // Configuração e cancelamentos de disparos automáticos (100% client-side).
 
+export type AmountSchedule = {
+  amountCents: number; // valor exato (em centavos) para casar
+  sendHour: string;    // "HH:MM"
+};
+
 export type AutoDispatchConfig = {
   enabled: boolean;
-  sendHour: string;        // "HH:MM"
+  sendHour: string;        // "HH:MM" — horário padrão
   intervalSeconds: number; // intervalo entre uma mensagem e outra
   maxPerDay: number;       // limite diário de envios automáticos
   allowedDays: ("dom" | "seg" | "ter" | "qua" | "qui" | "sex" | "sab")[];
+  batchSize: number;       // a cada N mensagens, aplica uma pausa maior
+  batchPauseSeconds: number; // duração da pausa entre lotes (em segundos)
+  amountSchedules: AmountSchedule[]; // horários customizados por valor
 };
 
 const CFG_KEY = "cobranca_ia_auto_dispatch_cfg_v1";
@@ -17,9 +25,12 @@ export function defaultAutoDispatchConfig(): AutoDispatchConfig {
   return {
     enabled: false,
     sendHour: "09:00",
-    intervalSeconds: 45,
+    intervalSeconds: 30,
     maxPerDay: 40,
     allowedDays: ["seg", "ter", "qua", "qui", "sex", "sab"],
+    batchSize: 5,
+    batchPauseSeconds: 300,
+    amountSchedules: [],
   };
 }
 
