@@ -1720,6 +1720,7 @@ function NewCustomerSheet({
       p_whatsapp_e164: buildE164(countryCode, customDdi, whatsapp),
       p_amount_cents: amt ?? 0,
       p_due_day: dd,
+      p_status: [] as string[],
       p_notes: notes.trim() || null,
     };
     const safeCompanyMask = typeof companyId === "string" && companyId.length >= 8
