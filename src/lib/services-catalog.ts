@@ -201,7 +201,8 @@ export function updateServiceMessage(
   const mIdx = all[sIdx].messages.findIndex((m) => m.id === messageId);
   if (mIdx < 0) return null;
   const merged: ServiceMessage = { ...all[sIdx].messages[mIdx], ...patch };
-  if (merged.kind === "cobranca") merged.offset_days = 0;
+  merged.offset_days = Math.round(Number(merged.offset_days ?? 0));
+  merged.kind = merged.offset_days === 0 ? "cobranca" : "acompanhamento";
   if (!merged.label?.trim()) merged.label = labelFor(merged.kind, merged.offset_days);
   const messages = all[sIdx].messages.slice();
   messages[mIdx] = merged;
