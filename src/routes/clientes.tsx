@@ -1529,19 +1529,26 @@ function DetailView({
             value={customer.amount_cents != null ? fmtBRL(customer.amount_cents) : <span className="text-muted-foreground">—</span>}
           />
           <DetailField
-            label="Dia de vencimento"
-            hint="Dia do mês em que a cobrança vence."
-            value={customer.due_day != null ? `Dia ${customer.due_day}` : <span className="text-muted-foreground">—</span>}
+            label="Vencimento"
+            hint="Próxima data de vencimento."
+            value={(() => {
+              const ex = getCustomerExtras(customer.id);
+              const iso = ex.dueDate ?? customer.due_date;
+              if (iso) return fmtDate(iso);
+              if (customer.due_day != null) return `Dia ${customer.due_day}`;
+              return <span className="text-muted-foreground">—</span>;
+            })()}
           />
           <DetailField
             label="Status"
-            hint="Ativo, expirado ou arquivado."
+            hint="Ativo ou expirado."
             value={
               <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(customer.status))}>
                 {statusLabel(customer.status)}
               </span>
             }
           />
+
         </div>
         <div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
