@@ -149,13 +149,11 @@ export function QuickRenewDialog({
           renew_app: false,
           screens: [],
         });
-        setDone({ msg: rec.confirmation_message || buildConfirmationMessage(rec) });
+        setCustomerDueOverride(customerId, customerNewDue);
+        const msg = rec.confirmation_message || buildConfirmationMessage(rec);
+        autoSend(msg);
+        setDone({ msg, newDue: customerNewDue, sent: true });
       } else {
-        // Caso 2: renova as telas selecionadas (cada uma com sua base)
-        // applyRenewal usa um único new_due_date global, então fazemos 1 renovação por data distinta agrupada,
-        // mas para simplificar e manter uma única mensagem, calculamos a maior nova data como referência
-        // e atualizamos cada tela individualmente em registros separados quando datas diferem.
-        // Aqui agrupamos por nova data para ter mensagens limpas.
         const groups = new Map<string, AppScreen[]>();
         for (const s of selectedScreens) {
           const newDue = addMonthsISO(baseFromScreen(s), months);
@@ -164,8 +162,10 @@ export function QuickRenewDialog({
         }
         const messages: string[] = [];
         const orderedGroups = [...groups.entries()];
+        let maxDue = "";
         for (let i = 0; i < orderedGroups.length; i++) {
           const [newDue, list] = orderedGroups[i];
+          if (newDue > maxDue) maxDue = newDue;
           const draftScreens = list.map((s) => {
             const renewApp = choices[s.id]?.renewApp ?? false;
             return {
@@ -175,10 +175,7 @@ export function QuickRenewDialog({
               _appNewDue: renewApp ? addMonthsISO(parseISO(s.app_due_date) ?? new Date(), months) : undefined,
             };
           });
-          // applyRenewal aceita renew_app global; chamamos uma vez por tela com app a renovar separadamente,
-          // garantindo a data correta de app por tela.
           const appsToRenew = draftScreens.filter((d) => d._renewApp);
-          // 1) Renovação principal (telas + serviço)
           const rec = applyRenewal({
             customer_id: customerId,
             customer_name: customerName,
@@ -192,7 +189,6 @@ export function QuickRenewDialog({
             screens: draftScreens.map((d) => ({ screen_id: d.screen_id, servers: d.servers })),
           });
           messages.push(rec.confirmation_message || buildConfirmationMessage(rec));
-          // 2) Para cada tela com app marcado, registra renovação adicional do app
           for (const a of appsToRenew) {
             if (!a._appNewDue) continue;
             const appRec = applyRenewal({
@@ -210,7 +206,10 @@ export function QuickRenewDialog({
             messages.push(buildConfirmationMessage(appRec));
           }
         }
-        setDone({ msg: messages.join("\n\n———\n\n") });
+        if (maxDue) setCustomerDueOverride(customerId, maxDue);
+        const fullMsg = messages.join("\n\n———\n\n");
+        autoSend(fullMsg);
+        setDone({ msg: fullMsg, newDue: maxDue, sent: true });
       }
       onRenewed?.();
     } catch (e) {
