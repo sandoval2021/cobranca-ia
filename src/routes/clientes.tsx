@@ -1678,8 +1678,8 @@ function NewCustomerSheet({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const d = onlyDigits(whatsapp);
-    if (!d || d.length < 10) { toast.error("Revise o WhatsApp informado."); return; }
+    const waErr = validateWhatsApp(countryCode, customDdi, whatsapp);
+    if (waErr) { toast.error(waErr); return; }
     const amt = amount.trim()
       ? Math.round(Number(amount.replace(/\./g, "").replace(",", ".")) * 100)
       : null;
