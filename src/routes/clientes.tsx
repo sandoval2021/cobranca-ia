@@ -1888,15 +1888,25 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
             </Field>
           </div>
           <div className="grid grid-cols-1 gap-1.5">
-            <Field label="Serviço / Valor mensal (R$)">
-              <Input
-                value={planValue}
-                onChange={(e) => setPlanValue(e.target.value)}
-                placeholder="Ex: 29,90"
-                inputMode="decimal"
-                maxLength={12}
-                className="h-8 text-xs"
-              />
+            <Field label="Serviço / Plano">
+              {services.length === 0 ? (
+                <div className="rounded-md border border-dashed border-border bg-muted/30 px-2 py-1.5 text-[11px] text-muted-foreground">
+                  Nenhum serviço cadastrado. Cadastre em <strong>Serviços</strong> para poder selecionar.
+                </div>
+              ) : (
+                <select
+                  value={planId}
+                  onChange={(e) => setPlanId(e.target.value)}
+                  className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">Selecione o serviço…</option>
+                  {services.map((s: ServiceItem) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nome} — R$ {(s.preco_cents / 100).toFixed(2).replace(".", ",")}
+                    </option>
+                  ))}
+                </select>
+              )}
             </Field>
           </div>
           {isPaid && (
