@@ -678,6 +678,7 @@ function ClientesPage() {
         onClose={() => setAppsId(null)}
         onOpenFull={() => {
           if (appsId) {
+            setOpenMode("view");
             setOpenId(appsId);
             setAppsId(null);
           }
