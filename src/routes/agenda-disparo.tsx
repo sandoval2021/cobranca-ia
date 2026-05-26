@@ -62,39 +62,40 @@ function AgendaDisparoPage() {
     });
   };
 
-  const addAmountSchedule = () => {
-    const raw = newAmount.replace(",", ".").trim();
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value <= 0) {
-      toast.error("Informe um valor em reais válido (ex: 12 ou 29,90).");
-      return;
-    }
-    const cents = Math.round(value * 100);
-    if (cfg.amountSchedules.some((a) => a.amountCents === cents)) {
-      toast.error("Já existe um horário para esse valor.");
-      return;
-    }
-    if (!/^\d{2}:\d{2}$/.test(newHour)) {
+  // Sincroniza catálogo de serviços
+  useEffect(() => {
+    const sync = () => setServices(listActiveServices());
+    window.addEventListener(SERVICES_EVENT, sync);
+    return () => window.removeEventListener(SERVICES_EVENT, sync);
+  }, []);
+
+  const scheduleByCents = new Map(cfg.amountSchedules.map((a) => [a.amountCents, a.sendHour]));
+
+  const setServiceHour = (cents: number, hour: string) => {
+    const others = cfg.amountSchedules.filter((a) => a.amountCents !== cents);
+    const next: AmountSchedule[] = [...others, { amountCents: cents, sendHour: hour }]
+      .sort((a, b) => a.amountCents - b.amountCents);
+    update({ amountSchedules: next });
+  };
+
+  const clearServiceHour = (cents: number) => {
+    update({ amountSchedules: cfg.amountSchedules.filter((a) => a.amountCents !== cents) });
+  };
+
+  const applyHourToAllServices = (hour: string) => {
+    if (!/^\d{2}:\d{2}$/.test(hour)) {
       toast.error("Horário inválido.");
       return;
     }
-    const next: AmountSchedule[] = [...cfg.amountSchedules, { amountCents: cents, sendHour: newHour }]
+    const next: AmountSchedule[] = services.map((s) => ({ amountCents: s.preco_cents, sendHour: hour }))
       .sort((a, b) => a.amountCents - b.amountCents);
     update({ amountSchedules: next });
-    setNewAmount("");
-    toast.success(`Horário customizado adicionado para ${fmtBRL(cents)}.`);
+    toast.success(`Horário ${hour} aplicado a todos os serviços.`);
   };
 
-  const updateAmountHour = (cents: number, hour: string) => {
-    update({
-      amountSchedules: cfg.amountSchedules.map((a) =>
-        a.amountCents === cents ? { ...a, sendHour: hour } : a,
-      ),
-    });
-  };
-
-  const removeAmount = (cents: number) => {
-    update({ amountSchedules: cfg.amountSchedules.filter((a) => a.amountCents !== cents) });
+  const clearAllServiceHours = () => {
+    update({ amountSchedules: [] });
+    toast.success("Horários personalizados removidos. Todos seguem o padrão.");
   };
 
   const resetAll = () => {
