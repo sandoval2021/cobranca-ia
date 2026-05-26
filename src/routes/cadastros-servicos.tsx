@@ -267,15 +267,30 @@ function PlanInfoEditor({ service, onSaved }: { service: ServiceItem; onSaved: (
   );
 }
 
+type Direction = "antes" | "no_dia" | "depois";
+
+function describeOffset(days: number): string {
+  if (days === 0) return "No dia do vencimento";
+  const abs = Math.abs(days);
+  const p = abs === 1 ? "" : "s";
+  return days < 0 ? `${abs} dia${p} ANTES do vencimento` : `${abs} dia${p} DEPOIS do vencimento`;
+}
+
 function MessagesList({
   service, selectedId, onSelect,
 }: { service: ServiceItem; selectedId: string | null; onSelect: (id: string) => void }) {
-  const [newKind, setNewKind] = useState<ServiceMessageKind>("acompanhamento");
-  const [newDays, setNewDays] = useState("30");
+  const [direction, setDirection] = useState<Direction>("depois");
+  const [newDays, setNewDays] = useState("3");
 
   function add() {
-    const days = newKind === "cobranca" ? 0 : Math.max(1, Math.round(Number(newDays) || 30));
-    const created = addServiceMessage(service.id, { kind: newKind, offset_days: days });
+    let days = 0;
+    if (direction === "no_dia") days = 0;
+    else {
+      const n = Math.max(1, Math.round(Number(newDays) || 1));
+      days = direction === "antes" ? -n : n;
+    }
+    const kind: ServiceMessageKind = days === 0 ? "cobranca" : "acompanhamento";
+    const created = addServiceMessage(service.id, { kind, offset_days: days });
     if (created) {
       onSelect(created.id);
       toast.success("Mensagem adicionada");
@@ -293,21 +308,24 @@ function MessagesList({
     onSelect(remaining[0]?.id ?? "");
   }
 
+  const sorted = [...service.messages].sort((a, b) => a.offset_days - b.offset_days);
+
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">
-        {service.messages.map((m) => (
+        {sorted.map((m) => (
           <div key={m.id} className="flex items-center">
             <button
               type="button"
               onClick={() => onSelect(m.id)}
+              title={describeOffset(m.offset_days)}
               className={`rounded-l-full border border-r-0 px-3 py-1 text-xs transition ${
                 selectedId === m.id
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card hover:bg-muted"
               }`}
             >
-              {m.label}
+              {m.offset_days === 0 ? "No dia" : m.offset_days < 0 ? `${Math.abs(m.offset_days)}d antes` : `${m.offset_days}d depois`}
             </button>
             <button
               type="button"
@@ -321,31 +339,44 @@ function MessagesList({
         ))}
       </div>
 
-      <div className="flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-border bg-muted/30 p-2">
-        <div className="flex-1 min-w-[140px]">
-          <Label className="text-[11px]">Adicionar mensagem</Label>
-          <select
-            className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
-            value={newKind}
-            onChange={(e) => setNewKind(e.target.value as ServiceMessageKind)}
-          >
-            <option value="cobranca">Cobrança</option>
-            <option value="acompanhamento">Acompanhamento</option>
-          </select>
-        </div>
-        {newKind === "acompanhamento" && (
-          <div className="w-24">
-            <Label className="text-[11px]">Dias</Label>
-            <Input type="number" min={1} value={newDays} onChange={(e) => setNewDays(e.target.value)} className="h-9" />
+      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-2">
+        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Adicionar nova mensagem — quando enviar?</p>
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex-1 min-w-[160px]">
+            <select
+              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              value={direction}
+              onChange={(e) => setDirection(e.target.value as Direction)}
+            >
+              <option value="antes">Antes do vencimento</option>
+              <option value="no_dia">No dia do vencimento (0)</option>
+              <option value="depois">Depois do vencimento</option>
+            </select>
           </div>
-        )}
-        <Button size="sm" onClick={add} className="gap-1.5 h-9">
-          <Plus className="h-3.5 w-3.5" /> Adicionar
-        </Button>
+          {direction !== "no_dia" && (
+            <div className="w-20">
+              <Input
+                type="number"
+                min={1}
+                value={newDays}
+                onChange={(e) => setNewDays(e.target.value)}
+                className="h-9"
+                aria-label="Quantos dias"
+              />
+            </div>
+          )}
+          <span className="text-[11px] text-muted-foreground">
+            {direction === "no_dia" ? "= 0 dias" : direction === "antes" ? "dias antes" : "dias depois"}
+          </span>
+          <Button size="sm" onClick={add} className="gap-1.5 h-9 ml-auto">
+            <Plus className="h-3.5 w-3.5" /> Adicionar
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
+
 
 function MessageEditor({ service, message }: { service: ServiceItem; message: ServiceMessage }) {
   const [template, setTemplate] = useState(
