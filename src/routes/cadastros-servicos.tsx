@@ -382,7 +382,11 @@ function MessageEditor({ service, message }: { service: ServiceItem; message: Se
   const [template, setTemplate] = useState(
     message.template || (message.kind === "cobranca" ? DEFAULT_COBRANCA : DEFAULT_ACOMP),
   );
-  const [label, setLabel] = useState(message.label);
+  const initialDir: Direction = message.offset_days === 0 ? "no_dia" : message.offset_days < 0 ? "antes" : "depois";
+  const [direction, setDirection] = useState<Direction>(initialDir);
+  const [days, setDays] = useState(String(Math.abs(message.offset_days) || 1));
+
+  const currentOffset = direction === "no_dia" ? 0 : (direction === "antes" ? -1 : 1) * Math.max(1, Math.round(Number(days) || 1));
 
   const preview = useMemo(
     () =>
@@ -398,27 +402,49 @@ function MessageEditor({ service, message }: { service: ServiceItem; message: Se
   );
 
   function save() {
-    updateServiceMessage(service.id, message.id, { template, label: label.trim() || message.label });
+    updateServiceMessage(service.id, message.id, {
+      template,
+      offset_days: currentOffset,
+      label: "",
+    });
     toast.success("Mensagem salva");
   }
 
   return (
-    <div className="mt-3 space-y-3 rounded-lg border border-border bg-card p-3">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div className="flex-1 min-w-[180px]">
-          <Label className="text-xs">Rótulo</Label>
-          <Input value={label} onChange={(e) => setLabel(e.target.value)} />
+    <div className="space-y-2.5 rounded-lg border-2 border-primary/40 bg-card p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+        <div className="text-sm">
+          <span className="text-muted-foreground">Editando: </span>
+          <strong>{describeOffset(currentOffset)}</strong>
         </div>
-        <div className="text-xs text-muted-foreground">
-          Tipo: <strong className="capitalize">{message.kind}</strong>
-          {message.kind === "acompanhamento" && <> · {message.offset_days} dias</>}
+        <div className="flex items-center gap-1.5">
+          <select
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+            value={direction}
+            onChange={(e) => setDirection(e.target.value as Direction)}
+          >
+            <option value="antes">Antes</option>
+            <option value="no_dia">No dia (0)</option>
+            <option value="depois">Depois</option>
+          </select>
+          {direction !== "no_dia" && (
+            <Input
+              type="number"
+              min={1}
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+              className="h-8 w-16"
+              aria-label="Dias"
+            />
+          )}
+          <span className="text-[11px] text-muted-foreground">dias</span>
         </div>
       </div>
 
       <div>
-        <Label className="text-xs">Texto da mensagem (com variáveis)</Label>
+        <Label className="text-xs">Texto da mensagem (use variáveis: {"{nome}"}, {"{valor}"}, {"{vencimento}"}…)</Label>
         <Textarea
-          rows={6}
+          rows={5}
           value={template}
           onChange={(e) => setTemplate(e.target.value)}
           className="font-mono text-xs"
@@ -426,8 +452,8 @@ function MessageEditor({ service, message }: { service: ServiceItem; message: Se
       </div>
 
       <div>
-        <Label className="text-xs text-muted-foreground">Como vai chegar no WhatsApp do cliente</Label>
-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+        <Label className="text-xs text-muted-foreground">Pré-visualização (como vai chegar no WhatsApp)</Label>
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-2.5">
           <p className="whitespace-pre-wrap text-sm leading-relaxed">{preview}</p>
         </div>
       </div>
