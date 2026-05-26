@@ -318,7 +318,7 @@ function ImportarClientesPage() {
 
       const { data, error } = await supabase.rpc(
         "staging_import_customers_from_rows",
-        { p_company_id: companyId, p_rows: payload as unknown as object }
+        { p_company_id: effCompany, p_rows: payload as unknown as object }
       );
 
       if (error) {
