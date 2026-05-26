@@ -484,6 +484,19 @@ function TestesPage() {
 
       <MessagesDialog lead={msgLead} onClose={() => setMsgLead(null)} />
 
+      <ClosedDialog
+        lead={closedLead}
+        onClose={() => setClosedLead(null)}
+        onConverted={(l) => {
+          // 1) marca como fechou no fluxo de indicações/bonificação
+          handleClosed(l);
+          // 2) arquiva o lead para sair da lista de testes ativos
+          archiveTrialLead(l.id);
+          setClosedLead(null);
+          reload();
+        }}
+      />
+
       <ConvertDialog lead={convertLead} onClose={() => setConvertLead(null)} onConfirmConverted={(l) => {
         updateTrialLead(l.id, { status: "Convertido em cliente" });
         updateReferralByLead(l.id, { status: "Fechou", data_fechamento: new Date().toISOString() });
