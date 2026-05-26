@@ -1611,65 +1611,63 @@ function NewCustomerSheet({
   const [app, setApp] = useState<AppKey | "__none__">("__none__");
   const [mac, setMac] = useState("");
   const [appKey, setAppKey] = useState("");
+  const [appDueDateStr, setAppDueDateStr] = useState(""); // dd/mm/aaaa
 
   // Bloco 3 — Cobrança
   const [amount, setAmount] = useState("");
-  const [dueDay, setDueDay] = useState("");
+  const [dueDateStr, setDueDateStr] = useState(""); // dd/mm/aaaa
 
   // Bloco 4 — Observações
   const [notes, setNotes] = useState("");
 
   const [busy, setBusy] = useState(false);
 
+  const appIsPaid = app !== "__none__" && APP_CATALOG[app as AppKey]?.tier === "pago";
+
   useEffect(() => {
     if (open) {
-      setName("");
-      setWhatsapp("");
-      setBirthday("");
-      setServerId("__none__");
-      setServerIdExtra("__none__");
-      setUsuario("");
-      setSenha("");
-      setShowSenha(false);
-      setTelas("1");
-      setApp("__none__");
-      setMac("");
-      setAppKey("");
-      setAmount("");
-      setDueDay("");
-      setNotes("");
-      setBusy(false);
+      setName(""); setWhatsapp(""); setBirthday("");
+      setServerId("__none__"); setServerIdExtra("__none__");
+      setUsuario(""); setSenha(""); setShowSenha(false);
+      setTelas("1"); setApp("__none__"); setMac(""); setAppKey(""); setAppDueDateStr("");
+      setAmount(""); setDueDateStr(""); setNotes(""); setBusy(false);
     }
   }, [open]);
 
+  // Máscara dd/mm/aaaa
+  const maskDate = (raw: string) => {
+    const d = raw.replace(/\D/g, "").slice(0, 8);
+    if (d.length >= 5) return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+    if (d.length >= 3) return `${d.slice(0, 2)}/${d.slice(2)}`;
+    return d;
+  };
+  // dd/mm/aaaa → ISO yyyy-mm-dd
+  const parseDateBR = (s: string): { iso: string | null; day: number | null; ok: boolean } => {
+    const t = s.trim();
+    if (!t) return { iso: null, day: null, ok: true };
+    const m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return { iso: null, day: null, ok: false };
+    const day = Number(m[1]), month = Number(m[2]), year = Number(m[3]);
+    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900) return { iso: null, day: null, ok: false };
+    return { iso: `${m[3]}-${m[2]}-${m[1]}`, day, ok: true };
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      toast.error("Informe o nome do cliente.");
-      return;
-    }
     const d = onlyDigits(whatsapp);
-    if (!d || d.length < 10) {
-      toast.error("Revise o WhatsApp informado.");
-      return;
-    }
+    if (!d || d.length < 10) { toast.error("Revise o WhatsApp informado."); return; }
     const amt = amount.trim()
       ? Math.round(Number(amount.replace(/\./g, "").replace(",", ".")) * 100)
       : null;
     if (amount.trim() && (amt == null || Number.isNaN(amt) || amt < 0)) {
-      toast.error("Informe um valor válido.");
-      return;
+      toast.error("Informe um valor válido."); return;
     }
-    const dd = dueDay.trim() ? Number(dueDay) : null;
-    if (dd != null && (Number.isNaN(dd) || dd < 1 || dd > 31)) {
-      toast.error("O dia de vencimento deve ser entre 1 e 31.");
-      return;
-    }
+    const due = parseDateBR(dueDateStr);
+    if (!due.ok) { toast.error("Vencimento inválido (dd/mm/aaaa)."); return; }
+    const appDue = parseDateBR(appDueDateStr);
+    if (!appDue.ok) { toast.error("Vencimento do app inválido (dd/mm/aaaa)."); return; }
     const telasNum = telas.trim() ? Math.max(1, Math.min(99, Number(telas) || 1)) : 1;
-    if (!supabase) {
-      toast.error("Conexão indisponível. Tente novamente em instantes.");
-      return;
-    }
+    if (!supabase) { toast.error("Conexão indisponível."); return; }
     setBusy(true);
     const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
     if (companyErr || !companyId) {
@@ -1679,10 +1677,10 @@ function NewCustomerSheet({
     }
     const { data, error } = await supabase.rpc("create_customer_admin", {
       p_company_id: companyId,
-      p_name: name.trim(),
+      p_name: name.trim() || "Cliente",
       p_whatsapp_e164: toE164(whatsapp),
       p_amount_cents: amt,
-      p_due_day: dd,
+      p_due_day: due.day,
       p_status: "ativo",
       p_notes: notes.trim() || null,
     });
@@ -1692,22 +1690,15 @@ function NewCustomerSheet({
       return;
     }
 
-    // Persistência local opcional de "Telas e aplicativos" (preview-only,
-    // mesmo storage usado em AppScreensSection). Só cria se o usuário
-    // informou algum dado de serviço.
     try {
       const row = Array.isArray(data) ? (data[0] as Row | undefined) : (data as Row | null);
       const newCustomerId = row
         ? (typeof row.id === "string" ? row.id : typeof row.customer_id === "string" ? row.customer_id : null)
         : null;
       const hasService =
-        serverId !== "__none__" ||
-        serverIdExtra !== "__none__" ||
-        usuario.trim() ||
-        senha.trim() ||
-        mac.trim() ||
-        appKey.trim() ||
-        app !== "__none__";
+        serverId !== "__none__" || serverIdExtra !== "__none__" ||
+        usuario.trim() || senha.trim() || mac.trim() || appKey.trim() ||
+        app !== "__none__" || appDue.iso || due.iso;
       if (newCustomerId && hasService) {
         const serverIds: string[] = [];
         if (serverId !== "__none__") serverIds.push(serverId);
@@ -1730,15 +1721,15 @@ function NewCustomerSheet({
             status: "ativa",
             server_ids: serverIds.length ? serverIds : undefined,
             primary_server_id: serverIds[0],
+            due_date: due.iso ?? undefined,
+            app_due_date: appDue.iso ?? undefined,
             created_at: now,
             updated_at: now,
           });
         }
         try { window.dispatchEvent(new Event("app-screens:changed")); } catch { /* ignore */ }
       }
-    } catch {
-      /* ignore — persistência extra é best-effort */
-    }
+    } catch { /* ignore */ }
 
     setBusy(false);
     toast.success("Cliente cadastrado com sucesso.");
@@ -1749,235 +1740,138 @@ function NewCustomerSheet({
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md">
-        <SheetHeader className="border-b border-border p-4">
+        <SheetHeader className="border-b border-border px-4 py-3">
           <SheetTitle className="text-base">Novo cliente</SheetTitle>
           <SheetDescription className="text-xs">
-            Cadastre rapidamente um novo cliente na sua base.
+            Preencha os dados essenciais. Tudo pode ser editado depois.
           </SheetDescription>
         </SheetHeader>
-        <form onSubmit={submit} className="flex-1 space-y-5 px-4 py-4">
-          {/* Bloco 1 — Dados do cliente */}
-          <section className="space-y-3 rounded-lg border border-border bg-card/40 p-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Dados do cliente
-            </h3>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Nome *</Label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                maxLength={120}
-                placeholder="Nome do cliente"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
-                <Label className="text-xs">WhatsApp *</Label>
-                <HelpTip text="Inclua o DDD. Será salvo no formato internacional." />
+        <form onSubmit={submit} className="flex-1 space-y-3 px-3 py-3">
+          {/* Dados do cliente */}
+          <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Dados do cliente</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1 col-span-2">
+                <Label className="text-xs">Nome</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="Nome do cliente (opcional)" />
               </div>
-              <Input
-                value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
-                placeholder="(11) 99999-9999"
-                inputMode="tel"
-                maxLength={20}
-                autoComplete="off"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Data de aniversário</Label>
-              <Input
-                type="date"
-                value={birthday}
-                onChange={(e) => setBirthday(e.target.value)}
-              />
-              <p className="text-[10px] text-muted-foreground">
-                Campo visual — persistência depende de coluna no backend.
-              </p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">WhatsApp *</Label>
+                  <HelpTip text="Inclua o DDD." />
+                </div>
+                <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="(11) 99999-9999" inputMode="tel" maxLength={20} required />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Aniversário</Label>
+                <Input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
+              </div>
             </div>
           </section>
 
-          {/* Bloco 2 — Serviço */}
-          <section className="space-y-3 rounded-lg border border-border bg-card/40 p-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Serviço
-            </h3>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
+          {/* Serviço */}
+          <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Serviço</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
                 <Label className="text-xs">Servidor</Label>
-                <HelpTip text="Escolha o servidor principal usado pelo cliente." />
+                <Select value={serverId} onValueChange={setServerId}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Selecionar</SelectItem>
+                    {servers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={serverId} onValueChange={setServerId}>
-                <SelectTrigger><SelectValue placeholder="Selecionar servidor" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Selecionar servidor</SelectItem>
-                  {servers.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Servidor adicional</Label>
-              <Select value={serverIdExtra} onValueChange={setServerIdExtra}>
-                <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Nenhum</SelectItem>
-                  {servers.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Usuário</Label>
-                  <HelpTip text="Login do cliente no painel/servidor." />
-                </div>
-                <Input
-                  value={usuario}
-                  onChange={(e) => setUsuario(e.target.value)}
-                  placeholder="usuário"
-                  autoComplete="off"
-                  maxLength={120}
-                />
+              <div className="space-y-1">
+                <Label className="text-xs">Servidor adicional</Label>
+                <Select value={serverIdExtra} onValueChange={setServerIdExtra}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Opcional" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
+                    {servers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Senha</Label>
-                  <HelpTip text="Senha do cliente no painel/servidor." />
-                </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Usuário</Label>
+                <Input value={usuario} onChange={(e) => setUsuario(e.target.value)} placeholder="usuário" autoComplete="off" maxLength={120} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Senha</Label>
                 <div className="relative">
-                  <Input
-                    type={showSenha ? "text" : "password"}
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    placeholder="••••••"
-                    autoComplete="new-password"
-                    maxLength={120}
-                    className="pr-9"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowSenha((v) => !v)}
-                    aria-label={showSenha ? "Ocultar senha" : "Mostrar senha"}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted"
-                  >
+                  <Input type={showSenha ? "text" : "password"} value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="••••••" autoComplete="new-password" maxLength={120} className="pr-9" />
+                  <button type="button" onClick={() => setShowSenha((v) => !v)} aria-label={showSenha ? "Ocultar" : "Mostrar"} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted">
                     {showSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Telas</Label>
-                  <HelpTip text="Quantidade de telas/conexões simultâneas." />
-                </div>
-                <Input
-                  value={telas}
-                  onChange={(e) => setTelas(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                  placeholder="1"
-                  inputMode="numeric"
-                />
+              <div className="space-y-1">
+                <Label className="text-xs">Telas</Label>
+                <Input value={telas} onChange={(e) => setTelas(e.target.value.replace(/\D/g, "").slice(0, 2))} placeholder="1" inputMode="numeric" />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">App usado</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">Aplicativo</Label>
                 <Select value={app} onValueChange={(v) => setApp(v as AppKey | "__none__")}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar app" /></SelectTrigger>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar app" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">Não informar</SelectItem>
                     {APP_OPTIONS.map((k) => (
-                      <SelectItem key={k} value={k}>{APP_CATALOG[k].label}</SelectItem>
+                      <SelectItem key={k} value={k}>
+                        {APP_CATALOG[k].label}{APP_CATALOG[k].tier === "pago" ? " (pago)" : ""}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">MAC</Label>
-                  <HelpTip text="Endereço MAC do app (ex.: IBO, Bob, Vu)." />
-                </div>
-                <Input
-                  value={mac}
-                  onChange={(e) => setMac(e.target.value)}
-                  placeholder="00:1A:79:..."
-                  autoComplete="off"
-                  maxLength={32}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Key</Label>
-                  <HelpTip text="Chave/licença do app, quando aplicável." />
-                </div>
-                <Input
-                  value={appKey}
-                  onChange={(e) => setAppKey(e.target.value)}
-                  placeholder="chave"
-                  autoComplete="off"
-                  maxLength={64}
-                />
-              </div>
+              {appIsPaid && (
+                <>
+                  <div className="space-y-1">
+                    <Label className="text-xs">MAC</Label>
+                    <Input value={mac} onChange={(e) => setMac(e.target.value)} placeholder="00:1A:79:..." autoComplete="off" maxLength={32} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Key</Label>
+                    <Input value={appKey} onChange={(e) => setAppKey(e.target.value)} placeholder="chave" autoComplete="off" maxLength={64} />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs">Vencimento do app</Label>
+                      <HelpTip text="Para receber lembrete quando estiver perto de vencer." />
+                    </div>
+                    <Input value={appDueDateStr} onChange={(e) => setAppDueDateStr(maskDate(e.target.value))} placeholder="dd/mm/aaaa" inputMode="numeric" maxLength={10} />
+                  </div>
+                </>
+              )}
             </div>
           </section>
 
-          {/* Bloco 3 — Cobrança */}
-          <section className="space-y-3 rounded-lg border border-border bg-card/40 p-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Cobrança
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+          {/* Cobrança */}
+          <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Cobrança</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
                 <Label className="text-xs">Valor mensal</Label>
-                <Input
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0,00"
-                  inputMode="decimal"
-                />
+                <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" inputMode="decimal" />
               </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs">Dia de vencimento</Label>
-                  <HelpTip text="Dia do mês entre 1 e 31." />
-                </div>
-                <Input
-                  value={dueDay}
-                  onChange={(e) => setDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                  placeholder="10"
-                  inputMode="numeric"
-                />
+              <div className="space-y-1">
+                <Label className="text-xs">Vencimento</Label>
+                <Input value={dueDateStr} onChange={(e) => setDueDateStr(maskDate(e.target.value))} placeholder="dd/mm/aaaa" inputMode="numeric" maxLength={10} />
               </div>
             </div>
           </section>
 
-          {/* Bloco 4 — Observações */}
-          <section className="space-y-3 rounded-lg border border-border bg-card/40 p-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Observações
-            </h3>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              maxLength={1000}
-              placeholder="Notas internas, não enviadas ao cliente."
-            />
+          {/* Observações */}
+          <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Observações</h3>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={1000} placeholder="Notas internas." />
           </section>
 
-          <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={busy} className="flex-1">
-              Cancelar
-            </Button>
+          <div className="flex gap-2 pt-1">
+            <Button type="button" variant="outline" onClick={onClose} disabled={busy} className="flex-1">Cancelar</Button>
             <Button type="submit" disabled={busy} className="flex-1 gap-1.5">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-              Cadastrar cliente
+              Cadastrar
             </Button>
           </div>
         </form>
