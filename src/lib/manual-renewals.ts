@@ -43,6 +43,7 @@ export type RenewalRecord = {
   created_at: string;
   customer_id: string;
   customer_name: string;
+  customer_whatsapp?: string | null;
   screens: RenewalScreenLog[];
   amount?: string;
   payment_method?: PaymentMethod;
@@ -50,6 +51,29 @@ export type RenewalRecord = {
   notes?: string;
   confirmation_message: string;
 };
+
+// Formata "+5582988936713" => "(82) 98893-6713".
+function formatPhonePretty(wa?: string | null): string {
+  if (!wa) return "";
+  const d = wa.replace(/\D+/g, "");
+  // Remove DDI 55 se houver
+  const local = d.startsWith("55") && d.length >= 12 ? d.slice(2) : d;
+  if (local.length === 11) return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
+  if (local.length === 10) return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
+  return wa;
+}
+
+// Saudação amigável: usa o nome se for real; usa o telefone formatado quando
+// o nome é genérico (ex.: "Cliente importado 87").
+function friendlyGreetingName(name: string, whatsapp?: string | null): string {
+  const isPlaceholder = !name || /^cliente importado/i.test(name.trim());
+  if (isPlaceholder) {
+    const pretty = formatPhonePretty(whatsapp);
+    if (pretty) return pretty;
+  }
+  return name || "cliente";
+}
+
 
 const STORAGE_KEY = "cobranca_ia_manual_renewal_history_v1";
 export const RENEWAL_EVENT = "cobranca_ia_manual_renewal:changed";
@@ -124,6 +148,7 @@ export type RenewalDraftScreen = {
 export type RenewalDraft = {
   customer_id: string;
   customer_name: string;
+  customer_whatsapp?: string | null;
   new_due_date: string; // YYYY-MM-DD
   amount?: string;
   payment_method?: PaymentMethod;
@@ -133,6 +158,7 @@ export type RenewalDraft = {
   app_amount?: string;
   screens: RenewalDraftScreen[];
 };
+
 
 export function buildConfirmationMessage(rec: RenewalRecord): string {
   let telasLinha = "";
@@ -163,11 +189,12 @@ export function buildConfirmationMessage(rec: RenewalRecord): string {
     "Olá {cliente_nome}, tudo certo ✅\n\nSua renovação foi registrada.\n📅 Novo vencimento: {vencimento}{telas_linha}\n\nObrigado!";
 
   return applyRevendaVariables(template, {
-    cliente_nome: rec.customer_name,
+    cliente_nome: friendlyGreetingName(rec.customer_name, rec.customer_whatsapp),
     vencimento,
     telas_linha: telasLinha,
     telas: String(rec.screens.length),
   });
+
 }
 
 export function applyRenewal(draft: RenewalDraft): RenewalRecord {
@@ -212,6 +239,8 @@ export function applyRenewal(draft: RenewalDraft): RenewalRecord {
     created_at: now,
     customer_id: draft.customer_id,
     customer_name: draft.customer_name,
+    customer_whatsapp: draft.customer_whatsapp ?? null,
+
     screens: screensLog,
     amount: draft.amount,
     payment_method: draft.payment_method,

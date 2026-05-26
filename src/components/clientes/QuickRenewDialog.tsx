@@ -195,6 +195,7 @@ export function QuickRenewDialog({
         const rec = applyRenewal({
           customer_id: customerId,
           customer_name: customerName,
+          customer_whatsapp: whatsappE164 ?? null,
           new_due_date: finalDue,
           amount: amount ? `R$ ${amount}` : undefined,
           payment_method: method,
@@ -233,6 +234,7 @@ export function QuickRenewDialog({
           const rec = applyRenewal({
             customer_id: customerId,
             customer_name: customerName,
+          customer_whatsapp: whatsappE164 ?? null,
             new_due_date: newDue,
             amount: i === 0 && amount ? `R$ ${amount}` : undefined,
             payment_method: method,
@@ -248,6 +250,7 @@ export function QuickRenewDialog({
             const appRec = applyRenewal({
               customer_id: customerId,
               customer_name: customerName,
+          customer_whatsapp: whatsappE164 ?? null,
               new_due_date: newDue,
               amount: appAmount ? `R$ ${appAmount}` : undefined,
               payment_method: method,

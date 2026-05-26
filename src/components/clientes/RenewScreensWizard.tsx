@@ -65,14 +65,17 @@ export function RenewScreensWizard({
   onClose,
   customerId,
   customerName,
+  customerWhatsapp,
   initialScreenId,
 }: {
   open: boolean;
   onClose: () => void;
   customerId: string;
   customerName: string;
+  customerWhatsapp?: string | null;
   initialScreenId?: string | null;
 }) {
+
   const [screens, setScreens] = useState<AppScreen[]>([]);
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -206,6 +209,7 @@ export function RenewScreensWizard({
       const rec = applyRenewal({
         customer_id: customerId,
         customer_name: customerName,
+        customer_whatsapp: customerWhatsapp ?? null,
         new_due_date: newDue,
         amount: amount.trim() || undefined,
         payment_method: paymentMethod,
@@ -245,6 +249,7 @@ export function RenewScreensWizard({
       created_at: new Date().toISOString(),
       customer_id: customerId,
       customer_name: customerName,
+        customer_whatsapp: customerWhatsapp ?? null,
       screens: ss,
       amount: amount.trim() || undefined,
       payment_method: paymentMethod,
@@ -349,6 +354,7 @@ export function RenewScreensWizard({
                   const screenLabels = Array.from(selected).map((id) => screens.find((s) => s.id === id)?.app).filter(Boolean).join(", ");
                   openFinanceWithDraft({
                     customer_name: customerName,
+
                     type: renewApp ? "renovacao_app" : "renovacao_lista",
                     amount_received: Number(amount) || 0,
                     screen_label: screenLabels,
