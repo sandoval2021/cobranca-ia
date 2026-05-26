@@ -74,7 +74,7 @@ import {
   APP_CATALOG, AppKey, AppScreen, APP_OPTIONS, listAllScreens, listScreens,
   nextDueDays, urgencyFromDays, urgencyClass, urgencyLabel,
   paidAppAlerts, paidAlertClass, PAID_ALERT_LABEL, appDueDays, isPaidApp,
-  APP_WEBSITE, ACCESS_LABEL, mask,
+  APP_WEBSITE, ACCESS_LABEL, mask, upsertScreen, newId,
 } from "@/lib/app-screens";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
