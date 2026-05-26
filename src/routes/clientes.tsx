@@ -1664,6 +1664,10 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
   const [app, setApp] = useState<AppKey>("xciptv");
   const [serverId, setServerId] = useState<string>("");
   const [name, setName] = useState("");
+  const [planValue, setPlanValue] = useState("");
+  const [macInput, setMacInput] = useState("");
+  const [keyInput, setKeyInput] = useState("");
+  const [appDueDate, setAppDueDate] = useState("");
 
   const refresh = () => setScreens(listScreens(customerId));
   useEffect(() => {
@@ -1676,17 +1680,26 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
 
   const servers = listActiveServers();
   const active = screens.filter((s) => s.status !== "arquivada");
+  const isPaid = APP_CATALOG[app]?.tier === "pago";
 
   const resetForm = () => {
     setDueDate("");
     setApp("xciptv");
     setServerId("");
     setName("");
+    setPlanValue("");
+    setMacInput("");
+    setKeyInput("");
+    setAppDueDate("");
   };
 
   const handleAdd = () => {
     if (!dueDate) {
       toast.error("Informe a data de vencimento.");
+      return;
+    }
+    if (isPaid && (!macInput.trim() || !keyInput.trim())) {
+      toast.error("Apps pagos exigem MAC e Key.");
       return;
     }
     const now = new Date().toISOString();
@@ -1700,6 +1713,10 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       tier: meta?.tier,
       access_type: meta?.access ?? "nao_informado",
       due_date: dueDate,
+      plan_value: planValue.trim() || undefined,
+      mac: isPaid ? macInput.trim() : undefined,
+      app_key: isPaid ? keyInput.trim() : undefined,
+      app_due_date: isPaid && appDueDate ? appDueDate : undefined,
       status: "ativa",
       server_ids: serverId ? [serverId] : [],
       primary_server_id: serverId || undefined,
@@ -1785,6 +1802,24 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
+                {(s.plan_value || s.mac || s.app_key || s.app_due_date) && (
+                  <div className="basis-full flex flex-wrap gap-1 pt-1 text-[10px] text-muted-foreground">
+                    {s.plan_value && (
+                      <span className="rounded bg-muted px-1.5 py-0.5">R$ {s.plan_value}</span>
+                    )}
+                    {s.mac && (
+                      <span className="rounded bg-muted px-1.5 py-0.5 font-mono">MAC: {s.mac}</span>
+                    )}
+                    {s.app_key && (
+                      <span className="rounded bg-muted px-1.5 py-0.5 font-mono">Key: {s.app_key}</span>
+                    )}
+                    {s.app_due_date && (
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                        App vence {new Date(s.app_due_date + "T00:00:00").toLocaleDateString("pt-BR")}
+                      </span>
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}
@@ -1837,6 +1872,53 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               </select>
             </Field>
           </div>
+          <div className="grid grid-cols-1 gap-1.5">
+            <Field label="Serviço / Valor mensal (R$)">
+              <Input
+                value={planValue}
+                onChange={(e) => setPlanValue(e.target.value)}
+                placeholder="Ex: 29,90"
+                inputMode="decimal"
+                maxLength={12}
+                className="h-8 text-xs"
+              />
+            </Field>
+          </div>
+          {isPaid && (
+            <div className="space-y-1.5 rounded-md border border-amber-300/40 bg-amber-50/60 p-1.5 dark:bg-amber-500/5">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                App pago — informe MAC, Key e vencimento do app
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <Field label="MAC">
+                  <Input
+                    value={macInput}
+                    onChange={(e) => setMacInput(e.target.value)}
+                    placeholder="00:1A:79:..."
+                    maxLength={32}
+                    className="h-8 font-mono text-xs"
+                  />
+                </Field>
+                <Field label="Key">
+                  <Input
+                    value={keyInput}
+                    onChange={(e) => setKeyInput(e.target.value)}
+                    placeholder="App key"
+                    maxLength={64}
+                    className="h-8 font-mono text-xs"
+                  />
+                </Field>
+              </div>
+              <Field label="Vencimento do app">
+                <Input
+                  type="date"
+                  value={appDueDate}
+                  onChange={(e) => setAppDueDate(e.target.value)}
+                  className="h-8 text-xs"
+                />
+              </Field>
+            </div>
+          )}
           <div className="flex gap-1.5 pt-1">
             <Button
               type="button"
