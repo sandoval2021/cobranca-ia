@@ -134,7 +134,10 @@ function ImportarClientesPage() {
     async function run() {
       setExistingMap({});
       setLookupReady(false);
-      if (!supabaseConfigured) return;
+      if (!supabaseConfigured) {
+        setLookupReady(true);
+        return;
+      }
       if (!isAuthenticated || !cid || !rows || rows.length === 0) {
         setLookupReady(true);
         return;
@@ -148,42 +151,54 @@ function ImportarClientesPage() {
       }
       setLookupLoading(true);
 
-      const res = await getImportCustomerDedupAdmin({
-        p_company_id: cid,
-        p_whatsapp_e164_values: e164s,
-      });
-      if (cancelled) return;
-
       const map: Record<string, { name?: string }> = {};
-      if (!res.error && res.data) {
-        const want = new Set(e164s);
-        for (const c of res.data as Array<Record<string, unknown>>) {
-          const candidates = [
-            c.whatsapp_e164,
-            c.whatsapp,
-            c.phone,
-            c.telefone,
-          ];
-          for (const cand of candidates) {
-            if (typeof cand !== "string") continue;
-            const norm = normalizeWhatsApp(cand);
-            if (norm && want.has(norm) && !map[norm]) {
-              const name =
-                (typeof c.name === "string" && c.name) ||
-                (typeof c.nome === "string" && c.nome) ||
-                (typeof c.full_name === "string" && c.full_name) ||
-                undefined;
-              map[norm] = { name: name || undefined };
-              break;
+      try {
+        const res = await getImportCustomerDedupAdmin({
+          p_company_id: cid,
+          p_whatsapp_e164_values: e164s,
+        });
+        if (cancelled) return;
+
+        if (res.error) {
+          console.warn("[importar-clientes] dedup falhou", res.error);
+        } else {
+          const list = Array.isArray(res.data)
+            ? res.data
+            : res.data && typeof res.data === "object"
+              ? [res.data as Record<string, unknown>]
+              : [];
+          const want = new Set(e164s);
+          for (const c of list as Array<Record<string, unknown>>) {
+            const candidates = [
+              c.whatsapp_e164,
+              c.whatsapp,
+              c.phone,
+              c.telefone,
+            ];
+            for (const cand of candidates) {
+              if (typeof cand !== "string") continue;
+              const norm = normalizeWhatsApp(cand);
+              if (norm && want.has(norm) && !map[norm]) {
+                const name =
+                  (typeof c.name === "string" && c.name) ||
+                  (typeof c.nome === "string" && c.nome) ||
+                  (typeof c.full_name === "string" && c.full_name) ||
+                  undefined;
+                map[norm] = { name: name || undefined };
+                break;
+              }
             }
           }
         }
-      } else if (res.error) {
-        console.warn("[importar-clientes] dedup falhou", res.error);
+      } catch (e) {
+        console.warn("[importar-clientes] dedup exceção", e);
+      } finally {
+        if (!cancelled) {
+          setExistingMap(map);
+          setLookupReady(true);
+          setLookupLoading(false);
+        }
       }
-      setExistingMap(map);
-      setLookupReady(true);
-      setLookupLoading(false);
     }
     run();
     return () => {
