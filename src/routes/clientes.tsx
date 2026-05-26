@@ -1849,11 +1849,17 @@ function NewCustomerSheet({
               {appIsPaid && (
                 <>
                   <div className="space-y-1">
-                    <Label className="text-xs">MAC</Label>
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs">MAC</Label>
+                      <HelpTip text="Credenciais ainda não possuem armazenamento seguro configurado. Salve o cliente agora e adicione essas informações quando a proteção estiver ativada." />
+                    </div>
                     <Input value={mac} onChange={(e) => setMac(e.target.value)} placeholder="00:1A:79:..." autoComplete="off" maxLength={32} />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Key</Label>
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs">Key</Label>
+                      <HelpTip text="Credenciais ainda não possuem armazenamento seguro configurado. Salve o cliente agora e adicione essas informações quando a proteção estiver ativada." />
+                    </div>
                     <Input value={appKey} onChange={(e) => setAppKey(e.target.value)} placeholder="chave" autoComplete="off" maxLength={64} />
                   </div>
                   <div className="space-y-1 col-span-2">
