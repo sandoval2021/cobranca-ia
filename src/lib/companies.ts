@@ -364,6 +364,71 @@ export function getCompanyForUser(userEmail?: string | null): Company | null {
   return null;
 }
 
+/**
+ * Garante uma conta/base ativa para o usuário sem exigir cadastro manual de empresa.
+ * Ordem de seleção:
+ *  1. Conta já vinculada ao e-mail (owner ativo).
+ *  2. Conta única existente (usar automaticamente).
+ *  3. Conta chamada "TESTANDO" (ambiente de teste).
+ *  4. Cria "Minha conta" e vincula como owner.
+ */
+export function ensureLocalAccount(
+  userEmail?: string | null,
+  userName?: string | null,
+  userWhatsapp?: string | null,
+): Company | null {
+  if (!userEmail) return null;
+  const existing = getCompanyForUser(userEmail);
+  if (existing) return existing;
+
+  const all = listCompanies();
+  let chosen: Company | null = null;
+  if (all.length === 1) {
+    chosen = all[0]!;
+  } else if (all.length > 1) {
+    const testando = all.find((c) => c.nome.trim().toUpperCase() === "TESTANDO");
+    if (testando) chosen = testando;
+  }
+
+  if (!chosen) {
+    const plans = listCompanyPlans();
+    const plan =
+      plans.find((p) => p.id === "plan_premium") ??
+      plans.find((p) => p.id === "plan_profissional") ??
+      plans.find((p) => p.id === "plan_basico") ??
+      plans[0]!;
+    const today = new Date().toISOString().slice(0, 10);
+    const inOneYear = new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10);
+    chosen = saveCompany({
+      nome: "Minha conta",
+      slug: slugify("minha-conta-" + Math.random().toString(36).slice(2, 6)),
+      dono_nome: userName ?? "Titular",
+      dono_email: userEmail,
+      dono_whatsapp: userWhatsapp ?? "",
+      status: "ativa",
+      plano_id: plan.id,
+      data_inicio: today,
+      data_vencimento: inOneYear,
+    });
+  }
+
+  // Garante vínculo de owner.
+  const already = getCompanyMembers(chosen.id).find(
+    (m) => m.email.toLowerCase() === userEmail.toLowerCase() && m.role === "owner",
+  );
+  if (!already) {
+    saveCompanyMember({
+      company_id: chosen.id,
+      nome: userName ?? "Titular",
+      email: userEmail,
+      whatsapp: userWhatsapp ?? "",
+      role: "owner",
+      status: "ativo",
+    });
+  }
+  return chosen;
+}
+
 // ---------- Permissões/limites ----------
 
 export function canCompanyUseModule(company: Company | null, mod: CompanyModuleKey): boolean {
