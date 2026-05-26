@@ -1263,19 +1263,16 @@ function CustomerSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md"
-      >
-        <SheetHeader className="border-b border-border p-4">
-          <SheetTitle className="text-base">{merged.name}</SheetTitle>
-          <SheetDescription className="text-xs">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-0 border-2 border-border shadow-2xl rounded-xl">
+        <DialogHeader className="border-b border-border px-4 py-3 text-left">
+          <DialogTitle className="text-sm">{merged.name}</DialogTitle>
+          <DialogDescription className="text-[11px]">
             {prettyPhone(merged.whatsapp) ?? "Sem WhatsApp cadastrado"}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="flex-1 px-4 py-4">
+        <div className="flex-1 overflow-y-auto px-3 py-3">
           {details.status === "loading" && (
             <div className="flex items-center justify-center py-10 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -1296,7 +1293,6 @@ function CustomerSheet({
                 setMode("view");
                 onChanged();
                 reloadTimeline();
-                // refresh
                 if (!supabase) return;
                 setDetails({ status: "loading" });
                 const { data } = await supabase.rpc("get_customer_details_admin", {
@@ -1311,36 +1307,36 @@ function CustomerSheet({
         </div>
 
         {details.status === "ready" && mode === "view" && (
-          <div className="sticky bottom-0 flex flex-col gap-2 border-t border-border bg-card p-3">
-            <Button onClick={() => setMode("edit")} className="w-full gap-1.5">
-              <Pencil className="h-4 w-4" /> Editar cliente
+          <div className="flex flex-wrap gap-2 border-t border-border bg-card p-2">
+            <Button size="sm" onClick={() => setMode("edit")} className="flex-1 min-w-[120px] gap-1.5">
+              <Pencil className="h-3.5 w-3.5" /> Editar
             </Button>
-            <div className="flex gap-2">
-              {canReactivate && (
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-1.5"
-                  disabled={busy === "reactivate"}
-                  onClick={handleReactivate}
-                >
-                  {busy === "reactivate" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RotateCcw className="h-4 w-4" />
-                  )}
-                  Reativar cliente
-                </Button>
-              )}
-              {kind !== "arquivado" && (
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-1.5 text-danger hover:text-danger"
-                  onClick={() => setConfirmArchive(true)}
-                >
-                  <Archive className="h-4 w-4" /> Arquivar
-                </Button>
-              )}
-            </div>
+            {canReactivate && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 min-w-[100px] gap-1.5"
+                disabled={busy === "reactivate"}
+                onClick={handleReactivate}
+              >
+                {busy === "reactivate" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-3.5 w-3.5" />
+                )}
+                Reativar
+              </Button>
+            )}
+            {kind !== "arquivado" && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 min-w-[100px] gap-1.5 text-danger hover:text-danger"
+                onClick={() => setConfirmArchive(true)}
+              >
+                <Archive className="h-3.5 w-3.5" /> Arquivar
+              </Button>
+            )}
           </div>
         )}
 
@@ -1370,8 +1366,9 @@ function CustomerSheet({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
+
   );
 }
 
