@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Clock, Save, Trash2, Plus, RotateCcw, Info } from "lucide-react";
+import { Save, Trash2, RotateCcw, Info } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageContainer } from "@/components/layout/PageContainer";
