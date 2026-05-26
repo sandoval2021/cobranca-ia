@@ -7,7 +7,9 @@ export const CUSTOMER_EXTRAS_EVENT = "cobranca_ia_customer_extras:changed";
 export type CustomerExtras = {
   email?: string;
   birthday?: string; // YYYY-MM-DD
+  dueDate?: string; // YYYY-MM-DD — data completa do próximo vencimento
 };
+
 
 type Store = Record<string, CustomerExtras>;
 

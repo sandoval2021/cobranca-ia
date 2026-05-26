@@ -1529,19 +1529,26 @@ function DetailView({
             value={customer.amount_cents != null ? fmtBRL(customer.amount_cents) : <span className="text-muted-foreground">—</span>}
           />
           <DetailField
-            label="Dia de vencimento"
-            hint="Dia do mês em que a cobrança vence."
-            value={customer.due_day != null ? `Dia ${customer.due_day}` : <span className="text-muted-foreground">—</span>}
+            label="Vencimento"
+            hint="Próxima data de vencimento."
+            value={(() => {
+              const ex = getCustomerExtras(customer.id);
+              const iso = ex.dueDate ?? customer.due_date;
+              if (iso) return fmtDate(iso);
+              if (customer.due_day != null) return `Dia ${customer.due_day}`;
+              return <span className="text-muted-foreground">—</span>;
+            })()}
           />
           <DetailField
             label="Status"
-            hint="Ativo, expirado ou arquivado."
+            hint="Ativo ou expirado."
             value={
               <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(customer.status))}>
                 {statusLabel(customer.status)}
               </span>
             }
           />
+
         </div>
         <div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -1671,12 +1678,29 @@ function EditForm({
   const [amount, setAmount] = useState(
     customer.amount_cents != null ? (customer.amount_cents / 100).toFixed(2).replace(".", ",") : "",
   );
-  const [dueDay, setDueDay] = useState(customer.due_day != null ? String(customer.due_day) : "");
+  const initialDueDate =
+    initialExtras.dueDate ??
+    customer.due_date ??
+    (customer.due_day != null
+      ? (() => {
+          const today = new Date();
+          const dd = Math.min(Math.max(customer.due_day, 1), 28);
+          const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+          return iso;
+        })()
+      : "");
+  const [dueDate, setDueDate] = useState(initialDueDate);
   const [status, setStatus] = useState(customer.status ?? "ativo");
   const [notes, setNotes] = useState(customer.notes ?? "");
   const createdAt = str(customer.raw, ["created_at", "cadastrado_em", "data_cadastro", "inserted_at"]);
-  const screensList = useMemo(() => listScreens(customer.id), [customer.id]);
-  const screensCount = screensList.length;
+
+
+  const dueDayFromDate = (iso: string): number | null => {
+    if (!iso) return null;
+    const d = new Date(iso + "T00:00:00");
+    if (isNaN(+d)) return null;
+    return d.getDate();
+  };
 
   const validate = (): string | null => {
     if (!name.trim()) return "Informe o nome do cliente.";
@@ -1684,9 +1708,8 @@ function EditForm({
     if (d && d.length < 10) return "Revise o WhatsApp informado.";
     const amt = Number(amount.replace(/\./g, "").replace(",", "."));
     if (amount && (isNaN(amt) || amt < 0)) return "Informe um valor válido.";
-    const dd = Number(dueDay);
-    if (dueDay && (isNaN(dd) || dd < 1 || dd > 31))
-      return "O dia de vencimento deve ser entre 1 e 31.";
+    if (dueDate && dueDayFromDate(dueDate) == null)
+      return "Informe uma data de vencimento válida.";
     return null;
   };
 
@@ -1702,12 +1725,13 @@ function EditForm({
     const amt = amount.trim()
       ? Math.round(Number(amount.replace(/\./g, "").replace(",", ".")) * 100)
       : null;
+    const dd = dueDate ? dueDayFromDate(dueDate) : null;
     const { error } = await supabase.rpc("update_customer_admin", {
       p_customer_id: customer.id,
       p_name: name.trim(),
       p_whatsapp_e164: whatsapp.trim() ? toE164(whatsapp) : null,
       p_amount_cents: amt,
-      p_due_day: dueDay.trim() ? Number(dueDay) : null,
+      p_due_day: dd,
       p_status: status.trim() || null,
       p_notes: notes.trim() || null,
     });
@@ -1716,10 +1740,15 @@ function EditForm({
       toast.error(friendlyRpcError(error.message));
       return;
     }
-    setCustomerExtras(customer.id, { email: email.trim(), birthday: birthday || undefined });
+    setCustomerExtras(customer.id, {
+      email: email.trim(),
+      birthday: birthday || undefined,
+      dueDate: dueDate || undefined,
+    });
     toast.success("Cliente atualizado com sucesso.");
     onSaved();
   };
+
 
   return (
     <form onSubmit={submit} className="space-y-2.5">
@@ -1746,12 +1775,11 @@ function EditForm({
             className="h-9"
           />
         </Field>
-        <Field label="Vence dia">
+        <Field label="Vence em">
           <Input
-            value={dueDay}
-            onChange={(e) => setDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            placeholder="10"
-            inputMode="numeric"
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
             className="h-9"
           />
         </Field>
@@ -1763,9 +1791,9 @@ function EditForm({
           >
             <option value="ativo">Ativo</option>
             <option value="expirado">Expirado</option>
-            <option value="arquivado">Arquivado</option>
           </select>
         </Field>
+
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Field label="E-mail">
@@ -1797,51 +1825,14 @@ function EditForm({
         />
       </Field>
 
-      <div className="space-y-1.5 rounded-xl border border-border bg-primary-soft/30 p-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
-            <Tv className="h-3 w-3" />
-            Telas e servidores
-            <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
-              {screensCount}
-            </span>
-          </div>
-          <span className="text-[10px] text-muted-foreground">Use o botão de TV para adicionar</span>
-        </div>
-        {screensCount === 0 ? (
-          <div className="rounded-md bg-card px-2 py-1.5 text-[11px] text-muted-foreground">
-            Nenhuma tela cadastrada ainda.
-          </div>
-        ) : (
-          <ul className="space-y-1">
-            {screensList.map((s) => {
-              const appLabel = APP_CATALOG[s.app]?.label ?? s.app;
-              const serverIds = s.server_ids?.length ? s.server_ids : (s.primary_server_id ? [s.primary_server_id] : []);
-              const serverNames = serverIds.map((id) => getServerById(id)?.name).filter(Boolean) as string[];
-              const serverText = serverNames.length ? serverNames.join(", ") : (s.server || "Sem servidor");
-              return (
-                <li
-                  key={s.id}
-                  className="flex items-center gap-1.5 rounded-md bg-card px-2 py-1 text-[11px]"
-                >
-                  <span className="truncate font-medium text-foreground">{s.name}</span>
-                  <span className="shrink-0 rounded-full bg-primary-soft px-1.5 text-[10px] font-medium text-primary">
-                    {appLabel}
-                  </span>
-                  <span className="ml-auto truncate text-muted-foreground" title={serverText}>
-                    {serverText}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      <div className="rounded-xl border border-border bg-primary-soft/30 p-2">
+        <AppScreensSection customerId={customer.id} customerName={customer.name} />
       </div>
 
       <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
         <span>Cadastro: <span className="font-medium text-foreground">{createdAt ? fmtDate(createdAt) : "—"}</span></span>
-        <span>Telas: <span className="font-medium text-foreground">{screensCount}</span></span>
       </div>
+
 
       <div className="flex gap-2 pt-1">
         <Button type="button" size="sm" variant="outline" onClick={onCancel} disabled={busy} className="flex-1">
