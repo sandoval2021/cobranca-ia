@@ -17,9 +17,10 @@ import {
 } from "@/lib/manual-renewals";
 import { setCustomerDueOverride } from "@/lib/customer-due-override";
 
+// Renovação manual: cada "mês" = 30 dias corridos (regra acordada com o usuário).
 function addMonthsISO(base: Date, months: number): string {
   const d = new Date(base);
-  d.setMonth(d.getMonth() + months);
+  d.setDate(d.getDate() + months * 30);
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
@@ -45,7 +46,7 @@ function baseFromDueDay(dueDay: number | null | undefined): Date {
   return d;
 }
 
-const MONTH_OPTIONS = [1, 3, 6, 12];
+const MONTH_OPTIONS = [1, 2, 3];
 
 type ScreenChoice = {
   id: string;
