@@ -6,6 +6,8 @@ import { MobileBottomNav } from "./MobileBottomNav";
 import { StagingBanner } from "./StagingBanner";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useLocalAuth } from "@/lib/use-local-auth";
+import { useAuth } from "@/lib/use-auth";
+import { syncDefaultCompanyForUser } from "@/lib/rpc-admin";
 import { ownerRouteDenial, describeDenial, type AccessDenialReason } from "@/lib/permissions";
 import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
