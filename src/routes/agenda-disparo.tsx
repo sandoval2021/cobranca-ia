@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Clock, Save, Trash2, Plus, RotateCcw, Info } from "lucide-react";
+import { Save, Trash2, RotateCcw, Info } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -20,6 +20,7 @@ import {
   type AutoDispatchConfig,
   type AmountSchedule,
 } from "@/lib/auto-dispatch";
+import { listActiveServices, SERVICES_EVENT, formatBRL as fmtBRLsvc } from "@/lib/services-catalog";
 
 export const Route = createFileRoute("/agenda-disparo")({
   component: AgendaDisparoPage,
@@ -31,14 +32,11 @@ const DAYS = [
   { k: "sab", label: "Sáb" },
 ] as const;
 
-function fmtBRL(cents: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
-}
 
 function AgendaDisparoPage() {
   const [cfg, setCfg] = useState<AutoDispatchConfig>(() => getAutoDispatchConfig());
-  const [newAmount, setNewAmount] = useState<string>("");
-  const [newHour, setNewHour] = useState<string>("09:00");
+  const [services, setServices] = useState(() => listActiveServices());
+  const [bulkHour, setBulkHour] = useState<string>("09:00");
 
   useEffect(() => {
     const sync = () => setCfg(getAutoDispatchConfig());
@@ -61,39 +59,40 @@ function AgendaDisparoPage() {
     });
   };
 
-  const addAmountSchedule = () => {
-    const raw = newAmount.replace(",", ".").trim();
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value <= 0) {
-      toast.error("Informe um valor em reais válido (ex: 12 ou 29,90).");
-      return;
-    }
-    const cents = Math.round(value * 100);
-    if (cfg.amountSchedules.some((a) => a.amountCents === cents)) {
-      toast.error("Já existe um horário para esse valor.");
-      return;
-    }
-    if (!/^\d{2}:\d{2}$/.test(newHour)) {
+  // Sincroniza catálogo de serviços
+  useEffect(() => {
+    const sync = () => setServices(listActiveServices());
+    window.addEventListener(SERVICES_EVENT, sync);
+    return () => window.removeEventListener(SERVICES_EVENT, sync);
+  }, []);
+
+  const scheduleByCents = new Map(cfg.amountSchedules.map((a) => [a.amountCents, a.sendHour]));
+
+  const setServiceHour = (cents: number, hour: string) => {
+    const others = cfg.amountSchedules.filter((a) => a.amountCents !== cents);
+    const next: AmountSchedule[] = [...others, { amountCents: cents, sendHour: hour }]
+      .sort((a, b) => a.amountCents - b.amountCents);
+    update({ amountSchedules: next });
+  };
+
+  const clearServiceHour = (cents: number) => {
+    update({ amountSchedules: cfg.amountSchedules.filter((a) => a.amountCents !== cents) });
+  };
+
+  const applyHourToAllServices = (hour: string) => {
+    if (!/^\d{2}:\d{2}$/.test(hour)) {
       toast.error("Horário inválido.");
       return;
     }
-    const next: AmountSchedule[] = [...cfg.amountSchedules, { amountCents: cents, sendHour: newHour }]
+    const next: AmountSchedule[] = services.map((s) => ({ amountCents: s.preco_cents, sendHour: hour }))
       .sort((a, b) => a.amountCents - b.amountCents);
     update({ amountSchedules: next });
-    setNewAmount("");
-    toast.success(`Horário customizado adicionado para ${fmtBRL(cents)}.`);
+    toast.success(`Horário ${hour} aplicado a todos os serviços.`);
   };
 
-  const updateAmountHour = (cents: number, hour: string) => {
-    update({
-      amountSchedules: cfg.amountSchedules.map((a) =>
-        a.amountCents === cents ? { ...a, sendHour: hour } : a,
-      ),
-    });
-  };
-
-  const removeAmount = (cents: number) => {
-    update({ amountSchedules: cfg.amountSchedules.filter((a) => a.amountCents !== cents) });
+  const clearAllServiceHours = () => {
+    update({ amountSchedules: [] });
+    toast.success("Horários personalizados removidos. Todos seguem o padrão.");
   };
 
   const resetAll = () => {
@@ -221,72 +220,109 @@ function AgendaDisparoPage() {
         </div>
       </Card>
 
-      <Card className="mt-4 p-4 space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold">Horário por valor de serviço</h3>
-          <p className="text-[11px] text-muted-foreground">
-            Quando o valor do cliente bater exatamente com um da lista, o disparo usa esse horário em vez do padrão.
-            Ex.: serviços de R$ 12,00 enviam às 09:00; serviços de R$ 30,00 enviam às 12:00.
+      <Card className="mt-4 p-4 space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold">Horário de envio por serviço</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Aqui aparecem todos os serviços cadastrados (em <strong>Cadastros</strong>). Para cada
+            serviço você pode escolher um horário próprio de envio — por exemplo, o plano de R$ 12
+            sai às 09:00 e o de R$ 30 sai às 12:00. Quando deixar como{" "}
+            <strong>Padrão</strong>, o serviço usa o horário padrão definido acima.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            A ordem de envio segue sempre a mesma regra do painel: primeiro os que estão{" "}
+            <strong>perto de vencer</strong>, depois os que vencem <strong>hoje</strong> e por
+            último os <strong>vencidos</strong> (quanto mais antigo o vencimento, mais ao fim da
+            fila).
           </p>
         </div>
 
-        <div className="flex flex-wrap items-end gap-2 rounded-md border bg-muted/20 p-3">
-          <div className="space-y-1">
-            <Label className="text-xs">Valor (R$)</Label>
-            <Input
-              type="text" inputMode="decimal" placeholder="12,00"
-              value={newAmount}
-              onChange={(e) => setNewAmount(e.target.value)}
-              className="h-9 w-[120px]"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Horário</Label>
+        <div className="rounded-md border bg-muted/20 p-3 space-y-2">
+          <Label className="text-xs font-semibold">Aplicar o mesmo horário a todos os serviços</Label>
+          <div className="flex flex-wrap items-end gap-2">
             <Input
               type="time"
-              value={newHour}
-              onChange={(e) => setNewHour(e.target.value)}
-              className="h-9 w-[120px]"
+              value={bulkHour}
+              onChange={(e) => setBulkHour(e.target.value)}
+              className="h-9 w-[130px]"
             />
+            <Button size="sm" onClick={() => applyHourToAllServices(bulkHour)} className="h-9 gap-1.5">
+              <Save className="h-3.5 w-3.5" /> Aplicar a todos
+            </Button>
+            <Button size="sm" variant="outline" onClick={clearAllServiceHours} className="h-9 gap-1.5">
+              <RotateCcw className="h-3.5 w-3.5" /> Voltar ao padrão
+            </Button>
           </div>
-          <Button size="sm" onClick={addAmountSchedule} className="gap-1.5 h-9">
-            <Plus className="h-3.5 w-3.5" /> Adicionar
-          </Button>
+          <p className="text-[11px] text-muted-foreground leading-snug">
+            Use quando quiser que <strong>todos os serviços</strong> sejam disparados no mesmo
+            horário, mantendo a regra de fila (próximos do vencimento primeiro).
+          </p>
         </div>
 
-        {cfg.amountSchedules.length === 0 ? (
-          <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
-            Nenhum horário customizado. Todos os clientes seguem o horário padrão.
+        {services.length === 0 ? (
+          <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground leading-relaxed">
+            Nenhum serviço cadastrado ainda. Vá em <strong>Cadastros</strong> e crie seus planos
+            para configurar um horário individual para cada um.
           </div>
         ) : (
           <div className="space-y-2">
-            {cfg.amountSchedules.map((a) => (
-              <div key={a.amountCents} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
-                <div className="text-sm font-semibold">{fmtBRL(a.amountCents)}</div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Enviar às</Label>
-                  <Input
-                    type="time"
-                    value={a.sendHour}
-                    onChange={(e) => updateAmountHour(a.amountCents, e.target.value)}
-                    className="h-8 w-[110px]"
-                  />
-                  <Button
-                    size="sm" variant="outline"
-                    onClick={() => removeAmount(a.amountCents)}
-                    className="h-8 gap-1 text-[11px]"
-                  >
-                    <Trash2 className="h-3 w-3" /> Remover
-                  </Button>
+            {services.map((s) => {
+              const customHour = scheduleByCents.get(s.preco_cents);
+              const isCustom = !!customHour;
+              return (
+                <div key={s.id} className="rounded-md border p-3 space-y-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold break-words">{s.nome}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {fmtBRLsvc(s.preco_cents)} · {s.telas} tela(s) · {s.meses} mês(es)
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                        isCustom
+                          ? "bg-primary/15 text-primary"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {isCustom ? `Envia às ${customHour}` : `Padrão (${cfg.sendHour})`}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Horário deste serviço</Label>
+                      <Input
+                        type="time"
+                        value={customHour ?? cfg.sendHour}
+                        onChange={(e) => setServiceHour(s.preco_cents, e.target.value)}
+                        className="h-9 w-[130px]"
+                      />
+                    </div>
+                    {isCustom && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => clearServiceHour(s.preco_cents)}
+                        className="h-9 gap-1 text-[11px]"
+                      >
+                        <Trash2 className="h-3 w-3" /> Usar padrão
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
 
-      <p className="mt-4 text-[11px] text-muted-foreground inline-flex items-center gap-1">
-        <Save className="h-3 w-3" /> As alterações são salvas automaticamente neste dispositivo.
+      <p className="mt-4 mb-2 text-[11px] text-muted-foreground inline-flex items-start gap-1 leading-snug">
+        <Save className="h-3 w-3 mt-0.5 shrink-0" />
+        <span>
+          Tudo é salvo automaticamente neste aparelho. Você pode alterar quantas vezes quiser — a
+          próxima rodada de disparos já usa as novas configurações.
+        </span>
       </p>
     </PageContainer>
   );
