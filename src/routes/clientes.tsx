@@ -204,7 +204,7 @@ const statusLabel = (s: string | null | undefined) => {
   if (k === "ativo") return "Ativo";
   if (k === "expirado") return "Expirado";
   if (k === "arquivado") return "Arquivado";
-  return s ?? "—";
+  return (s ?? "—").replace(/_/g, " ");
 };
 const statusClass = (s: string | null | undefined) => {
   const k = classifyStatus(s);
