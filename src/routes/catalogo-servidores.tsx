@@ -371,6 +371,20 @@ function ServerCard({
             <RotateCcw className="h-3.5 w-3.5" /> Reativar
           </Button>
         )}
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5 text-destructive hover:text-destructive"
+          onClick={() => guard({
+            kind: "delete",
+            title: `Excluir servidor ${server.name}`,
+            description: "Esta ação remove o servidor do catálogo. Não pode ser desfeita.",
+            actionLabel: "Excluir",
+            onConfirm: () => { deleteServer(server.id); toast.success("Servidor excluído"); },
+          })}
+        >
+          <Trash2 className="h-3.5 w-3.5" /> Excluir
+        </Button>
       </div>
 
       <AlertDialog open={askReveal} onOpenChange={(o) => !o && setAskReveal(false)}>
