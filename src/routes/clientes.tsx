@@ -1768,12 +1768,11 @@ function EditForm({
             className="h-9"
           />
         </Field>
-        <Field label="Vence dia">
+        <Field label="Vence em">
           <Input
-            value={dueDay}
-            onChange={(e) => setDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            placeholder="10"
-            inputMode="numeric"
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
             className="h-9"
           />
         </Field>
@@ -1785,9 +1784,9 @@ function EditForm({
           >
             <option value="ativo">Ativo</option>
             <option value="expirado">Expirado</option>
-            <option value="arquivado">Arquivado</option>
           </select>
         </Field>
+
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Field label="E-mail">
