@@ -273,6 +273,7 @@ function ClientesPage() {
     return () => window.removeEventListener("app-screens:changed", bump);
   }, []);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [openMode, setOpenMode] = useState<"view" | "edit">("view");
   const [openNew, setOpenNew] = useState(false);
   const [renewId, setRenewId] = useState<string | null>(null);
   const [appsId, setAppsId] = useState<string | null>(null);
