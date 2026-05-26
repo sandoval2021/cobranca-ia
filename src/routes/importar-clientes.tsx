@@ -104,7 +104,7 @@ function ImportarClientesPage() {
     errored?: number;
     message?: string;
   } | null>(null);
-  const [existingMap, setExistingMap] = useState<Record<string, { name?: string }>>({});
+  const [existingMap, setExistingMap] = useState<Record<string, { name?: string; id?: string; status?: string }>>({});
   const [lookupLoading, setLookupLoading] = useState(false);
   const [notImportedIdx, setNotImportedIdx] = useState<number[]>([]);
   const [skippedIdx, setSkippedIdx] = useState<Set<number>>(new Set());
