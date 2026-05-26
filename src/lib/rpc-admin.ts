@@ -111,7 +111,7 @@ export function useCurrentCompany(): CurrentCompanyState {
       if (error) {
         setState({
           status: "error",
-          message: "Não foi possível identificar a empresa.",
+          message: "Não foi possível preparar sua conta. Tente entrar novamente.",
           tech: stagingRpcDetail("get_current_company_admin", {}, error),
         });
         return;
@@ -119,7 +119,7 @@ export function useCurrentCompany(): CurrentCompanyState {
       if (!companyId) {
         setState({
           status: "error",
-          message: "Nenhuma empresa autorizada encontrada.",
+          message: "Não foi possível preparar sua conta. Tente entrar novamente.",
         });
         return;
       }
