@@ -244,7 +244,10 @@ function AgendaDisparoPage() {
 
 
         <div className="rounded-md border bg-muted/20 p-3 space-y-2">
-          <Label className="text-xs font-semibold">Aplicar o mesmo horário a todos os serviços</Label>
+          <div className="flex items-center gap-1">
+            <Label className="text-xs font-semibold">Aplicar o mesmo horário a todos os serviços</Label>
+            <HelpTip text="Define o mesmo horário para todos os serviços de uma vez. A ordem da fila (próximos do vencimento primeiro) continua valendo." />
+          </div>
           <div className="flex flex-wrap items-end gap-2">
             <Input
               type="time"
@@ -259,11 +262,8 @@ function AgendaDisparoPage() {
               <RotateCcw className="h-3.5 w-3.5" /> Voltar ao padrão
             </Button>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-snug">
-            Use quando quiser que <strong>todos os serviços</strong> sejam disparados no mesmo
-            horário, mantendo a regra de fila (próximos do vencimento primeiro).
-          </p>
         </div>
+
 
         {services.length === 0 ? (
           <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground leading-relaxed">
