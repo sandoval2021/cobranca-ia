@@ -52,7 +52,7 @@ function migrateMessages(s: Partial<ServiceItem> & { mensagem_cobranca?: string;
     return s.messages.map((m) => ({
       id: String(m.id ?? uid("msg")),
       kind: (m.kind === "acompanhamento" ? "acompanhamento" : "cobranca") as ServiceMessageKind,
-      offset_days: Math.max(0, Math.round(Number(m.offset_days ?? 0))),
+      offset_days: Math.round(Number(m.offset_days ?? 0)),
       label: String(m.label ?? labelFor(m.kind ?? "cobranca", Number(m.offset_days ?? 0))),
       template: String(m.template ?? ""),
     }));
