@@ -677,6 +677,34 @@ function ImportarClientesPage() {
                           : r.expires_raw ?? "—"}
                       </td>
                       <td className="p-2">{r.situation ?? "—"}</td>
+                      <td className="p-2">
+                        {enrichments[i] ? (
+                          <span
+                            className={
+                              enrichments[i].has_message_template
+                                ? "text-primary"
+                                : "text-amber-700 dark:text-amber-300"
+                            }
+                          >
+                            {enrichments[i].message_label}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="p-2">
+                        {enrichments[i]?.group_size && enrichments[i].group_size > 1 ? (
+                          <span className="text-blue-700 dark:text-blue-300">
+                            {enrichments[i].group_size} telas
+                            {enrichments[i].group_conflict
+                              ? ` · conflito: ${enrichments[i].group_conflict?.replace("_", " ")}`
+                              : ""}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+
                     </tr>
                   ))}
                 </tbody>
