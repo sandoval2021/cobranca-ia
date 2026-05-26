@@ -22,6 +22,8 @@ import {
   AlertTriangle,
   Ban,
   Clock,
+  Plus,
+  UserPlus,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -205,6 +207,7 @@ function ClientesPage() {
     return () => window.removeEventListener("app-screens:changed", bump);
   }, []);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [openNew, setOpenNew] = useState(false);
   const [reloadBump, setReloadBump] = useState(0);
 
   useEffect(() => {
@@ -225,11 +228,7 @@ function ClientesPage() {
       const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
       if (!alive) return;
       if (companyErr || !companyId) {
-        setErrorMsg(
-          companyErr
-            ? "Não foi possível identificar a empresa."
-            : "Nenhuma empresa autorizada encontrada.",
-        );
+        setErrorMsg("Não foi possível confirmar sua empresa. Tente novamente.");
         setItems(null);
         setLoading(false);
         return;
@@ -418,8 +417,17 @@ function ClientesPage() {
         title="Clientes"
         subtitle="Gerencie sua base de clientes"
         hint="Edite, arquive e consulte o histórico de cada cliente com segurança."
+        action={
+          <Button onClick={() => setOpenNew(true)} className="gap-1.5">
+            <Plus className="h-4 w-4" /> Novo cliente
+          </Button>
+        }
       />
+      <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+        Versão UI: clientes-v2-testes-v2
+      </div>
       <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
+
 
       {/* Busca */}
       <div className="relative mb-3">
@@ -515,16 +523,33 @@ function ClientesPage() {
       )}
 
       {isAuthenticated && !loading && errorMsg && (
-        <EmptyState icon={Users} title="Não foi possível carregar" description={errorMsg} />
+        <div className="space-y-3">
+          <EmptyState icon={Users} title="Não foi possível carregar" description={errorMsg} />
+          <div className="flex justify-center">
+            <Button onClick={() => setOpenNew(true)} className="gap-1.5">
+              <UserPlus className="h-4 w-4" /> Cadastrar primeiro cliente
+            </Button>
+          </div>
+        </div>
       )}
 
       {isAuthenticated && !loading && !errorMsg && ordered.length === 0 && (
-        <EmptyState
-          icon={Users}
-          title="Nenhum cliente encontrado"
-          description={query ? "Tente outra busca." : "Importe clientes para começar."}
-        />
+        <div className="space-y-3">
+          <EmptyState
+            icon={Users}
+            title="Nenhum cliente cadastrado ainda."
+            description={query ? "Tente outra busca." : "Comece cadastrando seu primeiro cliente."}
+          />
+          {!query && (
+            <div className="flex justify-center">
+              <Button onClick={() => setOpenNew(true)} className="gap-1.5">
+                <UserPlus className="h-4 w-4" /> Cadastrar primeiro cliente
+              </Button>
+            </div>
+          )}
+        </div>
       )}
+
 
       {isAuthenticated && !loading && !errorMsg && ordered.length > 0 && (
         <div className="space-y-2">
@@ -545,9 +570,16 @@ function ClientesPage() {
         onClose={() => setOpenId(null)}
         onChanged={reload}
       />
+
+      <NewCustomerSheet
+        open={openNew}
+        onClose={() => setOpenNew(false)}
+        onCreated={reload}
+      />
     </PageContainer>
   );
 }
+
 
 function FilterPill({
   active,
@@ -1541,4 +1573,163 @@ function extractExtras(eventType: string, meta: Row): { label: string; value: st
     push("Status", str(meta, ["new_status", "status"]));
   }
   return out.slice(0, 6);
+}
+
+// ---------- new customer sheet ----------
+function NewCustomerSheet({
+  open,
+  onClose,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [amount, setAmount] = useState("");
+  const [dueDay, setDueDay] = useState("");
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setName("");
+      setWhatsapp("");
+      setAmount("");
+      setDueDay("");
+      setNotes("");
+      setBusy(false);
+    }
+  }, [open]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      toast.error("Informe o nome do cliente.");
+      return;
+    }
+    const d = onlyDigits(whatsapp);
+    if (d && d.length < 10) {
+      toast.error("Revise o WhatsApp informado.");
+      return;
+    }
+    const amt = amount.trim()
+      ? Math.round(Number(amount.replace(/\./g, "").replace(",", ".")) * 100)
+      : null;
+    if (amount.trim() && (amt == null || Number.isNaN(amt) || amt < 0)) {
+      toast.error("Informe um valor válido.");
+      return;
+    }
+    const dd = dueDay.trim() ? Number(dueDay) : null;
+    if (dd != null && (Number.isNaN(dd) || dd < 1 || dd > 31)) {
+      toast.error("O dia de vencimento deve ser entre 1 e 31.");
+      return;
+    }
+    if (!supabase) {
+      toast.error("Conexão indisponível. Tente novamente em instantes.");
+      return;
+    }
+    setBusy(true);
+    const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
+    if (companyErr || !companyId) {
+      setBusy(false);
+      toast.error("Não foi possível confirmar sua empresa. Tente novamente.");
+      return;
+    }
+    const { error } = await supabase.rpc("create_customer_admin", {
+      p_company_id: companyId,
+      p_name: name.trim(),
+      p_whatsapp_e164: whatsapp.trim() ? toE164(whatsapp) : null,
+      p_amount_cents: amt,
+      p_due_day: dd,
+      p_status: "ativo",
+      p_notes: notes.trim() || null,
+    });
+    setBusy(false);
+    if (error) {
+      toast.error(friendlyRpcError(error.message));
+      return;
+    }
+    toast.success("Cliente cadastrado com sucesso.");
+    onCreated();
+    onClose();
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md">
+        <SheetHeader className="border-b border-border p-4">
+          <SheetTitle className="text-base">Novo cliente</SheetTitle>
+          <SheetDescription className="text-xs">
+            Cadastre rapidamente um novo cliente na sua base.
+          </SheetDescription>
+        </SheetHeader>
+        <form onSubmit={submit} className="flex-1 space-y-4 px-4 py-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1">
+              <Label className="text-xs">Nome *</Label>
+            </div>
+            <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} placeholder="Nome do cliente" />
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1">
+              <Label className="text-xs">WhatsApp</Label>
+              <HelpTip text="Inclua o DDD. Será salvo no formato internacional." />
+            </div>
+            <Input
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              placeholder="(11) 99999-9999"
+              inputMode="tel"
+              maxLength={20}
+              autoComplete="off"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs">Valor mensal</Label>
+                <HelpTip text="Cobrança recorrente em reais." />
+              </div>
+              <Input
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0,00"
+                inputMode="decimal"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs">Dia de vencimento</Label>
+                <HelpTip text="Entre 1 e 31." />
+              </div>
+              <Input
+                value={dueDay}
+                onChange={(e) => setDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                placeholder="10"
+                inputMode="numeric"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1">
+              <Label className="text-xs">Observações</Label>
+              <HelpTip text="Notas internas, não enviadas ao cliente." />
+            </div>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={1000} />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={busy} className="flex-1">
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={busy} className="flex-1 gap-1.5">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+              Cadastrar cliente
+            </Button>
+          </div>
+        </form>
+      </SheetContent>
+    </Sheet>
+  );
 }
