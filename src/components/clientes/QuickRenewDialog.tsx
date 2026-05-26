@@ -570,3 +570,36 @@ function FinanceRow({
     </div>
   );
 }
+
+function FinanceEditRow({
+  label, op, value, onChange, prefix, inputMode = "decimal",
+}: {
+  label: string; op: string; value: string;
+  onChange: (v: string) => void;
+  prefix?: string;
+  inputMode?: "decimal" | "numeric";
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 text-[11px] tracking-wide text-foreground/80">{label}</div>
+      <div className="flex items-center gap-1.5">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-md border bg-muted text-xs font-semibold">{op}</span>
+        <div className="relative">
+          {prefix && (
+            <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{prefix}</span>
+          )}
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            inputMode={inputMode}
+            className={cn(
+              "h-8 min-w-[110px] text-right text-xs tabular-nums",
+              prefix && "pl-8",
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
