@@ -969,8 +969,8 @@ function ClientCard({
       </div>
 
       <div className="divide-y divide-foreground/5">
-        <Row label="Cód. Cliente" value={<span className="font-mono">{codCliente}</span>} />
         <Row label="WhatsApp" value={phone ?? <span className="text-muted-foreground">—</span>} valueClass="font-mono" />
+
         <Row
           label="Serviço"
           value={
