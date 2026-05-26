@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Server, Plus, Pencil, Archive, RotateCcw, Download, Upload, RefreshCcw,
-  ExternalLink, Copy, Eye, EyeOff, X, Save, Loader2, AlertCircle, Share2,
+  ExternalLink, Copy, Eye, EyeOff, X, Save, Loader2, AlertCircle, Share2, Trash2,
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
