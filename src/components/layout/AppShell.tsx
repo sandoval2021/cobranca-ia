@@ -11,6 +11,7 @@ import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   COMPANIES_EVENT,
+  ensureLocalAccount,
   getCompanyForUser,
   getCurrentCompany,
   setCurrentCompany,
@@ -56,10 +57,11 @@ function useActiveCompany() {
       window.removeEventListener("storage", r);
     };
   }, []);
-  // Para owner: vincular sempre à empresa do email; para admin: empresa atual escolhida.
+  // Para owner: garantir/criar conta padrão automaticamente — usuário não precisa cadastrar empresa.
   if (isOwner) {
-    const c = getCompanyForUser(user?.email);
-    return c;
+    const existing = getCompanyForUser(user?.email);
+    if (existing) return existing;
+    return ensureLocalAccount(user?.email, user?.nome, user?.whatsapp);
   }
   return getCurrentCompany();
 }

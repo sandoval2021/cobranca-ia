@@ -202,7 +202,7 @@ function GestaoServicosPage() {
       const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
       if (!alive) return;
       if (companyErr || !companyId) {
-        setErrorMsg("Não foi possível identificar a empresa.");
+        setErrorMsg("Não foi possível preparar sua conta. Tente entrar novamente.");
         setCustomers(null);
         setLoading(false);
         return;

@@ -67,7 +67,7 @@ import { AISuggestionsPanel } from "@/components/ai/ai-analysis";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
-import { getCurrentCompanyAdmin, listCustomersAdmin } from "@/lib/rpc-admin";
+import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 import {
   APP_CATALOG, AppKey, AppScreen, APP_OPTIONS, listAllScreens, listScreens,
   nextDueDays, urgencyFromDays, urgencyClass, urgencyLabel,
@@ -285,10 +285,10 @@ function ClientesPage() {
     setLoading(true);
     setErrorMsg(null);
     (async () => {
-      const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
+      const { accountId: companyId, error: companyErr } = await getActiveAccountId();
       if (!alive) return;
       if (companyErr || !companyId) {
-        setErrorMsg("Não foi possível confirmar sua conta. Entre novamente e tente de novo.");
+        setErrorMsg("Não foi possível preparar sua conta. Tente entrar novamente.");
         setItems(null);
         setLoading(false);
         return;
@@ -1699,10 +1699,10 @@ function NewCustomerSheet({
     }
     if (!supabase) { toast.error("Conexão indisponível."); return; }
     setBusy(true);
-    const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
+    const { accountId: companyId, error: companyErr } = await getActiveAccountId();
     if (companyErr || !companyId) {
       setBusy(false);
-      toast.error("Não foi possível confirmar sua conta. Entre novamente e tente de novo.");
+      toast.error("Não foi possível preparar sua conta. Tente entrar novamente.");
       return;
     }
     const { data, error } = await supabase.rpc("create_customer_admin", {
