@@ -60,6 +60,13 @@ import {
   type ChipKey,
   type DispatchGroup,
 } from "@/lib/import-schedule";
+import {
+  enrichImportRows,
+  summarizeImport,
+  type ImportEnrichment,
+} from "@/lib/import-mapping";
+
+
 
 
 type RowKind = "new" | "existing" | "duplicate_file" | "error";
@@ -195,6 +202,17 @@ function ImportarClientesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, existingMap, lookupReady]);
 
+  const enrichments = useMemo<ImportEnrichment[]>(
+    () => (rows ? enrichImportRows(rows) : []),
+    [rows],
+  );
+  const summary = useMemo(
+    () => (rows ? summarizeImport(rows, enrichments) : null),
+    [rows, enrichments],
+  );
+
+
+
 
   async function onFile(file: File) {
     setParseError(null);
@@ -269,17 +287,31 @@ function ImportarClientesPage() {
     setConfirming(true);
     setResult(null);
     try {
-      const payload = validas.map((r) => ({
-        external_code: r.external_code,
-        external_customer_code: r.external_customer_code,
-        customer_name: r.customer_name,
-        whatsapp_e164: r.whatsapp_e164,
-        service_name: r.service_name,
-        amount_cents: r.amount_cents,
-        expires_at: r.expires_at,
-        situation: r.situation,
-        raw_row: r.raw_row,
-      }));
+      const idxByRef = new Map(rows!.map((r, i) => [r, i] as const));
+      const payload = validas.map((r) => {
+        const idx = idxByRef.get(r);
+        const e = idx != null ? enrichments[idx] : undefined;
+        return {
+          external_code: r.external_code,
+          external_customer_code: r.external_customer_code,
+          customer_name: r.customer_name,
+          whatsapp_e164: r.whatsapp_e164,
+          service_name: r.service_name,
+          amount_cents: r.amount_cents,
+          expires_at: r.expires_at,
+          situation: r.situation,
+          raw_row: {
+            ...r.raw_row,
+            matched_service_id: e?.matched_service_id ?? null,
+            plan_label: e?.plan_label ?? null,
+            message_label: e?.message_label ?? null,
+            group_size: e?.group_size ?? 1,
+            group_conflict: e?.group_conflict ?? null,
+            observation: e?.observation ?? null,
+          },
+        };
+      });
+
 
       const { data, error } = await supabase.rpc(
         "staging_import_customers_from_rows",
@@ -487,6 +519,18 @@ function ImportarClientesPage() {
             </div>
           </div>
 
+          {summary && (
+            <div className="mb-3 grid grid-cols-2 gap-1.5 rounded-xl border bg-muted/30 p-2 text-[11px] sm:grid-cols-4">
+              <SummaryStat label="WhatsApps únicos" value={summary.unique_whatsapps} />
+              <SummaryStat label="Valores reconhecidos" value={summary.amounts_recognized} />
+              <SummaryStat label="Vencimentos reconhecidos" value={summary.dates_recognized} />
+              <SummaryStat label="Planos casados" value={summary.messages_matched} />
+              <SummaryStat label="Mensagem padrão (revisar)" value={summary.messages_default} />
+              <SummaryStat label="Conflitos no grupo" value={summary.conflicts} />
+            </div>
+          )}
+
+
 
           {/* Mobile: cards */}
           <div className="space-y-2 sm:hidden">
@@ -544,6 +588,30 @@ function ImportarClientesPage() {
                   <dt className="text-muted-foreground">Situação</dt>
                   <dd>{r.situation ?? "—"}</dd>
                 </dl>
+                {enrichments[i] && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        enrichments[i].has_message_template
+                          ? "bg-primary/10 text-primary"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                      }`}
+                    >
+                      {enrichments[i].message_label}
+                    </span>
+                    {enrichments[i].group_size > 1 && (
+                      <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
+                        {enrichments[i].group_size} telas/serviços
+                      </span>
+                    )}
+                    {enrichments[i].group_conflict && (
+                      <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
+                        conflito: {enrichments[i].group_conflict?.replace("_", " ")}
+                      </span>
+                    )}
+                  </div>
+                )}
+
               </div>
             ))}
           </div>
@@ -562,6 +630,9 @@ function ImportarClientesPage() {
                     <th className="p-2 text-right font-medium">Valor</th>
                     <th className="p-2 text-left font-medium">Expira</th>
                     <th className="p-2 text-left font-medium">Situação</th>
+                    <th className="p-2 text-left font-medium">Mensagem</th>
+                    <th className="p-2 text-left font-medium">Grupo</th>
+
                   </tr>
                 </thead>
                 <tbody>
@@ -606,6 +677,34 @@ function ImportarClientesPage() {
                           : r.expires_raw ?? "—"}
                       </td>
                       <td className="p-2">{r.situation ?? "—"}</td>
+                      <td className="p-2">
+                        {enrichments[i] ? (
+                          <span
+                            className={
+                              enrichments[i].has_message_template
+                                ? "text-primary"
+                                : "text-amber-700 dark:text-amber-300"
+                            }
+                          >
+                            {enrichments[i].message_label}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="p-2">
+                        {enrichments[i]?.group_size && enrichments[i].group_size > 1 ? (
+                          <span className="text-blue-700 dark:text-blue-300">
+                            {enrichments[i].group_size} telas
+                            {enrichments[i].group_conflict
+                              ? ` · conflito: ${enrichments[i].group_conflict?.replace("_", " ")}`
+                              : ""}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+
                     </tr>
                   ))}
                 </tbody>
@@ -753,7 +852,17 @@ function KindPill({
   );
 }
 
+function SummaryStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between rounded-md bg-card/60 px-2 py-1">
+      <span className="truncate text-muted-foreground">{label}</span>
+      <span className="font-semibold tabular-nums">{value}</span>
+    </div>
+  );
+}
+
 function ResultCard({ label, value }: { label: string; value: number }) {
+
   return (
     <div className="rounded-xl border bg-card p-3">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
