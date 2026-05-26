@@ -452,6 +452,53 @@ export function GenerateMessageDialog({
             </Select>
           </div>
 
+          {/* Plano do cliente — usa o modelo de mensagem do plano */}
+          <div className="rounded-lg border border-border bg-card p-3">
+            <Label className="mb-1 flex items-center gap-1.5 text-xs">
+              Plano do cliente
+              <HelpTip text="Cada plano cadastrado em Cadastros · Serviços tem sua própria mensagem de cobrança. Escolha o plano deste cliente para usar o texto correto." />
+            </Label>
+            {services.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground">
+                Nenhum plano cadastrado. Cadastre em <strong>Cadastros · Serviços</strong> para usar mensagens por plano.
+              </p>
+            ) : (
+              <>
+                <Select value={planId ?? "__none__"} onValueChange={handlePickPlan}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Selecione o plano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Sem plano definido —</SelectItem>
+                    {services.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nome} · {fmtBRLCents(s.preco_cents)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[11px] text-muted-foreground">
+                    {selectedPlan
+                      ? `${selectedPlan.telas} tela${selectedPlan.telas > 1 ? "s" : ""} · ${selectedPlan.meses} ${selectedPlan.meses === 1 ? "mês" : "meses"}`
+                      : "Selecione um plano para usar a mensagem específica."}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={applyPlanTemplate}
+                    disabled={!selectedPlan}
+                    className="h-8 gap-1.5"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Usar modelo do plano
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+
+
           {/* Estado vazio antes da prévia */}
           {stage === "idle" && (
             <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
