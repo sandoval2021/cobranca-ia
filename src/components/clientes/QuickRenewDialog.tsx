@@ -15,7 +15,7 @@ import {
   applyRenewal, buildConfirmationMessage, fmtDateBR,
   PAYMENT_LABEL, PaymentMethod,
 } from "@/lib/manual-renewals";
-import { setCustomerDueOverride, clearCustomerDueOverride } from "@/lib/customer-due-override";
+import { clearCustomerDueOverride } from "@/lib/customer-due-override";
 import { supabase } from "@/integrations/supabase/client";
 
 // Persiste a renovação no Supabase via RPC `update_customer_admin`.
