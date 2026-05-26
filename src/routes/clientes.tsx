@@ -82,7 +82,7 @@ import { RenewScreensWizard } from "@/components/clientes/RenewScreensWizard";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
 import { getPrimaryRouteForServer } from "@/lib/dns-routes";
-import { Tv, ExternalLink, Copy, Check } from "lucide-react";
+import { Tv, ExternalLink, Copy, Check, Plus, Pencil, Save, X as XIcon } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
