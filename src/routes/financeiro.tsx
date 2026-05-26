@@ -834,7 +834,7 @@ function EntrySheet({ draft, goals, onClose, onSaved }: { draft: FinanceDraft; g
 
   return (
     <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent side="right">
         <SheetHeader>
           <SheetTitle>Nova entrada financeira</SheetTitle>
           <SheetDescription>Registro local. Nenhum pagamento real é processado.</SheetDescription>

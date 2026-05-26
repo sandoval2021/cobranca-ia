@@ -2146,7 +2146,7 @@ function NewCustomerSheet({
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md">
+      <SheetContent side="right" className="flex flex-col gap-0 p-0">
         <SheetHeader className="border-b border-border px-4 py-3">
           <SheetTitle className="text-base">Novo cliente</SheetTitle>
           <SheetDescription className="text-xs">
