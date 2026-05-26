@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bot, Clock, Send, Ban, RotateCcw, Settings2, ChevronDown, ChevronUp, MessageSquare, CheckCircle2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Bot, Clock, Send, Ban, RotateCcw, Settings2, ChevronDown, ChevronUp, MessageSquare, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
