@@ -247,6 +247,7 @@ export function GenerateMessageDialog({
   // Plano do cliente (catálogo local) — escolhe qual mensagem usar.
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [planId, setPlanId] = useState<string | null>(null);
+  const [planMsgId, setPlanMsgId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -264,14 +265,23 @@ export function GenerateMessageDialog({
     [services, planId],
   );
 
+  // Reset da mensagem selecionada ao mudar de plano.
+  useEffect(() => {
+    setPlanMsgId(selectedPlan?.messages[0]?.id ?? null);
+  }, [selectedPlan]);
+
+  const selectedPlanMsg = useMemo(
+    () => selectedPlan?.messages.find((m) => m.id === planMsgId) ?? selectedPlan?.messages[0] ?? null,
+    [selectedPlan, planMsgId],
+  );
+
   function applyPlanTemplate() {
-    if (!selectedPlan) {
-      toast.error("Selecione um plano cadastrado para este cliente.");
+    if (!selectedPlan || !selectedPlanMsg) {
+      toast.error("Selecione um plano e uma mensagem cadastrada.");
       return;
     }
-    const tpl =
-      selectedPlan.mensagem_cobranca?.trim() ||
-      "Olá {nome}, sua mensalidade do plano *{plano}* ({telas} tela/s · {meses} mês/es) no valor de *{valor}* vence em {vencimento}.";
+    const tpl = selectedPlanMsg.template?.trim()
+      || "Olá {nome}, sua mensalidade do plano *{plano}* no valor de *{valor}* vence em {vencimento}.";
     const vars: Record<string, string> = {
       nome: customerName || "cliente",
       plano: selectedPlan.nome,
@@ -280,7 +290,7 @@ export function GenerateMessageDialog({
       meses: String(selectedPlan.meses),
       vencimento: dueDatePretty || "—",
     };
-    const out = tpl.replace(/\{(\w+)\}/g, (_m, k) => vars[k] ?? `{${k}}`);
+    const out = tpl.replace(/\{(\w+)\}/g, (_m: string, k: string) => vars[k] ?? `{${k}}`);
     setPreview(out);
     setGeneratedTone(tone);
     setStage("preview");
@@ -477,21 +487,43 @@ export function GenerateMessageDialog({
                     ))}
                   </SelectContent>
                 </Select>
+
+                {selectedPlan && selectedPlan.messages.length > 0 && (
+                  <div className="mt-2">
+                    <Label className="text-[11px]">Mensagem do plano</Label>
+                    <Select
+                      value={selectedPlanMsg?.id ?? ""}
+                      onValueChange={(v) => setPlanMsgId(v)}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Selecione a mensagem" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedPlan.messages.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-[11px] text-muted-foreground">
                     {selectedPlan
-                      ? `${selectedPlan.telas} tela${selectedPlan.telas > 1 ? "s" : ""} · ${selectedPlan.meses} ${selectedPlan.meses === 1 ? "mês" : "meses"}`
+                      ? `${selectedPlan.messages.length} mensagem(ns) cadastrada(s) neste plano`
                       : "Selecione um plano para usar a mensagem específica."}
                   </p>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={applyPlanTemplate}
-                    disabled={!selectedPlan}
+                    disabled={!selectedPlan || !selectedPlanMsg}
                     className="h-8 gap-1.5"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
-                    Usar modelo do plano
+                    Usar mensagem do plano
                   </Button>
                 </div>
               </>
