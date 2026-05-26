@@ -558,8 +558,8 @@ function ClientesPage() {
       });
     }
     return [...filtered].sort((a, b) => {
-      const da = nextDueDays(a.due_day, allScreens[a.id] ?? []);
-      const db = nextDueDays(b.due_day, allScreens[b.id] ?? []);
+      const da = customerDueDays(a, allScreens[a.id] ?? []);
+      const db = customerDueDays(b, allScreens[b.id] ?? []);
       const rank = (d: number | null) => {
         if (d == null) return 500;
         if (d < 0) return 1000 + Math.abs(d); // vencidos no fim
