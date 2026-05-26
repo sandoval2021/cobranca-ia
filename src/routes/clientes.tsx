@@ -906,32 +906,32 @@ function ClientCard({
       <div className="mt-3 flex flex-wrap justify-end gap-1.5">
         <button
           type="button"
-          onClick={onOpen}
-          title="Renovar"
+          onClick={onRenew}
+          title="Renovar cliente"
           className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-emerald-700"
         >
           <RotateCcw className="h-3.5 w-3.5" /> Renovar
         </button>
         <button
           type="button"
-          onClick={onOpen}
-          title="Editar"
+          onClick={onApps}
+          title="Aplicativos e dados de acesso"
           className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-blue-700"
         >
-          <Pencil className="h-3.5 w-3.5" /> Editar
+          <Tv className="h-3.5 w-3.5" /> Aplicativos
         </button>
         <button
           type="button"
           onClick={onOpen}
-          title="Gerenciar"
+          title="Gerenciar cliente"
           className="inline-flex items-center gap-1 rounded-md bg-violet-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-violet-700"
         >
           <Settings2 className="h-3.5 w-3.5" /> Gerenciar
         </button>
         <button
           type="button"
-          onClick={onOpen}
-          title="Excluir"
+          onClick={onDelete}
+          title="Excluir cliente"
           className="inline-flex items-center gap-1 rounded-md bg-red-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-red-700"
         >
           <Trash2 className="h-3.5 w-3.5" /> Excluir
