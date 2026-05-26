@@ -251,12 +251,14 @@ const pickDueDateFromRow = (r: Row): string | null => {
   const candidates = [
     "due_date", "expires_at", "vencimento", "next_due_date",
     "data_vencimento", "expiration_date",
+    // Variantes vindas da importação (RawRow / payload bruto)
+    "expires_raw", "vencimento_raw", "data_vencimento_raw",
   ];
   for (const k of candidates) {
     const iso = toIsoDate(r[k]);
     if (iso) return iso;
   }
-  // Importação: raw_row pode conter expires_at original
+  // Importação: raw_row pode conter expires_at/expires_raw original
   const raw = r.raw_row;
   if (raw && typeof raw === "object") {
     for (const k of candidates) {
@@ -267,22 +269,44 @@ const pickDueDateFromRow = (r: Row): string | null => {
   return null;
 };
 
-const normalize = (r: Row): Customer => ({
-  id: String(r.id ?? ""),
-  name: str(r, ["name", "nome", "full_name"]) ?? "Cliente",
-  whatsapp:
-    str(r, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) ?? null,
-  amount_cents:
-    num(r, ["amount_cents"]) ??
-    (num(r, ["amount", "valor", "value", "monthly_amount"]) !== null
-      ? Math.round((num(r, ["amount", "valor", "value", "monthly_amount"]) as number) * 100)
-      : null),
-  due_day: num(r, ["due_day", "dia_vencimento", "vencimento_dia"]),
-  due_date: pickDueDateFromRow(r),
-  status: str(r, ["status", "situacao"]),
-  notes: str(r, ["notes", "observacoes", "observacao"]),
-  raw: r,
-});
+const normalize = (r: Row): Customer => {
+  const c: Customer = {
+    id: String(r.id ?? ""),
+    name: str(r, ["name", "nome", "full_name"]) ?? "Cliente",
+    whatsapp:
+      str(r, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) ?? null,
+    amount_cents:
+      num(r, ["amount_cents"]) ??
+      (num(r, ["amount", "valor", "value", "monthly_amount"]) !== null
+        ? Math.round((num(r, ["amount", "valor", "value", "monthly_amount"]) as number) * 100)
+        : null),
+    due_day: num(r, ["due_day", "dia_vencimento", "vencimento_dia"]),
+    due_date: pickDueDateFromRow(r),
+    status: str(r, ["status", "situacao"]),
+    notes: str(r, ["notes", "observacoes", "observacao"]),
+    raw: r,
+  };
+  // Debug seguro para o WhatsApp citado no ticket — apenas em dev.
+  if (
+    typeof import.meta !== "undefined" &&
+    (import.meta as { env?: { DEV?: boolean } }).env?.DEV &&
+    c.whatsapp === "+558288936713"
+  ) {
+    // eslint-disable-next-line no-console
+    console.log("[customer-due-debug]", {
+      whatsapp: c.whatsapp,
+      due_date: c.due_date,
+      raw_due_date: r.due_date,
+      raw_expires_at: r.expires_at,
+      raw_expires_raw: r.expires_raw,
+      raw_row_expires_at: (r.raw_row as Row | undefined)?.expires_at,
+      raw_row_expires_raw: (r.raw_row as Row | undefined)?.expires_raw,
+      due_day: c.due_day,
+    });
+  }
+  return c;
+};
+
 
 // Prioridade do vencimento do cliente:
 // 1) due_date/expires_at importado (data completa) — exibe data real;
