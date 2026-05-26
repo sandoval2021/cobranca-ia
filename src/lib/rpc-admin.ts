@@ -92,6 +92,66 @@ export async function getCurrentCompanyAdmin() {
   return { companyId: id ? String(id) : null, error: null as RpcErr | null };
 }
 
+/**
+ * Chama RPC `ensure_user_default_company` (Supabase) que retorna
+ * o UUID real da base do usuário autenticado, criando-a se necessário.
+ */
+export async function ensureUserDefaultCompany(): Promise<{
+  companyId: string | null;
+  error: RpcErr | null;
+}> {
+  const res = await callRpc<unknown>("ensure_user_default_company", {});
+  if (res.error) return { companyId: null, error: res.error };
+  const raw = Array.isArray(res.data) ? res.data[0] : res.data;
+  let id: string | undefined;
+  if (typeof raw === "string") id = raw;
+  else if (raw && typeof raw === "object") {
+    const r = raw as Record<string, unknown>;
+    id =
+      (r.id as string | undefined) ??
+      (r.company_id as string | undefined) ??
+      (r.ensure_user_default_company as string | undefined);
+  }
+  return { companyId: id ? String(id) : null, error: null };
+}
+
+/**
+ * Sincroniza a base padrão real do usuário: chama RPC, faz upsert/relink
+ * da entrada local com o UUID, vincula owner e define como conta corrente.
+ * Idempotente — pode ser chamada várias vezes.
+ */
+export async function syncDefaultCompanyForUser(user?: {
+  email?: string | null;
+  nome?: string | null;
+  whatsapp?: string | null;
+} | null): Promise<string | null> {
+  const { companyId, error } = await ensureUserDefaultCompany();
+  if (!companyId || !isUuid(companyId)) {
+    if (error) console.warn("[account] ensure_user_default_company falhou:", error.code, error.message);
+    return null;
+  }
+  try {
+    upsertRealCompany(companyId, {
+      dono_email: user?.email ?? "",
+      dono_nome: user?.nome ?? "",
+      dono_whatsapp: user?.whatsapp ?? "",
+    });
+    if (user?.email) ensureOwnerMember(companyId, user.email, user.nome, user.whatsapp);
+    const cur = getCurrentCompanyId();
+    if (!cur || !isUuid(cur)) setCurrentCompany(companyId);
+  } catch (e) {
+    console.warn("[account] sync local company falhou:", e);
+  }
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.setItem(ACCOUNT_CACHE_KEY, companyId);
+    } catch {
+      /* ignore */
+    }
+  }
+  return companyId;
+}
+
 const ACCOUNT_CACHE_KEY = "cobranca_ia_active_account_id_v1";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
