@@ -11,6 +11,7 @@ import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   COMPANIES_EVENT,
+  ensureLocalAccount,
   getCompanyForUser,
   getCurrentCompany,
   setCurrentCompany,
