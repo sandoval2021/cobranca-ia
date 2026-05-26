@@ -588,6 +588,30 @@ function ImportarClientesPage() {
                   <dt className="text-muted-foreground">Situação</dt>
                   <dd>{r.situation ?? "—"}</dd>
                 </dl>
+                {enrichments[i] && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        enrichments[i].has_message_template
+                          ? "bg-primary/10 text-primary"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                      }`}
+                    >
+                      {enrichments[i].message_label}
+                    </span>
+                    {enrichments[i].group_size > 1 && (
+                      <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
+                        {enrichments[i].group_size} telas/serviços
+                      </span>
+                    )}
+                    {enrichments[i].group_conflict && (
+                      <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
+                        conflito: {enrichments[i].group_conflict?.replace("_", " ")}
+                      </span>
+                    )}
+                  </div>
+                )}
+
               </div>
             ))}
           </div>
