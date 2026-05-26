@@ -4,21 +4,9 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 
 export const AUTH_REFRESH_EVENT = "cobranca-auth-refresh";
 
-async function getSessionWithTimeout(timeoutMs = 3500): Promise<Session | null> {
-  if (!supabase) return null;
-  const timeout = new Promise<Session | null>((resolve) => {
-    window.setTimeout(() => resolve(null), timeoutMs);
-  });
-  const sessionRead = supabase.auth
-    .getSession()
-    .then(({ data }) => data.session)
-    .catch(() => null);
-  return Promise.race([sessionRead, timeout]);
-}
-
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!supabase || !supabaseConfigured) {
@@ -26,21 +14,34 @@ export function useAuth() {
       return;
     }
     let alive = true;
-    async function refreshSession() {
-      const currentSession = await getSessionWithTimeout();
+
+    // Listener fires SIGNED_IN/SIGNED_OUT/INITIAL_SESSION synchronously.
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       if (!alive) return;
-      setSession(currentSession);
-      setLoading(false);
-    }
-    const { data: sub } = supabase.auth.onAuthStateChange?.((_e, s) => {
       setSession(s);
       setLoading(false);
-    }) ?? { data: { subscription: { unsubscribe: () => undefined } } };
-    refreshSession();
-    window.addEventListener(AUTH_REFRESH_EVENT, refreshSession);
+    });
+
+    // Initial restore from storage — resolves quickly; INITIAL_SESSION
+    // event also covers this, but keep as a safety net.
+    supabase.auth.getSession().then(({ data }) => {
+      if (!alive) return;
+      setSession(data.session);
+      setLoading(false);
+    }).catch(() => {
+      if (alive) setLoading(false);
+    });
+
+    const onRefresh = () => {
+      supabase!.auth.getSession().then(({ data }) => {
+        if (alive) setSession(data.session);
+      }).catch(() => undefined);
+    };
+    window.addEventListener(AUTH_REFRESH_EVENT, onRefresh);
+
     return () => {
       alive = false;
-      window.removeEventListener(AUTH_REFRESH_EVENT, refreshSession);
+      window.removeEventListener(AUTH_REFRESH_EVENT, onRefresh);
       sub.subscription.unsubscribe();
     };
   }, []);
