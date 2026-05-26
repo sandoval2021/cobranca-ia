@@ -1802,6 +1802,24 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
+                {(s.plan_value || s.mac || s.app_key || s.app_due_date) && (
+                  <div className="basis-full flex flex-wrap gap-1 pt-1 text-[10px] text-muted-foreground">
+                    {s.plan_value && (
+                      <span className="rounded bg-muted px-1.5 py-0.5">R$ {s.plan_value}</span>
+                    )}
+                    {s.mac && (
+                      <span className="rounded bg-muted px-1.5 py-0.5 font-mono">MAC: {s.mac}</span>
+                    )}
+                    {s.app_key && (
+                      <span className="rounded bg-muted px-1.5 py-0.5 font-mono">Key: {s.app_key}</span>
+                    )}
+                    {s.app_due_date && (
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                        App vence {new Date(s.app_due_date + "T00:00:00").toLocaleDateString("pt-BR")}
+                      </span>
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}
