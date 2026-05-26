@@ -288,7 +288,7 @@ function ClientesPage() {
       const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
       if (!alive) return;
       if (companyErr || !companyId) {
-        setErrorMsg("Não foi possível confirmar sua empresa. Tente novamente.");
+        setErrorMsg("Não foi possível confirmar sua conta. Entre novamente e tente de novo.");
         setItems(null);
         setLoading(false);
         return;
@@ -1700,7 +1700,7 @@ function NewCustomerSheet({
     const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
     if (companyErr || !companyId) {
       setBusy(false);
-      toast.error("Não foi possível confirmar sua empresa. Tente novamente.");
+      toast.error("Não foi possível confirmar sua conta. Entre novamente e tente de novo.");
       return;
     }
     const { data, error } = await supabase.rpc("create_customer_admin", {
