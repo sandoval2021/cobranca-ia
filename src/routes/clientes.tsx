@@ -67,7 +67,7 @@ import { AISuggestionsPanel } from "@/components/ai/ai-analysis";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
-import { getCurrentCompanyAdmin, listCustomersAdmin } from "@/lib/rpc-admin";
+import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 import {
   APP_CATALOG, AppKey, AppScreen, APP_OPTIONS, listAllScreens, listScreens,
   nextDueDays, urgencyFromDays, urgencyClass, urgencyLabel,
