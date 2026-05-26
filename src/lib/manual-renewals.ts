@@ -8,7 +8,7 @@ import {
   upsertScreen,
 } from "@/lib/app-screens";
 import { getServerById } from "@/lib/server-catalog";
-import { applyRevendaVariables } from "@/lib/revenda-settings";
+import { applyRevendaVariables, getRevendaSettings } from "@/lib/revenda-settings";
 
 export type PaymentMethod = "pix" | "dinheiro" | "cartao" | "outro";
 
@@ -135,39 +135,39 @@ export type RenewalDraft = {
 };
 
 export function buildConfirmationMessage(rec: RenewalRecord): string {
-  const lines: string[] = [];
-  lines.push(`Olá ${rec.customer_name}, tudo certo ✅`);
-  lines.push("");
+  let telasLinha = "";
+  let vencimento = "";
   if (rec.screens.length === 1) {
     const s = rec.screens[0];
-    lines.push("Sua renovação foi registrada.");
-    lines.push(`📺 Tela: ${s.screen_name}`);
-    if (s.new_due_date) lines.push(`📅 Novo vencimento: ${fmtDateBR(s.new_due_date)}`);
-    if (rec.amount) lines.push(`💰 Valor: ${rec.amount}`);
+    vencimento = s.new_due_date ? fmtDateBR(s.new_due_date) : "";
+    telasLinha = s.screen_name ? `\n📺 Tela: ${s.screen_name}` : "";
     if (s.app_renewed && s.new_app_due_date) {
-      lines.push(`📱 App ${s.app_label} renovado até: ${fmtDateBR(s.new_app_due_date)}`);
+      telasLinha += `\n📱 App ${s.app_label} renovado até: ${fmtDateBR(s.new_app_due_date)}`;
     }
-  } else {
-    lines.push("Sua renovação foi registrada para:");
+  } else if (rec.screens.length > 1) {
+    vencimento = fmtDateBR(rec.screens[0].new_due_date);
+    const lines: string[] = ["", "Telas renovadas:"];
     for (const s of rec.screens) {
-      lines.push(
-        `📺 ${s.screen_name} — vencimento: ${fmtDateBR(s.new_due_date)}`,
-      );
-    }
-    if (rec.amount) {
-      lines.push("");
-      lines.push(`💰 Valor: ${rec.amount}`);
+      lines.push(`📺 ${s.screen_name} — vence ${fmtDateBR(s.new_due_date)}`);
     }
     const appRenewed = rec.screens.filter((s) => s.app_renewed && s.new_app_due_date);
     for (const s of appRenewed) {
-      lines.push(`📱 App ${s.app_label} (${s.screen_name}) renovado até: ${fmtDateBR(s.new_app_due_date)}`);
+      lines.push(`📱 App ${s.app_label} (${s.screen_name}) até ${fmtDateBR(s.new_app_due_date)}`);
     }
-    lines.push("");
-    lines.push("Obrigado pela renovação.");
+    telasLinha = lines.join("\n");
   }
-  lines.push("");
-  lines.push("Se precisar de suporte, me chama por aqui.");
-  return applyRevendaVariables(lines.join("\n"));
+
+  const settings = getRevendaSettings();
+  const template =
+    settings.mensagens?.renovacao_confirmada?.trim() ||
+    "Olá {cliente_nome}, tudo certo ✅\n\nSua renovação foi registrada.\n📅 Novo vencimento: {vencimento}{telas_linha}\n\nObrigado!";
+
+  return applyRevendaVariables(template, {
+    cliente_nome: rec.customer_name,
+    vencimento,
+    telas_linha: telasLinha,
+    telas: String(rec.screens.length),
+  });
 }
 
 export function applyRenewal(draft: RenewalDraft): RenewalRecord {

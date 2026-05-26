@@ -248,6 +248,31 @@ function ConfiguracoesRevendaPage() {
           onChange={(v) => update("regras", { inativo_apos_60: v })} />
       </Card>
 
+      {/* Mensagens automáticas */}
+      <Card className="p-4 space-y-3">
+        <div className="flex items-center gap-2 font-medium">
+          <Copy className="h-4 w-4" /> Mensagem de confirmação de renovação
+        </div>
+        <div className="text-xs text-muted-foreground">
+          Esta mensagem é gerada automaticamente para todos os clientes ao confirmar uma renovação.
+          Use os marcadores entre chaves: <code>{"{cliente_nome}"}</code>, <code>{"{vencimento}"}</code>,
+          <code>{"{telas_linha}"}</code>, <code>{"{nome_revenda}"}</code>, <code>{"{whatsapp_suporte}"}</code>.
+        </div>
+        <Textarea
+          value={settings.mensagens.renovacao_confirmada}
+          onChange={(e) => {
+            update("mensagens", { renovacao_confirmada: e.target.value });
+            setDirty(true);
+          }}
+          rows={8}
+          className="font-mono text-sm"
+          placeholder="Olá {cliente_nome}, sua renovação foi registrada..."
+        />
+        <div className="text-[11px] text-muted-foreground">
+          Dica: não inclua o valor pago — esta mensagem é enviada automaticamente ao cliente.
+        </div>
+      </Card>
+
       {/* Prévia de mensagens */}
       <Card className="p-4 space-y-3">
         <div className="font-medium">Prévia de mensagens</div>

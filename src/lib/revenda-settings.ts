@@ -53,12 +53,17 @@ export type RevendaRegras = {
   inativo_apos_60: boolean;
 };
 
+export type RevendaMensagens = {
+  renovacao_confirmada: string;
+};
+
 export type RevendaSettings = {
   dados: RevendaDados;
   atendimento: RevendaAtendimento;
   pagamento: RevendaPagamento;
   planos: RevendaPlanos;
   regras: RevendaRegras;
+  mensagens: RevendaMensagens;
   updated_at?: string;
 };
 
@@ -108,6 +113,10 @@ export const DEFAULT_REVENDA_SETTINGS: RevendaSettings = {
     separar_app_pago: true,
     recuperar_apos_30: true,
     inativo_apos_60: true,
+  },
+  mensagens: {
+    renovacao_confirmada:
+      "Olá {cliente_nome}, tudo certo ✅\n\nSua renovação foi registrada com sucesso!\n📅 Novo vencimento: {vencimento}{telas_linha}\n\nObrigado pela confiança 🙏\nQualquer dúvida, é só me chamar.",
   },
 };
 
