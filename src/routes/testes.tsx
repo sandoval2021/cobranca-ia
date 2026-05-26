@@ -936,7 +936,7 @@ function ClosedDialog({
       toast.error("Não foi possível preparar sua conta. Saia e entre novamente.");
       return;
     }
-    const e164 = toE164FromLead(lead.whatsapp);
+    const e164 = toE164FromLead(currentLead.whatsapp);
     if (!e164) {
       setBusy(false);
       toast.error("WhatsApp inválido neste teste.");
@@ -944,7 +944,7 @@ function ClosedDialog({
     }
     const payload = {
       p_company_id: companyId,
-      p_name: (lead.nome || "").trim() || "Cliente",
+      p_name: (currentLead.nome || "").trim() || "Cliente",
       p_whatsapp_e164: e164,
       p_amount_cents: valorCents,
       p_due_day: vencimento.getDate(),
@@ -965,17 +965,17 @@ function ClosedDialog({
     }
     const finalMsg = buildClosedMessage({
       vencimento,
-      app: lead.app,
-      usuario: lead.usuario,
+      app: currentLead.app,
+      usuario: currentLead.usuario,
       telas: telasNum > 0 ? telasNum : undefined,
-      servidor: lead.servidor,
+      servidor: currentLead.servidor,
     });
     const waDigits = e164.replace(/\D/g, "");
     const waHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(finalMsg)}`;
     setBusy(false);
     setDone({ msg: finalMsg, waLink: waHref });
     toast.success("Cliente convertido com sucesso.");
-    onConverted(lead);
+    onConverted(currentLead);
   }
 
   const lembrete = addDaysDate(vencimento, -3);
