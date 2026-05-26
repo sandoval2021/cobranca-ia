@@ -1854,6 +1854,53 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               </select>
             </Field>
           </div>
+          <div className="grid grid-cols-1 gap-1.5">
+            <Field label="Serviço / Valor mensal (R$)">
+              <Input
+                value={planValue}
+                onChange={(e) => setPlanValue(e.target.value)}
+                placeholder="Ex: 29,90"
+                inputMode="decimal"
+                maxLength={12}
+                className="h-8 text-xs"
+              />
+            </Field>
+          </div>
+          {isPaid && (
+            <div className="space-y-1.5 rounded-md border border-amber-300/40 bg-amber-50/60 p-1.5 dark:bg-amber-500/5">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                App pago — informe MAC, Key e vencimento do app
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <Field label="MAC">
+                  <Input
+                    value={macInput}
+                    onChange={(e) => setMacInput(e.target.value)}
+                    placeholder="00:1A:79:..."
+                    maxLength={32}
+                    className="h-8 font-mono text-xs"
+                  />
+                </Field>
+                <Field label="Key">
+                  <Input
+                    value={keyInput}
+                    onChange={(e) => setKeyInput(e.target.value)}
+                    placeholder="App key"
+                    maxLength={64}
+                    className="h-8 font-mono text-xs"
+                  />
+                </Field>
+              </div>
+              <Field label="Vencimento do app">
+                <Input
+                  type="date"
+                  value={appDueDate}
+                  onChange={(e) => setAppDueDate(e.target.value)}
+                  className="h-8 text-xs"
+                />
+              </Field>
+            </div>
+          )}
           <div className="flex gap-1.5 pt-1">
             <Button
               type="button"
