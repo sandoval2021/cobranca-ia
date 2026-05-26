@@ -414,6 +414,38 @@ export function QuickRenewDialog({
                 </div>
               </div>
 
+              {/* Período de renovação (chips) */}
+              <div className="px-3 pt-3 space-y-1.5">
+                <Label className="text-[11px] font-semibold">Período de renovação</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {MONTH_OPTIONS.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMonths(m)}
+                      className={cn(
+                        "h-9 min-w-[64px] rounded-md border px-3 text-xs font-semibold transition-colors",
+                        months === m
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background hover:bg-muted",
+                      )}
+                    >
+                      {m} {m === 1 ? "mês" : "meses"}
+                    </button>
+                  ))}
+                  <div className="flex items-center gap-1.5 rounded-md border px-2 h-9">
+                    <span className="text-[10px] text-muted-foreground">Personalizado</span>
+                    <Input
+                      value={String(months)}
+                      onChange={(e) => setMonths(Math.max(1, Math.min(36, Number(e.target.value) || 1)))}
+                      inputMode="numeric"
+                      className="h-6 w-12 text-xs text-center px-1"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Cada mês equivale a 30 dias corridos.</p>
+              </div>
+
               {/* Linhas financeiras editáveis */}
               <div className="px-3 py-3 space-y-2 text-sm">
                 <FinanceEditRow
