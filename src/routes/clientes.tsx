@@ -576,9 +576,16 @@ function ClientesPage() {
         )}
       </div>
 
-      {/* Filtros */}
+      {/* Filtros (única barra de rolagem) */}
       <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         <FilterPill active={filter === "todos"} onClick={() => setFilter("todos")} label="Todos" count={counts.todos} />
+        <FilterPill
+          active={filter === "disparo_hoje"}
+          onClick={() => setFilter("disparo_hoje")}
+          label="Disparo hoje"
+          count={dispatchQueue.length}
+          dim={dispatchQueue.length === 0}
+        />
         <FilterPill active={filter === "hoje"} onClick={() => setFilter("hoje")} label="Vencem hoje" count={counts.hoje} />
         <FilterPill active={filter === "7d"} onClick={() => setFilter("7d")} label="Próx. 7 dias" count={counts.d7} />
         <FilterPill active={filter === "vencidos"} onClick={() => setFilter("vencidos")} label="Vencidos" count={counts.vencidos} />
@@ -591,10 +598,10 @@ function ClientesPage() {
         <FilterPill active={filter === "app_ibo"} onClick={() => setFilter("app_ibo")} label="IBO" count={counts.app_ibo} dim={counts.app_ibo === 0} />
         <FilterPill active={filter === "acc_mac_key"} onClick={() => setFilter("acc_mac_key")} label="MAC/Key" count={counts.acc_mac_key} dim={counts.acc_mac_key === 0} />
         <FilterPill active={filter === "acc_user_pass"} onClick={() => setFilter("acc_user_pass")} label="Usuário/Senha" count={counts.acc_user_pass} dim={counts.acc_user_pass === 0} />
-      </div>
 
-      {/* Filtros por servidor */}
-      <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {/* Separador visual entre filtros gerais e servidores */}
+        <div className="mx-1 shrink-0 self-center h-6 w-px bg-border" aria-hidden />
+
         <FilterPill
           active={serverFilter === "__all__"}
           onClick={() => setServerFilter("__all__")}
