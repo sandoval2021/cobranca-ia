@@ -80,7 +80,7 @@ export function QuickRenewDialog({
   const [method, setMethod] = useState<PaymentMethod>("pix");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<null | { msg: string }>(null);
+  const [done, setDone] = useState<null | { msg: string; newDue: string; sent: boolean }>(null);
 
   useEffect(() => {
     if (!open) return;
