@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
+import { HelpTip } from "@/components/ui-premium/HelpTip";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
