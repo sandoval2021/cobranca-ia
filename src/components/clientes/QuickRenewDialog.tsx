@@ -645,3 +645,24 @@ export function QuickRenewDialog({
     </Dialog>
   );
 }
+
+function FinanceRow({
+  label, op, value, strong, muted,
+}: { label: string; op: string; value: string; strong?: boolean; muted?: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className={cn("flex-1 text-[11px] tracking-wide", muted ? "text-muted-foreground" : "text-foreground/80", strong && "font-semibold text-foreground")}>
+        {label}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border bg-muted text-xs font-semibold">{op}</span>
+        <div className={cn(
+          "inline-flex h-7 min-w-[110px] items-center justify-end rounded-md border px-2 text-xs tabular-nums",
+          strong ? "bg-primary/10 text-primary font-bold border-primary/40" : "bg-background"
+        )}>
+          {value}
+        </div>
+      </div>
+    </div>
+  );
+}
