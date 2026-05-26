@@ -1783,9 +1783,49 @@ function NewCustomerSheet({
               <div className="space-y-1 col-span-2">
                 <div className="flex items-center gap-1">
                   <Label className="text-xs">WhatsApp *</Label>
-                  <HelpTip text="Inclua o DDD." />
+                  <HelpTip text="Escolha o país e informe o número do cliente. Para Brasil, use DDD + número." />
                 </div>
-                <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="(11) 99999-9999" inputMode="tel" maxLength={20} required />
+                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-2">
+                  <Select value={countryCode} onValueChange={setCountryCode}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {COUNTRY_LIST.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.label}{c.dial ? ` (+${c.dial})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex gap-1">
+                    {countryCode === "OTHER" && (
+                      <Input
+                        value={customDdi}
+                        onChange={(e) => setCustomDdi(onlyDigits(e.target.value).slice(0, 4))}
+                        placeholder="DDI"
+                        inputMode="numeric"
+                        className="w-16"
+                        maxLength={4}
+                        required
+                      />
+                    )}
+                    <Input
+                      value={whatsapp}
+                      onChange={(e) => {
+                        const c = findCountry(countryCode);
+                        const max = c.code === "OTHER" ? 14 : c.localMax;
+                        setWhatsapp(onlyDigits(e.target.value).slice(0, max));
+                      }}
+                      placeholder={
+                        countryCode === "BR"
+                          ? "DDD + número (ex: 82988936713)"
+                          : findCountry(countryCode).example || "Somente números"
+                      }
+                      inputMode="numeric"
+                      required
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </section>
