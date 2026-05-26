@@ -641,6 +641,10 @@ function ClientesPage() {
         ))}
       </div>
 
+      <AutoDispatchTodayPanel items={items} allScreens={allScreens} defaultOpen={false} />
+
+
+
 
       {/* Estados */}
       {!isAuthenticated && !authLoading && (
