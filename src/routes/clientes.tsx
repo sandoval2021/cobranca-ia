@@ -691,6 +691,8 @@ function ClientesPage() {
               key={c.id}
               customer={c}
               screens={allScreens[c.id] ?? []}
+              dispatchInfo={dispatchQueueById.get(c.id)}
+              onDispatchChanged={() => setDispatchTick((t) => t + 1)}
               onOpen={() => { setOpenMode("edit"); setOpenId(c.id); }}
               onRenew={() => setRenewId(c.id)}
               onApps={() => setAppsId(c.id)}
