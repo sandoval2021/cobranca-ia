@@ -138,6 +138,42 @@ export function updateReferralByLead(leadId: string, patch: Partial<Referral>) {
   if (changed) write(STORAGE_KEY, list);
 }
 
+/**
+ * Lista (mais antigos primeiro) os referrals de um indicador que já fecharam e
+ * ainda não foram contabilizados como bonificação aplicada.
+ */
+export function listClosedUnappliedForIndicator(indicatorKey: string): Referral[] {
+  return listReferrals()
+    .filter((r) => {
+      const key = r.indicador_cliente_id || r.indicador_whatsapp || r.indicador_nome;
+      return key === indicatorKey && r.status === "Fechou";
+    })
+    .sort((a, b) => (a.data_fechamento || a.data_indicacao).localeCompare(b.data_fechamento || b.data_indicacao));
+}
+
+/**
+ * Aplica a bonificação ao bater a meta: marca as `meta` indicações fechadas
+ * mais antigas como "Bonificação aplicada", zerando efetivamente o contador
+ * (que é cíclico em `summarizeByIndicador`). Retorna quantas foram marcadas.
+ */
+export function applyBonusForIndicator(indicatorKey: string, meta: number): number {
+  const list = listAllReferralsRaw();
+  // resolve no escopo da empresa: pega só fechadas elegíveis no escopo
+  const elegiveis = listClosedUnappliedForIndicator(indicatorKey).slice(0, Math.max(1, meta));
+  if (elegiveis.length < meta) return 0;
+  const ids = new Set(elegiveis.map((r) => r.id));
+  const now = new Date().toISOString();
+  let changed = 0;
+  for (let i = 0; i < list.length; i++) {
+    if (ids.has(list[i].id)) {
+      list[i] = { ...list[i], status: "Bonificação aplicada", bonificacao_aplicada_em: now };
+      changed++;
+    }
+  }
+  if (changed) write(STORAGE_KEY, list);
+  return changed;
+}
+
 export function getReferralRules(): ReferralRules {
   return read<ReferralRules>(RULES_KEY, DEFAULT_RULES);
 }

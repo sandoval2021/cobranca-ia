@@ -34,6 +34,7 @@ import { Route as CobrancasRouteImport } from './routes/cobrancas'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servidores'
 import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
+import { Route as CadastrosServicosRouteImport } from './routes/cadastros-servicos'
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -167,6 +168,11 @@ const CampanhasManuaisRoute = CampanhasManuaisRouteImport.update({
   path: '/campanhas-manuais',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CadastrosServicosRoute = CadastrosServicosRouteImport.update({
+  id: '/cadastros-servicos',
+  path: '/cadastros-servicos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BaseConhecimentoRoute = BaseConhecimentoRouteImport.update({
   id: '/base-conhecimento',
   path: '/base-conhecimento',
@@ -211,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
+  '/cadastros-servicos': typeof CadastrosServicosRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
@@ -245,6 +252,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
+  '/cadastros-servicos': typeof CadastrosServicosRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
+  '/cadastros-servicos': typeof CadastrosServicosRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
@@ -316,6 +325,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/backup-geral'
     | '/base-conhecimento'
+    | '/cadastros-servicos'
     | '/campanhas-manuais'
     | '/catalogo-servidores'
     | '/clientes'
@@ -350,6 +360,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/backup-geral'
     | '/base-conhecimento'
+    | '/cadastros-servicos'
     | '/campanhas-manuais'
     | '/catalogo-servidores'
     | '/clientes'
@@ -384,6 +395,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/backup-geral'
     | '/base-conhecimento'
+    | '/cadastros-servicos'
     | '/campanhas-manuais'
     | '/catalogo-servidores'
     | '/clientes'
@@ -419,6 +431,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BackupGeralRoute: typeof BackupGeralRoute
   BaseConhecimentoRoute: typeof BaseConhecimentoRoute
+  CadastrosServicosRoute: typeof CadastrosServicosRoute
   CampanhasManuaisRoute: typeof CampanhasManuaisRoute
   CatalogoServidoresRoute: typeof CatalogoServidoresRoute
   ClientesRoute: typeof ClientesRoute
@@ -623,6 +636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CampanhasManuaisRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cadastros-servicos': {
+      id: '/cadastros-servicos'
+      path: '/cadastros-servicos'
+      fullPath: '/cadastros-servicos'
+      preLoaderRoute: typeof CadastrosServicosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/base-conhecimento': {
       id: '/base-conhecimento'
       path: '/base-conhecimento'
@@ -683,6 +703,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BackupGeralRoute: BackupGeralRoute,
   BaseConhecimentoRoute: BaseConhecimentoRoute,
+  CadastrosServicosRoute: CadastrosServicosRoute,
   CampanhasManuaisRoute: CampanhasManuaisRoute,
   CatalogoServidoresRoute: CatalogoServidoresRoute,
   ClientesRoute: ClientesRoute,
@@ -712,13 +733,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
