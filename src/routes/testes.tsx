@@ -697,7 +697,7 @@ function NewTrialSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-4">
+      <SheetContent side="right">
         <SheetHeader className="pb-2">
           <SheetTitle className="text-base">{editing ? "Editar teste" : "Novo teste"}</SheetTitle>
           <SheetDescription className="text-xs">Apenas a data em que o teste foi pedido é necessária. Nada é enviado automaticamente.</SheetDescription>
