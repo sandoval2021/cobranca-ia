@@ -28,6 +28,7 @@ import {
   Trash2,
   Settings2,
   Send,
+  ChevronRight,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -879,145 +880,129 @@ function ClientCard({
               ? "border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/15"
               : "border-border bg-card";
 
+  // Próxima data de vencimento (ISO) — override tem prioridade; senão calcula a partir de due_day
+  const nextDueIso = (() => {
+    if (override) return override;
+    if (customer.due_day != null) {
+      const today = new Date();
+      const dd = Math.min(customer.due_day, 28);
+      const next = new Date(today.getFullYear(), today.getMonth(), dd);
+      if (next < today) next.setMonth(next.getMonth() + 1);
+      const p = (n: number) => String(n).padStart(2, "0");
+      return `${next.getFullYear()}-${p(next.getMonth() + 1)}-${p(next.getDate())}`;
+    }
+    return null;
+  })();
+
+  const primaryScreen = activeScreens[0];
+  const primaryApp = primaryScreen ? APP_CATALOG[primaryScreen.app] : null;
+  const shortCode = customer.id.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase();
+  const phoneDigits = onlyDigits(customer.whatsapp ?? "");
+  const codCliente = phoneDigits ? phoneDigits.slice(-10) : shortCode;
+
+  const Row = ({ label, value, valueClass }: { label: string; value: React.ReactNode; valueClass?: string }) => (
+    <div className="flex items-start justify-between gap-3 py-1 border-b border-foreground/5 last:border-b-0">
+      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
+      <span className={cn("text-xs text-right break-words min-w-0", valueClass)}>{value}</span>
+    </div>
+  );
+
   return (
     <div className={cn("rounded-xl border border-l-4 p-3 shadow-card", tint)}>
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-info-soft text-info text-sm font-semibold">
-          {initial}
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-info-soft text-info text-xs font-semibold">
+            {initial}
+          </div>
+          <p className="text-sm font-semibold truncate">{customer.name}</p>
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-sm font-semibold">{customer.name}</p>
-            <span
-              className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                statusClass(customer.status),
-              )}
-            >
-              {statusLabel(customer.status)}
-            </span>
-            {needsUpdate && (
-              <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
-                Atualizar servidor
-              </span>
-            )}
-            {(() => {
-              const alertsSet = new Set<string>();
-              for (const s of screens) {
-                if (s.status === "arquivada") continue;
-                for (const a of paidAppAlerts(s)) alertsSet.add(a);
-              }
-              return Array.from(alertsSet).slice(0, 4).map((a) => (
-                <span key={a} className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium", paidAlertClass(a as any))}>
-                  {PAID_ALERT_LABEL[a as keyof typeof PAID_ALERT_LABEL]}
-                </span>
-              ));
-            })()}
-          </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {phone ?? "Sem contato cadastrado"}
-          </p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-            <span>
-              {customer.amount_cents != null
-                ? <strong className="font-semibold text-foreground">{fmtBRL(customer.amount_cents)}</strong>
-                : "Sem valor"}{" "}
-              / mês
-            </span>
-            {(() => {
-              if (override) {
-                return (
-                  <span className="font-medium text-foreground">
-                    Vence {fmtDateBRFromISO(override)}
-                  </span>
-                );
-              }
-              if (customer.due_day != null) {
-                const today = new Date();
-                const dd = Math.min(customer.due_day, 28);
-                const next = new Date(today.getFullYear(), today.getMonth(), dd);
-                if (next < today) next.setMonth(next.getMonth() + 1);
-                const p = (n: number) => String(n).padStart(2, "0");
-                const iso = `${next.getFullYear()}-${p(next.getMonth() + 1)}-${p(next.getDate())}`;
-                return (
-                  <span className="font-medium text-foreground">
-                    Vence {fmtDateBRFromISO(iso)}
-                  </span>
-                );
-              }
-              return null;
-            })()}
-            {days != null && (
-              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>
-                {urgencyLabel(urg, days)}
-              </span>
-            )}
-          </div>
-          {activeScreens.length > 0 && (
-            <div className="mt-2 space-y-1">
-              {activeScreens.map((s) => {
-                const app = APP_CATALOG[s.app];
-                const sids = s.server_ids ?? [];
-                return (
-                  <div key={s.id} className="space-y-0.5">
-                    <div className="flex flex-wrap items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onOpen(); }}
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-medium transition-opacity hover:opacity-80",
-                          app.badgeClass,
-                        )}
-                        title={`${s.name} · ${app.label}`}
-                      >
-                        {s.name} · {app.label}
-                      </button>
-                      {sids.length > 0
-                        ? sids.map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)
-                        : <SemServidorBadge />}
-                    </div>
-                    {sids.length > 0 && (
-                      <div className="text-[10px] text-muted-foreground pl-1">
-                        {sids.map((sid) => {
-                          const r = getPrimaryRouteForServer(sid);
-                          const srv = getServerById(sid);
-                          return (
-                            <div key={sid} className="truncate">
-                              {srv?.name ?? "Servidor"}:{" "}
-                              {r?.host ? (
-                                <span className="font-mono text-foreground/80">{r.host}</span>
-                              ) : (
-                                <span>Servidor sem rota</span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {screens.length > activeScreens.length && (
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  +{screens.length - activeScreens.length}
-                </span>
-              )}
-            </div>
-          )}
-          {activeScreens.length === 0 && (
-            <div className="mt-2">
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label="Abrir detalhes"
+          className="shrink-0 text-muted-foreground hover:text-foreground"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="divide-y divide-foreground/5">
+        <Row label="Código" value={<span className="font-mono">{shortCode}</span>} />
+        <Row label="Cód. Cliente" value={<span className="font-mono">{codCliente}</span>} />
+        <Row label="Cliente" value={<span className="font-medium text-foreground">{customer.name}</span>} />
+        <Row label="WhatsApp" value={phone ?? <span className="text-muted-foreground">—</span>} valueClass="font-mono" />
+        <Row
+          label="Serviço"
+          value={
+            primaryScreen && primaryApp ? (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium", primaryApp.badgeClass)}
+                title={`${primaryScreen.name} · ${primaryApp.label}`}
+              >
+                {primaryScreen.name} · {primaryApp.label}
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={onApps}
                 className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-950/40 dark:text-blue-300"
-                title="Adicionar / gerenciar aplicativos"
               >
                 <Tv className="h-3 w-3" /> + Aplicativo
               </button>
-            </div>
-          )}
-        </div>
+            )
+          }
+        />
+        <Row
+          label="Valor"
+          value={
+            customer.amount_cents != null ? (
+              <strong className="font-semibold text-foreground">{fmtBRL(customer.amount_cents)}</strong>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )
+          }
+        />
+        <Row
+          label="Data Expiração"
+          value={nextDueIso ? <span className="font-medium text-foreground">{fmtDateBRFromISO(nextDueIso)}</span> : <span className="text-muted-foreground">—</span>}
+        />
+        <Row
+          label="Situação"
+          value={
+            <span className="inline-flex flex-wrap justify-end gap-1">
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", statusClass(customer.status))}>
+                {statusLabel(customer.status)}
+              </span>
+              {days != null && (
+                <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>
+                  {urgencyLabel(urg, days)}
+                </span>
+              )}
+              {needsUpdate && (
+                <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
+                  Atualizar servidor
+                </span>
+              )}
+            </span>
+          }
+        />
+        {primaryScreen && (primaryScreen.server_ids ?? []).length > 0 && (
+          <Row
+            label="Servidor"
+            value={
+              <span className="inline-flex flex-wrap justify-end gap-1">
+                {(primaryScreen.server_ids ?? []).map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)}
+              </span>
+            }
+          />
+        )}
+        {screens.length > activeScreens.length && (
+          <Row label="Mais telas" value={<span className="text-muted-foreground">+{screens.length - activeScreens.length}</span>} />
+        )}
       </div>
+
 
 
       {dispatchInfo && (
