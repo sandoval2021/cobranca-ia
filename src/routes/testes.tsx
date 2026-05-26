@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus, Search, Copy, Check, X, Archive, MessageCircle, ExternalLink,
-  Download, Upload, UserPlus, Pencil, Info, Eye, EyeOff,
+  Download, Upload, Pencil, Info, Eye, EyeOff,
 } from "lucide-react";
 import { listActiveServers } from "@/lib/server-catalog";
 
@@ -84,7 +84,7 @@ function TestesPage() {
   const [filter, setFilter] = useState<Filter>("Todos");
   const [query, setQuery] = useState("");
   const [msgLead, setMsgLead] = useState<TrialLead | null>(null);
-  const [convertLead, setConvertLead] = useState<TrialLead | null>(null);
+  
   const [closedLead, setClosedLead] = useState<TrialLead | null>(null);
   const { guard, dialog: securityDialog } = useSecurityGuard();
 
@@ -439,9 +439,6 @@ function TestesPage() {
                 <Button size="sm" variant="outline" onClick={() => handleLost(l)} className="gap-1">
                   <X className="h-3.5 w-3.5" /> Não fechou
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setConvertLead(l)} className="gap-1">
-                  <UserPlus className="h-3.5 w-3.5" /> Converter
-                </Button>
                 {(l.status === "Fechou" || l.status === "Convertido em cliente") && (
                   <Button size="sm" variant="outline" onClick={() => {
                     import("@/lib/financeiro-local").then(({ openFinanceWithDraft }) => {
@@ -530,12 +527,6 @@ function TestesPage() {
         }}
       />
 
-      <ConvertDialog lead={convertLead} onClose={() => setConvertLead(null)} onConfirmConverted={(l) => {
-        updateTrialLead(l.id, { status: "Convertido em cliente" });
-        updateReferralByLead(l.id, { status: "Fechou", data_fechamento: new Date().toISOString() });
-        reload();
-        setConvertLead(null);
-      }} />
       {securityDialog}
     </PageContainer>
 
@@ -937,47 +928,6 @@ function MessagesDialog({ lead, onClose }: { lead: TrialLead | null; onClose: ()
   );
 }
 
-function ConvertDialog({
-  lead, onClose, onConfirmConverted,
-}: {
-  lead: TrialLead | null;
-  onClose: () => void;
-  onConfirmConverted: (l: TrialLead) => void;
-}) {
-  if (!lead) return null;
-  const payload = [
-    `Nome: ${lead.nome || ""}`,
-    `WhatsApp: ${lead.whatsapp}`,
-    `Origem: ${lead.origem}`,
-    lead.indicado_por_nome ? `Indicado por: ${lead.indicado_por_nome}` : "",
-    lead.observacao ? `Observação: ${lead.observacao}` : "",
-  ].filter(Boolean).join("\n");
-  return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Converter em cliente</DialogTitle>
-          <DialogDescription>
-            Copie os dados e abra Clientes para concluir o cadastro. Nada é alterado automaticamente.
-          </DialogDescription>
-        </DialogHeader>
-        <pre className="whitespace-pre-wrap rounded-md border border-border bg-surface-muted p-3 text-sm">
-          {payload}
-        </pre>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={async () => {
-            await navigator.clipboard.writeText(payload);
-            toast.success("Dados copiados");
-          }}>Copiar dados para cadastro</Button>
-          <Button asChild variant="outline">
-            <Link to="/clientes">Abrir Clientes</Link>
-          </Button>
-          <Button onClick={() => onConfirmConverted(lead)}>Marcar como convertido</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // --- ClosedDialog: converts trial lead into active customer ---
 function toE164FromLead(raw: string): string {
@@ -1131,7 +1081,7 @@ function ClosedDialog({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Cliente fechou?</DialogTitle>
           <DialogDescription>
