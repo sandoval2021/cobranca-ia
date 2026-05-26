@@ -43,6 +43,11 @@ export type TrialLead = {
   data_fim?: string;
   app?: string;
   servidor?: string;
+  servidor_adicional?: string;
+  usuario?: string;
+  senha?: string;
+  valor_cents?: number;
+  horas_teste?: number;
   observacao?: string;
   indicado_por_cliente_id?: string;
   indicado_por_nome?: string;
@@ -184,6 +189,11 @@ export function saveTrialLead(
     data_fim: input.data_fim,
     app: input.app,
     servidor: input.servidor,
+    servidor_adicional: input.servidor_adicional,
+    usuario: input.usuario,
+    senha: input.senha,
+    valor_cents: input.valor_cents,
+    horas_teste: input.horas_teste,
     observacao: input.observacao,
     indicado_por_cliente_id: input.indicado_por_cliente_id,
     indicado_por_nome: input.indicado_por_nome,
