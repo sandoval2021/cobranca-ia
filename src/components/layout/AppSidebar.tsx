@@ -53,7 +53,7 @@ const GROUPS: Group[] = [
     id: "cadastros",
     label: "Cadastros",
     icon: Users,
-    routes: ["/clientes", "/mensagens", "/importar-clientes"],
+    routes: ["/clientes", "/gestao-servicos", "/catalogo-servidores", "/testes", "/mensagens", "/importar-clientes"],
   },
   { id: "ia", label: "IA", icon: Bot, routes: ["/ia", "/base-conhecimento"] },
   {
@@ -61,12 +61,6 @@ const GROUPS: Group[] = [
     label: "Relatórios",
     icon: BarChart3,
     routes: ["/relatorio", "/financeiro", "/indicacoes"],
-  },
-  {
-    id: "infra",
-    label: "Streaming / Infra",
-    icon: Server,
-    routes: ["/catalogo-servidores", "/testes"],
   },
   {
     id: "config",
