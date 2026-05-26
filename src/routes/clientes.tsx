@@ -1690,49 +1690,59 @@ function NewCustomerSheet({
       return;
     }
 
+    // Campos sensíveis: NÃO persistir (sem armazenamento seguro disponível).
+    const hasSensitive = !!(usuario.trim() || senha.trim() || mac.trim() || appKey.trim());
+    const hasBirthday = !!birthday.trim();
+    const hasTelasExtra = telasNum > 1;
+
     try {
       const row = Array.isArray(data) ? (data[0] as Row | undefined) : (data as Row | null);
       const newCustomerId = row
         ? (typeof row.id === "string" ? row.id : typeof row.customer_id === "string" ? row.customer_id : null)
         : null;
-      const hasService =
+      // Apenas dados NÃO sensíveis: servidores, app e vencimentos.
+      const hasNonSensitiveService =
         serverId !== "__none__" || serverIdExtra !== "__none__" ||
-        usuario.trim() || senha.trim() || mac.trim() || appKey.trim() ||
         app !== "__none__" || appDue.iso || due.iso;
-      if (newCustomerId && hasService) {
+      if (newCustomerId && hasNonSensitiveService) {
         const serverIds: string[] = [];
         if (serverId !== "__none__") serverIds.push(serverId);
         if (serverIdExtra !== "__none__" && serverIdExtra !== serverId) serverIds.push(serverIdExtra);
         const appKeyValue: AppKey = app === "__none__" ? "outro" : app;
         const access = APP_CATALOG[appKeyValue]?.access ?? "nao_informado";
         const now = new Date().toISOString();
-        for (let i = 0; i < telasNum; i++) {
-          upsertScreen({
-            id: newId(),
-            customer_id: newCustomerId,
-            company_id: companyId,
-            name: telasNum > 1 ? `Tela ${i + 1}` : "Tela 1",
-            app: appKeyValue,
-            access_type: access,
-            username: usuario.trim() || undefined,
-            password: senha.trim() || undefined,
-            mac: mac.trim() || undefined,
-            app_key: appKey.trim() || undefined,
-            status: "ativa",
-            server_ids: serverIds.length ? serverIds : undefined,
-            primary_server_id: serverIds[0],
-            due_date: due.iso ?? undefined,
-            app_due_date: appDue.iso ?? undefined,
-            created_at: now,
-            updated_at: now,
-          });
-        }
+        upsertScreen({
+          id: newId(),
+          customer_id: newCustomerId,
+          company_id: companyId,
+          name: "Tela 1",
+          app: appKeyValue,
+          access_type: access,
+          status: "ativa",
+          server_ids: serverIds.length ? serverIds : undefined,
+          primary_server_id: serverIds[0],
+          due_date: due.iso ?? undefined,
+          app_due_date: appDue.iso ?? undefined,
+          created_at: now,
+          updated_at: now,
+          // Credenciais (usuário/senha/MAC/Key) intencionalmente omitidas — sem armazenamento seguro.
+        });
         try { window.dispatchEvent(new Event("app-screens:changed")); } catch { /* ignore */ }
       }
     } catch { /* ignore */ }
 
     setBusy(false);
-    toast.success("Cliente cadastrado com sucesso.");
+    if (hasSensitive) {
+      toast.success("Cliente cadastrado. Dados sensíveis (usuário, senha, MAC, Key) não foram salvos porque a proteção ainda não está ativada.");
+    } else {
+      toast.success("Cliente cadastrado com sucesso.");
+    }
+    if (hasBirthday) {
+      toast.message("Aniversário depende de atualização no backend para ser salvo.");
+    }
+    if (hasTelasExtra) {
+      toast.message("Quantidade de telas depende de persistência no backend.");
+    }
     onCreated();
     onClose();
   };
