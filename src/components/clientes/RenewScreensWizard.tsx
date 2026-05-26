@@ -65,14 +65,17 @@ export function RenewScreensWizard({
   onClose,
   customerId,
   customerName,
+  customerWhatsapp,
   initialScreenId,
 }: {
   open: boolean;
   onClose: () => void;
   customerId: string;
   customerName: string;
+  customerWhatsapp?: string | null;
   initialScreenId?: string | null;
 }) {
+
   const [screens, setScreens] = useState<AppScreen[]>([]);
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
