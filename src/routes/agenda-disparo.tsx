@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
+import { HelpTip } from "@/components/ui-premium/HelpTip";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,8 +119,10 @@ function AgendaDisparoPage() {
     <PageContainer>
       <SectionHeader
         title="Agenda de disparo automático"
-        subtitle="Configure quando e com que ritmo as mensagens automáticas são enviadas. Você pode definir horários diferentes por valor de serviço."
+        subtitle="Configure quando e como as mensagens automáticas são enviadas."
+        hint="Aqui você define horário de início, intervalo entre mensagens, lotes com pausa, dias permitidos e horário individual por serviço. Tudo é salvo automaticamente neste aparelho e usado já na próxima rodada de disparos."
       />
+
 
       <Card className="p-4 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -175,17 +178,18 @@ function AgendaDisparoPage() {
             />
           </div>
           <div className="space-y-1 sm:col-span-2">
-            <Label className="text-xs">Pausa entre lotes (segundos)</Label>
+            <div className="flex items-center gap-1">
+              <Label className="text-xs">Pausa entre lotes (segundos)</Label>
+              <HelpTip text="Após enviar o nº de mensagens do lote, o sistema espera esses segundos antes do próximo lote. Ex.: 5 mensagens com 30s entre elas e depois pausa de 300s (5 min)." />
+            </div>
             <Input
               type="number" min={0} max={3600}
               value={cfg.batchPauseSeconds}
               onChange={(e) => update({ batchPauseSeconds: Math.max(0, Number(e.target.value) || 0) })}
               className="h-9"
             />
-            <p className="text-[11px] text-muted-foreground">
-              Ex.: 5 mensagens com 30s entre elas e depois pausa de 300s (5 min).
-            </p>
           </div>
+
         </div>
 
         <div className="space-y-2">
@@ -221,24 +225,29 @@ function AgendaDisparoPage() {
       </Card>
 
       <Card className="mt-4 p-4 space-y-4">
-        <div className="space-y-1">
+        <div className="flex items-start justify-between gap-2">
           <h3 className="text-sm font-semibold">Horário de envio por serviço</h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Aqui aparecem todos os serviços cadastrados (em <strong>Cadastros</strong>). Para cada
-            serviço você pode escolher um horário próprio de envio — por exemplo, o plano de R$ 12
-            sai às 09:00 e o de R$ 30 sai às 12:00. Quando deixar como{" "}
-            <strong>Padrão</strong>, o serviço usa o horário padrão definido acima.
-          </p>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            A ordem de envio segue sempre a mesma regra do painel: primeiro os que estão{" "}
-            <strong>perto de vencer</strong>, depois os que vencem <strong>hoje</strong> e por
-            último os <strong>vencidos</strong> (quanto mais antigo o vencimento, mais ao fim da
-            fila).
-          </p>
+          <HelpTip>
+            <p>
+              Aqui aparecem todos os serviços cadastrados (em <strong>Cadastros</strong>). Você
+              pode dar um horário próprio a cada um — ex.: plano de R$ 12 às 09:00 e plano de R$ 30
+              às 12:00. Quando estiver como <strong>Padrão</strong>, o serviço usa o horário
+              padrão definido acima.
+            </p>
+            <p>
+              A ordem de envio segue: <strong>perto de vencer</strong> primeiro, depois{" "}
+              <strong>hoje</strong> e por último os <strong>vencidos</strong> (quanto mais antigo,
+              mais ao fim da fila).
+            </p>
+          </HelpTip>
         </div>
 
+
         <div className="rounded-md border bg-muted/20 p-3 space-y-2">
-          <Label className="text-xs font-semibold">Aplicar o mesmo horário a todos os serviços</Label>
+          <div className="flex items-center gap-1">
+            <Label className="text-xs font-semibold">Aplicar o mesmo horário a todos os serviços</Label>
+            <HelpTip text="Define o mesmo horário para todos os serviços de uma vez. A ordem da fila (próximos do vencimento primeiro) continua valendo." />
+          </div>
           <div className="flex flex-wrap items-end gap-2">
             <Input
               type="time"
@@ -253,11 +262,8 @@ function AgendaDisparoPage() {
               <RotateCcw className="h-3.5 w-3.5" /> Voltar ao padrão
             </Button>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-snug">
-            Use quando quiser que <strong>todos os serviços</strong> sejam disparados no mesmo
-            horário, mantendo a regra de fila (próximos do vencimento primeiro).
-          </p>
         </div>
+
 
         {services.length === 0 ? (
           <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground leading-relaxed">
@@ -316,14 +322,6 @@ function AgendaDisparoPage() {
           </div>
         )}
       </Card>
-
-      <p className="mt-4 mb-2 text-[11px] text-muted-foreground inline-flex items-start gap-1 leading-snug">
-        <Save className="h-3 w-3 mt-0.5 shrink-0" />
-        <span>
-          Tudo é salvo automaticamente neste aparelho. Você pode alterar quantas vezes quiser — a
-          próxima rodada de disparos já usa as novas configurações.
-        </span>
-      </p>
     </PageContainer>
   );
 }
