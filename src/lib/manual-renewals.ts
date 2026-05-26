@@ -8,7 +8,7 @@ import {
   upsertScreen,
 } from "@/lib/app-screens";
 import { getServerById } from "@/lib/server-catalog";
-import { applyRevendaVariables } from "@/lib/revenda-settings";
+import { applyRevendaVariables, getRevendaSettings } from "@/lib/revenda-settings";
 
 export type PaymentMethod = "pix" | "dinheiro" | "cartao" | "outro";
 
