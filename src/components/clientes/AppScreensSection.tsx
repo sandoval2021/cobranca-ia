@@ -78,10 +78,13 @@ function todayStamp(): string {
 export function AppScreensSection({
   customerId,
   customerName = "Cliente",
+  customerWhatsapp = null,
 }: {
   customerId: string;
   customerName?: string;
+  customerWhatsapp?: string | null;
 }) {
+
   const [screens, setScreens] = useState<AppScreen[]>([]);
   const [editing, setEditing] = useState<AppScreen | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
