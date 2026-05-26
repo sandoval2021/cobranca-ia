@@ -474,7 +474,7 @@ function ClientesPage() {
       } else if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
         if (kind !== filter) return false;
       } else if (filter === "hoje" || filter === "7d" || filter === "vencidos") {
-        const d = nextDueDays(c.due_day, screens);
+        const d = customerDueDays(c, screens);
         if (d == null) return false;
         if (filter === "hoje" && d !== 0) return false;
         if (filter === "7d" && (d < 0 || d > 7)) return false;
