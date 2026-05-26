@@ -10,7 +10,7 @@ import {
   Users,
   Bot,
   BarChart3,
-  Server,
+  
   Settings2,
   MoreHorizontal,
 } from "lucide-react";
