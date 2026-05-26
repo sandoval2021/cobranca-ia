@@ -274,8 +274,11 @@ function ImportarClientesPage() {
       toast.error("Importação disponível apenas em ambiente de testes.");
       return;
     }
-    if (!companyId) {
-      toast.error("Selecione uma empresa.");
+    const effCompany =
+      companyId ??
+      (companyState.status === "ready" ? companyState.companyId : null);
+    if (!effCompany) {
+      toast.error("Empresa não encontrada para sua conta. Entre novamente.");
       return;
     }
     const validas = (rows ?? []).filter((r) => r.status === "valid");
