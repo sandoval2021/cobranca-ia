@@ -32,9 +32,6 @@ const DAYS = [
   { k: "sab", label: "Sáb" },
 ] as const;
 
-function fmtBRL(cents: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
-}
 
 function AgendaDisparoPage() {
   const [cfg, setCfg] = useState<AutoDispatchConfig>(() => getAutoDispatchConfig());
