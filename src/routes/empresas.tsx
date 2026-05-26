@@ -69,13 +69,7 @@ const STATUS_LABEL: Record<CompanyStatus, string> = {
   cancelada: "Cancelada",
 };
 
-const STATUS_TONE: Record<CompanyStatus, string> = {
-  teste: "bg-blue-100 text-blue-800",
-  ativa: "bg-emerald-100 text-emerald-800",
-  vencida: "bg-amber-100 text-amber-800",
-  suspensa: "bg-orange-100 text-orange-800",
-  cancelada: "bg-zinc-200 text-zinc-700",
-};
+// STATUS_TONE removido — UI agora usa apenas "Base ativa" / "Base de teste local".
 
 function useCompaniesData() {
   const [, setTick] = useState(0);
@@ -186,37 +180,32 @@ function EmpresasContent() {
   return (
     <PageContainer>
       <SectionHeader
-        title="Empresas"
-        subtitle="Gerencie donos, empresas, planos e acesso aos painéis vendidos."
-        hint="Apenas Super Admin. Modo local."
+        title="Minha base"
+        subtitle="Gerencie sua base de clientes e configurações de acesso."
+        hint="Modo local."
       />
-      <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
+      <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-900">
         <Info className="mr-1 inline h-3.5 w-3.5" />
-        Modo local: esta tela simula empresas e acessos. Em produção precisa Supabase, RLS e isolamento real por empresa.
+        Sua base principal é criada automaticamente. Você não precisa de plano para usar o sistema.
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         <TabsList className="mb-3">
-          <TabsTrigger value="empresas">Empresas</TabsTrigger>
-          <TabsTrigger value="planos">Planos</TabsTrigger>
+          <TabsTrigger value="empresas">Bases</TabsTrigger>
+          <TabsTrigger value="planos">Planos (avançado)</TabsTrigger>
         </TabsList>
 
         <TabsContent value="empresas">
-          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
             <StatPill label="Total" value={summary.total} />
-            <StatPill label="Em teste" value={summary.teste} tone="bg-blue-50" />
             <StatPill label="Ativas" value={summary.ativa} tone="bg-emerald-50" />
-            <StatPill label="Vencidas" value={summary.vencida} tone="bg-amber-50" />
-            <StatPill label="Suspensas" value={summary.suspensa} tone="bg-orange-50" />
-            <StatPill label="Canceladas" value={summary.cancelada} tone="bg-zinc-100" />
-            <StatPill label="Receita prevista" value={`R$ ${summary.receita.toFixed(0)}`} tone="bg-emerald-50" />
-            <StatPill label="Vence em 7 dias" value={summary.vence7} tone="bg-amber-50" />
+            <StatPill label="Em teste" value={summary.teste} tone="bg-blue-50" />
           </div>
 
           <div className="mb-3 flex flex-wrap gap-2">
             <Button size="sm" onClick={() => setCreating(true)}>
               <Plus className="h-4 w-4" />
-              Nova empresa
+              Nova base
             </Button>
             <Button size="sm" variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4" />
@@ -237,14 +226,14 @@ function EmpresasContent() {
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar nome, dono, e-mail, plano…"
+                placeholder="Buscar nome, dono, e-mail…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="pl-8"
               />
             </div>
             <div className="-mx-1 flex gap-1 overflow-x-auto px-1 sm:mx-0 sm:px-0">
-              {(["todas", "teste", "ativa", "vencida", "suspensa", "cancelada"] as const).map((f) => (
+              {(["todas", "ativa", "teste"] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
@@ -262,15 +251,14 @@ function EmpresasContent() {
           {filtered.length === 0 ? (
             <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
               <Building2 className="mx-auto mb-2 h-5 w-5" />
-              Nenhuma empresa.
+              Nenhuma base.
             </div>
           ) : (
             <ul className="space-y-2">
               {filtered.map((c) => {
-                const plan = getPlanById(c.plano_id);
                 const status = getCompanyStatus(c) as CompanyStatus;
                 const isCurrent = currentId === c.id;
-                const members = getCompanyMembers(c.id);
+                const isReal = isUuid(c.id);
                 return (
                   <li
                     key={c.id}
@@ -283,77 +271,71 @@ function EmpresasContent() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <p className="truncate text-sm font-semibold">{c.nome}</p>
-                          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", STATUS_TONE[status])}>
-                            {STATUS_LABEL[status]}
-                          </span>
-                          {isUuid(c.id) ? (
+                          {isReal ? (
                             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
-                              Servidor
+                              Base ativa
                             </span>
                           ) : (
                             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
-                              Local
+                              Base de teste local
                             </span>
                           )}
                           {isCurrent && (
                             <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
-                              Visualizando
+                              Em uso
                             </span>
                           )}
                         </div>
                         <p className="mt-0.5 truncate text-xs text-muted-foreground">
                           {c.dono_nome} · {c.dono_email}
                         </p>
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {plan?.nome ?? "Sem plano"} · venc. {c.data_vencimento || "—"} · {members.length} membro(s)
-                        </p>
-                        {!isUuid(c.id) && (
+                        {!isReal && (
                           <p className="mt-1 text-[11px] text-amber-700">
-                            Conta de teste ainda não está ativa no servidor.
+                            Base de teste ainda não está ativa.
                           </p>
                         )}
                       </div>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {!isUuid(c.id) && (
+                      {!isReal && (
                         <Button
                           size="sm"
                           variant="default"
                           onClick={async () => {
                             const { companyId, error } = await getCurrentCompanyAdmin();
                             if (!companyId || !isUuid(companyId)) {
-                              toast.error("Conta de teste ainda não está ativa no servidor.");
-                              console.warn("[empresas] ativar conta — sem UUID real:", error);
+                              toast.error("Base de teste ainda não está ativa.");
+                              console.warn("[empresas] ativar base — sem UUID real:", error);
                               return;
                             }
                             const updated = relinkCompanyId(c.id, companyId);
                             if (updated) {
                               setCurrentCompany(companyId);
-                              toast.success(`Conta vinculada ao servidor (${companyId.slice(0, 8)}…).`);
+                              toast.success(`Base ativa (${companyId.slice(0, 8)}…).`);
                             } else {
-                              toast.error("Não foi possível vincular esta conta agora.");
+                              toast.error("Não foi possível ativar esta base agora.");
                             }
                           }}
                         >
-                          Ativar conta de teste
+                          Ativar base
                         </Button>
                       )}
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={!isUuid(c.id)}
-                        title={isUuid(c.id) ? undefined : "Ative a conta no servidor primeiro."}
+                        disabled={!isReal}
+                        title={isReal ? undefined : "Ative a base primeiro."}
                         onClick={() => {
-                          if (!isUuid(c.id)) {
-                            toast.error("Selecione uma conta válida para continuar.");
+                          if (!isReal) {
+                            toast.error("Selecione uma base válida para continuar.");
                             return;
                           }
                           setCurrentCompany(c.id);
-                          toast.success(`Conta ativa: ${c.nome}`);
+                          toast.success(`Base ativa: ${c.nome}`);
                         }}
                       >
                         <Eye className="h-3.5 w-3.5" />
-                        Visualizar como
+                        Usar esta base
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => setEditing(c)}>
                         <Pencil className="h-3.5 w-3.5" />
@@ -364,7 +346,7 @@ function EmpresasContent() {
                           size="sm"
                           variant="ghost"
                           onClick={() => {
-                            if (confirm(`Arquivar (cancelar) ${c.nome}?`)) {
+                            if (confirm(`Arquivar ${c.nome}?`)) {
                               archiveCompany(c.id);
                               toast.success("Arquivada.");
                             }
