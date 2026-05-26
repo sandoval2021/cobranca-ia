@@ -188,7 +188,15 @@ function ImportarClientesPage() {
                   (typeof c.nome === "string" && c.nome) ||
                   (typeof c.full_name === "string" && c.full_name) ||
                   undefined;
-                map[norm] = { name: name || undefined };
+                const id =
+                  (typeof c.id === "string" && c.id) ||
+                  (typeof c.customer_id === "string" && c.customer_id) ||
+                  undefined;
+                const status =
+                  (typeof c.status === "string" && c.status) ||
+                  (typeof c.situacao === "string" && c.situacao) ||
+                  undefined;
+                map[norm] = { name: name || undefined, id, status };
                 break;
               }
             }
