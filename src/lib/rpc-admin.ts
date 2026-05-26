@@ -91,35 +91,36 @@ export async function getCurrentCompanyAdmin() {
 
 const ACCOUNT_CACHE_KEY = "cobranca_ia_active_account_id_v1";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** True se for UUID válido. Bloqueia IDs locais ("co_", "local_", "demo_", "tmp_"). */
+export function isUuid(value: unknown): value is string {
+  return typeof value === "string" && UUID_RE.test(value.trim());
+}
+
 /**
- * Helper único — obtém o id da conta ativa.
- * Prioridade:
- *  1) Conta selecionada em "Visualizando como" (local).
- *  2) Conta TESTANDO (ambiente staging/teste).
- *  3) Primeira conta local disponível.
- *  4) RPC backend get_current_company_admin.
- *  5) ensureLocalAccount cria "Minha conta" como fallback final.
+ * Obtém o UUID real da conta ativa para RPCs Supabase.
+ * NUNCA retorna ID local começando com "co_", "local_", "demo_", "tmp_".
  */
 export async function getActiveAccountId(): Promise<{
   accountId: string | null;
   error: RpcErr | null;
 }> {
-  // Cache só vale se ainda bate com a seleção atual ("Visualizando como").
+  // Cache — invalida se não for UUID válido ou se não bater com seleção atual.
   if (typeof window !== "undefined") {
     try {
       const cached = window.sessionStorage.getItem(ACCOUNT_CACHE_KEY);
       const currentId = getCurrentCompanyId();
-      if (cached && (!currentId || cached === currentId)) {
+      if (cached && isUuid(cached) && (!currentId || cached === currentId)) {
         return { accountId: cached, error: null };
       }
-      if (cached && currentId && cached !== currentId) {
+      if (cached && (!isUuid(cached) || (currentId && cached !== currentId))) {
         window.sessionStorage.removeItem(ACCOUNT_CACHE_KEY);
       }
     } catch {
       /* ignore */
     }
   }
-
 
   const cacheAndReturn = (id: string) => {
     if (typeof window !== "undefined") {
@@ -132,31 +133,37 @@ export async function getActiveAccountId(): Promise<{
     return { accountId: id, error: null as RpcErr | null };
   };
 
-  // 1) "Visualizando como"
+  // 1) "Visualizando como" — só se UUID real
   try {
     const currentId = getCurrentCompanyId();
     const current = getCurrentCompany();
     if (currentId && current) {
-      console.info("[account] usando conta selecionada:", current.nome);
-      return cacheAndReturn(currentId);
+      console.info("[account] selected local id:", currentId);
+      if (isUuid(currentId)) {
+        console.info("[account] resolved company uuid (selected):", current.nome);
+        return cacheAndReturn(currentId);
+      }
+      console.warn("[account] blocked non-uuid id (selected):", current.nome);
     }
   } catch (e) {
     console.warn("[account] getCurrentCompany falhou:", e);
   }
 
-  // 2) TESTANDO em staging/local
+  // 2/3) Contas locais — só se UUID real
   try {
     const all = listCompanies();
-    console.info("[account] contas locais encontradas:", all.length);
     const testando = all.find((c) => c.nome.trim().toUpperCase() === "TESTANDO");
     if (testando) {
-      console.info("[account] usando conta TESTANDO");
-      return cacheAndReturn(testando.id);
+      if (isUuid(testando.id)) {
+        console.info("[account] resolved company uuid (TESTANDO)");
+        return cacheAndReturn(testando.id);
+      }
+      console.warn("[account] blocked non-uuid id (TESTANDO local-only):", testando.id);
     }
-    // 3) primeira conta disponível
-    if (all.length > 0) {
-      console.info("[account] usando primeira conta local:", all[0]!.nome);
-      return cacheAndReturn(all[0]!.id);
+    const firstReal = all.find((c) => isUuid(c.id));
+    if (firstReal) {
+      console.info("[account] resolved company uuid (first real):", firstReal.nome);
+      return cacheAndReturn(firstReal.id);
     }
   } catch (e) {
     console.warn("[account] listCompanies falhou:", e);
@@ -164,19 +171,24 @@ export async function getActiveAccountId(): Promise<{
 
   // 4) backend
   const { companyId, error } = await getCurrentCompanyAdmin();
-  if (companyId) return cacheAndReturn(companyId);
+  if (companyId && isUuid(companyId)) return cacheAndReturn(companyId);
   if (error) console.warn("[account] get_current_company_admin erro:", error.code, error.message);
 
-  // 5) ensureLocalAccount como último fallback
+  // 5) ensureLocalAccount — só aceita UUID real
   try {
     const ensured = ensureLocalAccount(undefined, undefined, undefined);
-    if (ensured) {
-      console.info("[account] fallback ensureLocalAccount:", ensured.nome);
+    if (ensured && isUuid(ensured.id)) {
+      console.info("[account] resolved company uuid (ensureLocalAccount):", ensured.nome);
       return cacheAndReturn(ensured.id);
+    }
+    if (ensured) {
+      console.warn("[account] blocked non-uuid id (ensureLocalAccount):", ensured.id);
     }
   } catch (e) {
     console.warn("[account] ensureLocalAccount falhou:", e);
   }
+
+
 
   return { accountId: null, error };
 }
