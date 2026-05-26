@@ -400,6 +400,65 @@ function ImportarClientesPage() {
     }
   }
 
+  async function forceImportRow(idx: number) {
+    if (!supabase || !supabaseConfigured) return;
+    const r = rows?.[idx];
+    if (!r) return;
+    const effCompany =
+      companyId ??
+      (companyState.status === "ready" ? companyState.companyId : null);
+    if (!effCompany) {
+      toast.error("Empresa não encontrada.");
+      return;
+    }
+    if (!r.whatsapp_e164 && !r.customer_name) {
+      toast.error("Linha sem WhatsApp e sem nome — não dá para importar.");
+      return;
+    }
+    setForcingIdx(idx);
+    try {
+      const e = enrichments[idx];
+      const payload = [
+        {
+          external_code: r.external_code,
+          external_customer_code: r.external_customer_code,
+          customer_name: r.customer_name,
+          whatsapp_e164: r.whatsapp_e164,
+          service_name: r.service_name,
+          amount_cents: r.amount_cents,
+          expires_at: r.expires_at,
+          situation: r.situation,
+          raw_row: {
+            ...r.raw_row,
+            forced: true,
+            matched_service_id: e?.matched_service_id ?? null,
+            plan_label: e?.plan_label ?? null,
+            message_label: e?.message_label ?? null,
+            group_size: e?.group_size ?? 1,
+            group_conflict: e?.group_conflict ?? null,
+            observation: e?.observation ?? null,
+          },
+        },
+      ];
+      const { error } = await supabase.rpc(
+        "staging_import_customers_from_rows",
+        { p_company_id: effCompany, p_rows: payload as unknown as object },
+      );
+      if (error) {
+        toast.error("Não foi possível importar: " + error.message);
+        return;
+      }
+      toast.success("Cliente importado mesmo assim.");
+      setForcedIdx((prev) => {
+        const next = new Set(prev);
+        next.add(idx);
+        return next;
+      });
+    } finally {
+      setForcingIdx(null);
+    }
+  }
+
   const effectiveCompanyId =
     companyId ??
     (companyState.status === "ready" ? companyState.companyId : null);
