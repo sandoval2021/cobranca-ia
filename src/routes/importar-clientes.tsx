@@ -519,6 +519,18 @@ function ImportarClientesPage() {
             </div>
           </div>
 
+          {summary && (
+            <div className="mb-3 grid grid-cols-2 gap-1.5 rounded-xl border bg-muted/30 p-2 text-[11px] sm:grid-cols-4">
+              <SummaryStat label="WhatsApps únicos" value={summary.unique_whatsapps} />
+              <SummaryStat label="Valores reconhecidos" value={summary.amounts_recognized} />
+              <SummaryStat label="Vencimentos reconhecidos" value={summary.dates_recognized} />
+              <SummaryStat label="Planos casados" value={summary.messages_matched} />
+              <SummaryStat label="Mensagem padrão (revisar)" value={summary.messages_default} />
+              <SummaryStat label="Conflitos no grupo" value={summary.conflicts} />
+            </div>
+          )}
+
+
 
           {/* Mobile: cards */}
           <div className="space-y-2 sm:hidden">
