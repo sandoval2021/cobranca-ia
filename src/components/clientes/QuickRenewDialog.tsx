@@ -82,6 +82,10 @@ export function QuickRenewDialog({
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<null | { msg: string; newDue: string; sent: boolean }>(null);
+  const [newDueOverride, setNewDueOverride] = useState<string>("");
+  const [dataReceber, setDataReceber] = useState<string>("");
+  const [sendReceipt, setSendReceipt] = useState(true);
+  const [renovarPrazo, setRenovarPrazo] = useState(false);
 
   useEffect(() => {
     if (!open) return;
