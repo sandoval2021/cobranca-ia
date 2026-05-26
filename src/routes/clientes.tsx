@@ -79,6 +79,7 @@ import {
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
+import { AutoDispatchTodayPanel } from "@/components/clientes/AutoDispatchTodayPanel";
 import { getCustomerDueOverride, daysFromOverride, fmtDateBRFromISO } from "@/lib/customer-due-override";
 import { getCustomerExtras, setCustomerExtras } from "@/lib/customer-extras";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
@@ -508,9 +509,11 @@ function ClientesPage() {
       </div>
       <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
 
+      <AutoDispatchTodayPanel items={items} allScreens={allScreens} />
 
       {/* Busca */}
       <div className="relative mb-3">
+
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={query}
