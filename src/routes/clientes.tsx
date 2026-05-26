@@ -80,6 +80,7 @@ import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
 import { getCustomerDueOverride, daysFromOverride, fmtDateBRFromISO } from "@/lib/customer-due-override";
+import { getCustomerExtras, setCustomerExtras } from "@/lib/customer-extras";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
 import { getPrimaryRouteForServer } from "@/lib/dns-routes";
@@ -1382,14 +1383,19 @@ function EditForm({
   onSaved: () => void;
   setBusy: (b: boolean) => void;
 }) {
+  const initialExtras = getCustomerExtras(customer.id);
   const [name, setName] = useState(customer.name);
   const [whatsapp, setWhatsapp] = useState(customer.whatsapp ?? "");
+  const [email, setEmail] = useState(initialExtras.email ?? "");
+  const [birthday, setBirthday] = useState(initialExtras.birthday ?? "");
   const [amount, setAmount] = useState(
     customer.amount_cents != null ? (customer.amount_cents / 100).toFixed(2).replace(".", ",") : "",
   );
   const [dueDay, setDueDay] = useState(customer.due_day != null ? String(customer.due_day) : "");
   const [status, setStatus] = useState(customer.status ?? "ativo");
   const [notes, setNotes] = useState(customer.notes ?? "");
+  const createdAt = str(customer.raw, ["created_at", "cadastrado_em", "data_cadastro", "inserted_at"]);
+  const screensCount = useMemo(() => listScreens(customer.id).length, [customer.id]);
 
   const validate = (): string | null => {
     if (!name.trim()) return "Informe o nome do cliente.";
@@ -1429,6 +1435,7 @@ function EditForm({
       toast.error(friendlyRpcError(error.message));
       return;
     }
+    setCustomerExtras(customer.id, { email: email.trim(), birthday: birthday || undefined });
     toast.success("Cliente atualizado com sucesso.");
     onSaved();
   };
@@ -1484,6 +1491,36 @@ function EditForm({
           maxLength={1000}
         />
       </Field>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="E-mail" hint="Opcional. Usado para mensagens e relatórios.">
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="cliente@exemplo.com"
+            maxLength={120}
+          />
+        </Field>
+        <Field label="Aniversário" hint="Para mensagens automáticas de parabéns.">
+          <Input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+          />
+        </Field>
+      </div>
+
+      <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Data de cadastro</span>
+          <span className="font-medium">{createdAt ? fmtDate(createdAt) : "—"}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Telas cadastradas</span>
+          <span className="font-medium">{screensCount}</span>
+        </div>
+      </div>
 
       <div className="flex gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={busy} className="flex-1">

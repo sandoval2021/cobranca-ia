@@ -77,6 +77,7 @@ export function QuickRenewDialog({
   const [months, setMonths] = useState(1);
   const [amount, setAmount] = useState("");
   const [appAmount, setAppAmount] = useState("");
+  const [discount, setDiscount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("pix");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
@@ -97,6 +98,7 @@ export function QuickRenewDialog({
     setDone(null);
     setBusy(false);
     setAppAmount("");
+    setDiscount("");
     const base = monthlyAmountCents != null ? monthlyAmountCents / 100 : null;
     setAmount(base != null ? base.toFixed(2).replace(".", ",") : "");
   }, [open, customerId, monthlyAmountCents]);
@@ -120,6 +122,32 @@ export function QuickRenewDialog({
     () => addMonthsISO(baseFromDueDay(customerDueDay), months),
     [customerDueDay, months],
   );
+
+  // Data antiga (vencimento atual) — prioriza tela com vencimento mais próximo,
+  // ou usa o dia de vencimento mensal do cliente.
+  const oldDue = useMemo(() => {
+    if (selectedScreens.length > 0) {
+      const dates = selectedScreens
+        .map((s) => s.due_date)
+        .filter(Boolean) as string[];
+      if (dates.length) return dates.sort()[0];
+    }
+    if (customerDueDay) {
+      return addMonthsISO(baseFromDueDay(customerDueDay), -1);
+    }
+    return null;
+  }, [selectedScreens, customerDueDay]);
+
+  const parseBR = (v: string): number => {
+    const n = Number((v || "").replace(/\./g, "").replace(",", "."));
+    return isNaN(n) ? 0 : n;
+  };
+  const amountNum = parseBR(amount);
+  const appAmountNum = parseBR(appAmount);
+  const discountNum = parseBR(discount);
+  const totalNum = Math.max(0, amountNum + appAmountNum - discountNum);
+  const fmtMoney = (n: number) =>
+    `R$ ${n.toFixed(2).replace(".", ",")}`;
 
   const toggle = (id: string, patch: Partial<ScreenChoice>) =>
     setChoices((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
@@ -430,6 +458,17 @@ export function QuickRenewDialog({
             )}
 
             <div>
+              <Label className="text-xs">Desconto (R$, opcional)</Label>
+              <Input
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+                placeholder="0,00"
+                className="h-8"
+                inputMode="decimal"
+              />
+            </div>
+
+            <div>
               <Label className="text-xs">Observações (opcional)</Label>
               <Textarea
                 value={notes}
@@ -438,6 +477,54 @@ export function QuickRenewDialog({
                 placeholder="Ex.: pago via PIX"
                 className="resize-none text-sm"
               />
+            </div>
+
+            {/* Resumo antes da confirmação */}
+            <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs space-y-1.5">
+              <div className="font-semibold text-foreground flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" /> Resumo da renovação
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Vencimento atual</span>
+                <span className="font-medium">{oldDue ? fmtDateBR(oldDue) : "—"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Novo vencimento</span>
+                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                  {fmtDateBR(hasScreens && selectedScreens.length
+                    ? selectedScreens
+                        .map((s) => addMonthsISO(baseFromScreen(s), months))
+                        .sort()
+                        .reverse()[0]
+                    : customerNewDue)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Período</span>
+                <span className="font-medium">{months} {months === 1 ? "mês" : "meses"}</span>
+              </div>
+              <div className="border-t border-border/60 pt-1.5 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Valor do plano</span>
+                  <span>{fmtMoney(amountNum)}</span>
+                </div>
+                {appAmountNum > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Valor do app</span>
+                    <span>{fmtMoney(appAmountNum)}</span>
+                  </div>
+                )}
+                {discountNum > 0 && (
+                  <div className="flex items-center justify-between text-rose-600 dark:text-rose-400">
+                    <span>Desconto</span>
+                    <span>- {fmtMoney(discountNum)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between font-semibold text-foreground">
+                  <span>Total a receber</span>
+                  <span>{fmtMoney(totalNum)}</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
