@@ -87,6 +87,7 @@ import { computeAutoDispatchQueue, type AutoDispatchQueueItem } from "@/lib/auto
 import { AUTO_DISPATCH_EVENT, fmtHHMM, setCancelled, markSent } from "@/lib/auto-dispatch";
 import { MANUAL_RULES_EVENT } from "@/lib/manual-dispatch-rules";
 import { getCustomerDueOverride, daysFromOverride, fmtDateBRFromISO } from "@/lib/customer-due-override";
+import { getImportedDueByWhatsapp, IMPORTED_DUE_EVENT } from "@/lib/imported-due-dates";
 import { getCustomerExtras, setCustomerExtras } from "@/lib/customer-extras";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
