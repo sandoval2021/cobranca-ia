@@ -202,6 +202,17 @@ function ImportarClientesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, existingMap, lookupReady]);
 
+  const enrichments = useMemo<ImportEnrichment[]>(
+    () => (rows ? enrichImportRows(rows) : []),
+    [rows],
+  );
+  const summary = useMemo(
+    () => (rows ? summarizeImport(rows, enrichments) : null),
+    [rows, enrichments],
+  );
+
+
+
 
   async function onFile(file: File) {
     setParseError(null);
