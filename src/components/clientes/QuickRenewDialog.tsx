@@ -15,6 +15,7 @@ import {
   applyRenewal, buildConfirmationMessage, fmtDateBR,
   PAYMENT_LABEL, PaymentMethod,
 } from "@/lib/manual-renewals";
+import { setCustomerDueOverride } from "@/lib/customer-due-override";
 
 function addMonthsISO(base: Date, months: number): string {
   const d = new Date(base);
