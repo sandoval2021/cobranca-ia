@@ -958,6 +958,32 @@ function ClientCard({
         </button>
         <button
           type="button"
+          {activeScreens.length === 0 && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={onApps}
+                className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-950/40 dark:text-blue-300"
+                title="Adicionar / gerenciar aplicativos"
+              >
+                <Tv className="h-3 w-3" /> + Aplicativo
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={onRenew}
+          title="Renovar cliente"
+          className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-emerald-700"
+        >
+          <RotateCcw className="h-3.5 w-3.5" /> Renovar
+        </button>
+        <button
+          type="button"
           onClick={onApps}
           title="Aplicativos e dados de acesso"
           className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-blue-700"
