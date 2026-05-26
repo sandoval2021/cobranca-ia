@@ -447,7 +447,7 @@ function ClientesPage() {
         );
       });
     });
-  }, [items, query, filter, serverFilter, allScreens]);
+  }, [items, query, filter, serverFilter, allScreens, dispatchQueueById]);
 
   // Contadores por servidor (catálogo ativo) e "sem servidor"
   const serverCounts = useMemo(() => {
