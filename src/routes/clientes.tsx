@@ -763,10 +763,16 @@ function ClientCard({
   customer,
   screens,
   onOpen,
+  onRenew,
+  onApps,
+  onDelete,
 }: {
   customer: Customer;
   screens: AppScreen[];
   onOpen: () => void;
+  onRenew: () => void;
+  onApps: () => void;
+  onDelete: () => void;
 }) {
   const phone = prettyPhone(customer.whatsapp);
   const initial = customer.name.trim().charAt(0).toUpperCase() || "?";
