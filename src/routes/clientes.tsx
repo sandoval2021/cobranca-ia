@@ -1825,9 +1825,8 @@ function EditForm({
         />
       </Field>
 
-      <div className="rounded-xl border border-border bg-primary-soft/30 p-2">
-        <AppScreensSection customerId={customer.id} customerName={customer.name} />
-      </div>
+      <InlineScreensManager customerId={customer.id} />
+
 
       <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
         <span>Cadastro: <span className="font-medium text-foreground">{createdAt ? fmtDate(createdAt) : "—"}</span></span>
