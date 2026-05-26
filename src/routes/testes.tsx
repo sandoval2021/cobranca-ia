@@ -42,6 +42,8 @@ import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
 import { canCreateTrialLead } from "@/lib/plan-limits";
 import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
+import { supabase } from "@/integrations/supabase/client";
+import { getActiveAccountId } from "@/lib/rpc-admin";
 
 
 export const Route = createFileRoute("/testes")({
