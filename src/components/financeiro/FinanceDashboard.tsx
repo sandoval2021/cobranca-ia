@@ -195,9 +195,9 @@ export function FinanceDashboard() {
 
       {/* Estimativas a receber */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <Kpi icon={<Wallet className="h-4 w-4" />} label="Estimativa hoje" value={formatBRL(clientStats.estHoje / 100 * 100)} hint="Vencimentos do dia" />
-        <Kpi icon={<Wallet className="h-4 w-4" />} label="Estimativa 7 dias" value={formatBRL(clientStats.estSemana / 100 * 100)} hint="A vencer nesta semana" />
-        <Kpi icon={<Wallet className="h-4 w-4" />} label="Estimativa do mês" value={formatBRL(clientStats.estMes / 100 * 100)} hint="A vencer até fim do mês" />
+        <Kpi icon={<Wallet className="h-4 w-4" />} label="Estimativa hoje" value={formatBRL(clientStats.estHoje / 100)} hint="Vencimentos do dia" />
+        <Kpi icon={<Wallet className="h-4 w-4" />} label="Estimativa 7 dias" value={formatBRL(clientStats.estSemana / 100)} hint="A vencer nesta semana" />
+        <Kpi icon={<Wallet className="h-4 w-4" />} label="Estimativa do mês" value={formatBRL(clientStats.estMes / 100)} hint="A vencer até fim do mês" />
         <Kpi icon={<UserPlus className="h-4 w-4" />} label="Novos clientes (mês)" value={String(clientStats.novosMes)}
           hint={`Hoje ${clientStats.novosHoje} • Semana ${clientStats.novosSemana}`} />
       </div>
