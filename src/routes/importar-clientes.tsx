@@ -420,9 +420,19 @@ function ImportarClientesPage() {
           }
         }
 
+        // Persiste a data completa de vencimento por WhatsApp localmente,
+        // já que o backend atual só guarda due_day.
+        setImportedDueBulk(
+          validas.map((r) => ({
+            wa: r.whatsapp_e164,
+            date: r.expires_at ?? r.expires_raw ?? null,
+          })),
+        );
+
         toast.success("Importação concluída.");
         setLookupBump((n) => n + 1);
       }
+
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro inesperado.";
       toast.error("Falha ao importar: " + msg);
