@@ -250,9 +250,39 @@ export function QuickRenewDialog({
     }
     setBusy(true);
     try {
-      // Caso 1: cliente sem telas — registra renovação geral
+      // 1) PERSISTÊNCIA REAL no backend — bloqueia se falhar.
+      const finalDueForBackend = hasScreens
+        ? (() => {
+            const usingOverride = !!newDueOverride;
+            let maxDue = "";
+            for (const s of selectedScreens) {
+              const nd = usingOverride ? newDueOverride : addMonthsISO(baseFromScreen(s), months);
+              if (nd > maxDue) maxDue = nd;
+            }
+            return maxDue || computedNewDue;
+          })()
+        : (newDueOverride || customerNewDue);
+
+      const persist = await persistRenewalOnBackend({
+        customerId,
+        customerName,
+        whatsappE164,
+        monthlyAmountCents,
+        newDueISO: finalDueForBackend,
+        months,
+        oldDueISO: oldDue,
+        totalAmount: fmtMoney(totalNum),
+        monthlyAmount: amount ? `R$ ${amount}` : "",
+      });
+      if (!persist.ok) {
+        toast.error(persist.message || "Renovação precisa ser ativada no servidor.");
+        setBusy(false);
+        return;
+      }
+
+      // 2) Histórico local + mensagem WhatsApp (já existente)
       if (!hasScreens) {
-        const finalDue = newDueOverride || customerNewDue;
+        const finalDue = finalDueForBackend;
         const rec = applyRenewal({
           customer_id: customerId,
           customer_name: customerName,
@@ -264,7 +294,8 @@ export function QuickRenewDialog({
           renew_app: false,
           screens: [],
         });
-        setCustomerDueOverride(customerId, finalDue);
+        // Backend já tem a verdade: limpa override visual temporário.
+        clearCustomerDueOverride(customerId);
         const msg = rec.confirmation_message || buildConfirmationMessage(rec);
         if (sendReceipt) autoSend(msg);
         setDone({ msg, newDue: finalDue, sent: sendReceipt });
@@ -295,7 +326,7 @@ export function QuickRenewDialog({
           const rec = applyRenewal({
             customer_id: customerId,
             customer_name: customerName,
-          customer_whatsapp: whatsappE164 ?? null,
+            customer_whatsapp: whatsappE164 ?? null,
             new_due_date: newDue,
             amount: i === 0 && amount ? `R$ ${amount}` : undefined,
             payment_method: method,
@@ -311,7 +342,7 @@ export function QuickRenewDialog({
             const appRec = applyRenewal({
               customer_id: customerId,
               customer_name: customerName,
-          customer_whatsapp: whatsappE164 ?? null,
+              customer_whatsapp: whatsappE164 ?? null,
               new_due_date: newDue,
               amount: appAmount ? `R$ ${appAmount}` : undefined,
               payment_method: method,
@@ -324,11 +355,13 @@ export function QuickRenewDialog({
             messages.push(buildConfirmationMessage(appRec));
           }
         }
-        if (maxDue) setCustomerDueOverride(customerId, maxDue);
+        // Backend é a fonte de verdade — não precisa de override visual.
+        clearCustomerDueOverride(customerId);
         const fullMsg = messages.join("\n\n———\n\n");
         if (sendReceipt) autoSend(fullMsg);
         setDone({ msg: fullMsg, newDue: maxDue, sent: sendReceipt });
       }
+      toast.success("Cliente renovado com sucesso.");
       onRenewed?.();
     } catch (e) {
       toast.error("Não foi possível registrar a renovação.");
@@ -336,6 +369,7 @@ export function QuickRenewDialog({
       setBusy(false);
     }
   };
+
 
   const autoSend = (message: string) => {
     const phone = (whatsappE164 ?? "").replace(/\D/g, "");
