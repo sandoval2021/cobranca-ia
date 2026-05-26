@@ -1664,21 +1664,28 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
   const [app, setApp] = useState<AppKey>("xciptv");
   const [serverId, setServerId] = useState<string>("");
   const [name, setName] = useState("");
-  const [planValue, setPlanValue] = useState("");
+  const [planId, setPlanId] = useState<string>("");
   const [macInput, setMacInput] = useState("");
   const [keyInput, setKeyInput] = useState("");
   const [appDueDate, setAppDueDate] = useState("");
 
+  const [servicesVersion, setServicesVersion] = useState(0);
   const refresh = () => setScreens(listScreens(customerId));
   useEffect(() => {
     refresh();
     const onChange = () => refresh();
+    const onSvc = () => setServicesVersion((v) => v + 1);
     window.addEventListener("app-screens:changed", onChange as EventListener);
-    return () => window.removeEventListener("app-screens:changed", onChange as EventListener);
+    window.addEventListener(SERVICES_EVENT, onSvc as EventListener);
+    return () => {
+      window.removeEventListener("app-screens:changed", onChange as EventListener);
+      window.removeEventListener(SERVICES_EVENT, onSvc as EventListener);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
 
   const servers = listActiveServers();
+  const services = useMemo(() => listActiveServices(), [servicesVersion]);
   const active = screens.filter((s) => s.status !== "arquivada");
   const isPaid = APP_CATALOG[app]?.tier === "pago";
 
@@ -1687,7 +1694,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
     setApp("xciptv");
     setServerId("");
     setName("");
-    setPlanValue("");
+    setPlanId("");
     setMacInput("");
     setKeyInput("");
     setAppDueDate("");
@@ -1698,10 +1705,15 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       toast.error("Informe a data de vencimento.");
       return;
     }
+    if (!planId) {
+      toast.error("Selecione o serviço/plano.");
+      return;
+    }
     if (isPaid && (!macInput.trim() || !keyInput.trim())) {
       toast.error("Apps pagos exigem MAC e Key.");
       return;
     }
+    const plan = services.find((s) => s.id === planId);
     const now = new Date().toISOString();
     const screenName = name.trim() || `Tela ${active.length + 1}`;
     const meta = APP_CATALOG[app];
@@ -1713,7 +1725,9 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       tier: meta?.tier,
       access_type: meta?.access ?? "nao_informado",
       due_date: dueDate,
-      plan_value: planValue.trim() || undefined,
+      plan_id: plan?.id,
+      plan_name: plan?.nome,
+      plan_value: plan ? (plan.preco_cents / 100).toFixed(2).replace(".", ",") : undefined,
       mac: isPaid ? macInput.trim() : undefined,
       app_key: isPaid ? keyInput.trim() : undefined,
       app_due_date: isPaid && appDueDate ? appDueDate : undefined,
