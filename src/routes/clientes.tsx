@@ -1703,7 +1703,7 @@ function NewCustomerSheet({
     if (!companyId) {
       setBusy(false);
       console.warn("[novo cliente] sem UUID real de conta", companyErr);
-      toast.error("Sua conta de teste ainda não está vinculada ao servidor. Atualize a página ou selecione uma conta válida.");
+      toast.error("Sua base de teste ainda não está ativa. Atualize a página ou selecione uma base válida.");
       return;
     }
 
