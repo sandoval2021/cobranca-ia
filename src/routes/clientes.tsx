@@ -708,8 +708,22 @@ function ClientCard({
   const activeScreens = screens.filter((s) => s.status !== "arquivada").slice(0, 4);
   const needsUpdate = screens.some((s) => s.needs_server_update && s.status !== "arquivada");
 
+  // Cor de fundo/borda do card conforme urgência
+  const tint =
+    urg === "vencido"
+      ? "border-red-400 bg-red-50 dark:bg-red-950/30"
+      : urg === "hoje"
+        ? "border-red-300 bg-red-50/70 dark:bg-red-900/20"
+        : urg === "3d"
+          ? "border-orange-300 bg-orange-50 dark:bg-orange-950/20"
+          : urg === "7d"
+            ? "border-amber-300 bg-amber-50 dark:bg-amber-950/20"
+            : urg === "em_dia"
+              ? "border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/15"
+              : "border-border bg-card";
+
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-card">
+    <div className={cn("rounded-xl border-l-4 border border-l-current p-3 shadow-card", tint)}>
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-info-soft text-info text-sm font-semibold">
           {initial}
@@ -816,10 +830,39 @@ function ClientCard({
         </div>
       </div>
 
-      <div className="mt-3 flex justify-end">
-        <Button size="sm" variant="outline" onClick={onOpen} className="gap-1.5">
-          <Eye className="h-3.5 w-3.5" /> Ver detalhes
-        </Button>
+      <div className="mt-3 flex flex-wrap justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={onOpen}
+          title="Renovar"
+          className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-emerald-700"
+        >
+          <RotateCcw className="h-3.5 w-3.5" /> Renovar
+        </button>
+        <button
+          type="button"
+          onClick={onOpen}
+          title="Editar"
+          className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-blue-700"
+        >
+          <Pencil className="h-3.5 w-3.5" /> Editar
+        </button>
+        <button
+          type="button"
+          onClick={onOpen}
+          title="Gerenciar"
+          className="inline-flex items-center gap-1 rounded-md bg-violet-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-violet-700"
+        >
+          <Settings2 className="h-3.5 w-3.5" /> Gerenciar
+        </button>
+        <button
+          type="button"
+          onClick={onOpen}
+          title="Excluir"
+          className="inline-flex items-center gap-1 rounded-md bg-red-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-red-700"
+        >
+          <Trash2 className="h-3.5 w-3.5" /> Excluir
+        </button>
       </div>
     </div>
   );
