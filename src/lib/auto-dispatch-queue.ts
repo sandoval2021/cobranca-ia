@@ -73,9 +73,23 @@ export function computeAutoDispatchQueue(
     if (rule.blockNoWhatsapp && !onlyDigits(c.whatsapp ?? "")) continue;
     candidates.push({ client: c, days, rule });
   }
-  candidates.sort((a, b) => a.days - b.days);
+  candidates.sort((a, b) => {
+    // Próximos do vencimento primeiro; vencidos vão para o fim (mais antigos por último).
+    const rank = (d: number) => (d >= 0 ? d : 1000 + Math.abs(d));
+    return rank(a.days) - rank(b.days);
+  });
   const limited = candidates.slice(0, cfg.maxPerDay);
-  return limited.map((cand, i): AutoDispatchQueueItem => {
+
+  // Index por bucket de horário (para que clientes com horários customizados
+  // por valor não compartilhem a mesma fila de intervalos).
+  const indexByHour = new Map<string, number>();
+  return limited.map((cand): AutoDispatchQueueItem => {
+    const hourKey = (() => {
+      const hit = cfg.amountSchedules.find((a) => a.amountCents === (cand.client.amount_cents ?? -1));
+      return hit?.sendHour ?? cfg.sendHour;
+    })();
+    const i = indexByHour.get(hourKey) ?? 0;
+    indexByHour.set(hourKey, i + 1);
     const vars = {
       nome: cand.client.name,
       whatsapp: cand.client.whatsapp,
@@ -88,7 +102,7 @@ export function computeAutoDispatchQueue(
       daysUntilDue: cand.days,
       ruleId: cand.rule.id,
       ruleName: cand.rule.name,
-      scheduleTime: computeScheduleTime(cfg, i),
+      scheduleTime: computeScheduleTime(cfg, i, new Date(), cand.client.amount_cents),
       message: applyTemplate(cand.rule.template, vars),
       cancelled: cancelled.has(cand.client.id),
       sent: sent.has(cand.client.id),
@@ -96,3 +110,4 @@ export function computeAutoDispatchQueue(
     };
   });
 }
+
