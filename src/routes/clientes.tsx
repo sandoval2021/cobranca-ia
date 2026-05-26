@@ -1071,7 +1071,7 @@ function ClientCard({
             "text-sm font-semibold truncate",
             dispatchFailed && "text-red-600 dark:text-red-400",
           )}>
-            {customer.name}
+            {phone || customer.name}
           </p>
         </div>
         <button
