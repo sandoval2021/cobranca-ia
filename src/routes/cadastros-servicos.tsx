@@ -128,7 +128,7 @@ function CadastrosServicosPage() {
               <Button size="sm" variant="outline" onClick={() => openEdit(s)} className="gap-1">
                 <Pencil className="h-3.5 w-3.5" /> Editar
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => remove(s)} className="gap-1 text-destructive">
+              <Button size="sm" variant="ghost" onClick={() => setPendingDelete(s)} className="gap-1 text-destructive">
                 <Trash2 className="h-3.5 w-3.5" /> Excluir
               </Button>
             </div>
