@@ -47,6 +47,7 @@ import {
   importCompanies,
   listCompanies,
   listCompanyPlans,
+  relinkCompanyId,
   saveCompany,
   saveCompanyMember,
   saveCompanyPlan,
@@ -56,6 +57,7 @@ import {
   type CompanyPlan,
   type CompanyStatus,
 } from "@/lib/companies";
+import { getCurrentCompanyAdmin, isUuid } from "@/lib/rpc-admin";
 
 export const Route = createFileRoute("/empresas")({ component: EmpresasPage });
 
