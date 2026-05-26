@@ -239,6 +239,8 @@ export function applyRenewal(draft: RenewalDraft): RenewalRecord {
     created_at: now,
     customer_id: draft.customer_id,
     customer_name: draft.customer_name,
+    customer_whatsapp: draft.customer_whatsapp ?? null,
+
     screens: screensLog,
     amount: draft.amount,
     payment_method: draft.payment_method,
