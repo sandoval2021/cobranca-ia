@@ -41,8 +41,10 @@ function uid(prefix = "svc") {
 }
 
 function labelFor(kind: ServiceMessageKind, days: number): string {
-  if (kind === "cobranca") return "Cobrança";
-  return `Acompanhamento ${days} dia${days === 1 ? "" : "s"}`;
+  if (days === 0) return "No dia do vencimento";
+  const abs = Math.abs(days);
+  const plural = abs === 1 ? "" : "s";
+  return days < 0 ? `${abs} dia${plural} antes do vencimento` : `${abs} dia${plural} depois do vencimento`;
 }
 
 function migrateMessages(s: Partial<ServiceItem> & { mensagem_cobranca?: string; mensagem_acompanhamento?: string }): ServiceMessage[] {
