@@ -41,8 +41,10 @@ function uid(prefix = "svc") {
 }
 
 function labelFor(kind: ServiceMessageKind, days: number): string {
-  if (kind === "cobranca") return "Cobrança";
-  return `Acompanhamento ${days} dia${days === 1 ? "" : "s"}`;
+  if (days === 0) return "No dia do vencimento";
+  const abs = Math.abs(days);
+  const plural = abs === 1 ? "" : "s";
+  return days < 0 ? `${abs} dia${plural} antes do vencimento` : `${abs} dia${plural} depois do vencimento`;
 }
 
 function migrateMessages(s: Partial<ServiceItem> & { mensagem_cobranca?: string; mensagem_acompanhamento?: string }): ServiceMessage[] {
@@ -50,7 +52,7 @@ function migrateMessages(s: Partial<ServiceItem> & { mensagem_cobranca?: string;
     return s.messages.map((m) => ({
       id: String(m.id ?? uid("msg")),
       kind: (m.kind === "acompanhamento" ? "acompanhamento" : "cobranca") as ServiceMessageKind,
-      offset_days: Math.max(0, Math.round(Number(m.offset_days ?? 0))),
+      offset_days: Math.round(Number(m.offset_days ?? 0)),
       label: String(m.label ?? labelFor(m.kind ?? "cobranca", Number(m.offset_days ?? 0))),
       template: String(m.template ?? ""),
     }));
@@ -174,13 +176,14 @@ export function addServiceMessage(
   const all = read();
   const idx = all.findIndex((s) => s.id === serviceId);
   if (idx < 0) return null;
-  const days = input.kind === "cobranca" ? 0 : Math.max(1, Math.round(input.offset_days ?? 30));
+  const days = Math.round(Number(input.offset_days ?? 0));
+  const kind: ServiceMessageKind = days === 0 ? "cobranca" : "acompanhamento";
   const msg: ServiceMessage = {
     id: uid("msg"),
-    kind: input.kind,
+    kind,
     offset_days: days,
-    label: input.label?.trim() || labelFor(input.kind, days),
-    template: input.template ?? (input.kind === "cobranca" ? DEFAULT_COBRANCA : DEFAULT_ACOMP),
+    label: input.label?.trim() || labelFor(kind, days),
+    template: input.template ?? (kind === "cobranca" ? DEFAULT_COBRANCA : DEFAULT_ACOMP),
   };
   all[idx] = { ...all[idx], messages: [...all[idx].messages, msg] };
   write(all);
@@ -198,7 +201,8 @@ export function updateServiceMessage(
   const mIdx = all[sIdx].messages.findIndex((m) => m.id === messageId);
   if (mIdx < 0) return null;
   const merged: ServiceMessage = { ...all[sIdx].messages[mIdx], ...patch };
-  if (merged.kind === "cobranca") merged.offset_days = 0;
+  merged.offset_days = Math.round(Number(merged.offset_days ?? 0));
+  merged.kind = merged.offset_days === 0 ? "cobranca" : "acompanhamento";
   if (!merged.label?.trim()) merged.label = labelFor(merged.kind, merged.offset_days);
   const messages = all[sIdx].messages.slice();
   messages[mIdx] = merged;
