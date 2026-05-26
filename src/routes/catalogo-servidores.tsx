@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Server, Plus, Pencil, Archive, RotateCcw, Download, Upload, RefreshCcw,
-  ExternalLink, Copy, Eye, EyeOff, X, Save, Loader2, AlertCircle, Share2,
+  ExternalLink, Copy, Eye, EyeOff, X, Save, Loader2, AlertCircle, Share2, Trash2,
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
@@ -23,8 +23,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   ServerEntry, listServers, saveServer, archiveServer, reactivateServer,
-  restoreDefaultServers, exportServers, parseServerBackup, importServers,
-  newServerId, serverBadgeStyle, maskSecret, formatServerAsText,
+  deleteServer, restoreDefaultServers, exportServers, parseServerBackup,
+  importServers, newServerId, serverBadgeStyle, maskSecret, formatServerAsText,
   SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
@@ -371,6 +371,20 @@ function ServerCard({
             <RotateCcw className="h-3.5 w-3.5" /> Reativar
           </Button>
         )}
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5 text-destructive hover:text-destructive"
+          onClick={() => guard({
+            kind: "delete",
+            title: `Excluir servidor ${server.name}`,
+            description: "Esta ação remove o servidor do catálogo. Não pode ser desfeita.",
+            actionLabel: "Excluir",
+            onConfirm: () => { deleteServer(server.id); toast.success("Servidor excluído"); },
+          })}
+        >
+          <Trash2 className="h-3.5 w-3.5" /> Excluir
+        </Button>
       </div>
 
       <AlertDialog open={askReveal} onOpenChange={(o) => !o && setAskReveal(false)}>
