@@ -186,37 +186,32 @@ function EmpresasContent() {
   return (
     <PageContainer>
       <SectionHeader
-        title="Empresas"
-        subtitle="Gerencie donos, empresas, planos e acesso aos painéis vendidos."
-        hint="Apenas Super Admin. Modo local."
+        title="Minha base"
+        subtitle="Gerencie sua base de clientes e configurações de acesso."
+        hint="Modo local."
       />
-      <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
+      <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-900">
         <Info className="mr-1 inline h-3.5 w-3.5" />
-        Modo local: esta tela simula empresas e acessos. Em produção precisa Supabase, RLS e isolamento real por empresa.
+        Sua base principal é criada automaticamente. Você não precisa de plano para usar o sistema.
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         <TabsList className="mb-3">
-          <TabsTrigger value="empresas">Empresas</TabsTrigger>
-          <TabsTrigger value="planos">Planos</TabsTrigger>
+          <TabsTrigger value="empresas">Bases</TabsTrigger>
+          <TabsTrigger value="planos">Planos (avançado)</TabsTrigger>
         </TabsList>
 
         <TabsContent value="empresas">
-          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
             <StatPill label="Total" value={summary.total} />
-            <StatPill label="Em teste" value={summary.teste} tone="bg-blue-50" />
             <StatPill label="Ativas" value={summary.ativa} tone="bg-emerald-50" />
-            <StatPill label="Vencidas" value={summary.vencida} tone="bg-amber-50" />
-            <StatPill label="Suspensas" value={summary.suspensa} tone="bg-orange-50" />
-            <StatPill label="Canceladas" value={summary.cancelada} tone="bg-zinc-100" />
-            <StatPill label="Receita prevista" value={`R$ ${summary.receita.toFixed(0)}`} tone="bg-emerald-50" />
-            <StatPill label="Vence em 7 dias" value={summary.vence7} tone="bg-amber-50" />
+            <StatPill label="Em teste" value={summary.teste} tone="bg-blue-50" />
           </div>
 
           <div className="mb-3 flex flex-wrap gap-2">
             <Button size="sm" onClick={() => setCreating(true)}>
               <Plus className="h-4 w-4" />
-              Nova empresa
+              Nova base
             </Button>
             <Button size="sm" variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4" />
@@ -237,14 +232,14 @@ function EmpresasContent() {
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar nome, dono, e-mail, plano…"
+                placeholder="Buscar nome, dono, e-mail…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="pl-8"
               />
             </div>
             <div className="-mx-1 flex gap-1 overflow-x-auto px-1 sm:mx-0 sm:px-0">
-              {(["todas", "teste", "ativa", "vencida", "suspensa", "cancelada"] as const).map((f) => (
+              {(["todas", "ativa", "teste"] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
