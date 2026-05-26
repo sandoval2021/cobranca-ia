@@ -104,14 +104,22 @@ export async function getActiveAccountId(): Promise<{
   accountId: string | null;
   error: RpcErr | null;
 }> {
+  // Cache só vale se ainda bate com a seleção atual ("Visualizando como").
   if (typeof window !== "undefined") {
     try {
       const cached = window.sessionStorage.getItem(ACCOUNT_CACHE_KEY);
-      if (cached) return { accountId: cached, error: null };
+      const currentId = getCurrentCompanyId();
+      if (cached && (!currentId || cached === currentId)) {
+        return { accountId: cached, error: null };
+      }
+      if (cached && currentId && cached !== currentId) {
+        window.sessionStorage.removeItem(ACCOUNT_CACHE_KEY);
+      }
     } catch {
       /* ignore */
     }
   }
+
 
   const cacheAndReturn = (id: string) => {
     if (typeof window !== "undefined") {
