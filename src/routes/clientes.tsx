@@ -469,6 +469,8 @@ function ClientesPage() {
         const active = screens.filter((s) => s.status !== "arquivada");
         if (!screensHaveServer(active, serverFilter)) return false;
       }
+      // Por padrão, arquivados ficam fora da lista (só aparecem na aba "Arquivados").
+      if (filter !== "arquivado" && kind === "arquivado") return false;
       if (filter === "disparo_hoje") {
         if (!dispatchQueueById.has(c.id)) return false;
       } else if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
