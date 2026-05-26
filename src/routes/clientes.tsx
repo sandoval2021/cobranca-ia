@@ -1708,7 +1708,7 @@ function NewCustomerSheet({
     const { data, error } = await supabase.rpc("create_customer_admin", {
       p_company_id: companyId,
       p_name: name.trim() || "Cliente",
-      p_whatsapp_e164: toE164(whatsapp),
+      p_whatsapp_e164: buildE164(countryCode, customDdi, whatsapp),
       p_amount_cents: amt,
       p_due_day: dd,
       p_status: "ativo",
