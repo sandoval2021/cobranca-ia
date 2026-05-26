@@ -1688,15 +1688,21 @@ function EditForm({
   const createdAt = str(customer.raw, ["created_at", "cadastrado_em", "data_cadastro", "inserted_at"]);
 
 
+  const dueDayFromDate = (iso: string): number | null => {
+    if (!iso) return null;
+    const d = new Date(iso + "T00:00:00");
+    if (isNaN(+d)) return null;
+    return d.getDate();
+  };
+
   const validate = (): string | null => {
     if (!name.trim()) return "Informe o nome do cliente.";
     const d = onlyDigits(whatsapp);
     if (d && d.length < 10) return "Revise o WhatsApp informado.";
     const amt = Number(amount.replace(/\./g, "").replace(",", "."));
     if (amount && (isNaN(amt) || amt < 0)) return "Informe um valor válido.";
-    const dd = Number(dueDay);
-    if (dueDay && (isNaN(dd) || dd < 1 || dd > 31))
-      return "O dia de vencimento deve ser entre 1 e 31.";
+    if (dueDate && dueDayFromDate(dueDate) == null)
+      return "Informe uma data de vencimento válida.";
     return null;
   };
 
@@ -1712,12 +1718,13 @@ function EditForm({
     const amt = amount.trim()
       ? Math.round(Number(amount.replace(/\./g, "").replace(",", ".")) * 100)
       : null;
+    const dd = dueDate ? dueDayFromDate(dueDate) : null;
     const { error } = await supabase.rpc("update_customer_admin", {
       p_customer_id: customer.id,
       p_name: name.trim(),
       p_whatsapp_e164: whatsapp.trim() ? toE164(whatsapp) : null,
       p_amount_cents: amt,
-      p_due_day: dueDay.trim() ? Number(dueDay) : null,
+      p_due_day: dd,
       p_status: status.trim() || null,
       p_notes: notes.trim() || null,
     });
@@ -1726,10 +1733,15 @@ function EditForm({
       toast.error(friendlyRpcError(error.message));
       return;
     }
-    setCustomerExtras(customer.id, { email: email.trim(), birthday: birthday || undefined });
+    setCustomerExtras(customer.id, {
+      email: email.trim(),
+      birthday: birthday || undefined,
+      dueDate: dueDate || undefined,
+    });
     toast.success("Cliente atualizado com sucesso.");
     onSaved();
   };
+
 
   return (
     <form onSubmit={submit} className="space-y-2.5">
