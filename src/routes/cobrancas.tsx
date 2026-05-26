@@ -703,6 +703,7 @@ function ChargeCard({
         open={showGenerate}
         onClose={() => setShowGenerate(false)}
         chargeId={charge.id}
+        customerId={charge.customer_id ?? null}
         customerName={who}
         whatsappPretty={phone}
         amountBRL={charge.amount_cents != null ? fmtBRL(charge.amount_cents) : null}
@@ -999,6 +1000,7 @@ function ChargeSheet({
           open={showGenerate}
           onClose={() => setShowGenerate(false)}
           chargeId={charge.id}
+          customerId={charge.customer_id ?? null}
           customerName={who}
           whatsappPretty={phone}
           amountBRL={charge.amount_cents != null ? fmtBRL(charge.amount_cents) : null}

@@ -31,6 +31,16 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  listActiveServices,
+  formatBRL as fmtBRLCents,
+  type ServiceItem,
+} from "@/lib/services-catalog";
+import {
+  getCustomerPlanId,
+  setCustomerPlan,
+  CUSTOMER_PLANS_EVENT,
+} from "@/lib/customer-plans";
 
 type Row = Record<string, unknown>;
 
@@ -205,6 +215,7 @@ export function GenerateMessageDialog({
   open,
   onClose,
   chargeId,
+  customerId = null,
   customerName,
   whatsappPretty,
   amountBRL,
@@ -216,6 +227,7 @@ export function GenerateMessageDialog({
   open: boolean;
   onClose: () => void;
   chargeId: string | null;
+  customerId?: string | null;
   customerName: string;
   whatsappPretty: string | null;
   amountBRL: string | null;
@@ -231,6 +243,54 @@ export function GenerateMessageDialog({
   const [preview, setPreview] = useState<string>("");
   const [generatedTone, setGeneratedTone] = useState<string>("amigavel");
   const [copyOk, setCopyOk] = useState(false);
+
+  // Plano do cliente (catálogo local) — escolhe qual mensagem usar.
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [planId, setPlanId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const reload = () => {
+      setServices(listActiveServices());
+      setPlanId(getCustomerPlanId(customerId));
+    };
+    reload();
+    window.addEventListener(CUSTOMER_PLANS_EVENT, reload);
+    return () => window.removeEventListener(CUSTOMER_PLANS_EVENT, reload);
+  }, [open, customerId]);
+
+  const selectedPlan = useMemo(
+    () => services.find((s) => s.id === planId) ?? null,
+    [services, planId],
+  );
+
+  function applyPlanTemplate() {
+    if (!selectedPlan) {
+      toast.error("Selecione um plano cadastrado para este cliente.");
+      return;
+    }
+    const tpl =
+      selectedPlan.mensagem_cobranca?.trim() ||
+      "Olá {nome}, sua mensalidade do plano *{plano}* ({telas} tela/s · {meses} mês/es) no valor de *{valor}* vence em {vencimento}.";
+    const vars: Record<string, string> = {
+      nome: customerName || "cliente",
+      plano: selectedPlan.nome,
+      valor: amountBRL || fmtBRLCents(selectedPlan.preco_cents),
+      telas: String(selectedPlan.telas),
+      meses: String(selectedPlan.meses),
+      vencimento: dueDatePretty || "—",
+    };
+    const out = tpl.replace(/\{(\w+)\}/g, (_m, k) => vars[k] ?? `{${k}}`);
+    setPreview(out);
+    setGeneratedTone(tone);
+    setStage("preview");
+  }
+
+  function handlePickPlan(id: string) {
+    const v = id === "__none__" ? null : id;
+    setPlanId(v);
+    if (customerId) setCustomerPlan(customerId, v);
+  }
 
   useEffect(() => {
     if (open) {
@@ -391,6 +451,53 @@ export function GenerateMessageDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Plano do cliente — usa o modelo de mensagem do plano */}
+          <div className="rounded-lg border border-border bg-card p-3">
+            <Label className="mb-1 flex items-center gap-1.5 text-xs">
+              Plano do cliente
+              <HelpTip text="Cada plano cadastrado em Cadastros · Serviços tem sua própria mensagem de cobrança. Escolha o plano deste cliente para usar o texto correto." />
+            </Label>
+            {services.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground">
+                Nenhum plano cadastrado. Cadastre em <strong>Cadastros · Serviços</strong> para usar mensagens por plano.
+              </p>
+            ) : (
+              <>
+                <Select value={planId ?? "__none__"} onValueChange={handlePickPlan}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Selecione o plano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Sem plano definido —</SelectItem>
+                    {services.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nome} · {fmtBRLCents(s.preco_cents)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[11px] text-muted-foreground">
+                    {selectedPlan
+                      ? `${selectedPlan.telas} tela${selectedPlan.telas > 1 ? "s" : ""} · ${selectedPlan.meses} ${selectedPlan.meses === 1 ? "mês" : "meses"}`
+                      : "Selecione um plano para usar a mensagem específica."}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={applyPlanTemplate}
+                    disabled={!selectedPlan}
+                    className="h-8 gap-1.5"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Usar modelo do plano
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+
 
           {/* Estado vazio antes da prévia */}
           {stage === "idle" && (
