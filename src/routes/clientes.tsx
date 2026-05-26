@@ -285,10 +285,10 @@ function ClientesPage() {
     setLoading(true);
     setErrorMsg(null);
     (async () => {
-      const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
+      const { accountId: companyId, error: companyErr } = await getActiveAccountId();
       if (!alive) return;
       if (companyErr || !companyId) {
-        setErrorMsg("Não foi possível confirmar sua conta. Entre novamente e tente de novo.");
+        setErrorMsg("Não foi possível preparar sua conta. Tente entrar novamente.");
         setItems(null);
         setLoading(false);
         return;
