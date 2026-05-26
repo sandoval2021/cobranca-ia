@@ -595,26 +595,36 @@ function NewTrialSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{editing ? "Editar teste" : "Novo teste"}</SheetTitle>
-          <SheetDescription>Preencha os dados do teste. Nada é enviado automaticamente.</SheetDescription>
+      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-4">
+        <SheetHeader className="pb-2">
+          <SheetTitle className="text-base">{editing ? "Editar teste" : "Novo teste"}</SheetTitle>
+          <SheetDescription className="text-xs">Apenas a data em que o teste foi pedido é necessária. Nada é enviado automaticamente.</SheetDescription>
         </SheetHeader>
-        <div className="mt-4 space-y-3">
-          <Field label="Nome">
-            <Input value={form.nome ?? ""} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Opcional" />
-          </Field>
-          <Field label="WhatsApp *">
-            <Input value={form.whatsapp ?? ""} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="(00) 00000-0000" inputMode="tel" />
-          </Field>
-          <Field label="Origem">
-            <select className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-              value={form.origem ?? "Outro"} onChange={(e) => setForm({ ...form, origem: e.target.value as TrialOrigin })}>
-              {TRIAL_ORIGINS.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </Field>
+        <div className="mt-2 space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Quem indicou (nome)">
+            <Field label="Nome">
+              <Input value={form.nome ?? ""} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Opcional" />
+            </Field>
+            <Field label="WhatsApp *">
+              <Input value={form.whatsapp ?? ""} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="(00) 00000-0000" inputMode="tel" />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Origem">
+              <select className="h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                value={form.origem ?? "Outro"} onChange={(e) => setForm({ ...form, origem: e.target.value as TrialOrigin })}>
+                {TRIAL_ORIGINS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </Field>
+            <Field label="Status">
+              <select className="h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                value={form.status ?? "Teste solicitado"} onChange={(e) => setForm({ ...form, status: e.target.value as TrialLead["status"] })}>
+                {TRIAL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Quem indicou">
               <Input value={form.indicado_por_nome ?? ""} onChange={(e) => setForm({ ...form, indicado_por_nome: e.target.value })} placeholder="Opcional" />
             </Field>
             <Field label="WhatsApp indicador">
@@ -622,26 +632,28 @@ function NewTrialSheet({
             </Field>
           </div>
 
-          <Field label="Servidor *">
-            <select
-              className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-              value={form.servidor ?? ""}
-              onChange={(e) => setForm({ ...form, servidor: e.target.value })}
-            >
-              <option value="">Selecione um servidor…</option>
-              {servers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
-            </select>
-          </Field>
-          <Field label="Servidor adicional">
-            <select
-              className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-              value={form.servidor_adicional ?? ""}
-              onChange={(e) => setForm({ ...form, servidor_adicional: e.target.value })}
-            >
-              <option value="">Nenhum (opcional)</option>
-              {servers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
-            </select>
-          </Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Servidor *">
+              <select
+                className="h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                value={form.servidor ?? ""}
+                onChange={(e) => setForm({ ...form, servidor: e.target.value })}
+              >
+                <option value="">Selecione…</option>
+                {servers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Servidor adicional">
+              <select
+                className="h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                value={form.servidor_adicional ?? ""}
+                onChange={(e) => setForm({ ...form, servidor_adicional: e.target.value })}
+              >
+                <option value="">Nenhum</option>
+                {servers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+              </select>
+            </Field>
+          </div>
 
           <div className="grid grid-cols-2 gap-2">
             <Field label="Usuário">
@@ -668,69 +680,42 @@ function NewTrialSheet({
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="Valor do teste (R$)">
-              <Input
-                value={valorStr}
-                onChange={(e) => setValorStr(e.target.value)}
-                placeholder="0,00"
-                inputMode="decimal"
-              />
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="Valor (R$)">
+              <Input value={valorStr} onChange={(e) => setValorStr(e.target.value)} placeholder="0,00" inputMode="decimal" />
             </Field>
-            <Field label="Horas de teste">
+            <Field label="Horas">
               <Input
-                type="number"
-                min={1}
-                max={720}
+                type="number" min={1} max={720}
                 value={form.horas_teste ?? 2}
                 onChange={(e) => setForm({ ...form, horas_teste: Number(e.target.value) })}
               />
             </Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="Início do teste">
+            <Field label="Início">
               <Input
                 type="datetime-local"
                 value={form.data_inicio?.slice(0, 16) ?? ""}
                 onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
               />
             </Field>
-            <Field label="Fim do teste (auto)">
-              <Input
-                type="datetime-local"
-                value={form.data_fim?.slice(0, 16) ?? ""}
-                readOnly
-                className="bg-muted/40"
-              />
-            </Field>
           </div>
 
-          <Field label="App sugerido">
-            <Input value={form.app ?? ""} onChange={(e) => setForm({ ...form, app: e.target.value })} placeholder="Opcional" />
-          </Field>
-          <Field label="Status">
-            <select className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-              value={form.status ?? "Teste solicitado"} onChange={(e) => setForm({ ...form, status: e.target.value as TrialLead["status"] })}>
-              {TRIAL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </Field>
           <Field label="Interesse">
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               {TRIAL_INTERESTS.map((i) => (
                 <button key={i} type="button" onClick={() => setForm({ ...form, interesse: i as TrialInterest })}
                   className={cn(
-                    "flex-1 rounded-md border px-3 py-1.5 text-sm",
+                    "flex-1 rounded-md border px-2 py-1 text-xs",
                     form.interesse === i ? "border-primary bg-primary text-primary-foreground" : "border-border",
                   )}>{i}</button>
               ))}
             </div>
           </Field>
           <Field label="Observação">
-            <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={3} />
+            <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} />
           </Field>
         </div>
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-3 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={submit}>Salvar teste</Button>
         </div>
