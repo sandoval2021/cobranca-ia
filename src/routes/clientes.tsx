@@ -1602,15 +1602,24 @@ function NewCustomerSheet({
   const [serverIdExtra, setServerIdExtra] = useState<string>("__none__");
   const [app, setApp] = useState<AppKey | "__none__">("__none__");
   const [amount, setAmount] = useState("");
-  const [dueDay, setDueDay] = useState("");
+  const [dueDate, setDueDate] = useState(""); // yyyy-mm-dd (data completa do cliente)
   const [notes, setNotes] = useState("");
+  // Campos de app pago — UI agora; persistência segura definitiva virá com backend.
+  const [mac, setMac] = useState("");
+  const [appKey, setAppKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [appDueDate, setAppDueDate] = useState(""); // yyyy-mm-dd
   const [busy, setBusy] = useState(false);
+
+  const paidApp = app !== "__none__" && APP_CATALOG[app]?.tier === "pago";
 
   useEffect(() => {
     if (open) {
       setName(""); setWhatsapp("");
       setServerId("__none__"); setServerIdExtra("__none__");
-      setApp("__none__"); setAmount(""); setDueDay(""); setNotes(""); setBusy(false);
+      setApp("__none__"); setAmount(""); setDueDate(""); setNotes("");
+      setMac(""); setAppKey(""); setShowKey(false); setAppDueDate("");
+      setBusy(false);
     }
   }, [open]);
 
@@ -1624,9 +1633,16 @@ function NewCustomerSheet({
     if (amount.trim() && (amt == null || Number.isNaN(amt) || amt < 0)) {
       toast.error("Informe um valor válido."); return;
     }
-    const dd = Number(dueDay);
-    if (dueDay.trim() && (Number.isNaN(dd) || dd < 1 || dd > 31)) {
-      toast.error("O dia de vencimento deve ser entre 1 e 31."); return;
+    // Converte data completa (yyyy-mm-dd) para dia do mês (1-31)
+    // Backend atual ainda só persiste p_due_day; data completa virá com backend futuro.
+    let dd: number | null = null;
+    if (dueDate.trim()) {
+      const parsed = new Date(dueDate + "T00:00:00");
+      if (isNaN(+parsed)) {
+        toast.error("Informe uma data de vencimento válida.");
+        return;
+      }
+      dd = parsed.getDate();
     }
     if (!supabase) { toast.error("Conexão indisponível."); return; }
     setBusy(true);
@@ -1641,7 +1657,7 @@ function NewCustomerSheet({
       p_name: name.trim() || "Cliente",
       p_whatsapp_e164: toE164(whatsapp),
       p_amount_cents: amt,
-      p_due_day: dueDay.trim() ? dd : null,
+      p_due_day: dd,
       p_status: "ativo",
       p_notes: notes.trim() || null,
     });
@@ -1762,6 +1778,58 @@ function NewCustomerSheet({
             </div>
           </section>
 
+          {/* Dados do app pago — visível somente para apps pagos */}
+          {paidApp && (
+            <section className="space-y-2 rounded-lg border border-amber-300/50 bg-amber-50/40 p-2.5 dark:border-amber-500/30 dark:bg-amber-500/5">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                Dados do app pago
+              </h3>
+              <p className="text-[11px] leading-snug text-muted-foreground">
+                MAC e Key ainda dependem da proteção segura no servidor para serem salvos de forma definitiva.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Label className="text-xs">MAC</Label>
+                    <HelpTip text="Endereço MAC do aparelho. Opcional. Persistência segura virá com o backend." />
+                  </div>
+                  <Input value={mac} onChange={(e) => setMac(e.target.value)} placeholder="00:1A:79:00:00:00" maxLength={32} />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Label className="text-xs">Key</Label>
+                    <HelpTip text="Chave do app pago. Opcional. Persistência segura virá com o backend." />
+                  </div>
+                  <div className="relative">
+                    <Input
+                      value={appKey}
+                      onChange={(e) => setAppKey(e.target.value)}
+                      type={showKey ? "text" : "password"}
+                      placeholder="••••••"
+                      maxLength={64}
+                      className="pr-9"
+                    />
+                    <button
+                      type="button"
+                      aria-label={showKey ? "Ocultar key" : "Mostrar key"}
+                      onClick={() => setShowKey((v) => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted"
+                    >
+                      {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1 col-span-2">
+                  <div className="flex items-center gap-1">
+                    <Label className="text-xs">Vencimento do app</Label>
+                    <HelpTip text="Escolha quando o app pago do cliente vence. Será salvo quando a persistência do app estiver ativada no servidor." />
+                  </div>
+                  <Input type="date" value={appDueDate} onChange={(e) => setAppDueDate(e.target.value)} />
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Cobrança */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
             <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Cobrança</h3>
@@ -1771,8 +1839,11 @@ function NewCustomerSheet({
                 <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" inputMode="decimal" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Dia de vencimento</Label>
-                <Input value={dueDay} onChange={(e) => setDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))} placeholder="1–31" inputMode="numeric" />
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Data de vencimento</Label>
+                  <HelpTip text="Escolha a data em que a mensalidade do cliente vence. Por enquanto o sistema usa o dia dessa data para cobrança mensal." />
+                </div>
+                <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
               </div>
             </div>
           </section>
