@@ -195,11 +195,44 @@ function TestesPage() {
     const indicatorKey = lead.indicado_por_cliente_id || lead.indicado_por_whatsapp || lead.indicado_por_nome;
     if (indicatorKey) {
       const s = summary.find((x) => x.key === indicatorKey);
-      if (s && s.fecharam >= rules.meta && s.bonificacaoPendente === 0) {
-        // mark one referral as bonificação pendente
-        // Find the latest "Fechou" for this indicator and bump
-        // (handled visually in /indicacoes)
-        toast.success("Indicador bateu meta — confira em Indicações");
+      if (s) {
+        const bonificacao = bonusDescription(rules);
+        if (s.fecharam >= rules.meta) {
+          // aplica a bonificação automaticamente (zera o ciclo) e mantém histórico
+          const aplicadas = applyBonusForIndicator(indicatorKey, rules.meta);
+          if (aplicadas >= rules.meta) {
+            const msg = renderReferralMessage("bateu_meta", {
+              indicador: s.nome, fechadas: s.fecharam, faltam: 0, meta: rules.meta, bonificacao,
+            });
+            navigator.clipboard?.writeText(msg).catch(() => {});
+            const wa = (s.whatsapp || "").replace(/\D/g, "");
+            toast.success(`Bonificação liberada para ${s.nome}!`, {
+              description: rules.tipo === "1mes"
+                ? "Renovação 1 mês grátis liberada. Mensagem copiada — confira em Clientes para aplicar a renovação."
+                : "Mensagem de premiação copiada. Veja em Indicações.",
+              action: wa ? {
+                label: "WhatsApp",
+                onClick: () => window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, "_blank"),
+              } : undefined,
+              duration: 12000,
+            });
+          }
+        } else {
+          // ainda falta — notifica progresso
+          const msg = renderReferralMessage("fechou_falta", {
+            indicador: s.nome, fechadas: s.fecharam, faltam: s.faltamParaMeta, meta: rules.meta, bonificacao,
+          });
+          navigator.clipboard?.writeText(msg).catch(() => {});
+          const wa = (s.whatsapp || "").replace(/\D/g, "");
+          toast.info(`Indicador ${s.nome}: ${s.fecharam} de ${rules.meta} — falta ${s.faltamParaMeta}`, {
+            description: "Mensagem para o indicador copiada.",
+            action: wa ? {
+              label: "WhatsApp",
+              onClick: () => window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, "_blank"),
+            } : undefined,
+            duration: 10000,
+          });
+        }
       }
     }
     reload();
