@@ -490,6 +490,7 @@ function ImportarClientesPage() {
         toast.error("Não foi possível importar: " + error.message);
         return;
       }
+      setImportedDueBulk([{ wa: r.whatsapp_e164, date: r.expires_at ?? r.expires_raw ?? null }]);
       toast.success("Cliente importado mesmo assim.");
       setForcedIdx((prev) => {
         const next = new Set(prev);
