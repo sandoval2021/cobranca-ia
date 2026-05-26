@@ -60,55 +60,59 @@
 }
 
 :root {
-  --radius: 0.75rem;
+  /* iOS-style rounded corners */
+  --radius: 1rem;
 
-  --background: oklch(0.985 0.003 250);
-  --foreground: oklch(0.18 0.025 260);
+  /* Soft blue-tinted white background, iOS feel */
+  --background: oklch(0.985 0.006 240);
+  --foreground: oklch(0.20 0.02 250);
   --surface: oklch(1 0 0);
-  --surface-muted: oklch(0.97 0.005 250);
+  --surface-muted: oklch(0.975 0.008 240);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.025 260);
+  --card-foreground: oklch(0.20 0.02 250);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.025 260);
+  --popover-foreground: oklch(0.20 0.02 250);
 
-  --primary: oklch(0.52 0.19 270);
-  --primary-foreground: oklch(0.99 0 0);
-  --primary-soft: oklch(0.95 0.04 270);
+  /* iOS system blue (#007AFF) */
+  --primary: oklch(0.60 0.18 252);
+  --primary-foreground: oklch(1 0 0);
+  --primary-soft: oklch(0.955 0.035 245);
 
-  --secondary: oklch(0.96 0.005 250);
-  --secondary-foreground: oklch(0.25 0.02 260);
-  --muted: oklch(0.96 0.005 250);
-  --muted-foreground: oklch(0.5 0.015 260);
-  --accent: oklch(0.95 0.02 270);
-  --accent-foreground: oklch(0.25 0.05 270);
+  --secondary: oklch(0.965 0.01 245);
+  --secondary-foreground: oklch(0.28 0.03 250);
+  --muted: oklch(0.965 0.01 245);
+  --muted-foreground: oklch(0.55 0.02 250);
+  --accent: oklch(0.955 0.035 245);
+  --accent-foreground: oklch(0.42 0.14 252);
 
-  --destructive: oklch(0.58 0.21 27);
-  --destructive-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.62 0.20 25);
+  --destructive-foreground: oklch(1 0 0);
 
-  --success: oklch(0.62 0.16 155);
-  --success-foreground: oklch(0.99 0 0);
-  --success-soft: oklch(0.95 0.05 155);
+  --success: oklch(0.66 0.15 155);
+  --success-foreground: oklch(1 0 0);
+  --success-soft: oklch(0.955 0.05 155);
 
-  --warning: oklch(0.78 0.15 75);
-  --warning-foreground: oklch(0.25 0.05 75);
-  --warning-soft: oklch(0.96 0.06 85);
+  --warning: oklch(0.78 0.14 70);
+  --warning-foreground: oklch(0.28 0.06 70);
+  --warning-soft: oklch(0.965 0.06 80);
 
-  --danger: oklch(0.6 0.21 25);
-  --danger-foreground: oklch(0.99 0 0);
-  --danger-soft: oklch(0.95 0.05 25);
+  --danger: oklch(0.62 0.20 25);
+  --danger-foreground: oklch(1 0 0);
+  --danger-soft: oklch(0.96 0.04 25);
 
-  --info: oklch(0.6 0.15 235);
-  --info-foreground: oklch(0.99 0 0);
-  --info-soft: oklch(0.95 0.04 235);
+  --info: oklch(0.60 0.18 252);
+  --info-foreground: oklch(1 0 0);
+  --info-soft: oklch(0.955 0.035 245);
 
-  --border: oklch(0.92 0.008 255);
-  --border-strong: oklch(0.86 0.012 255);
-  --input: oklch(0.92 0.008 255);
-  --ring: oklch(0.52 0.19 270);
+  --border: oklch(0.93 0.01 245);
+  --border-strong: oklch(0.88 0.012 245);
+  --input: oklch(0.93 0.01 245);
+  --ring: oklch(0.60 0.18 252);
 
-  --shadow-card: 0 1px 2px oklch(0.18 0.025 260 / 0.04), 0 4px 16px oklch(0.18 0.025 260 / 0.04);
-  --shadow-pop: 0 8px 32px oklch(0.18 0.025 260 / 0.12);
+  /* Soft, premium iOS-like shadows */
+  --shadow-card: 0 1px 2px oklch(0.20 0.04 252 / 0.04), 0 4px 14px oklch(0.20 0.04 252 / 0.05);
+  --shadow-pop: 0 12px 36px oklch(0.20 0.04 252 / 0.14);
 
   --sidebar-width: 16rem;
   --sidebar-width-icon: 4rem;
