@@ -1585,7 +1585,8 @@ function EditForm({
   const [status, setStatus] = useState(customer.status ?? "ativo");
   const [notes, setNotes] = useState(customer.notes ?? "");
   const createdAt = str(customer.raw, ["created_at", "cadastrado_em", "data_cadastro", "inserted_at"]);
-  const screensCount = useMemo(() => listScreens(customer.id).length, [customer.id]);
+  const screensList = useMemo(() => listScreens(customer.id), [customer.id]);
+  const screensCount = screensList.length;
 
   const validate = (): string | null => {
     if (!name.trim()) return "Informe o nome do cliente.";
