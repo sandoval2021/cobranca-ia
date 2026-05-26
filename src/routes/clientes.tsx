@@ -1383,14 +1383,19 @@ function EditForm({
   onSaved: () => void;
   setBusy: (b: boolean) => void;
 }) {
+  const initialExtras = getCustomerExtras(customer.id);
   const [name, setName] = useState(customer.name);
   const [whatsapp, setWhatsapp] = useState(customer.whatsapp ?? "");
+  const [email, setEmail] = useState(initialExtras.email ?? "");
+  const [birthday, setBirthday] = useState(initialExtras.birthday ?? "");
   const [amount, setAmount] = useState(
     customer.amount_cents != null ? (customer.amount_cents / 100).toFixed(2).replace(".", ",") : "",
   );
   const [dueDay, setDueDay] = useState(customer.due_day != null ? String(customer.due_day) : "");
   const [status, setStatus] = useState(customer.status ?? "ativo");
   const [notes, setNotes] = useState(customer.notes ?? "");
+  const createdAt = str(customer.raw, ["created_at", "cadastrado_em", "data_cadastro", "inserted_at"]);
+  const screensCount = useMemo(() => listScreens(customer.id).length, [customer.id]);
 
   const validate = (): string | null => {
     if (!name.trim()) return "Informe o nome do cliente.";
