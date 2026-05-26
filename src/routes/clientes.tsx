@@ -1703,9 +1703,10 @@ function NewCustomerSheet({
     if (!companyId) {
       setBusy(false);
       console.warn("[novo cliente] sem UUID real de conta", companyErr);
-      toast.error("Sua base de teste ainda não está ativa. Atualize a página ou selecione uma base válida.");
+      toast.error("Não foi possível preparar sua conta automaticamente. Saia e entre novamente.");
       return;
     }
+
 
     const { data, error } = await supabase.rpc("create_customer_admin", {
       p_company_id: companyId,
