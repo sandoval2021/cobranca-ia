@@ -944,6 +944,18 @@ function ClientCard({
               )}
             </div>
           )}
+          {activeScreens.length === 0 && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={onApps}
+                className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-950/40 dark:text-blue-300"
+                title="Adicionar / gerenciar aplicativos"
+              >
+                <Tv className="h-3 w-3" /> + Aplicativo
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
