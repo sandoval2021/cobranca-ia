@@ -123,8 +123,32 @@ export function QuickRenewDialog({
     [customerDueDay, months],
   );
 
-  const toggle = (id: string, patch: Partial<ScreenChoice>) =>
-    setChoices((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+  // Data antiga (vencimento atual) — prioriza tela com vencimento mais próximo,
+  // ou usa o dia de vencimento mensal do cliente.
+  const oldDue = useMemo(() => {
+    if (selectedScreens.length > 0) {
+      const dates = selectedScreens
+        .map((s) => s.due_date)
+        .filter(Boolean) as string[];
+      if (dates.length) return dates.sort()[0];
+    }
+    if (customerDueDay) {
+      return addMonthsISO(baseFromDueDay(customerDueDay), -1);
+    }
+    return null;
+  }, [selectedScreens, customerDueDay]);
+
+  const parseBR = (v: string): number => {
+    const n = Number((v || "").replace(/\./g, "").replace(",", "."));
+    return isNaN(n) ? 0 : n;
+  };
+  const amountNum = parseBR(amount);
+  const appAmountNum = parseBR(appAmount);
+  const discountNum = parseBR(discount);
+  const totalNum = Math.max(0, amountNum + appAmountNum - discountNum);
+  const fmtMoney = (n: number) =>
+    `R$ ${n.toFixed(2).replace(".", ",")}`;
+
 
   const selectAll = (val: boolean) => {
     const next: Record<string, ScreenChoice> = {};
