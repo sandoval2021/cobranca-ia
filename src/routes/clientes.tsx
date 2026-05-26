@@ -270,6 +270,10 @@ function ClientesPage() {
   }, []);
   const [openId, setOpenId] = useState<string | null>(null);
   const [openNew, setOpenNew] = useState(false);
+  const [renewId, setRenewId] = useState<string | null>(null);
+  const [appsId, setAppsId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [reloadBump, setReloadBump] = useState(0);
 
   useEffect(() => {
