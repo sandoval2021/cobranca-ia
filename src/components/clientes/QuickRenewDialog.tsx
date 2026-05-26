@@ -155,9 +155,23 @@ export function QuickRenewDialog({
   const amountNum = parseBR(amount);
   const appAmountNum = parseBR(appAmount);
   const discountNum = parseBR(discount);
-  const totalNum = Math.max(0, amountNum + appAmountNum - discountNum);
+  const totalServicos = amountNum + appAmountNum;
+  const totalNum = Math.max(0, totalServicos - discountNum);
   const fmtMoney = (n: number) =>
     `R$ ${n.toFixed(2).replace(".", ",")}`;
+
+  // Vencimento final calculado (telas ou cliente)
+  const computedNewDue = useMemo(() => {
+    if (hasScreens && selectedScreens.length) {
+      return selectedScreens
+        .map((s) => addMonthsISO(baseFromScreen(s), months))
+        .sort()
+        .reverse()[0];
+    }
+    return customerNewDue;
+  }, [hasScreens, selectedScreens, months, customerNewDue]);
+
+  const effectiveNewDue = newDueOverride || computedNewDue;
 
   const toggle = (id: string, patch: Partial<ScreenChoice>) =>
     setChoices((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
