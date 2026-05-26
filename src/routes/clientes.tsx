@@ -896,25 +896,69 @@ function ClientCard({
 
   const primaryScreen = activeScreens[0];
   const primaryApp = primaryScreen ? APP_CATALOG[primaryScreen.app] : null;
-  const shortCode = customer.id.replace(/[^a-zA-Z0-9]/g, "").slice(-4).toUpperCase();
   const phoneDigits = onlyDigits(customer.whatsapp ?? "");
-  const codCliente = phoneDigits ? phoneDigits.slice(-10) : shortCode;
+  const codCliente = phoneDigits ? phoneDigits.slice(-10) : customer.id.replace(/[^a-zA-Z0-9]/g, "").slice(-6).toUpperCase();
+
+  // Estado do disparo de hoje (para colorir nome em vermelho em caso de falha)
+  const nowMs = Date.now();
+  const dispatchScheduledMs = dispatchInfo ? dispatchInfo.scheduleTime.getTime() : 0;
+  const dispatchFailed = !!dispatchInfo && !dispatchInfo.sent && !dispatchInfo.cancelled && dispatchScheduledMs + 60_000 < nowMs;
+  const dispatchPending = !!dispatchInfo && !dispatchInfo.sent && !dispatchInfo.cancelled && !dispatchFailed;
+  const fmtDateTimeBR = (d: Date) =>
+    `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()} ${fmtHHMM(d)}`;
+
+  const sendWhatsAppNow = () => {
+    if (!dispatchInfo) return;
+    const phoneD = onlyDigits(customer.whatsapp ?? "");
+    if (!phoneD) { toast.error("Cliente sem WhatsApp."); return; }
+    window.open(
+      `https://wa.me/${phoneD}?text=${encodeURIComponent(dispatchInfo.message)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+    markSent(customer.id);
+    onDispatchChanged?.();
+  };
+
+  // Abre o site externo do app e copia MAC/Key se houver — sites externos não
+  // permitem auto-preenchimento por questões de segurança; o melhor que dá pra fazer
+  // é abrir o site e deixar MAC/Key na área de transferência prontos para colar.
+  const openAppExternal = () => {
+    if (!primaryScreen) return;
+    const url = APP_WEBSITE[primaryScreen.app];
+    if (!url) { toast.info("Este app não tem site externo cadastrado."); return; }
+    const mac = primaryScreen.mac?.trim();
+    const key = primaryScreen.app_key?.trim();
+    if (mac && key) {
+      void navigator.clipboard?.writeText(`MAC: ${mac}\nKey: ${key}`).catch(() => {});
+      toast.success("MAC e Key copiados — cole no site do app.");
+    } else if (mac) {
+      void navigator.clipboard?.writeText(mac).catch(() => {});
+      toast.success("MAC copiado — cole no site do app.");
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   const Row = ({ label, value, valueClass }: { label: string; value: React.ReactNode; valueClass?: string }) => (
-    <div className="flex items-start justify-between gap-3 py-1 border-b border-foreground/5 last:border-b-0">
-      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
-      <span className={cn("text-xs text-right break-words min-w-0", valueClass)}>{value}</span>
+    <div className="flex items-center justify-between gap-3 py-0.5">
+      <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
+      <span className={cn("text-[11px] text-right break-words min-w-0", valueClass)}>{value}</span>
     </div>
   );
 
   return (
-    <div className={cn("rounded-xl border border-l-4 p-3 shadow-card", tint)}>
-      <div className="flex items-center justify-between gap-2 mb-1">
+    <div className={cn("rounded-lg border border-l-4 p-2.5 shadow-card", tint)}>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-info-soft text-info text-xs font-semibold">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-info-soft text-info text-[11px] font-semibold">
             {initial}
           </div>
-          <p className="text-sm font-semibold truncate">{customer.name}</p>
+          <p className={cn(
+            "text-sm font-semibold truncate",
+            dispatchFailed && "text-red-600 dark:text-red-400",
+          )}>
+            {customer.name}
+          </p>
         </div>
         <button
           type="button"
@@ -927,9 +971,7 @@ function ClientCard({
       </div>
 
       <div className="divide-y divide-foreground/5">
-        <Row label="Código" value={<span className="font-mono">{shortCode}</span>} />
         <Row label="Cód. Cliente" value={<span className="font-mono">{codCliente}</span>} />
-        <Row label="Cliente" value={<span className="font-medium text-foreground">{customer.name}</span>} />
         <Row label="WhatsApp" value={phone ?? <span className="text-muted-foreground">—</span>} valueClass="font-mono" />
         <Row
           label="Serviço"
@@ -937,11 +979,23 @@ function ClientCard({
             primaryScreen && primaryApp ? (
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onOpen(); }}
-                className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium", primaryApp.badgeClass)}
-                title={`${primaryScreen.name} · ${primaryApp.label}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (primaryApp.tier === "pago") openAppExternal();
+                  else onOpen();
+                }}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                  primaryApp.badgeClass,
+                )}
+                title={
+                  primaryApp.tier === "pago"
+                    ? `Abrir site oficial de ${primaryApp.label}`
+                    : `${primaryScreen.name} · ${primaryApp.label}`
+                }
               >
                 {primaryScreen.name} · {primaryApp.label}
+                {primaryApp.tier === "pago" && <ExternalLink className="h-2.5 w-2.5" />}
               </button>
             ) : (
               <button
@@ -957,15 +1011,13 @@ function ClientCard({
         <Row
           label="Valor"
           value={
-            customer.amount_cents != null ? (
-              <strong className="font-semibold text-foreground">{fmtBRL(customer.amount_cents)}</strong>
-            ) : (
-              <span className="text-muted-foreground">—</span>
-            )
+            customer.amount_cents != null
+              ? <strong className="font-semibold text-foreground">{fmtBRL(customer.amount_cents)}</strong>
+              : <span className="text-muted-foreground">—</span>
           }
         />
         <Row
-          label="Data Expiração"
+          label="Expira"
           value={nextDueIso ? <span className="font-medium text-foreground">{fmtDateBRFromISO(nextDueIso)}</span> : <span className="text-muted-foreground">—</span>}
         />
         <Row
@@ -988,61 +1040,49 @@ function ClientCard({
             </span>
           }
         />
-        {primaryScreen && (primaryScreen.server_ids ?? []).length > 0 && (
-          <Row
-            label="Servidor"
-            value={
-              <span className="inline-flex flex-wrap justify-end gap-1">
-                {(primaryScreen.server_ids ?? []).map((sid) => <ServerBadge key={sid} serverId={sid} size="xs" />)}
-              </span>
-            }
-          />
-        )}
-        {screens.length > activeScreens.length && (
-          <Row label="Mais telas" value={<span className="text-muted-foreground">+{screens.length - activeScreens.length}</span>} />
-        )}
       </div>
-
-
 
       {dispatchInfo && (
         <div className={cn(
-          "mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-[11px]",
-          dispatchInfo.sent && "border-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/20",
+          "mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border px-2 py-1 text-[11px]",
+          dispatchInfo.sent && "border-emerald-300 bg-emerald-50/70 dark:border-emerald-600/40 dark:bg-emerald-950/20",
           dispatchInfo.cancelled && "border-muted bg-muted/40 opacity-80",
-          !dispatchInfo.sent && !dispatchInfo.cancelled && "border-primary/30 bg-primary/5",
+          dispatchFailed && "border-red-400 bg-red-50 dark:border-red-500/40 dark:bg-red-950/25",
+          dispatchPending && "border-primary/30 bg-primary/5",
         )}>
           <div className="flex items-center gap-1.5 min-w-0">
             {dispatchInfo.sent ? (
               <>
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                <span className="font-medium">Enviada hoje</span>
-                <span className="text-muted-foreground font-mono">• {fmtHHMM(dispatchInfo.scheduleTime)}</span>
+                <span className="font-medium text-emerald-700 dark:text-emerald-300">Enviada com sucesso</span>
+                <span className="text-muted-foreground font-mono">· {fmtDateTimeBR(dispatchInfo.scheduleTime)}</span>
               </>
             ) : dispatchInfo.cancelled ? (
               <>
                 <Ban className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="font-medium">Envio cancelado</span>
-                <span className="text-muted-foreground font-mono">• era {fmtHHMM(dispatchInfo.scheduleTime)}</span>
+                <span className="text-muted-foreground font-mono">· era {fmtDateTimeBR(dispatchInfo.scheduleTime)}</span>
+              </>
+            ) : dispatchFailed ? (
+              <>
+                <AlertTriangle className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                <span className="font-semibold text-red-600 dark:text-red-400">Falha no envio</span>
+                <span className="text-muted-foreground font-mono">· {fmtDateTimeBR(dispatchInfo.scheduleTime)}</span>
               </>
             ) : (
               <>
                 <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span className="font-medium">Será enviada às</span>
-                <span className="font-mono">{fmtHHMM(dispatchInfo.scheduleTime)}</span>
+                <span className="font-medium">Será enviada em</span>
+                <span className="font-mono">{fmtDateTimeBR(dispatchInfo.scheduleTime)}</span>
               </>
             )}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {dispatchInfo.cancelled ? (
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCancelled(customer.id, false);
-                  onDispatchChanged?.();
-                }}
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-0.5 text-[10px] font-medium hover:bg-muted"
+                onClick={(e) => { e.stopPropagation(); setCancelled(customer.id, false); onDispatchChanged?.(); }}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-[10px] font-medium hover:bg-muted"
               >
                 <RotateCcw className="h-3 w-3" /> Reativar
               </button>
@@ -1056,27 +1096,22 @@ function ClientCard({
                     onDispatchChanged?.();
                     toast.success(`Envio cancelado para ${customer.name}`);
                   }}
-                  className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-0.5 text-[10px] font-medium hover:bg-muted"
+                  className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-[10px] font-medium hover:bg-muted"
+                  title="Cancelar envio"
                 >
-                  <Ban className="h-3 w-3" /> Cancelar envio
+                  <Ban className="h-3 w-3" />
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const phoneD = onlyDigits(customer.whatsapp ?? "");
-                    if (!phoneD) { toast.error("Cliente sem WhatsApp."); return; }
-                    window.open(
-                      `https://wa.me/${phoneD}?text=${encodeURIComponent(dispatchInfo.message)}`,
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                    markSent(customer.id);
-                    onDispatchChanged?.();
-                  }}
-                  className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground hover:opacity-90"
+                  onClick={(e) => { e.stopPropagation(); sendWhatsAppNow(); }}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-white hover:opacity-90",
+                    dispatchFailed ? "bg-red-600" : "bg-primary",
+                  )}
+                  title={dispatchFailed ? "Enviar novamente" : "Enviar agora"}
                 >
-                  <Send className="h-3 w-3" /> Enviar agora
+                  {dispatchFailed ? <RotateCcw className="h-3 w-3" /> : <Send className="h-3 w-3" />}
+                  {dispatchFailed ? "Reenviar" : "Enviar"}
                 </button>
               </>
             ) : null}
@@ -1084,44 +1119,48 @@ function ClientCard({
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap justify-end gap-1.5">
-
+      <div className="mt-2 grid grid-cols-4 gap-1">
         <button
           type="button"
           onClick={onRenew}
           title="Renovar cliente"
-          className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-emerald-700"
+          aria-label="Renovar"
+          className="inline-flex h-8 items-center justify-center rounded-md bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
         >
-          <RotateCcw className="h-3.5 w-3.5" /> Renovar
+          <RotateCcw className="h-4 w-4" />
         </button>
         <button
           type="button"
           onClick={onApps}
           title="Aplicativos e dados de acesso"
-          className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-blue-700"
+          aria-label="Aplicativos"
+          className="inline-flex h-8 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm hover:bg-blue-700"
         >
-          <Tv className="h-3.5 w-3.5" /> Aplicativos
+          <Tv className="h-4 w-4" />
         </button>
         <button
           type="button"
           onClick={onOpen}
           title="Gerenciar cliente"
-          className="inline-flex items-center gap-1 rounded-md bg-violet-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-violet-700"
+          aria-label="Gerenciar"
+          className="inline-flex h-8 items-center justify-center rounded-md bg-violet-600 text-white shadow-sm hover:bg-violet-700"
         >
-          <Settings2 className="h-3.5 w-3.5" /> Gerenciar
+          <Settings2 className="h-4 w-4" />
         </button>
         <button
           type="button"
           onClick={onDelete}
           title="Excluir cliente"
-          className="inline-flex items-center gap-1 rounded-md bg-red-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-red-700"
+          aria-label="Excluir"
+          className="inline-flex h-8 items-center justify-center rounded-md bg-red-600 text-white shadow-sm hover:bg-red-700"
         >
-          <Trash2 className="h-3.5 w-3.5" /> Excluir
+          <Trash2 className="h-4 w-4" />
         </button>
       </div>
     </div>
   );
 }
+
 
 // ---------- detail sheet ----------
 type DetailsState =
