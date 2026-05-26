@@ -44,17 +44,18 @@ type Group = {
 // "Início" fica como link solto no topo, sem grupo.
 const GROUPS: Group[] = [
   {
+    id: "cadastros",
+    label: "Cadastros",
+    icon: Users,
+    routes: ["/clientes", "/cadastros-servicos", "/gestao-servicos", "/catalogo-servidores", "/testes", "/mensagens", "/importar-clientes"],
+  },
+  {
     id: "operacao",
     label: "Operação",
     icon: Activity,
     routes: ["/operacao-dia", "/pendencias", "/cobrancas", "/campanhas-manuais", "/fila-simulada"],
   },
-  {
-    id: "cadastros",
-    label: "Cadastros",
-    icon: Users,
-    routes: ["/clientes", "/gestao-servicos", "/catalogo-servidores", "/testes", "/mensagens", "/importar-clientes"],
-  },
+
   { id: "ia", label: "IA", icon: Bot, routes: ["/ia", "/base-conhecimento"] },
   {
     id: "relatorios",
