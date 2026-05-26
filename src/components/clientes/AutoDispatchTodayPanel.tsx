@@ -93,7 +93,8 @@ export function AutoDispatchTodayPanel({
 
   const queue: QueueItem[] = useMemo(() => {
     if (!items) return [];
-    const candidates: { client: ClientLike; days: number; rule: ReturnType<typeof pickRule> }[] = [];
+    type Cand = { client: ClientLike; days: number; rule: NonNullable<ReturnType<typeof pickRule>> };
+    const candidates: Cand[] = [];
     for (const c of items) {
       const screens = allScreens[c.id] ?? [];
       const overrideIso = getCustomerDueOverride(c.id);
@@ -103,12 +104,13 @@ export function AutoDispatchTodayPanel({
         const dt = new Date(overrideIso + "T00:00:00");
         days = Math.floor((+dt - +today) / (1000 * 60 * 60 * 24));
       } else {
-        days = nextDueDays(c.due_day, screens);
+        const nd = nextDueDays(c.due_day, screens);
+        if (nd == null) continue;
+        days = nd as number;
       }
       if (!Number.isFinite(days)) continue;
       const rule = pickRule(days, rules);
       if (!rule) continue;
-      // só inclui se a regra do dia bate exatamente com daysOffset (-days = elapsed)
       const elapsed = -days;
       if (rule.daysOffset !== elapsed) continue;
       if (rule.blockNoWhatsapp && !onlyDigits(c.whatsapp ?? "")) continue;
