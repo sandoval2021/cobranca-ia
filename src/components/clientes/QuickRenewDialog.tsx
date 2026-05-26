@@ -18,8 +18,10 @@ import {
 import { clearCustomerDueOverride } from "@/lib/customer-due-override";
 import { supabase } from "@/integrations/supabase/client";
 
-// Persiste a renovação no Supabase via RPC `update_customer_admin`.
-// Atualiza due_day, status=em_dia e concatena histórico em notes.
+// Persiste a renovação no Supabase via RPC `renew_customer_admin`.
+// Salva due_date COMPLETO, atualiza due_day como fallback, status=em_dia
+// e concatena histórico em notes (preservado dentro da própria RPC).
+// Fallback: se a RPC nova ainda não existir no banco, cai para update_customer_admin (apenas due_day).
 async function persistRenewalOnBackend(args: {
   customerId: string;
   customerName: string;
@@ -34,18 +36,9 @@ async function persistRenewalOnBackend(args: {
   if (!supabase) {
     return { ok: false, message: "Renovação precisa ser ativada no servidor." };
   }
-  let currentNotes = "";
-  try {
-    const { data } = await supabase.rpc("get_customer_details_admin", {
-      p_customer_id: args.customerId,
-    });
-    const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
-    if (row && typeof row.notes === "string") currentNotes = row.notes;
-  } catch {
-    /* segue sem notes anteriores */
-  }
   const dueDate = new Date(args.newDueISO + "T00:00:00");
   if (isNaN(+dueDate)) return { ok: false, message: "Nova data de vencimento inválida." };
+
   const fmtBR = (iso?: string | null) => {
     if (!iso) return "—";
     const d = new Date(iso + "T00:00:00");
@@ -59,11 +52,40 @@ async function persistRenewalOnBackend(args: {
     `- Valor mensal: ${args.monthlyAmount || "—"}`,
     `- Valor total: ${args.totalAmount || "—"}`,
   ].join("\n");
-  const mergedNotes = currentNotes
-    ? `${currentNotes.trim()}\n\n${historyBlock}`
-    : historyBlock;
 
-  const payload = {
+  // 1) Caminho preferido: RPC nova que salva due_date completo.
+  const renewRes = await supabase.rpc("renew_customer_admin", {
+    p_customer_id: args.customerId,
+    p_due_date: args.newDueISO,
+    p_amount_cents: args.monthlyAmountCents,
+    p_notes: historyBlock,
+  });
+  if (!renewRes.error) return { ok: true };
+
+  const msg = (renewRes.error.message || "").toLowerCase();
+  const rpcMissing =
+    msg.includes("could not find") ||
+    msg.includes("does not exist") ||
+    msg.includes("not find function") ||
+    renewRes.error.code === "PGRST202";
+
+  if (!rpcMissing) {
+    return { ok: false, message: renewRes.error.message || "Falha ao salvar no servidor." };
+  }
+
+  // 2) Fallback legado (só due_day) — exige preservar notes manualmente.
+  let currentNotes = "";
+  try {
+    const { data } = await supabase.rpc("get_customer_details_admin", {
+      p_customer_id: args.customerId,
+    });
+    const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
+    if (row && typeof row.notes === "string") currentNotes = row.notes;
+  } catch {
+    /* sem notes anteriores */
+  }
+  const mergedNotes = currentNotes ? `${currentNotes.trim()}\n\n${historyBlock}` : historyBlock;
+  const upd = await supabase.rpc("update_customer_admin", {
     p_customer_id: args.customerId,
     p_name: args.customerName,
     p_whatsapp_e164: args.whatsappE164 ?? null,
@@ -71,11 +93,18 @@ async function persistRenewalOnBackend(args: {
     p_due_day: dueDate.getDate(),
     p_status: "em_dia",
     p_notes: mergedNotes,
-  };
-  const { error } = await supabase.rpc("update_customer_admin", payload);
-  if (error) return { ok: false, message: error.message || "Falha ao salvar no servidor." };
+  });
+  if (upd.error) {
+    return {
+      ok: false,
+      message:
+        "Renovação precisa ser ativada no servidor (RPC renew_customer_admin ausente). " +
+        upd.error.message,
+    };
+  }
   return { ok: true };
 }
+
 
 // Renovação manual: cada "mês" = 30 dias corridos (regra acordada com o usuário).
 function addMonthsISO(base: Date, months: number): string {
