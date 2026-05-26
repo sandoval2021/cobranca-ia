@@ -27,6 +27,7 @@ import {
   UserPlus,
   Trash2,
   Settings2,
+  Send,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
