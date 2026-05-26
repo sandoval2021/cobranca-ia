@@ -72,7 +72,7 @@ function isToday(iso?: string) {
 
 const FILTERS = [
   "Todos", "Novos", "Em teste", "Aguardando", "Fecharam", "Não fecharam",
-  "Indicados", "Quentes", "Hoje", "Atrasados",
+  "Indicados", "Hoje", "Atrasados",
 ] as const;
 type Filter = (typeof FILTERS)[number];
 
@@ -113,7 +113,6 @@ function TestesPage() {
       fecharam: visible.filter((l) => l.status === "Fechou" || l.status === "Convertido em cliente").length,
       naoFecharam: visible.filter((l) => l.status === "Não fechou" || l.status === "Perdido").length,
       indicados: visible.filter((l) => l.indicado_por_nome || l.indicado_por_whatsapp).length,
-      quentes: visible.filter((l) => l.interesse === "Quente").length,
     };
   }, [visible]);
 
@@ -134,7 +133,6 @@ function TestesPage() {
         case "Fecharam": return l.status === "Fechou" || l.status === "Convertido em cliente";
         case "Não fecharam": return l.status === "Não fechou" || l.status === "Perdido";
         case "Indicados": return !!(l.indicado_por_nome || l.indicado_por_whatsapp);
-        case "Quentes": return l.interesse === "Quente";
         case "Hoje": return isToday(l.data_contato) || isToday(l.data_inicio);
         case "Atrasados":
           return !!l.data_fim && new Date(l.data_fim) < new Date() &&
@@ -329,7 +327,7 @@ function TestesPage() {
         <Link to="/configuracoes-revenda" className="underline">Editar Minha Revenda</Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8 mb-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7 mb-4">
         <StatTile label="Novos" value={stats.novos} />
         <StatTile label="Em teste" value={stats.emTeste} />
         <StatTile label="Aguardando" value={stats.aguardando} />
@@ -337,7 +335,6 @@ function TestesPage() {
         <StatTile label="Fecharam" value={stats.fecharam} />
         <StatTile label="Não fecharam" value={stats.naoFecharam} />
         <StatTile label="Indicados" value={stats.indicados} />
-        <StatTile label="Quentes" value={stats.quentes} />
       </div>
 
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -375,7 +372,6 @@ function TestesPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium">{l.nome || "Sem nome"}</p>
                     <StatusChip status={l.status} />
-                    <InterestChip interesse={l.interesse} />
                     {indicado && (
                       <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs text-primary">
                         Indicado por {l.indicado_por_nome || l.indicado_por_whatsapp}
