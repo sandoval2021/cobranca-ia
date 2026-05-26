@@ -365,6 +365,9 @@ function ImportarClientesPage() {
     }
   }
 
+  const validForImport = (rows ?? []).filter(
+    (r) => r.status === "valid" || r.status === "duplicate",
+  ).length;
   const disabledReason: string | null = !isAuthenticated
     ? "Entre com uma conta autorizada para importar."
     : flags.appEnv !== "staging"
@@ -373,13 +376,11 @@ function ImportarClientesPage() {
         ? "Selecione uma empresa."
         : !rows || rows.length === 0
           ? "Envie um arquivo com pelo menos 1 cliente válido."
-          : !lookupReady
-            ? "Verificando clientes já cadastrados…"
-            : counts.new + counts.existing === 0 && counts.error > 0
-              ? "Revise os erros antes de continuar."
-              : counts.new + counts.existing === 0
-                ? "Envie um arquivo com pelo menos 1 cliente válido."
-                : null;
+          : validForImport === 0 && counts.error > 0
+            ? "Revise os erros antes de continuar."
+            : validForImport === 0
+              ? "Envie um arquivo com pelo menos 1 cliente válido."
+              : null;
 
   const canConfirm = disabledReason === null && !confirming;
 
