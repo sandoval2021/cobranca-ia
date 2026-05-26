@@ -2092,7 +2092,30 @@ function NewCustomerSheet({
   );
 }
 
-// ---------- Aplicativos do cliente (dialog rápido) ----------
+// ---------- Aplicativos do cliente (dialog rápido, com add/edit inline) ----------
+type DraftScreen = {
+  id?: string;
+  name: string;
+  app: AppKey;
+  mac: string;
+  app_key: string;
+  username: string;
+  password: string;
+  app_due_date: string;
+};
+
+function blankDraft(suggestedName: string): DraftScreen {
+  return {
+    name: suggestedName,
+    app: "bob_player",
+    mac: "",
+    app_key: "",
+    username: "",
+    password: "",
+    app_due_date: "",
+  };
+}
+
 function AppsDialog({
   customer,
   screens,
@@ -2107,6 +2130,23 @@ function AppsDialog({
   onOpenFull: () => void;
 }) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<DraftScreen | null>(null);
+
+  const active = screens.filter((s) => s.status !== "arquivada");
+
+  // Abre formulário automaticamente quando não há nenhuma tela
+  useEffect(() => {
+    if (!open) {
+      setDraft(null);
+      setEditingId(null);
+      return;
+    }
+    if (active.length === 0 && !draft) {
+      setDraft(blankDraft("Tela 1"));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, active.length]);
 
   const copy = async (label: string, value?: string | null) => {
     if (!value) return;
@@ -2120,8 +2160,70 @@ function AppsDialog({
     }
   };
 
+  const startEdit = (s: AppScreen) => {
+    setEditingId(s.id);
+    setDraft({
+      id: s.id,
+      name: s.name || "Tela",
+      app: s.app,
+      mac: s.mac ?? "",
+      app_key: s.app_key ?? "",
+      username: s.username ?? "",
+      password: s.password ?? "",
+      app_due_date: s.app_due_date ?? "",
+    });
+  };
+
+  const startAdd = () => {
+    setEditingId(null);
+    setDraft(blankDraft(`Tela ${active.length + 1}`));
+  };
+
+  const cancelDraft = () => {
+    setDraft(null);
+    setEditingId(null);
+  };
+
+  const saveDraft = () => {
+    if (!customer || !draft) return;
+    const meta = APP_CATALOG[draft.app];
+    const now = new Date().toISOString();
+    const base: AppScreen =
+      editingId
+        ? {
+            ...(screens.find((s) => s.id === editingId) as AppScreen),
+          }
+        : {
+            id: newId(),
+            customer_id: customer.id,
+            name: draft.name.trim() || "Tela",
+            app: draft.app,
+            tier: meta.tier,
+            access_type: meta.access,
+            status: "ativa",
+            created_at: now,
+            updated_at: now,
+          };
+    const next: AppScreen = {
+      ...base,
+      name: draft.name.trim() || base.name || "Tela",
+      app: draft.app,
+      tier: meta.tier,
+      access_type: meta.access,
+      mac: draft.mac.trim() || undefined,
+      app_key: draft.app_key.trim() || undefined,
+      username: draft.username.trim() || undefined,
+      password: draft.password.trim() || undefined,
+      app_due_date: draft.app_due_date || undefined,
+      updated_at: now,
+    };
+    upsertScreen(next);
+    toast.success(editingId ? "Tela atualizada" : "Tela adicionada");
+    setDraft(null);
+    setEditingId(null);
+  };
+
   if (!customer) return null;
-  const active = screens.filter((s) => s.status !== "arquivada");
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -2129,18 +2231,15 @@ function AppsDialog({
         <DialogHeader>
           <DialogTitle className="text-base">Aplicativos · {customer.name}</DialogTitle>
           <DialogDescription className="text-xs">
-            Apps usados, vencimentos e dados de acesso. {active.length > 1 ? `${active.length} telas.` : ""}
+            {active.length === 0
+              ? "Selecione o app, preencha os dados e salve."
+              : `${active.length} tela${active.length > 1 ? "s" : ""} cadastrada${active.length > 1 ? "s" : ""}.`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
-          {active.length === 0 && (
-            <p className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-              Nenhuma tela cadastrada. Use <strong>Gerenciar</strong> para adicionar.
-            </p>
-          )}
-
           {active.map((s) => {
+            if (editingId === s.id) return null;
             const app = APP_CATALOG[s.app];
             const site = APP_WEBSITE[s.app];
             const dDays = appDueDays(s);
@@ -2148,7 +2247,7 @@ function AppsDialog({
             return (
               <div key={s.id} className="rounded-lg border border-border bg-card p-2.5">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{s.name}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       {site ? (
@@ -2160,7 +2259,6 @@ function AppsDialog({
                             "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium hover:opacity-80",
                             app.badgeClass,
                           )}
-                          title={`Abrir site oficial · ${app.label}`}
                         >
                           {app.label}
                           <ExternalLink className="h-2.5 w-2.5" />
@@ -2180,87 +2278,163 @@ function AppsDialog({
                       )}
                     </div>
                   </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => startEdit(s)}
+                    className="h-7 shrink-0 gap-1 px-2 text-[10px]"
+                  >
+                    <Pencil className="h-3 w-3" /> Editar
+                  </Button>
                 </div>
 
-                {(s.access_type === "mac_key" || s.access_type === "mac") && (
+                {(s.mac || s.app_key) && (
                   <div className="mt-2 space-y-1.5">
                     {s.mac && (
-                      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
-                        <div className="min-w-0">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">MAC</p>
-                          <p className="truncate font-mono text-xs">{s.mac}</p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => copy(`MAC (${s.name})`, s.mac)}
-                          className="h-7 shrink-0 gap-1 px-2 text-[10px]"
-                        >
-                          {copied === `MAC (${s.name})` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                          Copiar
-                        </Button>
-                      </div>
+                      <CredRow label="MAC" value={s.mac} onCopy={() => copy(`MAC (${s.name})`, s.mac)} copied={copied === `MAC (${s.name})`} />
                     )}
                     {s.app_key && (
-                      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
-                        <div className="min-w-0">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Key</p>
-                          <p className="truncate font-mono text-xs">{s.app_key}</p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => copy(`Key (${s.name})`, s.app_key)}
-                          className="h-7 shrink-0 gap-1 px-2 text-[10px]"
-                        >
-                          {copied === `Key (${s.name})` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                          Copiar
-                        </Button>
-                      </div>
+                      <CredRow label="Key" value={s.app_key} onCopy={() => copy(`Key (${s.name})`, s.app_key)} copied={copied === `Key (${s.name})`} />
                     )}
                   </div>
                 )}
-
                 {s.access_type === "user_pass" && (s.username || s.password) && (
                   <div className="mt-2 space-y-1.5">
                     {s.username && (
-                      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
-                        <div className="min-w-0">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Usuário</p>
-                          <p className="truncate font-mono text-xs">{s.username}</p>
-                        </div>
-                        <Button size="sm" variant="ghost" onClick={() => copy(`Usuário (${s.name})`, s.username)} className="h-7 shrink-0 gap-1 px-2 text-[10px]">
-                          {copied === `Usuário (${s.name})` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                          Copiar
-                        </Button>
-                      </div>
+                      <CredRow label="Usuário" value={s.username} onCopy={() => copy(`Usuário (${s.name})`, s.username)} copied={copied === `Usuário (${s.name})`} />
                     )}
                     {s.password && (
-                      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
-                        <div className="min-w-0">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Senha</p>
-                          <p className="truncate font-mono text-xs">{mask(s.password)}</p>
-                        </div>
-                        <Button size="sm" variant="ghost" onClick={() => copy(`Senha (${s.name})`, s.password)} className="h-7 shrink-0 gap-1 px-2 text-[10px]">
-                          {copied === `Senha (${s.name})` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                          Copiar
-                        </Button>
-                      </div>
+                      <CredRow label="Senha" value={mask(s.password)} onCopy={() => copy(`Senha (${s.name})`, s.password)} copied={copied === `Senha (${s.name})`} />
                     )}
                   </div>
                 )}
               </div>
             );
           })}
+
+          {draft && (
+            <div className="rounded-lg border-2 border-primary/40 bg-primary/5 p-2.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold">
+                  {editingId ? "Editando tela" : "Nova tela"}
+                </p>
+                <Button size="sm" variant="ghost" onClick={cancelDraft} className="h-6 w-6 p-0">
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Nome da tela</span>
+                  <Input
+                    value={draft.name}
+                    onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                    className="h-8 text-xs"
+                    placeholder="Tela 1"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Aplicativo</span>
+                  <select
+                    value={draft.app}
+                    onChange={(e) => setDraft({ ...draft, app: e.target.value as AppKey })}
+                    className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                  >
+                    {APP_OPTIONS.map((k) => (
+                      <option key={k} value={k}>{APP_CATALOG[k].label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {APP_CATALOG[draft.app].access === "user_pass" ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="space-y-1">
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Usuário</span>
+                    <Input value={draft.username} onChange={(e) => setDraft({ ...draft, username: e.target.value })} className="h-8 text-xs font-mono" />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Senha</span>
+                    <Input value={draft.password} onChange={(e) => setDraft({ ...draft, password: e.target.value })} className="h-8 text-xs font-mono" />
+                  </label>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="space-y-1">
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">MAC</span>
+                    <Input
+                      value={draft.mac}
+                      onChange={(e) => setDraft({ ...draft, mac: e.target.value })}
+                      className="h-8 text-xs font-mono"
+                      placeholder="00:1A:79:..."
+                    />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Key</span>
+                    <Input
+                      value={draft.app_key}
+                      onChange={(e) => setDraft({ ...draft, app_key: e.target.value })}
+                      className="h-8 text-xs font-mono"
+                      placeholder="chave do app"
+                    />
+                  </label>
+                </div>
+              )}
+
+              <label className="block space-y-1">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Vencimento do app {APP_CATALOG[draft.app].tier === "pago" ? "(pago — usado para cobrar)" : "(opcional)"}
+                </span>
+                <Input
+                  type="date"
+                  value={draft.app_due_date}
+                  onChange={(e) => setDraft({ ...draft, app_due_date: e.target.value })}
+                  className="h-8 text-xs"
+                />
+              </label>
+
+              <div className="flex gap-2">
+                <Button size="sm" onClick={saveDraft} className="flex-1 h-8 gap-1.5 text-xs">
+                  <Save className="h-3.5 w-3.5" /> Salvar
+                </Button>
+                <Button size="sm" variant="outline" onClick={cancelDraft} className="h-8 text-xs">
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!draft && (
+            <Button size="sm" variant="outline" onClick={startAdd} className="w-full gap-1.5 text-xs">
+              <Plus className="h-3.5 w-3.5" /> Adicionar tela / aplicativo
+            </Button>
+          )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" onClick={onClose}>Fechar</Button>
-          <Button onClick={onOpenFull} className="gap-1.5">
-            <Settings2 className="h-4 w-4" /> Editar / Trocar servidor
+          <Button onClick={onOpenFull} variant="secondary" className="gap-1.5">
+            <Settings2 className="h-4 w-4" /> Gerenciar completo
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CredRow({
+  label, value, onCopy, copied,
+}: { label: string; value: string; onCopy: () => void; copied: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="truncate font-mono text-xs">{value}</p>
+      </div>
+      <Button size="sm" variant="ghost" onClick={onCopy} className="h-7 shrink-0 gap-1 px-2 text-[10px]">
+        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+        Copiar
+      </Button>
+    </div>
   );
 }
