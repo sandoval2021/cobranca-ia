@@ -149,6 +149,8 @@ export function QuickRenewDialog({
   const fmtMoney = (n: number) =>
     `R$ ${n.toFixed(2).replace(".", ",")}`;
 
+  const toggle = (id: string, patch: Partial<ScreenChoice>) =>
+    setChoices((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
 
   const selectAll = (val: boolean) => {
     const next: Record<string, ScreenChoice> = {};
