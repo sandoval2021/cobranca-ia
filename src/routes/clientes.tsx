@@ -339,6 +339,7 @@ function ClientesPage() {
     try {
       const id = window.sessionStorage.getItem("cobranca_ia_open_customer_id");
       if (id && items.some((c) => c.id === id)) {
+        setOpenMode("view");
         setOpenId(id);
         window.sessionStorage.removeItem("cobranca_ia_open_customer_id");
       }
