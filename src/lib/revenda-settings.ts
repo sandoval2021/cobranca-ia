@@ -114,6 +114,10 @@ export const DEFAULT_REVENDA_SETTINGS: RevendaSettings = {
     recuperar_apos_30: true,
     inativo_apos_60: true,
   },
+  mensagens: {
+    renovacao_confirmada:
+      "Olá {cliente_nome}, tudo certo ✅\n\nSua renovação foi registrada com sucesso!\n📅 Novo vencimento: {vencimento}{telas_linha}\n\nObrigado pela confiança 🙏\nQualquer dúvida, é só me chamar.",
+  },
 };
 
 function deepMerge<T>(base: T, patch: any): T {
