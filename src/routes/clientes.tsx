@@ -74,14 +74,18 @@ import {
   APP_CATALOG, AppKey, AppScreen, APP_OPTIONS, listAllScreens, listScreens,
   nextDueDays, urgencyFromDays, urgencyClass, urgencyLabel,
   paidAppAlerts, paidAlertClass, PAID_ALERT_LABEL, appDueDays, isPaidApp,
-  
+  APP_WEBSITE, ACCESS_LABEL, mask,
 } from "@/lib/app-screens";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
+import { RenewScreensWizard } from "@/components/clientes/RenewScreensWizard";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
 import { getPrimaryRouteForServer } from "@/lib/dns-routes";
-import { Tv } from "lucide-react";
+import { Tv, ExternalLink, Copy, Check } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/clientes")({ component: ClientesPage });
 
@@ -270,6 +274,10 @@ function ClientesPage() {
   }, []);
   const [openId, setOpenId] = useState<string | null>(null);
   const [openNew, setOpenNew] = useState(false);
+  const [renewId, setRenewId] = useState<string | null>(null);
+  const [appsId, setAppsId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [reloadBump, setReloadBump] = useState(0);
 
   useEffect(() => {
@@ -627,6 +635,9 @@ function ClientesPage() {
               customer={c}
               screens={allScreens[c.id] ?? []}
               onOpen={() => setOpenId(c.id)}
+              onRenew={() => setRenewId(c.id)}
+              onApps={() => setAppsId(c.id)}
+              onDelete={() => setDeleteId(c.id)}
             />
           ))}
         </div>
@@ -638,6 +649,66 @@ function ClientesPage() {
         onClose={() => setOpenId(null)}
         onChanged={reload}
       />
+
+      {renewId && (
+        <RenewScreensWizard
+          open={!!renewId}
+          onClose={() => setRenewId(null)}
+          customerId={renewId}
+          customerName={items?.find((c) => c.id === renewId)?.name ?? "Cliente"}
+        />
+      )}
+
+      <AppsDialog
+        customer={appsId ? items?.find((c) => c.id === appsId) ?? null : null}
+        screens={appsId ? (allScreens[appsId] ?? []) : []}
+        open={!!appsId}
+        onClose={() => setAppsId(null)}
+        onOpenFull={() => {
+          if (appsId) {
+            setOpenId(appsId);
+            setAppsId(null);
+          }
+        }}
+      />
+
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && !deleting && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir este cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O cliente <strong>{items?.find((c) => c.id === deleteId)?.name ?? ""}</strong> será
+              arquivado e deixará de aparecer na lista ativa. O histórico fica preservado e você
+              pode reativar quando quiser.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!supabase || !deleteId) return;
+                setDeleting(true);
+                const { error } = await supabase.rpc("archive_customer_admin", {
+                  p_customer_id: deleteId,
+                });
+                setDeleting(false);
+                if (error) {
+                  toast.error(friendlyRpcError(error.message));
+                  return;
+                }
+                toast.success("Cliente excluído da lista ativa.");
+                setDeleteId(null);
+                reload();
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <NewCustomerSheet
         open={openNew}
@@ -696,10 +767,16 @@ function ClientCard({
   customer,
   screens,
   onOpen,
+  onRenew,
+  onApps,
+  onDelete,
 }: {
   customer: Customer;
   screens: AppScreen[];
   onOpen: () => void;
+  onRenew: () => void;
+  onApps: () => void;
+  onDelete: () => void;
 }) {
   const phone = prettyPhone(customer.whatsapp);
   const initial = customer.name.trim().charAt(0).toUpperCase() || "?";
@@ -833,32 +910,32 @@ function ClientCard({
       <div className="mt-3 flex flex-wrap justify-end gap-1.5">
         <button
           type="button"
-          onClick={onOpen}
-          title="Renovar"
+          onClick={onRenew}
+          title="Renovar cliente"
           className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-emerald-700"
         >
           <RotateCcw className="h-3.5 w-3.5" /> Renovar
         </button>
         <button
           type="button"
-          onClick={onOpen}
-          title="Editar"
+          onClick={onApps}
+          title="Aplicativos e dados de acesso"
           className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-blue-700"
         >
-          <Pencil className="h-3.5 w-3.5" /> Editar
+          <Tv className="h-3.5 w-3.5" /> Aplicativos
         </button>
         <button
           type="button"
           onClick={onOpen}
-          title="Gerenciar"
+          title="Gerenciar cliente"
           className="inline-flex items-center gap-1 rounded-md bg-violet-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-violet-700"
         >
           <Settings2 className="h-3.5 w-3.5" /> Gerenciar
         </button>
         <button
           type="button"
-          onClick={onOpen}
-          title="Excluir"
+          onClick={onDelete}
+          title="Excluir cliente"
           className="inline-flex items-center gap-1 rounded-md bg-red-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-red-700"
         >
           <Trash2 className="h-3.5 w-3.5" /> Excluir
@@ -2012,5 +2089,178 @@ function NewCustomerSheet({
         </form>
       </SheetContent>
     </Sheet>
+  );
+}
+
+// ---------- Aplicativos do cliente (dialog rápido) ----------
+function AppsDialog({
+  customer,
+  screens,
+  open,
+  onClose,
+  onOpenFull,
+}: {
+  customer: Customer | null;
+  screens: AppScreen[];
+  open: boolean;
+  onClose: () => void;
+  onOpenFull: () => void;
+}) {
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copy = async (label: string, value?: string | null) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(label);
+      toast.success(`${label} copiado`);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  };
+
+  if (!customer) return null;
+  const active = screens.filter((s) => s.status !== "arquivada");
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-base">Aplicativos · {customer.name}</DialogTitle>
+          <DialogDescription className="text-xs">
+            Apps usados, vencimentos e dados de acesso. {active.length > 1 ? `${active.length} telas.` : ""}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-2">
+          {active.length === 0 && (
+            <p className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+              Nenhuma tela cadastrada. Use <strong>Gerenciar</strong> para adicionar.
+            </p>
+          )}
+
+          {active.map((s) => {
+            const app = APP_CATALOG[s.app];
+            const site = APP_WEBSITE[s.app];
+            const dDays = appDueDays(s);
+            const dUrg = urgencyFromDays(dDays);
+            return (
+              <div key={s.id} className="rounded-lg border border-border bg-card p-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{s.name}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      {site ? (
+                        <a
+                          href={site}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium hover:opacity-80",
+                            app.badgeClass,
+                          )}
+                          title={`Abrir site oficial · ${app.label}`}
+                        >
+                          {app.label}
+                          <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                      ) : (
+                        <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", app.badgeClass)}>
+                          {app.label}
+                        </span>
+                      )}
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                        {ACCESS_LABEL[s.access_type]}
+                      </span>
+                      {dDays != null && (
+                        <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(dUrg))}>
+                          App: {urgencyLabel(dUrg, dDays)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {(s.access_type === "mac_key" || s.access_type === "mac") && (
+                  <div className="mt-2 space-y-1.5">
+                    {s.mac && (
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
+                        <div className="min-w-0">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">MAC</p>
+                          <p className="truncate font-mono text-xs">{s.mac}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copy(`MAC (${s.name})`, s.mac)}
+                          className="h-7 shrink-0 gap-1 px-2 text-[10px]"
+                        >
+                          {copied === `MAC (${s.name})` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          Copiar
+                        </Button>
+                      </div>
+                    )}
+                    {s.app_key && (
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
+                        <div className="min-w-0">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Key</p>
+                          <p className="truncate font-mono text-xs">{s.app_key}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copy(`Key (${s.name})`, s.app_key)}
+                          className="h-7 shrink-0 gap-1 px-2 text-[10px]"
+                        >
+                          {copied === `Key (${s.name})` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          Copiar
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {s.access_type === "user_pass" && (s.username || s.password) && (
+                  <div className="mt-2 space-y-1.5">
+                    {s.username && (
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
+                        <div className="min-w-0">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Usuário</p>
+                          <p className="truncate font-mono text-xs">{s.username}</p>
+                        </div>
+                        <Button size="sm" variant="ghost" onClick={() => copy(`Usuário (${s.name})`, s.username)} className="h-7 shrink-0 gap-1 px-2 text-[10px]">
+                          {copied === `Usuário (${s.name})` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          Copiar
+                        </Button>
+                      </div>
+                    )}
+                    {s.password && (
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
+                        <div className="min-w-0">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Senha</p>
+                          <p className="truncate font-mono text-xs">{mask(s.password)}</p>
+                        </div>
+                        <Button size="sm" variant="ghost" onClick={() => copy(`Senha (${s.name})`, s.password)} className="h-7 shrink-0 gap-1 px-2 text-[10px]">
+                          {copied === `Senha (${s.name})` ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          Copiar
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="outline" onClick={onClose}>Fechar</Button>
+          <Button onClick={onOpenFull} className="gap-1.5">
+            <Settings2 className="h-4 w-4" /> Editar / Trocar servidor
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -94,6 +94,24 @@ export const APP_CATALOG: Record<
   outro:           { label: "Outro",           access: "nao_informado", tier: "desconhecido", badgeClass: "bg-muted text-muted-foreground border border-border" },
 };
 
+// Site oficial de cada aplicativo (para abrir ao clicar no badge).
+export const APP_WEBSITE: Record<AppKey, string | null> = {
+  xciptv:          "https://xciptv.com/",
+  smarters:        "https://www.iptvsmarters.com/",
+  smarters_player: "https://www.iptvsmarters.com/",
+  bob_player:      "https://www.bobplayer.app/",
+  bob_play:        "https://www.bobplay.app/",
+  ibo_player:      "https://iboplayer.com/",
+  ibo_pro:         "https://ibopro.app/",
+  ibo_mix:         "https://www.ibomix.com/",
+  vu_player:       "https://vuplayer.com/",
+  eagle_play:      "https://eagleplay.app/",
+  duplex_play:     "https://duplexiptv.com/",
+  set_iptv:        "https://setiptv.com/",
+  smart_one:       "https://smartone-iptv.com/",
+  outro:           null,
+};
+
 export const APP_OPTIONS: AppKey[] = [
   "xciptv", "smarters", "smarters_player",
   "bob_player", "bob_play",
