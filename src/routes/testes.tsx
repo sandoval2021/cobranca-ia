@@ -322,14 +322,14 @@ function TestesPage() {
 
 
         action={
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => { setEditing(null); setOpenNew(true); }} className="gap-2">
-              <Plus className="h-4 w-4" /> Novo teste
+          <div className="grid grid-cols-3 gap-1.5">
+            <Button size="sm" onClick={() => { setEditing(null); setOpenNew(true); }} className="gap-1 px-2 text-xs">
+              <Plus className="h-3.5 w-3.5" /> Novo
             </Button>
-            <Button variant="outline" onClick={handleExport} className="gap-2">
-              <Download className="h-4 w-4" /> Exportar
+            <Button size="sm" variant="outline" onClick={handleExport} className="gap-1 px-2 text-xs">
+              <Download className="h-3.5 w-3.5" /> Exportar
             </Button>
-            <label className="inline-flex">
+            <label className="inline-flex w-full">
               <input
                 type="file"
                 accept="application/json"
@@ -340,8 +340,8 @@ function TestesPage() {
                   e.target.value = "";
                 }}
               />
-              <Button variant="outline" asChild className="gap-2 cursor-pointer">
-                <span><Upload className="h-4 w-4" /> Importar</span>
+              <Button size="sm" variant="outline" asChild className="w-full gap-1 px-2 text-xs cursor-pointer">
+                <span><Upload className="h-3.5 w-3.5" /> Importar</span>
               </Button>
             </label>
           </div>
