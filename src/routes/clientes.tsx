@@ -222,9 +222,48 @@ type Customer = {
   whatsapp: string | null;
   amount_cents: number | null;
   due_day: number | null;
+  due_date: string | null;
   status: string | null;
   notes: string | null;
   raw: Row;
+};
+
+// Normaliza qualquer string de data ("2023-02-19", "2023-02-19T00:00:00",
+// "19/02/2023") para ISO "YYYY-MM-DD". Retorna null se inválida.
+const toIsoDate = (v: unknown): string | null => {
+  if (typeof v !== "string") return null;
+  const s = v.trim();
+  if (!s) return null;
+  const m1 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m1) return `${m1[1]}-${m1[2]}-${m1[3]}`;
+  const m2 = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m2) return `${m2[3]}-${m2[2]}-${m2[1]}`;
+  const d = new Date(s);
+  if (!isNaN(+d)) {
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+  return null;
+};
+
+const pickDueDateFromRow = (r: Row): string | null => {
+  const candidates = [
+    "due_date", "expires_at", "vencimento", "next_due_date",
+    "data_vencimento", "expiration_date",
+  ];
+  for (const k of candidates) {
+    const iso = toIsoDate(r[k]);
+    if (iso) return iso;
+  }
+  // Importação: raw_row pode conter expires_at original
+  const raw = r.raw_row;
+  if (raw && typeof raw === "object") {
+    for (const k of candidates) {
+      const iso = toIsoDate((raw as Row)[k]);
+      if (iso) return iso;
+    }
+  }
+  return null;
 };
 
 const normalize = (r: Row): Customer => ({
@@ -238,10 +277,38 @@ const normalize = (r: Row): Customer => ({
       ? Math.round((num(r, ["amount", "valor", "value", "monthly_amount"]) as number) * 100)
       : null),
   due_day: num(r, ["due_day", "dia_vencimento", "vencimento_dia"]),
+  due_date: pickDueDateFromRow(r),
   status: str(r, ["status", "situacao"]),
   notes: str(r, ["notes", "observacoes", "observacao"]),
   raw: r,
 });
+
+// Prioridade do vencimento do cliente:
+// 1) due_date/expires_at importado (data completa) — exibe data real;
+// 2) due_day como recorrência mensal.
+// Telas (app screens) sempre podem antecipar o vencimento mais próximo.
+const getCustomerDueIso = (c: Customer): string | null => c.due_date;
+
+const customerDueDays = (c: Customer, screens: AppScreen[]): number | null => {
+  const iso = getCustomerDueIso(c);
+  if (iso) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const d = new Date(iso + "T00:00:00");
+    if (isNaN(+d)) return nextDueDays(c.due_day, screens);
+    const base = Math.floor((+d - +today) / (1000 * 60 * 60 * 24));
+    // Telas podem antecipar (vencer antes); se positivo menor, usa.
+    let best = base;
+    for (const s of screens) {
+      if (s.status === "arquivada" || s.status === "pausada") continue;
+      const sd = s.due_date ? Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000) : null;
+      if (sd == null) continue;
+      if (best < 0 && sd < 0) best = Math.max(best, sd);
+      else if (sd >= 0 && (best < 0 || sd < best)) best = sd;
+    }
+    return best;
+  }
+  return nextDueDays(c.due_day, screens);
+};
 
 function friendlyRpcError(msg: string): string {
   const m = msg.toLowerCase();
