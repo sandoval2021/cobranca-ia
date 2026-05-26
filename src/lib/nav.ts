@@ -78,11 +78,11 @@ export const ownerNav: NavItem[] = [
 ];
 
 export const ownerBottomNav: NavItem[] = [
-  { to: "/", label: "Início", icon: LayoutDashboard },
   { to: "/clientes", label: "Clientes", icon: Users },
-  { to: "/operacao-dia", label: "Hoje", icon: CalendarClock },
-  { to: "/cobrancas", label: "Cobranças", icon: Receipt, superAdminOnly: true },
-  { to: "/mensagens", label: "Chat", icon: MessageCircle, superAdminOnly: true },
+  { to: "/testes", label: "Testes", icon: Beaker },
+  { to: "/cadastros-servicos", label: "Cadastro", icon: Tv },
+  { to: "/gestao-servicos", label: "Gestão", icon: ListChecks },
+  { to: "/catalogo-servidores", label: "Servidores", icon: Server },
 ];
 
 export const adminNav: NavItem[] = ownerNav;
