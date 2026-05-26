@@ -128,11 +128,17 @@ function ImportarClientesPage() {
   // Dedup via RPC segura: get_import_customer_dedup_admin
   useEffect(() => {
     let cancelled = false;
+    const cid =
+      companyId ??
+      (companyState.status === "ready" ? companyState.companyId : null);
     async function run() {
       setExistingMap({});
       setLookupReady(false);
       if (!supabaseConfigured) return;
-      if (!isAuthenticated || !companyId || !rows || rows.length === 0) return;
+      if (!isAuthenticated || !cid || !rows || rows.length === 0) {
+        setLookupReady(true);
+        return;
+      }
       const e164s = Array.from(
         new Set(rows.map((r) => r.whatsapp_e164).filter((x): x is string => !!x)),
       );
@@ -143,7 +149,7 @@ function ImportarClientesPage() {
       setLookupLoading(true);
 
       const res = await getImportCustomerDedupAdmin({
-        p_company_id: companyId,
+        p_company_id: cid,
         p_whatsapp_e164_values: e164s,
       });
       if (cancelled) return;
@@ -183,7 +189,7 @@ function ImportarClientesPage() {
     return () => {
       cancelled = true;
     };
-  }, [rows, companyId, isAuthenticated]);
+  }, [rows, companyId, companyState, isAuthenticated]);
 
   const rowKind = (r: ValidatedRow): RowKind | "pending" => {
     if (r.status === "invalid") return "error";
@@ -274,8 +280,11 @@ function ImportarClientesPage() {
       toast.error("Importação disponível apenas em ambiente de testes.");
       return;
     }
-    if (!companyId) {
-      toast.error("Selecione uma empresa.");
+    const effCompany =
+      companyId ??
+      (companyState.status === "ready" ? companyState.companyId : null);
+    if (!effCompany) {
+      toast.error("Empresa não encontrada para sua conta. Entre novamente.");
       return;
     }
     const validas = (rows ?? []).filter((r) => r.status === "valid");
@@ -315,7 +324,7 @@ function ImportarClientesPage() {
 
       const { data, error } = await supabase.rpc(
         "staging_import_customers_from_rows",
-        { p_company_id: companyId, p_rows: payload as unknown as object }
+        { p_company_id: effCompany, p_rows: payload as unknown as object }
       );
 
       if (error) {
@@ -365,15 +374,30 @@ function ImportarClientesPage() {
     }
   }
 
+  const effectiveCompanyId =
+    companyId ??
+    (companyState.status === "ready" ? companyState.companyId : null);
   const validForImport = (rows ?? []).filter(
     (r) => r.status === "valid" || r.status === "duplicate",
   ).length;
+  const companyBlocker =
+    companyState.status === "loading"
+      ? "Carregando empresa…"
+      : companyState.status === "not_configured"
+        ? "Conexão não configurada."
+        : companyState.status === "unauthenticated"
+          ? "Entre com uma conta autorizada para importar."
+          : companyState.status === "error"
+            ? companyState.message
+            : !effectiveCompanyId
+              ? "Empresa não encontrada para sua conta."
+              : null;
   const disabledReason: string | null = !isAuthenticated
     ? "Entre com uma conta autorizada para importar."
     : flags.appEnv !== "staging"
       ? "A importação só funciona no ambiente de testes."
-      : !companyId
-        ? "Selecione uma empresa."
+      : companyBlocker
+        ? companyBlocker
         : !rows || rows.length === 0
           ? "Envie um arquivo com pelo menos 1 cliente válido."
           : validForImport === 0 && counts.error > 0
@@ -729,34 +753,17 @@ function ImportarClientesPage() {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-4">
             <p className="text-xs text-muted-foreground">
               {counts.new} novos, {counts.existing} já cadastrados (serão atualizados),{" "}
               {counts.duplicate_file} duplicados no arquivo, {counts.error} com erro.
               {" "}Clientes já cadastrados serão atualizados, não duplicados.
             </p>
-            <div className="flex flex-col items-stretch gap-1 sm:items-end">
-              <Button
-                size="lg"
-                onClick={onConfirm}
-                disabled={!canConfirm}
-                className="w-full sm:w-auto"
-              >
-                {confirming ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Importando…
-                  </>
-                ) : (
-                  <>Confirmar importação</>
-                )}
-              </Button>
-              {disabledReason && (
-                <p className="text-[11px] text-muted-foreground sm:text-right">
-                  {disabledReason}
-                </p>
-              )}
-            </div>
+            {disabledReason && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {disabledReason}
+              </p>
+            )}
           </div>
 
         </Card>
