@@ -22,6 +22,8 @@ import {
   AlertTriangle,
   Ban,
   Clock,
+  Plus,
+  UserPlus,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
