@@ -221,21 +221,23 @@ function AgendaDisparoPage() {
       </Card>
 
       <Card className="mt-4 p-4 space-y-4">
-        <div className="space-y-1">
+        <div className="flex items-start justify-between gap-2">
           <h3 className="text-sm font-semibold">Horário de envio por serviço</h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Aqui aparecem todos os serviços cadastrados (em <strong>Cadastros</strong>). Para cada
-            serviço você pode escolher um horário próprio de envio — por exemplo, o plano de R$ 12
-            sai às 09:00 e o de R$ 30 sai às 12:00. Quando deixar como{" "}
-            <strong>Padrão</strong>, o serviço usa o horário padrão definido acima.
-          </p>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            A ordem de envio segue sempre a mesma regra do painel: primeiro os que estão{" "}
-            <strong>perto de vencer</strong>, depois os que vencem <strong>hoje</strong> e por
-            último os <strong>vencidos</strong> (quanto mais antigo o vencimento, mais ao fim da
-            fila).
-          </p>
+          <HelpTip>
+            <p>
+              Aqui aparecem todos os serviços cadastrados (em <strong>Cadastros</strong>). Você
+              pode dar um horário próprio a cada um — ex.: plano de R$ 12 às 09:00 e plano de R$ 30
+              às 12:00. Quando estiver como <strong>Padrão</strong>, o serviço usa o horário
+              padrão definido acima.
+            </p>
+            <p>
+              A ordem de envio segue: <strong>perto de vencer</strong> primeiro, depois{" "}
+              <strong>hoje</strong> e por último os <strong>vencidos</strong> (quanto mais antigo,
+              mais ao fim da fila).
+            </p>
+          </HelpTip>
         </div>
+
 
         <div className="rounded-md border bg-muted/20 p-3 space-y-2">
           <Label className="text-xs font-semibold">Aplicar o mesmo horário a todos os serviços</Label>
