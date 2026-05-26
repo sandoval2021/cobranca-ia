@@ -61,6 +61,8 @@ export type AppScreen = {
   app_due_date?: string;
   app_renewal_value?: string;
   plan_value?: string; // valor mensal do serviço desta tela (ex: "29,90")
+  plan_id?: string;    // referência ao ServiceItem (services-catalog) selecionado
+  plan_name?: string;  // nome do serviço/plano (snapshot)
   status: ScreenStatus;
   route?: RouteKind;
   needs_server_update?: boolean;
@@ -463,6 +465,7 @@ export function formatScreenAsText(
   const r = routeLabel(s.route);
   if (r) lines.push(`Rota: ${r}`);
   if (s.due_date) lines.push(`Vencimento: ${fmtDate(s.due_date)}`);
+  if (s.plan_name) lines.push(`Serviço: ${s.plan_name}`);
   if (s.plan_value) lines.push(`Valor: R$ ${s.plan_value}`);
   if (s.app_due_date) lines.push(`Vencimento do app: ${fmtDate(s.app_due_date)}`);
   if (s.app_renewal_value) lines.push(`Renovação do app: R$ ${s.app_renewal_value}`);

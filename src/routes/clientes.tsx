@@ -78,6 +78,7 @@ import {
   paidAppAlerts, paidAlertClass, PAID_ALERT_LABEL, appDueDays, isPaidApp,
   APP_WEBSITE, ACCESS_LABEL, mask, upsertScreen, newId, archiveScreen,
 } from "@/lib/app-screens";
+import { listActiveServices, SERVICES_EVENT, type ServiceItem } from "@/lib/services-catalog";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
@@ -1664,21 +1665,28 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
   const [app, setApp] = useState<AppKey>("xciptv");
   const [serverId, setServerId] = useState<string>("");
   const [name, setName] = useState("");
-  const [planValue, setPlanValue] = useState("");
+  const [planId, setPlanId] = useState<string>("");
   const [macInput, setMacInput] = useState("");
   const [keyInput, setKeyInput] = useState("");
   const [appDueDate, setAppDueDate] = useState("");
 
+  const [servicesVersion, setServicesVersion] = useState(0);
   const refresh = () => setScreens(listScreens(customerId));
   useEffect(() => {
     refresh();
     const onChange = () => refresh();
+    const onSvc = () => setServicesVersion((v) => v + 1);
     window.addEventListener("app-screens:changed", onChange as EventListener);
-    return () => window.removeEventListener("app-screens:changed", onChange as EventListener);
+    window.addEventListener(SERVICES_EVENT, onSvc as EventListener);
+    return () => {
+      window.removeEventListener("app-screens:changed", onChange as EventListener);
+      window.removeEventListener(SERVICES_EVENT, onSvc as EventListener);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
 
   const servers = listActiveServers();
+  const services = useMemo(() => listActiveServices(), [servicesVersion]);
   const active = screens.filter((s) => s.status !== "arquivada");
   const isPaid = APP_CATALOG[app]?.tier === "pago";
 
@@ -1687,7 +1695,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
     setApp("xciptv");
     setServerId("");
     setName("");
-    setPlanValue("");
+    setPlanId("");
     setMacInput("");
     setKeyInput("");
     setAppDueDate("");
@@ -1698,10 +1706,15 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       toast.error("Informe a data de vencimento.");
       return;
     }
+    if (!planId) {
+      toast.error("Selecione o serviço/plano.");
+      return;
+    }
     if (isPaid && (!macInput.trim() || !keyInput.trim())) {
       toast.error("Apps pagos exigem MAC e Key.");
       return;
     }
+    const plan = services.find((s) => s.id === planId);
     const now = new Date().toISOString();
     const screenName = name.trim() || `Tela ${active.length + 1}`;
     const meta = APP_CATALOG[app];
@@ -1713,7 +1726,9 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       tier: meta?.tier,
       access_type: meta?.access ?? "nao_informado",
       due_date: dueDate,
-      plan_value: planValue.trim() || undefined,
+      plan_id: plan?.id,
+      plan_name: plan?.nome,
+      plan_value: plan ? (plan.preco_cents / 100).toFixed(2).replace(".", ",") : undefined,
       mac: isPaid ? macInput.trim() : undefined,
       app_key: isPaid ? keyInput.trim() : undefined,
       app_due_date: isPaid && appDueDate ? appDueDate : undefined,
@@ -1804,8 +1819,10 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                 </button>
                 {(s.plan_value || s.mac || s.app_key || s.app_due_date) && (
                   <div className="basis-full flex flex-wrap gap-1 pt-1 text-[10px] text-muted-foreground">
-                    {s.plan_value && (
-                      <span className="rounded bg-muted px-1.5 py-0.5">R$ {s.plan_value}</span>
+                    {(s.plan_name || s.plan_value) && (
+                      <span className="rounded bg-primary-soft px-1.5 py-0.5 text-primary">
+                        {s.plan_name ?? "Plano"}{s.plan_value ? ` · R$ ${s.plan_value}` : ""}
+                      </span>
                     )}
                     {s.mac && (
                       <span className="rounded bg-muted px-1.5 py-0.5 font-mono">MAC: {s.mac}</span>
@@ -1873,15 +1890,25 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
             </Field>
           </div>
           <div className="grid grid-cols-1 gap-1.5">
-            <Field label="Serviço / Valor mensal (R$)">
-              <Input
-                value={planValue}
-                onChange={(e) => setPlanValue(e.target.value)}
-                placeholder="Ex: 29,90"
-                inputMode="decimal"
-                maxLength={12}
-                className="h-8 text-xs"
-              />
+            <Field label="Serviço / Plano">
+              {services.length === 0 ? (
+                <div className="rounded-md border border-dashed border-border bg-muted/30 px-2 py-1.5 text-[11px] text-muted-foreground">
+                  Nenhum serviço cadastrado. Cadastre em <strong>Serviços</strong> para poder selecionar.
+                </div>
+              ) : (
+                <select
+                  value={planId}
+                  onChange={(e) => setPlanId(e.target.value)}
+                  className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">Selecione o serviço…</option>
+                  {services.map((s: ServiceItem) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nome} — R$ {(s.preco_cents / 100).toFixed(2).replace(".", ",")}
+                    </option>
+                  ))}
+                </select>
+              )}
             </Field>
           </div>
           {isPaid && (
