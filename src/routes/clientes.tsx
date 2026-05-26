@@ -636,7 +636,7 @@ function ClientesPage() {
               key={c.id}
               customer={c}
               screens={allScreens[c.id] ?? []}
-              onOpen={() => setOpenId(c.id)}
+              onOpen={() => { setOpenMode("edit"); setOpenId(c.id); }}
               onRenew={() => setRenewId(c.id)}
               onApps={() => setAppsId(c.id)}
               onDelete={() => setDeleteId(c.id)}
@@ -650,16 +650,25 @@ function ClientesPage() {
         open={!!opened}
         onClose={() => setOpenId(null)}
         onChanged={reload}
+        defaultMode={openMode}
       />
 
-      {renewId && (
-        <RenewScreensWizard
-          open={!!renewId}
-          onClose={() => setRenewId(null)}
-          customerId={renewId}
-          customerName={items?.find((c) => c.id === renewId)?.name ?? "Cliente"}
-        />
-      )}
+      {renewId && (() => {
+        const c = items?.find((x) => x.id === renewId);
+        if (!c) return null;
+        return (
+          <QuickRenewDialog
+            open={!!renewId}
+            onClose={() => setRenewId(null)}
+            customerId={renewId}
+            customerName={c.name}
+            customerDueDay={c.due_day}
+            monthlyAmountCents={c.amount_cents}
+            whatsappE164={c.whatsapp}
+            onRenewed={reload}
+          />
+        );
+      })()}
 
       <AppsDialog
         customer={appsId ? items?.find((c) => c.id === appsId) ?? null : null}
