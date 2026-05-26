@@ -835,6 +835,8 @@ function FilterPill({
 function ClientCard({
   customer,
   screens,
+  dispatchInfo,
+  onDispatchChanged,
   onOpen,
   onRenew,
   onApps,
@@ -842,6 +844,8 @@ function ClientCard({
 }: {
   customer: Customer;
   screens: AppScreen[];
+  dispatchInfo?: AutoDispatchQueueItem;
+  onDispatchChanged?: () => void;
   onOpen: () => void;
   onRenew: () => void;
   onApps: () => void;
