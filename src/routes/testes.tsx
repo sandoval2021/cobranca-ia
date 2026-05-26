@@ -400,7 +400,7 @@ function TestesPage() {
                     </a>
                   </Button>
                 )}
-                <Button size="sm" variant="outline" onClick={() => handleClosed(l)} className="gap-1">
+                <Button size="sm" variant="outline" onClick={() => setClosedLead(l)} className="gap-1">
                   <Check className="h-3.5 w-3.5" /> Fechou
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => handleLost(l)} className="gap-1">
