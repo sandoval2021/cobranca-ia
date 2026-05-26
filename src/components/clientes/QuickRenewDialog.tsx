@@ -103,6 +103,12 @@ export function QuickRenewDialog({
     setBusy(false);
     setAppAmount("");
     setDiscount("");
+    setSendReceipt(true);
+    setRenovarPrazo(false);
+    const today = new Date();
+    const p = (n: number) => String(n).padStart(2, "0");
+    setDataReceber(`${today.getFullYear()}-${p(today.getMonth() + 1)}-${p(today.getDate())}`);
+    setNewDueOverride("");
     const base = monthlyAmountCents != null ? monthlyAmountCents / 100 : null;
     setAmount(base != null ? base.toFixed(2).replace(".", ",") : "");
   }, [open, customerId, monthlyAmountCents]);
