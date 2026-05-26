@@ -1699,10 +1699,10 @@ function NewCustomerSheet({
     }
     if (!supabase) { toast.error("Conexão indisponível."); return; }
     setBusy(true);
-    const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
+    const { accountId: companyId, error: companyErr } = await getActiveAccountId();
     if (companyErr || !companyId) {
       setBusy(false);
-      toast.error("Não foi possível confirmar sua conta. Entre novamente e tente de novo.");
+      toast.error("Não foi possível preparar sua conta. Tente entrar novamente.");
       return;
     }
     const { data, error } = await supabase.rpc("create_customer_admin", {
