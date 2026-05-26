@@ -723,7 +723,7 @@ function ClientCard({
               : "border-border bg-card";
 
   return (
-    <div className={cn("rounded-xl border-l-4 border border-l-current p-3 shadow-card", tint)}>
+    <div className={cn("rounded-xl border border-l-4 p-3 shadow-card", tint)}>
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-info-soft text-info text-sm font-semibold">
           {initial}
