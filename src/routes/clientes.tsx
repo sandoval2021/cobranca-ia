@@ -1631,99 +1631,99 @@ function EditForm({
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="space-y-2.5">
       <Field label="Nome">
-        <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
+        <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} className="h-9" />
       </Field>
-      <Field label="WhatsApp" hint="Inclua o DDD. Será salvo no formato internacional.">
+      <Field label="WhatsApp">
         <Input
           value={whatsapp}
           onChange={(e) => setWhatsapp(e.target.value)}
           placeholder="(11) 99999-9999"
           inputMode="tel"
           maxLength={20}
+          className="h-9"
         />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Valor mensal" hint="Cobrança recorrente em reais.">
+      <div className="grid grid-cols-3 gap-2">
+        <Field label="Valor (R$)">
           <Input
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0,00"
             inputMode="decimal"
+            className="h-9"
           />
         </Field>
-        <Field label="Dia de vencimento" hint="Entre 1 e 31.">
+        <Field label="Vence dia">
           <Input
             value={dueDay}
             onChange={(e) => setDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
             placeholder="10"
             inputMode="numeric"
+            className="h-9"
           />
         </Field>
+        <Field label="Status">
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="ativo">Ativo</option>
+            <option value="expirado">Expirado</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+        </Field>
       </div>
-      <Field label="Status" hint="Use ativo, expirado ou arquivado.">
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          <option value="ativo">Ativo</option>
-          <option value="expirado">Expirado</option>
-          <option value="arquivado">Arquivado</option>
-        </select>
-      </Field>
-      <Field label="Observações" hint="Notas internas, não enviadas ao cliente.">
-        <Textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          maxLength={1000}
-        />
-      </Field>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="E-mail" hint="Opcional. Usado para mensagens e relatórios.">
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="E-mail">
           <Input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="cliente@exemplo.com"
             maxLength={120}
+            className="h-9"
           />
         </Field>
-        <Field label="Aniversário" hint="Para mensagens automáticas de parabéns.">
+        <Field label="Aniversário">
           <Input
             type="date"
             value={birthday}
             onChange={(e) => setBirthday(e.target.value)}
+            className="h-9"
           />
         </Field>
       </div>
+      <Field label="Observações">
+        <Textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={2}
+          maxLength={1000}
+          className="resize-none"
+        />
+      </Field>
 
-      <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs space-y-1">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Data de cadastro</span>
-          <span className="font-medium">{createdAt ? fmtDate(createdAt) : "—"}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Telas cadastradas</span>
-          <span className="font-medium">{screensCount}</span>
-        </div>
+      <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+        <span>Cadastro: <span className="font-medium text-foreground">{createdAt ? fmtDate(createdAt) : "—"}</span></span>
+        <span>Telas: <span className="font-medium text-foreground">{screensCount}</span></span>
       </div>
 
-      <div className="flex gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={busy} className="flex-1">
+      <div className="flex gap-2 pt-1">
+        <Button type="button" size="sm" variant="outline" onClick={onCancel} disabled={busy} className="flex-1">
           Cancelar
         </Button>
-        <Button type="submit" disabled={busy} className="flex-1 gap-1.5">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+        <Button type="submit" size="sm" disabled={busy} className="flex-1 gap-1.5">
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           Salvar
         </Button>
       </div>
     </form>
   );
 }
+
 
 function Field({
   label,
