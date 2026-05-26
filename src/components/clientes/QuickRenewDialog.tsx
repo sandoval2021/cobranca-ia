@@ -320,54 +320,20 @@ export function QuickRenewDialog({
 
         {!done && (
           <div className="space-y-3 py-1">
-            {/* Período */}
-            <div>
-              <Label className="text-xs">Quantos meses?</Label>
-              <div className="mt-1 grid grid-cols-4 gap-2">
-                {MONTH_OPTIONS.map((m) => (
-                  <Button
-                    key={m}
-                    type="button"
-                    size="sm"
-                    variant={months === m ? "default" : "outline"}
-                    onClick={() => setMonths(m)}
-                  >
-                    {m}m
-                  </Button>
-                ))}
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                <Label className="text-[11px] text-muted-foreground">Personalizado:</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={36}
-                  value={months}
-                  onChange={(e) =>
-                    setMonths(Math.max(1, Math.min(36, Number(e.target.value) || 1)))
-                  }
-                  className="h-7 w-20"
-                />
-                <span className="text-[11px] text-muted-foreground">meses</span>
-              </div>
-            </div>
-
-            {/* Telas */}
-            {hasScreens && (
+            {/* Telas (se houver mais de uma) */}
+            {hasScreens && multi && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs flex items-center gap-1">
                     <Tv className="h-3.5 w-3.5" /> Telas a renovar ({selectedScreens.length}/{screens.length})
                   </Label>
-                  {multi && (
-                    <button
-                      type="button"
-                      className="text-[11px] text-primary hover:underline"
-                      onClick={() => selectAll(!allSelected)}
-                    >
-                      {allSelected ? "Desmarcar todas" : "Marcar todas"}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="text-[11px] text-primary hover:underline"
+                    onClick={() => selectAll(!allSelected)}
+                  >
+                    {allSelected ? "Desmarcar todas" : "Marcar todas"}
+                  </button>
                 </div>
                 <div className="space-y-1.5">
                   {screens.map((s) => {
@@ -380,9 +346,7 @@ export function QuickRenewDialog({
                         key={s.id}
                         className={cn(
                           "rounded-md border px-2.5 py-2 text-xs transition-colors",
-                          ch.selected
-                            ? "border-primary/40 bg-primary/5"
-                            : "border-border bg-muted/30",
+                          ch.selected ? "border-primary/40 bg-primary/5" : "border-border bg-muted/30",
                         )}
                       >
                         <label className="flex items-start gap-2 cursor-pointer">
@@ -395,9 +359,7 @@ export function QuickRenewDialog({
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-semibold truncate">{s.name || "Tela"}</span>
                               {meta && (
-                                <span
-                                  className={cn("rounded px-1.5 py-px text-[10px]", meta.badgeClass)}
-                                >
+                                <span className={cn("rounded px-1.5 py-px text-[10px]", meta.badgeClass)}>
                                   {meta.label}
                                 </span>
                               )}
@@ -418,14 +380,7 @@ export function QuickRenewDialog({
                               onCheckedChange={(v) => toggle(s.id, { renewApp: !!v })}
                             />
                             <Smartphone className="h-3 w-3 text-muted-foreground" />
-                            <span>
-                              Renovar também o app {meta.label}
-                              {s.app_due_date && (
-                                <span className="text-muted-foreground">
-                                  {" "}— vence {fmtDateBR(s.app_due_date)}
-                                </span>
-                              )}
-                            </span>
+                            <span>Renovar também o app {meta.label}</span>
                           </label>
                         )}
                       </div>
@@ -435,78 +390,8 @@ export function QuickRenewDialog({
               </div>
             )}
 
-            {!hasScreens && (
-              <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Novo vencimento</span>
-                  <span className="font-semibold">{fmtDateBR(customerNewDue)}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Valor / pagamento */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Valor total (R$)</Label>
-                <Input
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0,00"
-                  className="h-8"
-                  inputMode="decimal"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Pagamento</Label>
-                <select
-                  value={method}
-                  onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-                  className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
-                >
-                  {(Object.keys(PAYMENT_LABEL) as PaymentMethod[]).map((k) => (
-                    <option key={k} value={k}>{PAYMENT_LABEL[k]}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {selectedScreens.some((s) => choices[s.id]?.renewApp) && (
-              <div>
-                <Label className="text-xs">Valor do app (R$, opcional)</Label>
-                <Input
-                  value={appAmount}
-                  onChange={(e) => setAppAmount(e.target.value)}
-                  placeholder="0,00"
-                  className="h-8"
-                  inputMode="decimal"
-                />
-              </div>
-            )}
-
-            <div>
-              <Label className="text-xs">Desconto (R$, opcional)</Label>
-              <Input
-                value={discount}
-                onChange={(e) => setDiscount(e.target.value)}
-                placeholder="0,00"
-                className="h-8"
-                inputMode="decimal"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs">Observações (opcional)</Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                placeholder="Ex.: pago via PIX"
-                className="resize-none text-sm"
-              />
-            </div>
-
-            {/* Resumo financeiro estilo recibo */}
-            <div className="rounded-lg border bg-card overflow-hidden">
+            {/* Card único — tudo editável */}
+            <div className="rounded-xl border bg-card overflow-hidden">
               {/* Cabeçalho */}
               <div className="flex items-center gap-3 px-3 py-3 bg-muted/40 border-b">
                 <div className="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center">
@@ -518,18 +403,36 @@ export function QuickRenewDialog({
                     {hasScreens && selectedScreens.length === 1
                       ? `${selectedScreens[0].name || "Tela"} • ${APP_CATALOG[selectedScreens[0].app]?.label ?? ""}`
                       : hasScreens
-                        ? `${selectedScreens.length} tela(s) selecionada(s)`
+                        ? `${selectedScreens.length} tela(s)`
                         : "Renovação geral"}
                     {monthlyAmountCents != null && ` • ${fmtMoney(monthlyAmountCents / 100)}/mês`}
                   </div>
                 </div>
               </div>
 
-              {/* Linhas financeiras */}
-              <div className="px-3 py-2 space-y-2 text-sm">
-                <FinanceRow label="RENOVAÇÕES" op="×" value={String(months)} />
-                <FinanceRow label="TOTAL SERVIÇOS" op="=" value={fmtMoney(totalServicos)} muted />
-                <FinanceRow label="DESCONTO" op="−" value={fmtMoney(discountNum)} />
+              {/* Linhas financeiras editáveis */}
+              <div className="px-3 py-3 space-y-2 text-sm">
+                <FinanceEditRow
+                  label="RENOVAÇÕES"
+                  op="×"
+                  value={String(months)}
+                  onChange={(v) => setMonths(Math.max(1, Math.min(36, Number(v) || 1)))}
+                  inputMode="numeric"
+                />
+                <FinanceEditRow
+                  label="TOTAL SERVIÇOS"
+                  op="="
+                  value={amount}
+                  onChange={setAmount}
+                  prefix="R$"
+                />
+                <FinanceEditRow
+                  label="DESCONTO"
+                  op="−"
+                  value={discount}
+                  onChange={setDiscount}
+                  prefix="R$"
+                />
                 <div className="border-t pt-2">
                   <FinanceRow label="TOTAL A RECEBER" op="=" value={fmtMoney(totalNum)} strong />
                 </div>
@@ -542,7 +445,7 @@ export function QuickRenewDialog({
                   <Input
                     value={oldDue ? fmtDateBR(oldDue) : "—"}
                     readOnly
-                    className="h-8 text-xs bg-muted/60"
+                    className="h-9 text-xs bg-muted/60"
                   />
                 </div>
                 <div className="space-y-1">
@@ -553,23 +456,23 @@ export function QuickRenewDialog({
                     type="date"
                     value={newDueOverride || computedNewDue}
                     onChange={(e) => setNewDueOverride(e.target.value)}
-                    className="h-8 text-xs"
+                    className="h-9 text-xs"
                   />
                 </div>
-                <div className="space-y-1 col-span-2 sm:col-span-1">
+                <div className="space-y-1 col-span-2">
                   <Label className="text-[11px] font-semibold">Data Contas a Receber</Label>
                   <Input
                     type="date"
                     value={dataReceber}
                     onChange={(e) => setDataReceber(e.target.value)}
                     disabled={!renovarPrazo}
-                    className="h-8 text-xs"
+                    className="h-9 text-xs"
                   />
                 </div>
                 <div className="col-span-2 flex flex-col gap-1.5 pt-1">
                   <label className="flex items-center gap-2 text-xs cursor-pointer">
                     <Checkbox checked={sendReceipt} onCheckedChange={(v) => setSendReceipt(!!v)} />
-                    Enviar Recibo no WhatsApp
+                    Enviar Recibo no WhatsApp (automático)
                   </label>
                   <label className="flex items-center gap-2 text-xs cursor-pointer">
                     <Checkbox checked={renovarPrazo} onCheckedChange={(v) => setRenovarPrazo(!!v)} />
@@ -578,13 +481,14 @@ export function QuickRenewDialog({
                 </div>
               </div>
 
-              <div className="px-3 pb-3 text-[10px] text-muted-foreground">
-                Resumo: {fmtMoney(amountNum)} (plano){appAmountNum > 0 && ` + ${fmtMoney(appAmountNum)} (app)`}{discountNum > 0 && ` − ${fmtMoney(discountNum)} (desconto)`} = <strong className="text-foreground">{fmtMoney(totalNum)}</strong>
-                {effectiveNewDue && <> · Novo vencimento: <strong className="text-foreground">{fmtDateBR(effectiveNewDue)}</strong></>}
+              <div className="px-3 pb-3 pt-2 border-t bg-muted/10 text-[11px] text-muted-foreground">
+                Novo vencimento: <strong className="text-foreground">{fmtDateBR(effectiveNewDue)}</strong>
+                {" • "}Total: <strong className="text-foreground">{fmtMoney(totalNum)}</strong>
               </div>
             </div>
           </div>
         )}
+
 
         {done && (
           <div className="space-y-3 py-1">
