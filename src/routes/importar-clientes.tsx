@@ -60,6 +60,13 @@ import {
   type ChipKey,
   type DispatchGroup,
 } from "@/lib/import-schedule";
+import {
+  enrichImportRows,
+  summarizeImport,
+  type ImportEnrichment,
+} from "@/lib/import-mapping";
+
+
 
 
 type RowKind = "new" | "existing" | "duplicate_file" | "error";
