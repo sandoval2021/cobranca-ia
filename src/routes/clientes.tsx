@@ -1807,11 +1807,17 @@ function NewCustomerSheet({
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Usuário</Label>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Usuário</Label>
+                  <HelpTip text="Credenciais ainda não possuem armazenamento seguro configurado. Salve o cliente agora e adicione essas informações quando a proteção estiver ativada." />
+                </div>
                 <Input value={usuario} onChange={(e) => setUsuario(e.target.value)} placeholder="usuário" autoComplete="off" maxLength={120} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Senha</Label>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Senha</Label>
+                  <HelpTip text="Credenciais ainda não possuem armazenamento seguro configurado. Salve o cliente agora e adicione essas informações quando a proteção estiver ativada." />
+                </div>
                 <div className="relative">
                   <Input type={showSenha ? "text" : "password"} value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="••••••" autoComplete="new-password" maxLength={120} className="pr-9" />
                   <button type="button" onClick={() => setShowSenha((v) => !v)} aria-label={showSenha ? "Ocultar" : "Mostrar"} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted">
@@ -1820,7 +1826,10 @@ function NewCustomerSheet({
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Telas</Label>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Telas</Label>
+                  <HelpTip text="Quantidade de telas depende de persistência no backend." />
+                </div>
                 <Input value={telas} onChange={(e) => setTelas(e.target.value.replace(/\D/g, "").slice(0, 2))} placeholder="1" inputMode="numeric" />
               </div>
               <div className="space-y-1">
