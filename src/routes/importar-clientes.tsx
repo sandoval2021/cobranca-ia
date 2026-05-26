@@ -410,16 +410,16 @@ function ImportarClientesPage() {
           }
         }
         if (toReactivate.size > 0) {
-          await Promise.all(
-            Array.from(toReactivate).map((id) =>
-              supabase!.rpc("reactivate_customer_admin", { p_customer_id: id }).then(
-                ({ error: e }) => {
-                  if (e) console.warn("[importar-clientes] reativar falhou", id, e);
-                },
-              ),
-            ),
-          );
+          const ids = Array.from(toReactivate);
+          const { error: reactErr } = await supabase!
+            .from("customers")
+            .update({ status: "em_dia" })
+            .in("id", ids);
+          if (reactErr) {
+            console.warn("[importar-clientes] reativar falhou", reactErr);
+          }
         }
+
         toast.success("Importação concluída.");
         setLookupBump((n) => n + 1);
       }
