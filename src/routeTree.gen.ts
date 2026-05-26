@@ -17,6 +17,7 @@ import { Route as PreparacaoBackendRouteImport } from './routes/preparacao-backe
 import { Route as PendenciasRouteImport } from './routes/pendencias'
 import { Route as OperacaoDiaRouteImport } from './routes/operacao-dia'
 import { Route as MigracaoEmpresaRouteImport } from './routes/migracao-empresa'
+import { Route as MeusDadosRouteImport } from './routes/meus-dados'
 import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as IndicacoesRouteImport } from './routes/indicacoes'
 import { Route as ImportarClientesRouteImport } from './routes/importar-clientes'
@@ -79,6 +80,11 @@ const OperacaoDiaRoute = OperacaoDiaRouteImport.update({
 const MigracaoEmpresaRoute = MigracaoEmpresaRouteImport.update({
   id: '/migracao-empresa',
   path: '/migracao-empresa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeusDadosRoute = MeusDadosRouteImport.update({
+  id: '/meus-dados',
+  path: '/meus-dados',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MensagensRoute = MensagensRouteImport.update({
@@ -221,6 +227,7 @@ export interface FileRoutesByFullPath {
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
+  '/meus-dados': typeof MeusDadosRoute
   '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByTo {
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
+  '/meus-dados': typeof MeusDadosRoute
   '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
@@ -288,6 +296,7 @@ export interface FileRoutesById {
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
+  '/meus-dados': typeof MeusDadosRoute
   '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
@@ -323,6 +332,7 @@ export interface FileRouteTypes {
     | '/importar-clientes'
     | '/indicacoes'
     | '/mensagens'
+    | '/meus-dados'
     | '/migracao-empresa'
     | '/operacao-dia'
     | '/pendencias'
@@ -356,6 +366,7 @@ export interface FileRouteTypes {
     | '/importar-clientes'
     | '/indicacoes'
     | '/mensagens'
+    | '/meus-dados'
     | '/migracao-empresa'
     | '/operacao-dia'
     | '/pendencias'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
     | '/importar-clientes'
     | '/indicacoes'
     | '/mensagens'
+    | '/meus-dados'
     | '/migracao-empresa'
     | '/operacao-dia'
     | '/pendencias'
@@ -423,6 +435,7 @@ export interface RootRouteChildren {
   ImportarClientesRoute: typeof ImportarClientesRoute
   IndicacoesRoute: typeof IndicacoesRoute
   MensagensRoute: typeof MensagensRoute
+  MeusDadosRoute: typeof MeusDadosRoute
   MigracaoEmpresaRoute: typeof MigracaoEmpresaRoute
   OperacaoDiaRoute: typeof OperacaoDiaRoute
   PendenciasRoute: typeof PendenciasRoute
@@ -489,6 +502,13 @@ declare module '@tanstack/react-router' {
       path: '/migracao-empresa'
       fullPath: '/migracao-empresa'
       preLoaderRoute: typeof MigracaoEmpresaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meus-dados': {
+      id: '/meus-dados'
+      path: '/meus-dados'
+      fullPath: '/meus-dados'
+      preLoaderRoute: typeof MeusDadosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mensagens': {
@@ -679,6 +699,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImportarClientesRoute: ImportarClientesRoute,
   IndicacoesRoute: IndicacoesRoute,
   MensagensRoute: MensagensRoute,
+  MeusDadosRoute: MeusDadosRoute,
   MigracaoEmpresaRoute: MigracaoEmpresaRoute,
   OperacaoDiaRoute: OperacaoDiaRoute,
   PendenciasRoute: PendenciasRoute,

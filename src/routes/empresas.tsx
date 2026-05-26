@@ -180,13 +180,13 @@ function EmpresasContent() {
   return (
     <PageContainer>
       <SectionHeader
-        title="Minha base"
-        subtitle="Gerencie sua base de clientes e configurações de acesso."
-        hint="Modo local."
+        title="Contas de donos"
+        subtitle="Gestão SaaS das contas (planos, assinaturas, vencimento). Donos comuns não precisam abrir esta tela."
+        hint="Super admin."
       />
       <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-900">
         <Info className="mr-1 inline h-3.5 w-3.5" />
-        Sua base principal é criada automaticamente. Você não precisa de plano para usar o sistema.
+        Para editar os próprios dados, o dono usa <strong>Meus dados</strong>. Esta tela é apenas para gestão da plataforma.
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
