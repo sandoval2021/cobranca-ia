@@ -1435,6 +1435,7 @@ function EditForm({
       toast.error(friendlyRpcError(error.message));
       return;
     }
+    setCustomerExtras(customer.id, { email: email.trim(), birthday: birthday || undefined });
     toast.success("Cliente atualizado com sucesso.");
     onSaved();
   };
