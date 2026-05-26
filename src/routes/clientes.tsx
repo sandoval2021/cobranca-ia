@@ -548,10 +548,8 @@ function ClientesPage() {
           </Button>
         }
       />
-      <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-        Versão UI: clientes-v2-testes-v2
-      </div>
-      <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
+
+
 
 
 
