@@ -527,14 +527,6 @@ function StatusChip({ status }: { status: string }) {
   return <span className={cn("rounded-full px-2 py-0.5 text-xs", tone)}>{status}</span>;
 }
 
-function InterestChip({ interesse }: { interesse: string }) {
-  const tone =
-    interesse === "Quente" ? "bg-destructive/15 text-destructive" :
-    interesse === "Morno" ? "bg-warning/15 text-warning" :
-    "bg-surface-muted text-muted-foreground";
-  return <span className={cn("rounded-full px-2 py-0.5 text-xs", tone)}>{interesse}</span>;
-}
-
 function NewTrialSheet({
   open, onOpenChange, editing, onSave,
 }: {
@@ -544,11 +536,17 @@ function NewTrialSheet({
   onSave: (input: Partial<TrialLead> & { whatsapp: string }) => void;
 }) {
   const [form, setForm] = useState<Partial<TrialLead> & { whatsapp: string }>({
-    whatsapp: "", origem: "Outro", interesse: "Morno", horas_teste: 2,
+    whatsapp: "", origem: "Outro", horas_teste: 2,
   });
   const [showSenha, setShowSenha] = useState(false);
-  const [valorStr, setValorStr] = useState("");
+  const [intl, setIntl] = useState(false); // WhatsApp do lead — fora do Brasil
+  const [intlInd, setIntlInd] = useState(false); // WhatsApp indicador — fora do Brasil
+  const [waErr, setWaErr] = useState<string | undefined>();
+  const [waIndErr, setWaIndErr] = useState<string | undefined>();
+  const [serviceId, setServiceId] = useState<string>("");
+  const [matchedCust, setMatchedCust] = useState<{ id?: string; name?: string } | null>(null);
   const servers = useMemo(() => listActiveServers(), [open]);
+  const services = useMemo<ServiceItem[]>(() => listActiveServices(), [open]);
 
   function nowLocalIso() {
     const d = new Date();
@@ -566,17 +564,31 @@ function NewTrialSheet({
   useEffect(() => {
     if (editing) {
       setForm(editing);
-      setValorStr(editing.valor_cents != null ? (editing.valor_cents / 100).toFixed(2).replace(".", ",") : "");
+      // detecta se whatsapp do lead parece BR (10/11 digitos) ou intl
+      const dE = onlyDigits(editing.whatsapp);
+      setIntl(!(dE.length === 10 || dE.length === 11));
+      const dI = onlyDigits(editing.indicado_por_whatsapp || "");
+      setIntlInd(dI.length > 0 && !(dI.length === 10 || dI.length === 11));
+      // tenta achar service pelo valor
+      if (editing.valor_cents) {
+        const found = services.find((s) => s.preco_cents === editing.valor_cents);
+        setServiceId(found?.id ?? "");
+      } else setServiceId("");
     } else {
       const inicio = nowLocalIso();
       setForm({
-        whatsapp: "", origem: "Outro", interesse: "Morno",
+        whatsapp: "", origem: "Outro",
         data_inicio: inicio, horas_teste: 2, data_fim: addHoursIso(inicio, 2),
       });
-      setValorStr("");
+      setServiceId("");
+      setIntl(false);
+      setIntlInd(false);
     }
     setShowSenha(false);
-  }, [editing, open]);
+    setWaErr(undefined);
+    setWaIndErr(undefined);
+    setMatchedCust(null);
+  }, [editing, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Recalcula Fim do teste sempre que Início ou Horas mudarem
   useEffect(() => {
@@ -589,21 +601,73 @@ function NewTrialSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.data_inicio, form.horas_teste]);
 
+  function onWaChange(v: string) {
+    const formatted = intl ? maskIntl(v) : maskBR(v);
+    setForm((f) => ({ ...f, whatsapp: formatted }));
+    if (waErr) setWaErr(undefined);
+  }
+  function onWaIndChange(v: string) {
+    const formatted = intlInd ? maskIntl(v) : maskBR(v);
+    setForm((f) => ({ ...f, indicado_por_whatsapp: formatted }));
+    if (waIndErr) setWaIndErr(undefined);
+    if (matchedCust) setMatchedCust(null);
+  }
+
+  // Lookup: quando o WhatsApp indicador estiver válido, busca cliente existente
+  async function lookupIndicator() {
+    const v = form.indicado_por_whatsapp || "";
+    if (!v.trim()) return;
+    const check = validateWhatsapp(v, { international: intlInd });
+    if (!check.ok) return;
+    const { accountId } = await getActiveAccountId();
+    if (!accountId) return;
+    const search = check.digits.slice(-8); // últimos 8 dígitos
+    const res = await listCustomersAdmin({ p_company_id: accountId, p_search: search, p_limit: 5 });
+    const rows = (res.data ?? []) as Array<Record<string, unknown>>;
+    const found = rows.find((r) => {
+      const raw = String(r.whatsapp_e164 || r.whatsapp || "");
+      return onlyDigits(raw).endsWith(search);
+    });
+    if (found) {
+      const id = String(found.id || "");
+      const name = String(found.name || found.nome || "Cliente");
+      setMatchedCust({ id, name });
+      setForm((f) => ({
+        ...f,
+        indicado_por_cliente_id: id,
+        indicado_por_nome: f.indicado_por_nome?.trim() ? f.indicado_por_nome : name,
+      }));
+    } else {
+      setMatchedCust(null);
+    }
+  }
+
   function submit() {
-    if (!form.whatsapp?.trim()) { toast.error("WhatsApp é obrigatório"); return; }
+    const waCheck = validateWhatsapp(form.whatsapp || "", { international: intl });
+    if (!waCheck.ok) { setWaErr(waCheck.error); toast.error(waCheck.error || "WhatsApp inválido"); return; }
+    if (form.indicado_por_whatsapp?.trim()) {
+      const c = validateWhatsapp(form.indicado_por_whatsapp, { international: intlInd });
+      if (!c.ok) { setWaIndErr(c.error); toast.error(c.error || "WhatsApp do indicador inválido"); return; }
+    }
     if (!form.servidor?.trim()) { toast.error("Selecione um servidor"); return; }
     if (form.usuario?.trim() && !form.senha?.trim()) { toast.error("Informe a senha para esse usuário"); return; }
     if (form.senha?.trim() && !form.usuario?.trim()) { toast.error("Informe o usuário para essa senha"); return; }
     const horas = Number(form.horas_teste);
     if (!horas || horas <= 0) { toast.error("Informe as horas do teste"); return; }
-    const valorNum = valorStr.trim() ? Number(valorStr.replace(/\./g, "").replace(",", ".")) : null;
-    if (valorStr.trim() && (valorNum == null || Number.isNaN(valorNum) || valorNum < 0)) {
-      toast.error("Informe um valor válido");
-      return;
+    let valor_cents: number | undefined;
+    if (serviceId) {
+      const svc = services.find((s) => s.id === serviceId);
+      if (svc) valor_cents = svc.preco_cents;
+    } else if (editing?.valor_cents) {
+      valor_cents = editing.valor_cents;
     }
     onSave({
       ...form,
-      valor_cents: valorNum != null ? Math.round(valorNum * 100) : undefined,
+      whatsapp: waCheck.e164,
+      indicado_por_whatsapp: form.indicado_por_whatsapp?.trim()
+        ? validateWhatsapp(form.indicado_por_whatsapp, { international: intlInd }).e164
+        : undefined,
+      valor_cents,
     });
   }
 
@@ -620,7 +684,28 @@ function NewTrialSheet({
               <Input value={form.nome ?? ""} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Opcional" />
             </Field>
             <Field label="WhatsApp *">
-              <Input value={form.whatsapp ?? ""} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="(00) 00000-0000" inputMode="tel" />
+              <Input
+                value={form.whatsapp ?? ""}
+                onChange={(e) => onWaChange(e.target.value)}
+                placeholder={intl ? "+DDI número" : "(00) 90000-0000"}
+                inputMode="tel"
+                aria-invalid={!!waErr}
+              />
+              <label className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={intl}
+                  onChange={(e) => {
+                    setIntl(e.target.checked);
+                    // re-aplica máscara ao trocar
+                    const v = form.whatsapp || "";
+                    setForm((f) => ({ ...f, whatsapp: e.target.checked ? maskIntl(v) : maskBR(v) }));
+                    setWaErr(undefined);
+                  }}
+                />
+                Fora do Brasil (internacional)
+              </label>
+              {waErr && <p className="text-[11px] text-destructive">{waErr}</p>}
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -639,10 +724,38 @@ function NewTrialSheet({
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Quem indicou">
-              <Input value={form.indicado_por_nome ?? ""} onChange={(e) => setForm({ ...form, indicado_por_nome: e.target.value })} placeholder="Opcional" />
+              <Input
+                value={form.indicado_por_nome ?? ""}
+                onChange={(e) => setForm({ ...form, indicado_por_nome: e.target.value })}
+                placeholder="Opcional"
+              />
+              {matchedCust && (
+                <p className="text-[11px] text-success">Cliente existente · {matchedCust.name}</p>
+              )}
             </Field>
             <Field label="WhatsApp indicador">
-              <Input value={form.indicado_por_whatsapp ?? ""} onChange={(e) => setForm({ ...form, indicado_por_whatsapp: e.target.value })} placeholder="Opcional" inputMode="tel" />
+              <Input
+                value={form.indicado_por_whatsapp ?? ""}
+                onChange={(e) => onWaIndChange(e.target.value)}
+                onBlur={lookupIndicator}
+                placeholder="Opcional"
+                inputMode="tel"
+                aria-invalid={!!waIndErr}
+              />
+              <label className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={intlInd}
+                  onChange={(e) => {
+                    setIntlInd(e.target.checked);
+                    const v = form.indicado_por_whatsapp || "";
+                    setForm((f) => ({ ...f, indicado_por_whatsapp: e.target.checked ? maskIntl(v) : maskBR(v) }));
+                    setWaIndErr(undefined);
+                  }}
+                />
+                Fora do Brasil
+              </label>
+              {waIndErr && <p className="text-[11px] text-destructive">{waIndErr}</p>}
             </Field>
           </div>
 
@@ -695,8 +808,24 @@ function NewTrialSheet({
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <Field label="Valor (R$)">
-              <Input value={valorStr} onChange={(e) => setValorStr(e.target.value)} placeholder="0,00" inputMode="decimal" />
+            <Field label="Serviço">
+              {services.length === 0 ? (
+                <div className="rounded-md border border-dashed border-border bg-surface-muted px-2 py-1.5 text-xs">
+                  Nenhum serviço cadastrado.{" "}
+                  <Link to="/cadastros-servicos" className="underline">Cadastrar</Link>
+                </div>
+              ) : (
+                <select
+                  className="h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                  value={serviceId}
+                  onChange={(e) => setServiceId(e.target.value)}
+                >
+                  <option value="">Selecione…</option>
+                  {services.map((s) => (
+                    <option key={s.id} value={s.id}>{s.nome} — {formatBRL(s.preco_cents)}</option>
+                  ))}
+                </select>
+              )}
             </Field>
             <Field label="Horas">
               <Input
@@ -714,17 +843,6 @@ function NewTrialSheet({
             </Field>
           </div>
 
-          <Field label="Interesse">
-            <div className="flex gap-1.5">
-              {TRIAL_INTERESTS.map((i) => (
-                <button key={i} type="button" onClick={() => setForm({ ...form, interesse: i as TrialInterest })}
-                  className={cn(
-                    "flex-1 rounded-md border px-2 py-1 text-xs",
-                    form.interesse === i ? "border-primary bg-primary text-primary-foreground" : "border-border",
-                  )}>{i}</button>
-              ))}
-            </div>
-          </Field>
           <Field label="Observação">
             <Textarea value={form.observacao ?? ""} onChange={(e) => setForm({ ...form, observacao: e.target.value })} rows={2} />
           </Field>
