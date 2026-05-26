@@ -631,6 +631,9 @@ function ClientesPage() {
               customer={c}
               screens={allScreens[c.id] ?? []}
               onOpen={() => setOpenId(c.id)}
+              onRenew={() => setRenewId(c.id)}
+              onApps={() => setAppsId(c.id)}
+              onDelete={() => setDeleteId(c.id)}
             />
           ))}
         </div>
@@ -642,6 +645,66 @@ function ClientesPage() {
         onClose={() => setOpenId(null)}
         onChanged={reload}
       />
+
+      {renewId && (
+        <RenewScreensWizard
+          open={!!renewId}
+          onClose={() => setRenewId(null)}
+          customerId={renewId}
+          customerName={items?.find((c) => c.id === renewId)?.name ?? "Cliente"}
+        />
+      )}
+
+      <AppsDialog
+        customer={appsId ? items?.find((c) => c.id === appsId) ?? null : null}
+        screens={appsId ? (allScreens[appsId] ?? []) : []}
+        open={!!appsId}
+        onClose={() => setAppsId(null)}
+        onOpenFull={() => {
+          if (appsId) {
+            setOpenId(appsId);
+            setAppsId(null);
+          }
+        }}
+      />
+
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && !deleting && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir este cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O cliente <strong>{items?.find((c) => c.id === deleteId)?.name ?? ""}</strong> será
+              arquivado e deixará de aparecer na lista ativa. O histórico fica preservado e você
+              pode reativar quando quiser.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!supabase || !deleteId) return;
+                setDeleting(true);
+                const { error } = await supabase.rpc("archive_customer_admin", {
+                  p_customer_id: deleteId,
+                });
+                setDeleting(false);
+                if (error) {
+                  toast.error(friendlyRpcError(error.message));
+                  return;
+                }
+                toast.success("Cliente excluído da lista ativa.");
+                setDeleteId(null);
+                reload();
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <NewCustomerSheet
         open={openNew}
