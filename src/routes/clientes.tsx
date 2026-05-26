@@ -1700,9 +1700,10 @@ function NewCustomerSheet({
     if (!supabase) { toast.error("Conexão indisponível."); return; }
     setBusy(true);
     const { accountId: companyId, error: companyErr } = await getActiveAccountId();
-    if (companyErr || !companyId) {
+    if (!companyId) {
       setBusy(false);
-      toast.error("Não foi possível preparar sua conta. Tente entrar novamente.");
+      console.warn("[novo cliente] sem conta ativa", companyErr);
+      toast.error("Selecione uma conta para continuar.");
       return;
     }
     const { data, error } = await supabase.rpc("create_customer_admin", {
