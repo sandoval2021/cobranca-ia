@@ -236,32 +236,32 @@ function PlanInfoEditor({ service, onSaved }: { service: ServiceItem; onSaved: (
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-card p-3">
-      <div>
-        <Label className="text-xs">Nome do plano</Label>
-        <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Plano R$ 12" />
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        <div>
-          <Label className="text-xs">Telas</Label>
-          <Input type="number" min={1} max={10} value={telas} onChange={(e) => setTelas(e.target.value)} />
+    <div className="rounded-lg border border-border bg-card p-2.5">
+      <div className="grid grid-cols-12 gap-2 items-end">
+        <div className="col-span-12 sm:col-span-5">
+          <Label className="text-[11px]">Nome do plano</Label>
+          <Input className="h-8" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Plano R$ 12" />
         </div>
-        <div>
-          <Label className="text-xs">Meses</Label>
-          <Input type="number" min={1} max={24} value={meses} onChange={(e) => setMeses(e.target.value)} />
+        <div className="col-span-3 sm:col-span-2">
+          <Label className="text-[11px]">Telas</Label>
+          <Input className="h-8" type="number" min={1} max={10} value={telas} onChange={(e) => setTelas(e.target.value)} />
         </div>
-        <div>
-          <Label className="text-xs">Valor (R$)</Label>
-          <Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="12,00" />
+        <div className="col-span-3 sm:col-span-2">
+          <Label className="text-[11px]">Meses</Label>
+          <Input className="h-8" type="number" min={1} max={24} value={meses} onChange={(e) => setMeses(e.target.value)} />
+        </div>
+        <div className="col-span-3 sm:col-span-2">
+          <Label className="text-[11px]">Valor (R$)</Label>
+          <Input className="h-8" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="12,00" />
+        </div>
+        <div className="col-span-3 sm:col-span-1 flex justify-end">
+          <Button size="sm" onClick={submit} className="h-8 gap-1 px-2" title="Salvar dados do plano">
+            <Save className="h-3.5 w-3.5" /> Salvar
+          </Button>
         </div>
       </div>
-      <div className="flex justify-end">
-        <Button size="sm" onClick={submit} className="gap-1.5">
-          <Save className="h-3.5 w-3.5" /> Salvar dados do plano
-        </Button>
-      </div>
-      <p className="text-[11px] text-muted-foreground">
-        Você não precisa criar planos separados por nº de telas. Pode colocar tudo dentro da mensagem (1/3/6/12 meses, 1 e 2 telas, valores) — todos os clientes desse plano receberão o mesmo texto.
+      <p className="mt-1.5 text-[10px] leading-tight text-muted-foreground">
+        Coloque tudo dentro da mensagem (1/3/6/12 meses, 1 e 2 telas, valores) — todos os clientes desse plano receberão o mesmo texto.
       </p>
     </div>
   );
