@@ -73,9 +73,22 @@ export function AppShell() {
   const [openSheet, setOpenSheet] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const title = titles[pathname] ?? "Painel";
-  const { isOwner, isSuperAdmin } = useLocalAuth();
+  const { user, isOwner, isSuperAdmin } = useLocalAuth();
+  const { isAuthenticated } = useAuth();
   const company = useActiveCompany();
   const denial = isOwner ? ownerRouteDenial(pathname, company) : null;
+
+  // Garante base real (UUID Supabase) automaticamente após login.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    syncDefaultCompanyForUser({
+      email: user?.email,
+      nome: user?.nome,
+      whatsapp: user?.whatsapp,
+    }).catch(() => {
+      /* silencioso — getActiveAccountId trata erro no momento do uso */
+    });
+  }, [isAuthenticated, user?.email, user?.nome, user?.whatsapp]);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
