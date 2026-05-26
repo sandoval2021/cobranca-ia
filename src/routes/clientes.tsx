@@ -864,14 +864,29 @@ function ClientCard({
                 : "Sem valor"}{" "}
               / mês
             </span>
-            {customer.due_day != null && !override && (
-              <span>Vence dia {customer.due_day}</span>
-            )}
-            {override && (
-              <span className="font-medium text-foreground">
-                Vence em {fmtDateBRFromISO(override)}
-              </span>
-            )}
+            {(() => {
+              if (override) {
+                return (
+                  <span className="font-medium text-foreground">
+                    Vence {fmtDateBRFromISO(override)}
+                  </span>
+                );
+              }
+              if (customer.due_day != null) {
+                const today = new Date();
+                const dd = Math.min(customer.due_day, 28);
+                const next = new Date(today.getFullYear(), today.getMonth(), dd);
+                if (next < today) next.setMonth(next.getMonth() + 1);
+                const p = (n: number) => String(n).padStart(2, "0");
+                const iso = `${next.getFullYear()}-${p(next.getMonth() + 1)}-${p(next.getDate())}`;
+                return (
+                  <span className="font-medium text-foreground">
+                    Vence {fmtDateBRFromISO(iso)}
+                  </span>
+                );
+              }
+              return null;
+            })()}
             {days != null && (
               <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>
                 {urgencyLabel(urg, days)}
