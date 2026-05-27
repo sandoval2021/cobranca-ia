@@ -40,12 +40,14 @@ import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
 import { Route as BackupRouteImport } from './routes/backup'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AjudaIaRouteImport } from './routes/ajuda-ia'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as AgendaDisparoRouteImport } from './routes/agenda-disparo'
 import { Route as AdminPlanosPagamentosRouteImport } from './routes/admin-planos-pagamentos'
 import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as AcessoRestritoRouteImport } from './routes/acesso-restrito'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AtendimentoIaTokenRouteImport } from './routes/atendimento-ia.$token'
 import { Route as ApiPublicWebhooksMercadoPagoRouteImport } from './routes/api/public/webhooks/mercado-pago'
 
 const TestesRoute = TestesRouteImport.update({
@@ -203,6 +205,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AjudaIaRoute = AjudaIaRouteImport.update({
+  id: '/ajuda-ia',
+  path: '/ajuda-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AjudaRoute = AjudaRouteImport.update({
   id: '/ajuda',
   path: '/ajuda',
@@ -233,6 +240,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtendimentoIaTokenRoute = AtendimentoIaTokenRouteImport.update({
+  id: '/atendimento-ia/$token',
+  path: '/atendimento-ia/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksMercadoPagoRoute =
   ApiPublicWebhooksMercadoPagoRouteImport.update({
     id: '/api/public/webhooks/mercado-pago',
@@ -247,6 +259,7 @@ export interface FileRoutesByFullPath {
   '/admin-planos-pagamentos': typeof AdminPlanosPagamentosRoute
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
+  '/ajuda-ia': typeof AjudaIaRoute
   '/auth': typeof AuthRoute
   '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
@@ -278,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
 }
 export interface FileRoutesByTo {
@@ -287,6 +301,7 @@ export interface FileRoutesByTo {
   '/admin-planos-pagamentos': typeof AdminPlanosPagamentosRoute
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
+  '/ajuda-ia': typeof AjudaIaRoute
   '/auth': typeof AuthRoute
   '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
@@ -318,6 +333,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
 }
 export interface FileRoutesById {
@@ -328,6 +344,7 @@ export interface FileRoutesById {
   '/admin-planos-pagamentos': typeof AdminPlanosPagamentosRoute
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
+  '/ajuda-ia': typeof AjudaIaRoute
   '/auth': typeof AuthRoute
   '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
@@ -359,6 +376,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
 }
 export interface FileRouteTypes {
@@ -370,6 +388,7 @@ export interface FileRouteTypes {
     | '/admin-planos-pagamentos'
     | '/agenda-disparo'
     | '/ajuda'
+    | '/ajuda-ia'
     | '/auth'
     | '/backup'
     | '/backup-geral'
@@ -401,6 +420,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/seguranca-local'
     | '/testes'
+    | '/atendimento-ia/$token'
     | '/api/public/webhooks/mercado-pago'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -410,6 +430,7 @@ export interface FileRouteTypes {
     | '/admin-planos-pagamentos'
     | '/agenda-disparo'
     | '/ajuda'
+    | '/ajuda-ia'
     | '/auth'
     | '/backup'
     | '/backup-geral'
@@ -441,6 +462,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/seguranca-local'
     | '/testes'
+    | '/atendimento-ia/$token'
     | '/api/public/webhooks/mercado-pago'
   id:
     | '__root__'
@@ -450,6 +472,7 @@ export interface FileRouteTypes {
     | '/admin-planos-pagamentos'
     | '/agenda-disparo'
     | '/ajuda'
+    | '/ajuda-ia'
     | '/auth'
     | '/backup'
     | '/backup-geral'
@@ -481,6 +504,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/seguranca-local'
     | '/testes'
+    | '/atendimento-ia/$token'
     | '/api/public/webhooks/mercado-pago'
   fileRoutesById: FileRoutesById
 }
@@ -491,6 +515,7 @@ export interface RootRouteChildren {
   AdminPlanosPagamentosRoute: typeof AdminPlanosPagamentosRoute
   AgendaDisparoRoute: typeof AgendaDisparoRoute
   AjudaRoute: typeof AjudaRoute
+  AjudaIaRoute: typeof AjudaIaRoute
   AuthRoute: typeof AuthRoute
   BackupRoute: typeof BackupRoute
   BackupGeralRoute: typeof BackupGeralRoute
@@ -522,6 +547,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
+  AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
   ApiPublicWebhooksMercadoPagoRoute: typeof ApiPublicWebhooksMercadoPagoRoute
 }
 
@@ -744,6 +770,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ajuda-ia': {
+      id: '/ajuda-ia'
+      path: '/ajuda-ia'
+      fullPath: '/ajuda-ia'
+      preLoaderRoute: typeof AjudaIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ajuda': {
       id: '/ajuda'
       path: '/ajuda'
@@ -786,6 +819,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/atendimento-ia/$token': {
+      id: '/atendimento-ia/$token'
+      path: '/atendimento-ia/$token'
+      fullPath: '/atendimento-ia/$token'
+      preLoaderRoute: typeof AtendimentoIaTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/mercado-pago': {
       id: '/api/public/webhooks/mercado-pago'
       path: '/api/public/webhooks/mercado-pago'
@@ -803,6 +843,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPlanosPagamentosRoute: AdminPlanosPagamentosRoute,
   AgendaDisparoRoute: AgendaDisparoRoute,
   AjudaRoute: AjudaRoute,
+  AjudaIaRoute: AjudaIaRoute,
   AuthRoute: AuthRoute,
   BackupRoute: BackupRoute,
   BackupGeralRoute: BackupGeralRoute,
@@ -834,6 +875,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
+  AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
   ApiPublicWebhooksMercadoPagoRoute: ApiPublicWebhooksMercadoPagoRoute,
 }
 export const routeTree = rootRouteImport

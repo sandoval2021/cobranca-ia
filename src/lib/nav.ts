@@ -76,6 +76,7 @@ export const ownerNav: NavItem[] = [
   { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Saúde dos dados, segurança, rotas, financeiro e operação local", superAdminOnly: true },
   { to: "/preparacao-backend", label: "Preparação Backend", icon: Database, hint: "Mapeie dados locais e prepare a futura migração segura para banco de dados", superAdminOnly: true },
   { to: "/migracao-empresa", label: "Migração Empresa", icon: Database, hint: "Vincule dados locais antigos a uma empresa", superAdminOnly: true },
+  { to: "/ajuda-ia", label: "Ajuda com IA", icon: Sparkles, hint: "Tire dúvidas sobre o CobraEasy com IA" },
   { to: "/ajuda", label: "Ajuda", icon: LifeBuoy, hint: "Aprenda como usar cada parte do sistema" },
 ];
 
