@@ -224,15 +224,16 @@ export function QuickRenewDialog({
   const hasScreens = screens.length > 0;
   const multi = screens.length > 1;
 
-  // Vencimento "geral" do cliente (sem telas)
+  // Vencimento "geral" do cliente — usa o mesmo helper-base do card.
   const customerNewDue = useMemo(
-    () => addMonthsISO(baseFromDueDay(customerDueDay), months),
-    [customerDueDay, months],
+    () => addMonthsISO(baseFromCustomer(customerDueIso, customerDueDay), months),
+    [customerDueIso, customerDueDay, months],
   );
 
-  // Data antiga (vencimento atual) — prioriza tela com vencimento mais próximo,
-  // ou usa o dia de vencimento mensal do cliente.
+  // Data antiga (vencimento atual) — usa a data importada quando existe;
+  // depois cai para tela com vencimento mais próximo; por fim due_day.
   const oldDue = useMemo(() => {
+    if (customerDueIso) return customerDueIso;
     if (selectedScreens.length > 0) {
       const dates = selectedScreens
         .map((s) => s.due_date)
@@ -240,10 +241,13 @@ export function QuickRenewDialog({
       if (dates.length) return dates.sort()[0];
     }
     if (customerDueDay) {
-      return addMonthsISO(baseFromDueDay(customerDueDay), -1);
+      const base = baseFromCustomer(null, customerDueDay);
+      base.setMonth(base.getMonth() - 1);
+      const p = (n: number) => String(n).padStart(2, "0");
+      return `${base.getFullYear()}-${p(base.getMonth() + 1)}-${p(base.getDate())}`;
     }
     return null;
-  }, [selectedScreens, customerDueDay]);
+  }, [customerDueIso, selectedScreens, customerDueDay]);
 
   const parseBR = (v: string): number => {
     const n = Number((v || "").replace(/\./g, "").replace(",", "."));
