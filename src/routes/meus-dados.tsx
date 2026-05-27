@@ -37,6 +37,7 @@ import {
   type Company,
 } from "@/lib/companies";
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentTermsCard } from "@/components/companies/PaymentTermsCard";
 
 export const Route = createFileRoute("/meus-dados")({ component: MinhaContaPage });
 
