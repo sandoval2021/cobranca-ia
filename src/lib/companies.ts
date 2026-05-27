@@ -121,6 +121,8 @@ const DEFAULT_PLANS: CompanyPlan[] = [
     limite_telas: 200,
     limite_testes: 30,
     limite_servidores: 2,
+    dias_teste: 7,
+    descricao: "Para começar — clientes, telas e cobranças básicas.",
     modulos: [
       "clientes",
       "telas_app",
