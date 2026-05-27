@@ -834,6 +834,7 @@ function ClientesPage() {
             customerId={renewId}
             customerName={c.name}
             customerDueDay={c.due_day}
+            customerDueIso={getCustomerDueIso(c)}
             monthlyAmountCents={c.amount_cents}
             whatsappE164={c.whatsapp}
             onRenewed={reload}
