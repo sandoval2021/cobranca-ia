@@ -1230,7 +1230,7 @@ function ImportarClientesPage() {
                       </td>
 
                     </tr>
-                  ))}
+                  ); })}
                 </tbody>
               </table>
             </div>
