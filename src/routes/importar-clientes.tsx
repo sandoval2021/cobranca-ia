@@ -1160,7 +1160,7 @@ function ImportarClientesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, i) => (
+                  {pageIdx.map((i) => { const r = rows[i]; return (
                     <tr key={i} className="border-b last:border-0">
                       <td className="p-2">
                         <KindPill kind={rowKind(r)} errors={r.errors} />
