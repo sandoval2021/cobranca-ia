@@ -463,23 +463,23 @@ function SignupOtpForm({
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
           <ShieldCheck className="h-6 w-6" />
         </div>
-        <h2 className="text-base font-semibold">Digite o código de 6 dígitos enviado para seu e-mail</h2>
+        <h2 className="text-base font-semibold">Digite o código de {OTP_LENGTH} dígitos enviado para seu e-mail</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Enviamos um código de 6 dígitos para <strong>{ctx.email}</strong>. Digite abaixo para
+          Enviamos um código de {OTP_LENGTH} dígitos para <strong>{ctx.email}</strong>. Digite abaixo para
           continuar.
         </p>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="otp-code">Código de 6 dígitos</Label>
+        <Label htmlFor="otp-code">Código de {OTP_LENGTH} dígitos</Label>
         <Input
           id="otp-code"
           ref={inputRef}
           inputMode="numeric"
           autoComplete="one-time-code"
-          pattern="\d{6}"
-          maxLength={6}
-          placeholder="••••••"
+          pattern={`\\d{${OTP_LENGTH}}`}
+          maxLength={OTP_LENGTH}
+          placeholder="••••••••"
           value={code}
           onChange={(e) => setCode(onlyDigits(e.target.value))}
           required
@@ -491,7 +491,7 @@ function SignupOtpForm({
         <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
       )}
 
-      <Button type="submit" disabled={submitting || code.length !== 6} className="h-11 w-full">
+      <Button type="submit" disabled={submitting || code.length !== OTP_LENGTH} className="h-11 w-full">
         {submitting ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
