@@ -898,6 +898,25 @@ function ClientesPage() {
       {renewId && (() => {
         const c = items?.find((x) => x.id === renewId);
         if (!c) return null;
+        const screens = allScreens[c.id] ?? [];
+        // Fonte única: mesma data exibida no card (Expira: ...).
+        const dueInfo = getCustomerDueInfo(c, screens);
+        if (
+          typeof import.meta !== "undefined" &&
+          (import.meta as { env?: { DEV?: boolean } }).env?.DEV &&
+          c.whatsapp === "+558288936713"
+        ) {
+          // eslint-disable-next-line no-console
+          console.log("[renew-sequential] open dialog", {
+            customer_id: c.id,
+            whatsapp: c.whatsapp,
+            card_due_iso: dueInfo.iso,
+            card_days: dueInfo.days,
+            currentDueSource: dueInfo.source,
+            raw_due_date: c.due_date,
+            raw_due_day: c.due_day,
+          });
+        }
         return (
           <QuickRenewDialog
             open={!!renewId}
@@ -905,9 +924,10 @@ function ClientesPage() {
             customerId={renewId}
             customerName={c.name}
             customerDueDay={c.due_day}
-            customerDueIso={getCustomerDueIso(c)}
+            customerDueIso={dueInfo.iso}
             monthlyAmountCents={c.amount_cents}
             whatsappE164={c.whatsapp}
+
             onRenewed={(patch) => {
               // Atualização otimista: refletir o novo due_date no card
               // imediatamente, com base no retorno da RPC. O reload em seguida
