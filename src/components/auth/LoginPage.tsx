@@ -435,7 +435,7 @@ function SignupOtpForm({
     } catch {
       /* silencioso */
     }
-    toast.success("E-mail confirmado com sucesso.");
+    toast.success("Cadastro confirmado!");
   }
 
   async function handleResend() {
