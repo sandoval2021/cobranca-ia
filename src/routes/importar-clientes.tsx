@@ -480,6 +480,8 @@ function ImportarClientesPage() {
       toast.error("Falha ao importar: " + msg);
     } finally {
       setConfirming(false);
+      setImportProgress(null);
+      cancelImportRef.current = false;
     }
   }
 
