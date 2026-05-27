@@ -37,6 +37,7 @@ import {
   type Company,
 } from "@/lib/companies";
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentTermsCard } from "@/components/companies/PaymentTermsCard";
 
 export const Route = createFileRoute("/meus-dados")({ component: MinhaContaPage });
 
@@ -325,7 +326,10 @@ function MinhaContaPage() {
           </Button>
         </Card>
 
-        {/* 6) Ajuda */}
+        {/* 6) Termos de pagamento */}
+        <PaymentTermsCard />
+
+        {/* 7) Ajuda */}
         <Card icon={<LifeBuoy className="h-5 w-5" />} title="Precisa de ajuda?">
           <p className="text-sm text-muted-foreground">
             Entre em contato com o suporte para ajustar plano, pagamento ou dados da conta.
