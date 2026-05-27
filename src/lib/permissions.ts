@@ -20,7 +20,7 @@ export const SUPER_ADMIN_ONLY_ROUTES: string[] = [
   "/empresas",
   "/regras-disparo",
   "/base-conhecimento",
-  "/importar-clientes",
+  // "/importar-clientes" — liberado para Dono importar a própria base (escopada por p_company_id).
   "/cobrancas",
   "/mensagens",
   "/ia",
