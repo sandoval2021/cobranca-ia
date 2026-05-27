@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Target,
   Info,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -93,6 +94,75 @@ function OwnerRoleNotice() {
           Sua conta ainda não está vinculada a uma empresa. Peça ao admin para vincular seu e-mail.
         </div>
       )}
+    </div>
+  );
+}
+
+function PwaInstallPrompt() {
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("cobranca_ia_pwa_dismissed") === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      // @ts-expect-error iOS specific
+      window.navigator.standalone === true;
+    setIsStandalone(standalone);
+  }, []);
+
+  if (isStandalone || dismissed) return null;
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    try {
+      window.localStorage.setItem("cobranca_ia_pwa_dismissed", "1");
+    } catch {
+      /* noop */
+    }
+  };
+
+  return (
+    <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+      <div className="flex items-start gap-2">
+        <Download className="mt-0.5 h-4 w-4 shrink-0 text-blue-700" />
+        <div className="min-w-0 flex-1">
+          <p className="font-medium">Instale este painel no seu celular</p>
+          <p className="mt-0.5 text-xs text-blue-800">
+            Acesse mais rápido como um aplicativo.
+          </p>
+          <div className="mt-2 rounded-lg bg-white/70 p-2 text-xs text-blue-900">
+            {isIOS ? (
+              <p>
+                Toque no botão <strong>Compartilhar</strong> do Safari e escolha{" "}
+                <strong>Adicionar à Tela de Início</strong>.
+              </p>
+            ) : (
+              <p>
+                Toque nos <strong>três pontos</strong> do Chrome e escolha{" "}
+                <strong>Adicionar à tela inicial</strong>.
+              </p>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={handleDismiss}
+          className="shrink-0 rounded p-1 text-blue-700 hover:bg-blue-100"
+          aria-label="Fechar"
+        >
+          <span className="text-xs font-semibold">✕</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -584,6 +654,7 @@ function Dashboard() {
       </div>
 
       <OwnerRoleNotice />
+      <PwaInstallPrompt />
 
       {/* Próximo passo recomendado — linguagem simples para o Dono */}
       {(() => {
