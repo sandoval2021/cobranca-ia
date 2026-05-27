@@ -138,7 +138,11 @@ export async function registerLocalUser(input: RegisterInput): Promise<RegisterR
     email,
     whatsapp,
     senha_hash: hash,
-    role: input.role ?? "owner",
+    // Cadastro público SEMPRE vira owner. Mesmo que `input.role` venha
+    // como "super_admin" (por engano ou abuso), ignoramos aqui. Super
+    // admin só existe no backend (is_super_admin / user_roles) — nunca
+    // pode ser concedido por chamada de cliente.
+    role: "owner",
     status: "pendente_confirmacao",
     email_confirmed: false,
     created_at: now,
