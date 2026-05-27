@@ -73,10 +73,14 @@ export function LoginPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
           {!supabaseConfigured && (
             <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-              Conexão não configurada. Verifique as variáveis do Supabase no
-              ambiente do Lovable.
+              {!hasKey
+                ? "Anon key ausente para pkghjzbvmifmztqvpdeu. Configure o secret ANON_KEY_SUPABASE no Lovable Cloud com a chave anon do projeto correto e republique."
+                : !isAnonKeyForExpectedProject
+                  ? `Anon key embutida pertence ao projeto errado (ref=${supabaseAnonKeyRef ?? "?"}). Esperado pkghjzbvmifmztqvpdeu.`
+                  : "Conexão não configurada. Verifique as variáveis do Supabase no ambiente do Lovable."}
             </div>
           )}
+
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="login-email">E-mail</Label>
