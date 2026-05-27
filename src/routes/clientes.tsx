@@ -1585,12 +1585,15 @@ function DetailView({
           />
           <DetailField
             label="Status"
-            hint="Ativo ou expirado."
-            value={
-              <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(customer.status))}>
-                {statusLabel(customer.status)}
-              </span>
-            }
+            hint="Em dia até a data de vencimento; após isso, expirado."
+            value={(() => {
+              const d = customerDueDays(merged, []);
+              return (
+                <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(merged.status, d))}>
+                  {statusLabel(merged.status, d)}
+                </span>
+              );
+            })()}
           />
 
         </div>
