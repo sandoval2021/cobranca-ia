@@ -252,6 +252,7 @@ export function applyRenewal(draft: RenewalDraft): RenewalRecord {
     payment_method: draft.payment_method,
     app_amount: draft.app_amount,
     notes: draft.notes,
+    next_due_date: draft.new_due_date || undefined,
     confirmation_message: "",
   };
   rec.confirmation_message = buildConfirmationMessage(rec);
