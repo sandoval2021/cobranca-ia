@@ -9,6 +9,7 @@ import { useLocalAuth } from "@/lib/use-local-auth";
 import { useAuth } from "@/lib/use-auth";
 import { syncDefaultCompanyForUser } from "@/lib/rpc-admin";
 import { ownerRouteDenial, describeDenial, type AccessDenialReason } from "@/lib/permissions";
+import { AccountStatusBanner } from "@/components/companies/AccountStatusBanner";
 import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
