@@ -86,7 +86,12 @@ function companyLabel(c: Company): string {
   return (c.id as string | undefined) ?? "Empresa";
 }
 
-const MAX_BYTES = 10 * 1024 * 1024;
+// Sem limite fixo: bases reais podem passar de 10MB. Acima de 25MB só
+// avisamos o usuário que pode demorar; o parse roda em chunks.
+const SOFT_WARN_BYTES = 25 * 1024 * 1024;
+// Tamanho do lote enviado para a RPC staging_import_customers_from_rows.
+// Evita timeout/payload gigante em bases de 5k–10k clientes.
+const IMPORT_CHUNK_SIZE = 250;
 
 function ImportarClientesPage() {
   const { user, isAuthenticated } = useAuth();
@@ -97,6 +102,8 @@ function ImportarClientesPage() {
   const [parseError, setParseError] = useState<string | null>(null);
   const [rows, setRows] = useState<ValidatedRow[] | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ done: number; total: number } | null>(null);
+  const cancelImportRef = useRef(false);
   const [result, setResult] = useState<{
     imported?: number;
     updated?: number;
@@ -257,9 +264,10 @@ function ImportarClientesPage() {
     setRows(null);
     setFileName(file.name);
 
-    if (file.size > MAX_BYTES) {
-      setParseError("Arquivo maior que 10 MB. Envie um arquivo menor.");
-      return;
+    if (file.size > SOFT_WARN_BYTES) {
+      toast.message(
+        `Arquivo grande (${(file.size / (1024 * 1024)).toFixed(1)} MB). O processamento será feito em lotes — pode levar alguns minutos.`,
+      );
     }
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
     if (!isPdf) {
@@ -353,10 +361,43 @@ function ImportarClientesPage() {
       });
 
 
-      const { data, error } = await supabase.rpc(
-        "staging_import_customers_from_rows",
-        { p_company_id: effCompany, p_rows: payload as unknown as object }
-      );
+      // Envia em lotes para suportar bases grandes (5k–10k clientes) sem
+      // estourar timeout/payload da RPC. Cancelável entre lotes.
+      cancelImportRef.current = false;
+      const totals = { imported: 0, updated: 0, charges: 0 };
+      let lastError: { message: string } | null = null;
+      const chunks: typeof payload[] = [];
+      for (let i = 0; i < payload.length; i += IMPORT_CHUNK_SIZE) {
+        chunks.push(payload.slice(i, i + IMPORT_CHUNK_SIZE));
+      }
+      setImportProgress({ done: 0, total: payload.length });
+      let processed = 0;
+      let cancelledByUser = false;
+      for (const chunk of chunks) {
+        if (cancelImportRef.current) {
+          cancelledByUser = true;
+          break;
+        }
+        const { data: chunkData, error: chunkError } = await supabase.rpc(
+          "staging_import_customers_from_rows",
+          { p_company_id: effCompany, p_rows: chunk as unknown as object },
+        );
+        if (chunkError) {
+          lastError = chunkError;
+          break;
+        }
+        const cr = (chunkData ?? {}) as Record<string, number>;
+        totals.imported += cr.imported ?? 0;
+        totals.updated += cr.updated ?? 0;
+        totals.charges += cr.charges ?? 0;
+        processed += chunk.length;
+        setImportProgress({ done: processed, total: payload.length });
+      }
+      const data = totals;
+      const error = lastError;
+      if (cancelledByUser) {
+        toast.message(`Importação cancelada. ${processed} de ${payload.length} linhas foram processadas antes do cancelamento.`);
+      }
 
       if (error) {
         const m = (error.message || "").toLowerCase();
@@ -439,6 +480,8 @@ function ImportarClientesPage() {
       toast.error("Falha ao importar: " + msg);
     } finally {
       setConfirming(false);
+      setImportProgress(null);
+      cancelImportRef.current = false;
     }
   }
 
@@ -673,7 +716,39 @@ function ImportarClientesPage() {
                 <>Confirmar importação</>
               )}
             </Button>
+            {confirming && importProgress ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => {
+                  cancelImportRef.current = true;
+                  toast.message("Cancelando após o lote atual…");
+                }}
+              >
+                Cancelar
+              </Button>
+            ) : null}
           </div>
+
+          {confirming && importProgress ? (
+            <div className="mb-3 rounded-md border bg-muted/40 p-2 text-xs">
+              <div className="mb-1 flex items-center justify-between">
+                <span>Importando em lotes de {IMPORT_CHUNK_SIZE}…</span>
+                <span className="tabular-nums">
+                  {importProgress.done} / {importProgress.total}
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded bg-muted">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{
+                    width: `${Math.min(100, (importProgress.done / Math.max(1, importProgress.total)) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ) : null}
 
           <div className="mb-3 flex flex-wrap gap-1.5 text-xs">
             <Badge variant="secondary" className="gap-1">
