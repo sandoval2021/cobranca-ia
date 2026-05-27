@@ -322,31 +322,103 @@ const normalize = (r: Row): Customer => {
 
 
 // Prioridade do vencimento do cliente:
-// 1) due_date/expires_at importado (data completa) — exibe data real;
-// 2) due_day como recorrência mensal.
-// Telas (app screens) sempre podem antecipar o vencimento mais próximo.
+// 1) due_date/expires_at (data completa do backend);
+// 2) override local — apenas se for MAIS RECENTE que o backend
+//    (evita override antigo sobrescrever uma renovação nova);
+// 3) due_day como recorrência mensal calculada.
+// Telas (app screens) só podem antecipar o vencimento quando o cliente
+// já está em dia (days >= 0) — nunca tornam um cliente em dia em vencido.
 const getCustomerDueIso = (c: Customer): string | null => c.due_date;
 
-const customerDueDays = (c: Customer, screens: AppScreen[]): number | null => {
-  const iso = getCustomerDueIso(c);
-  if (iso) {
+const dueIsoFromDueDay = (dueDay: number | null): string | null => {
+  if (dueDay == null || dueDay < 1 || dueDay > 31) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const y = today.getFullYear();
+  const m = today.getMonth();
+  const dd = Math.min(dueDay, new Date(y, m + 1, 0).getDate());
+  let next = new Date(y, m, dd);
+  if (next < today) {
+    const nm = m + 1;
+    const ddn = Math.min(dueDay, new Date(y, nm + 1, 0).getDate());
+    next = new Date(y, nm, ddn);
+  }
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${next.getFullYear()}-${p(next.getMonth() + 1)}-${p(next.getDate())}`;
+};
+
+const daysFromIso = (iso: string | null): number | null => {
+  if (!iso) return null;
+  const dt = new Date(iso + "T00:00:00");
+  if (isNaN(+dt)) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.floor((+dt - +today) / (1000 * 60 * 60 * 24));
+};
+
+// Fonte única para data/dias/situação do cliente. Garante que o texto
+// "Expira", o badge "Vencido há X dias" e os filtros usem o MESMO iso.
+export type CustomerDueInfo = {
+  iso: string | null;
+  days: number | null;
+  source: "override" | "backend" | "due_day" | "none";
+};
+
+const getCustomerDueInfo = (c: Customer, screens: AppScreen[]): CustomerDueInfo => {
+  const backendIso = getCustomerDueIso(c);
+  const overrideIso = getCustomerDueOverride(c.id);
+  // Auto-cleanup: se backend já tem data >= override, override está obsoleto.
+  if (overrideIso && backendIso && backendIso >= overrideIso) {
+    try { clearCustomerDueOverride(c.id); } catch { /* noop */ }
+  }
+  let iso: string | null = backendIso;
+  let source: CustomerDueInfo["source"] = backendIso ? "backend" : "none";
+  if (overrideIso && (!backendIso || overrideIso > backendIso)) {
+    iso = overrideIso;
+    source = "override";
+  }
+  if (!iso) {
+    const fromDay = dueIsoFromDueDay(c.due_day);
+    if (fromDay) { iso = fromDay; source = "due_day"; }
+  }
+  let days = daysFromIso(iso);
+  // Telas só puxam o vencimento para mais cedo quando o cliente está em dia.
+  if (days != null && days >= 0) {
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const d = new Date(iso + "T00:00:00");
-    if (isNaN(+d)) return nextDueDays(c.due_day, screens);
-    const base = Math.floor((+d - +today) / (1000 * 60 * 60 * 24));
-    // Telas podem antecipar (vencer antes); se positivo menor, usa.
-    let best = base;
     for (const s of screens) {
       if (s.status === "arquivada" || s.status === "pausada") continue;
-      const sd = s.due_date ? Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000) : null;
-      if (sd == null) continue;
-      if (best < 0 && sd < 0) best = Math.max(best, sd);
-      else if (sd >= 0 && (best < 0 || sd < best)) best = sd;
+      if (!s.due_date) continue;
+      const dt = new Date(s.due_date + "T00:00:00");
+      if (isNaN(+dt)) continue;
+      const sd = Math.floor((+dt - +today) / (1000 * 60 * 60 * 24));
+      if (sd >= 0 && sd < days) days = sd;
     }
-    return best;
   }
-  return nextDueDays(c.due_day, screens);
+  // Debug seguro para o ticket — apenas em DEV.
+  if (
+    typeof import.meta !== "undefined" &&
+    (import.meta as { env?: { DEV?: boolean } }).env?.DEV &&
+    c.whatsapp === "+558288936713"
+  ) {
+    // eslint-disable-next-line no-console
+    console.log("[customer-status-debug]", {
+      customer_id: c.id,
+      whatsapp: c.whatsapp,
+      raw_status: c.status,
+      due_date: c.due_date,
+      due_day: c.due_day,
+      chosen_due_iso: iso,
+      source,
+      today: new Date().toISOString().slice(0, 10),
+      daysDiff: days,
+      visualStatus: effectiveStatusKind(c.status, days),
+      badgeLabel: days != null ? urgencyLabel(urgencyFromDays(days), days) : "Sem vencimento",
+    });
+  }
+  return { iso, days, source };
 };
+
+const customerDueDays = (c: Customer, screens: AppScreen[]): number | null =>
+  getCustomerDueInfo(c, screens).days;
+
 
 function friendlyRpcError(msg: string): string {
   const m = msg.toLowerCase();
