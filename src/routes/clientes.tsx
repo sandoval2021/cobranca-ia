@@ -674,11 +674,10 @@ function ClientesPage() {
     return [...filtered].sort((a, b) => {
       const sa = allScreens[a.id] ?? [];
       const sb = allScreens[b.id] ?? [];
-      // Usa o mesmo "days" exibido no card (override sobrescreve base).
-      const oa = daysFromOverride(getCustomerDueOverride(a.id));
-      const ob = daysFromOverride(getCustomerDueOverride(b.id));
-      const da = oa != null ? oa : customerDueDays(a, sa);
-      const db = ob != null ? ob : customerDueDays(b, sb);
+      // Usa o mesmo "days" exibido no card (fonte única).
+      const da = getCustomerDueInfo(a, sa).days;
+      const db = getCustomerDueInfo(b, sb).days;
+
       const rank = (d: number | null) => {
         if (d != null && d < 0) return 1_000_000 + Math.abs(d); // vencidos no fim
         if (d == null) return 500_000;
