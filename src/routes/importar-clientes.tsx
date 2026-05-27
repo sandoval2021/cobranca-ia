@@ -716,7 +716,39 @@ function ImportarClientesPage() {
                 <>Confirmar importação</>
               )}
             </Button>
+            {confirming && importProgress ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => {
+                  cancelImportRef.current = true;
+                  toast.message("Cancelando após o lote atual…");
+                }}
+              >
+                Cancelar
+              </Button>
+            ) : null}
           </div>
+
+          {confirming && importProgress ? (
+            <div className="mb-3 rounded-md border bg-muted/40 p-2 text-xs">
+              <div className="mb-1 flex items-center justify-between">
+                <span>Importando em lotes de {IMPORT_CHUNK_SIZE}…</span>
+                <span className="tabular-nums">
+                  {importProgress.done} / {importProgress.total}
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded bg-muted">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{
+                    width: `${Math.min(100, (importProgress.done / Math.max(1, importProgress.total)) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ) : null}
 
           <div className="mb-3 flex flex-wrap gap-1.5 text-xs">
             <Badge variant="secondary" className="gap-1">
