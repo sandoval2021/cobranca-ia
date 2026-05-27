@@ -654,6 +654,7 @@ function Dashboard() {
       </div>
 
       <OwnerRoleNotice />
+      <PwaInstallPrompt />
 
       {/* Próximo passo recomendado — linguagem simples para o Dono */}
       {(() => {
