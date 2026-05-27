@@ -102,6 +102,8 @@ function ImportarClientesPage() {
   const [parseError, setParseError] = useState<string | null>(null);
   const [rows, setRows] = useState<ValidatedRow[] | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ done: number; total: number } | null>(null);
+  const cancelImportRef = useRef(false);
   const [result, setResult] = useState<{
     imported?: number;
     updated?: number;
