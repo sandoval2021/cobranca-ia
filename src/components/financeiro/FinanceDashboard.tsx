@@ -8,7 +8,7 @@ import {
   listFinanceEntries, formatBRL, calculateFinanceSummary, FINANCE_EVENT,
   type FinanceEntry,
 } from "@/lib/financeiro-local";
-import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
+import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { useAuth } from "@/lib/use-auth";
 import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 
