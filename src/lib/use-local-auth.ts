@@ -46,24 +46,80 @@ export function useLocalAuth() {
   }, []);
 
   // Consulta autoritativa do backend.
+  // Ordem de tentativa (fail-soft, nunca quebra o login):
+  //   1) RPC public.current_user_is_super_admin()           — preferida
+  //   2) RPC public.is_super_admin(uid|user_id|p_user_id)   — fallback direto
+  //   3) null → cai para allowlist VITE_SUPER_ADMIN_EMAILS  — opcional
+  //   4) sem nada → "owner" (default seguro)
   useEffect(() => {
     let cancelled = false;
     if (!supaUser?.id || !supabaseConfigured || !supabase) {
       setBackendSuperAdmin(null);
       return;
     }
+    const uid = supaUser.id;
+
+    function isMissingFnError(err: { message?: string; code?: string } | null) {
+      if (!err) return false;
+      const m = (err.message ?? "").toLowerCase();
+      return (
+        err.code === "PGRST202" ||
+        err.code === "42883" ||
+        m.includes("could not find") ||
+        m.includes("does not exist") ||
+        m.includes("not find function") ||
+        m.includes("schema cache")
+      );
+    }
+
     (async () => {
       try {
-        const { data, error } = await supabase.rpc("current_user_is_super_admin");
+        // 1) Tentativa preferida.
+        const r1 = await supabase.rpc("current_user_is_super_admin");
         if (cancelled) return;
-        if (error) {
-          // RPC ainda não aplicada no backend (404/does not exist) ou erro de
-          // permissão — caímos no fallback por allowlist. Não logamos como
-          // erro porque é esperado até a migration ser aplicada.
+        if (!r1.error) {
+          setBackendSuperAdmin(Boolean(r1.data));
+          return;
+        }
+        if (!isMissingFnError(r1.error)) {
+          // Erro real (permissão/etc.) — não conseguimos confirmar.
           setBackendSuperAdmin(null);
           return;
         }
-        setBackendSuperAdmin(Boolean(data));
+
+        // 2) Fallback: chamar is_super_admin(uuid) diretamente.
+        // PostgREST exige argumento nomeado. Não sabemos o nome exato do
+        // parâmetro declarado no banco — tentamos as convenções mais
+        // comuns na ordem: uid, user_id, p_user_id, _user_id.
+        const candidates: Array<Record<string, string>> = [
+          { uid },
+          { user_id: uid },
+          { p_user_id: uid },
+          { _user_id: uid },
+        ];
+        for (const args of candidates) {
+          const r2 = await supabase.rpc("is_super_admin", args);
+          if (cancelled) return;
+          if (!r2.error) {
+            setBackendSuperAdmin(Boolean(r2.data));
+            return;
+          }
+          // Se foi erro de "parâmetro errado", tenta o próximo nome.
+          // Qualquer outro erro real → para e cai para allowlist.
+          if (!isMissingFnError(r2.error)) {
+            setBackendSuperAdmin(null);
+            return;
+          }
+        }
+
+        // Nenhuma das duas RPCs existe no backend.
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.info(
+            "[auth] Super Admin não confirmado pelo backend (nenhuma RPC disponível). Usuário tratado como Dono por segurança até a migration ser aplicada ou VITE_SUPER_ADMIN_EMAILS ser configurado.",
+          );
+        }
+        setBackendSuperAdmin(null);
       } catch {
         if (!cancelled) setBackendSuperAdmin(null);
       }
