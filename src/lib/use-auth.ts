@@ -22,10 +22,21 @@ export function useAuth() {
       setLoading(false);
     });
 
-    // Initial restore from storage — resolves quickly; INITIAL_SESSION
-    // event also covers this, but keep as a safety net.
-    supabase.auth.getSession().then(({ data }) => {
+    // Initial restore from storage + revalidate token against Auth server.
+    // If the stored JWT is stale (e.g. signing key rotated → unrecognized
+    // kid), force sign-out so the user re-authenticates with a fresh token.
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!alive) return;
+      if (data.session) {
+        const { error } = await supabase!.auth.getUser();
+        if (error) {
+          await supabase!.auth.signOut().catch(() => undefined);
+          if (!alive) return;
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+      }
       setSession(data.session);
       setLoading(false);
     }).catch(() => {
