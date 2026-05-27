@@ -437,12 +437,15 @@ function ImportarClientesPage() {
           errored: counts.error,
         });
         const notImported: number[] = [];
+        const imported = new Set<number>();
         (rows ?? []).forEach((row, i) => {
           if (row.status !== "valid") notImported.push(i);
+          else imported.add(i);
         });
         setNotImportedIdx(notImported);
         setSkippedIdx(new Set());
         setForcedIdx(new Set());
+        setImportedIdx(imported);
         // Reativa clientes arquivados que voltaram via importação.
         const toReactivate = new Set<string>();
         for (const r of validas) {
