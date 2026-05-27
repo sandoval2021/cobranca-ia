@@ -461,10 +461,10 @@ function SignupOtpForm({
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
           <ShieldCheck className="h-6 w-6" />
         </div>
-        <h2 className="text-base font-semibold">Digite o código enviado para seu e-mail</h2>
+        <h2 className="text-base font-semibold">Digite o código de 6 dígitos enviado para seu e-mail</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Enviamos um código de 6 dígitos para <strong>{ctx.email}</strong>. Digite abaixo para
-          confirmar sua conta.
+          continuar.
         </p>
       </div>
 
