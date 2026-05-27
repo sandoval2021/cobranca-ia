@@ -42,29 +42,40 @@ export function BillingPaymentCard({ company }: Props) {
   const status = company ? getCompanyStatus(company) : "ativa";
   const plan = company?.plano_id ? getPlanById(company.plano_id) : null;
 
-  const fetchConfig = useServerFn(getBillingPublicConfig);
+  const fetchAccess = useServerFn(getBillingCompanyAccess);
   const fetchLast = useServerFn(getLastPaymentAttempt);
   const startCheckout = useServerFn(createBillingCheckout);
 
   const [configured, setConfigured] = useState<boolean | null>(null);
+  const [canCheckout, setCanCheckout] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [lastAttempt, setLastAttempt] = useState<any>(null);
 
   useEffect(() => {
     let alive = true;
+    if (!company?.id) {
+      setConfigured(false);
+      setCanCheckout(false);
+      return;
+    }
     (async () => {
       try {
-        const r = await fetchConfig();
-        if (alive) setConfigured(Boolean(r?.configured));
+        const r = await fetchAccess({ data: { companyId: company.id } });
+        if (!alive) return;
+        setConfigured(Boolean(r?.configured));
+        setCanCheckout(Boolean(r?.canCheckout));
       } catch {
-        if (alive) setConfigured(false);
+        if (alive) {
+          setConfigured(false);
+          setCanCheckout(false);
+        }
       }
     })();
     return () => {
       alive = false;
     };
-  }, [fetchConfig]);
+  }, [company?.id, fetchAccess]);
 
   useEffect(() => {
     let alive = true;
