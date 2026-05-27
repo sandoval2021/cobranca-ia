@@ -249,7 +249,17 @@ export function listCompanyPlans(): CompanyPlan[] {
     write(PLANS_KEY, DEFAULT_PLANS);
     return DEFAULT_PLANS;
   }
-  return stored;
+  // Migração leve: garante dias_teste presente em planos antigos.
+  let changed = false;
+  const migrated = stored.map((p) => {
+    if (typeof p.dias_teste !== "number") {
+      changed = true;
+      return { ...p, dias_teste: p.id === "plan_admin" ? 0 : 7 };
+    }
+    return p;
+  });
+  if (changed) write(PLANS_KEY, migrated);
+  return migrated;
 }
 
 export function saveCompanyPlan(plan: CompanyPlan): CompanyPlan {
