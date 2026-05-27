@@ -82,7 +82,7 @@ async function fetchAllCustomers(companyId: string): Promise<Row[]> {
     const res = await listCustomersAdmin({
       p_company_id: companyId, p_limit: limit, p_offset: offset,
     });
-    if (!res.ok) throw new Error("rpc");
+    if (res.error) throw new Error("rpc");
     const batch = (res.data as Row[] | null) ?? [];
     all.push(...batch);
     if (batch.length < limit) break;
