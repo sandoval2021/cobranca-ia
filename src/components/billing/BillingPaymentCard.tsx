@@ -10,7 +10,7 @@ import type { Company } from "@/lib/companies";
 import { getCompanyStatus, getPlanById } from "@/lib/companies";
 import {
   createBillingCheckout,
-  getBillingPublicConfig,
+  getBillingCompanyAccess,
   getLastPaymentAttempt,
 } from "@/lib/billing.functions";
 
