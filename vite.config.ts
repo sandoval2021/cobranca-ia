@@ -11,6 +11,8 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // Rebuild trigger: inject secrets URL_SUPABASE / ANON_KEY_SUPABASE into published bundle.
 const env = process.env;
 const FORBIDDEN_REF = "ajeyimujgtukcbadyash";
+// JWT anon keys embed the project ref as base64 inside the payload.
+const FORBIDDEN_REF_B64 = "YWpleWltdWpndHVrY2JhZHlhc2"; // base64("ajeyimujgtukcbadyash") prefix
 const EXPECTED_URL = "https://pkghjzbvmifmztqvpdeu.supabase.co";
 // Pick the first non-empty value that does NOT reference the forbidden
 // (empty) Lovable Cloud database. This makes the build immune to the
