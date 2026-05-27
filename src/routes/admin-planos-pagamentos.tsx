@@ -110,9 +110,8 @@ function AdminPlanosPage() {
     <PageContainer>
       <SectionHeader
         title="Planos e pagamentos"
-        description="Configuração visual dos planos. Pagamento online ainda não está ativo."
-        icon={Package}
-        actions={
+        subtitle="Configuração visual dos planos. Pagamento online ainda não está ativo."
+        action={
           <Button onClick={openNew}>
             <Plus className="mr-2 h-4 w-4" />
             Novo plano
