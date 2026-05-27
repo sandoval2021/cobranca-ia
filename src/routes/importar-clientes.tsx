@@ -273,6 +273,65 @@ function ImportarClientesPage() {
     [rows, enrichments],
   );
 
+  // FASE 4 — paginação/filtros/busca da prévia. Sem isso, 5k–10k linhas
+  // travavam o navegador ao renderizar todos os cards/linhas de uma vez.
+  const [previewFilter, setPreviewFilter] = useState<PreviewFilter>("todos");
+  const [previewSearch, setPreviewSearch] = useState("");
+  const [previewPage, setPreviewPage] = useState(0);
+
+  // Reset paginação quando troca arquivo/filtro/busca.
+  useEffect(() => {
+    setPreviewPage(0);
+  }, [rows, previewFilter, previewSearch]);
+
+  const filteredIdx = useMemo<number[]>(() => {
+    if (!rows) return [];
+    const q = previewSearch.trim().toLowerCase();
+    const out: number[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const e = enrichments[i];
+      // filtro por tipo
+      if (previewFilter === "validos" && r.status !== "valid") continue;
+      if (previewFilter === "erros" && r.status !== "invalid") continue;
+      if (previewFilter === "duplicados" && r.status !== "duplicate") continue;
+      if (previewFilter === "conflitos" && !e?.group_conflict) continue;
+      if (previewFilter === "repetidos" && (!e || e.group_size <= 1)) continue;
+      // busca livre por nome ou WhatsApp
+      if (q) {
+        const hay = `${r.customer_name ?? ""} ${r.whatsapp_raw ?? ""} ${r.whatsapp_e164 ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) continue;
+      }
+      out.push(i);
+    }
+    return out;
+  }, [rows, enrichments, previewFilter, previewSearch]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredIdx.length / PREVIEW_PAGE_SIZE));
+  const safePage = Math.min(previewPage, totalPages - 1);
+  const pageIdx = useMemo(
+    () => filteredIdx.slice(safePage * PREVIEW_PAGE_SIZE, (safePage + 1) * PREVIEW_PAGE_SIZE),
+    [filteredIdx, safePage],
+  );
+
+  // Contadores agregados para os chips de filtro.
+  const filterCounts = useMemo(() => {
+    const c = { todos: 0, validos: 0, erros: 0, duplicados: 0, conflitos: 0, repetidos: 0 };
+    if (!rows) return c;
+    c.todos = rows.length;
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const e = enrichments[i];
+      if (r.status === "valid") c.validos++;
+      if (r.status === "invalid") c.erros++;
+      if (r.status === "duplicate") c.duplicados++;
+      if (e?.group_conflict) c.conflitos++;
+      if (e && e.group_size > 1) c.repetidos++;
+    }
+    return c;
+  }, [rows, enrichments]);
+
+
 
 
 
