@@ -376,7 +376,7 @@ export function buildScheduleTxt(items: ScheduleItem[]): string {
   const planned = total - blocked;
 
   const lines: string[] = [];
-  lines.push(`Agenda de disparos — Importação (Cobrança IA)`);
+  lines.push(`Agenda de disparos — Importação (CobraEasy)`);
   lines.push(`Gerado em: ${now.toLocaleString("pt-BR")}`);
   lines.push(`Total de clientes: ${total}`);
   lines.push(`Disparos planejados: ${planned}`);

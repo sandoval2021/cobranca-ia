@@ -31,7 +31,7 @@ import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 export const Route = createFileRoute("/backup-geral")({
   head: () => ({
     meta: [
-      { title: "Backup Geral — Cobrança IA" },
+      { title: "Backup Geral — CobraEasy" },
       { name: "description", content: "Exporte, importe e valide um backup completo dos dados locais do sistema." },
     ],
   }),

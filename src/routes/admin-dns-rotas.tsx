@@ -46,7 +46,7 @@ import { listServers, type ServerEntry } from "@/lib/server-catalog";
 export const Route = createFileRoute("/admin-dns-rotas")({
   head: () => ({
     meta: [
-      { title: "DNS e Rotas — Cobrança IA" },
+      { title: "DNS e Rotas — CobraEasy" },
       { name: "description", content: "Super Admin: domínios, subdomínios e rotas dos servidores (modo local)." },
     ],
   }),

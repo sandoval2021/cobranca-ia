@@ -15,7 +15,7 @@ import { downloadCsv } from "@/lib/import-report";
 export const Route = createFileRoute("/backup")({
   head: () => ({
     meta: [
-      { title: "Backup e segurança dos dados — Cobrança IA" },
+      { title: "Backup e segurança dos dados — CobraEasy" },
       { name: "description", content: "Exporte cópias de segurança dos seus clientes e veja avisos sobre a proteção dos seus dados." },
     ],
   }),

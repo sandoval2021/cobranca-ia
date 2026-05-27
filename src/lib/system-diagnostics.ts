@@ -929,7 +929,7 @@ export function exportDiagnosticsTxt(): void {
   const lines: string[] = [];
   const date = new Date();
   const ymd = date.toISOString().slice(0, 10);
-  lines.push("Cobrança IA — Diagnóstico do sistema local");
+  lines.push("CobraEasy — Diagnóstico do sistema local");
   lines.push(`Gerado em: ${date.toLocaleString("pt-BR")}`);
   lines.push("");
   lines.push("RESUMO GERAL");

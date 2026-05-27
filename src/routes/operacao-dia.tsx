@@ -511,7 +511,7 @@ function OperacaoDiaPage() {
   const exportTxt = () => {
     const lines: string[] = [];
     const date = new Date().toLocaleDateString("pt-BR");
-    lines.push(`Operação do dia — Cobrança IA`);
+    lines.push(`Operação do dia — CobraEasy`);
     lines.push(`Data: ${date}`);
     lines.push(`Ambiente: simulado (nada enviado)`);
     lines.push("");

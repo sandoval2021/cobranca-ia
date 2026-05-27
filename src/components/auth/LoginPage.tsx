@@ -58,7 +58,7 @@ export function LoginPage() {
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-pop">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h1 className="text-xl font-semibold tracking-tight">Painel de Cobrança IA</h1>
+          <h1 className="text-xl font-semibold tracking-tight">CobraEasy</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {view === "signup" || view === "signup_otp"
               ? "Crie sua conta para começar"

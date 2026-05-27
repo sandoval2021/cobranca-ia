@@ -172,7 +172,7 @@ export function resetRevendaSettings(): RevendaSettings {
 
 export function exportRevendaSettings(): string {
   const data = getRevendaSettings();
-  const blob = new Blob([JSON.stringify({ system: "Cobrança IA", kind: "revenda_settings", version: 1, exportedAt: new Date().toISOString(), data }, null, 2)], {
+  const blob = new Blob([JSON.stringify({ system: "CobraEasy", kind: "revenda_settings", version: 1, exportedAt: new Date().toISOString(), data }, null, 2)], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob);

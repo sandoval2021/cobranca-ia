@@ -29,7 +29,7 @@ function AuthPage() {
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">Painel Cobrança IA</h1>
+            <h1 className="text-lg font-semibold tracking-tight">CobraEasy</h1>
             <p className="text-xs text-muted-foreground">Acesso da revenda</p>
           </div>
         </div>

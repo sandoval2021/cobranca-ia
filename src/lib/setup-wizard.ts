@@ -385,7 +385,7 @@ export function exportSetupChecklist(): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   const ymd = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   const lines: string[] = [];
-  lines.push("Cobrança IA — Checklist de Configuração Inicial");
+  lines.push("CobraEasy — Checklist de Configuração Inicial");
   lines.push(`Gerado em: ${date.toLocaleString("pt-BR")}`);
   lines.push("");
   lines.push(

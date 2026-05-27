@@ -1,6 +1,6 @@
 {
-  "name": "Painel de Cobrança IA",
-  "short_name": "Cobrança IA",
+  "name": "CobraEasy",
+  "short_name": "CobraEasy",
   "description": "Gerencie clientes, cobranças, testes e mensagens em um só lugar.",
   "start_url": "/",
   "scope": "/",

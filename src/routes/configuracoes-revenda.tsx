@@ -29,7 +29,7 @@ import {
 export const Route = createFileRoute("/configuracoes-revenda")({
   head: () => ({
     meta: [
-      { title: "Minha Revenda — Cobrança IA" },
+      { title: "Minha Revenda — CobraEasy" },
       { name: "description", content: "Configure os dados usados nas mensagens, cobranças e atendimento." },
     ],
   }),

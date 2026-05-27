@@ -25,7 +25,7 @@ import { LocalRoleSwitcher } from "@/components/auth/LocalRoleSwitcher";
 export const Route = createFileRoute("/seguranca-local")({
   head: () => ({
     meta: [
-      { title: "Segurança Local — Cobrança IA" },
+      { title: "Segurança Local — CobraEasy" },
       { name: "description", content: "Proteja dados sensíveis deste navegador com PIN e modo protegido." },
     ],
   }),
