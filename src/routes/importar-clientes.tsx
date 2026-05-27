@@ -272,11 +272,6 @@ function ImportarClientesPage() {
       setParseError("Formato não suportado. Envie um PDF pesquisável.");
       return;
     }
-    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
-    if (!isPdf) {
-      setParseError("Formato não suportado. Envie um PDF pesquisável.");
-      return;
-    }
 
     setParsing(true);
     try {
