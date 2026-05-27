@@ -98,6 +98,20 @@ function escapeCsv(v: unknown): string {
   return s;
 }
 
+// FASE 5.1 — Defesa em profundidade: caso algum dado sensível tenha vazado
+// para campos textuais (apesar do mascaramento já feito no parser xlsx),
+// trocamos por marcadores neutros antes de exportar.
+const SENSITIVE_FIELD_REGEX =
+  /\b(senha|password|pass)\s*[:=]\s*\S+/gi;
+const SENSITIVE_INLINE_REGEX =
+  /\b(token|key|chave|mac|login|usuario|usuário|user)\s*[:=]\s*\S+/gi;
+function sanitizeForExport(value: string): string {
+  if (!value) return value;
+  return value
+    .replace(SENSITIVE_FIELD_REGEX, "$1: não exibida por segurança")
+    .replace(SENSITIVE_INLINE_REGEX, "$1: informado");
+}
+
 function rowToRecord(i: number, ctx: ReportContext): Record<string, string> {
   const r = ctx.rows[i];
   const e = ctx.enrichments[i];
@@ -118,8 +132,8 @@ function rowToRecord(i: number, ctx: ReportContext): Record<string, string> {
     vencimento_detectado: fmtBR(r.expires_at, r.expires_raw),
     status_detectado: r.status,
     situacao_detectada: r.situation ?? "",
-    plano_detectado: e?.plan_label ?? "",
-    mensagem_detectada: e?.message_label ?? "",
+    plano_detectado: sanitizeForExport(e?.plan_label ?? ""),
+    mensagem_detectada: sanitizeForExport(e?.message_label ?? ""),
     telas_detectadas: String(e?.group_size ?? 1),
     grupo_whatsapp: e && e.group_size > 1 ? (r.whatsapp_e164 ?? "") : "",
     linha_principal:
@@ -131,7 +145,7 @@ function rowToRecord(i: number, ctx: ReportContext): Record<string, string> {
         : "SIM",
     conflito_valor: conflictAmount ? "SIM" : "NAO",
     conflito_vencimento: conflictDate ? "SIM" : "NAO",
-    observacao: e?.observation ?? "",
+    observacao: sanitizeForExport(e?.observation ?? ""),
     cliente_id: ex?.id ?? "",
     data_importacao: new Date().toISOString(),
   };

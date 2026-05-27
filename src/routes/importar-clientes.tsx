@@ -380,7 +380,8 @@ function ImportarClientesPage() {
           );
         }
       } catch (err) {
-        console.error(err);
+        // FASE 5.1 — não imprimir conteúdo da planilha; só o tipo/mensagem do erro.
+        console.error("[xlsx] parse failed:", err instanceof Error ? err.message : "unknown");
         setParseError("Não conseguimos ler esta planilha. Verifique se o arquivo não está corrompido.");
       } finally {
         setParsing(false);
@@ -928,6 +929,10 @@ function ImportarClientesPage() {
         <p className="mt-2 text-[11px] text-muted-foreground">
           Formatos aceitos: <strong>PDF pesquisável</strong> e <strong>Excel (.xlsx, .xls)</strong>.
           Reconhecemos colunas como Nome, WhatsApp, Valor e Vencimento automaticamente.
+        </p>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Por segurança, dados como senha, chave, MAC e login podem ser ocultados na prévia
+          e nos relatórios, mas continuam preservados internamente quando necessário.
         </p>
         {parseError && (
           <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">

@@ -17,6 +17,50 @@ const FIELD_SYNONYMS: Record<string, string[]> = {
 
 const EXTRA_NOTE_KEYS = ["observação", "observacao", "obs", "descrição", "descricao", "notas", "anotações", "anotacoes", "usuário", "usuario", "login", "user", "mac", "key"];
 
+// FASE 5.1 — Segurança/privacidade da importação Excel
+// Chaves perigosas: evitar poluição de protótipo (CVE-2023-30533).
+const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+
+// Limite por célula para evitar travamento / mitigar ReDoS (CVE-2024-22363)
+// na renderização de prévia e observações. Não limita o arquivo inteiro.
+const MAX_CELL_CHARS = 2000;
+
+// Padrões de rótulos sensíveis que NÃO devem ser exibidos em texto puro
+// na prévia ou em relatórios. O dado pode ser preservado internamente,
+// mas o que aparecer ao usuário/relatório vai mascarado.
+const SENSITIVE_PATTERNS: Array<{ test: (l: string) => boolean; label: string }> = [
+  { test: (l) => /\bsenha\b|\bpassword\b|\bpass\b/.test(l), label: "senha: não exibida por segurança" },
+  { test: (l) => /\btoken\b/.test(l), label: "token: informado" },
+  { test: (l) => /\bkey\b|\bchave\b/.test(l), label: "chave: informada" },
+  { test: (l) => /\bmac\b/.test(l), label: "mac: informado" },
+  { test: (l) => /\busuario\b|\busuário\b|\blogin\b|\buser\b/.test(l), label: "login: informado" },
+];
+
+function maskedSensitiveLabel(normalizedLabel: string): string | null {
+  for (const p of SENSITIVE_PATTERNS) {
+    if (p.test(normalizedLabel)) return p.label;
+  }
+  return null;
+}
+
+function safeKey(key: string): string | null {
+  // Sanitiza chaves: nunca deixar chave perigosa entrar em qualquer objeto
+  // que possa ser mesclado adiante (raw_row, notes, etc).
+  const k = key.trim();
+  if (!k) return null;
+  if (DANGEROUS_KEYS.has(k)) return null;
+  if (DANGEROUS_KEYS.has(k.toLowerCase())) return null;
+  return k;
+}
+
+function truncateLong(value: string): { text: string; truncated: boolean } {
+  if (value.length <= MAX_CELL_CHARS) return { text: value, truncated: false };
+  return {
+    text: value.slice(0, MAX_CELL_CHARS) + " […texto muito longo foi resumido para segurança]",
+    truncated: true,
+  };
+}
+
 function norm(s: unknown): string {
   return String(s ?? "")
     .toLowerCase()
@@ -67,7 +111,9 @@ function cellToDateString(value: unknown): string | null {
 function cellToString(value: unknown): string | null {
   if (value == null) return null;
   if (value instanceof Date) return value.toISOString();
-  const s = String(value).trim();
+  const raw = String(value);
+  const { text } = truncateLong(raw);
+  const s = text.trim();
   return s || null;
 }
 
@@ -172,34 +218,48 @@ export async function parseExcelFile(file: File): Promise<XlsxParseResult> {
       }
     });
 
-    // Preserve extras (unmapped columns + known "note" columns) in raw_row via service_name fallback / notes
-    const extras: Record<string, unknown> = {};
-    unmapped.forEach(({ index, label }) => {
-      const v = row[index];
-      if (v != null && String(v).trim() !== "") {
-        const key = norm(label) || `col_${index}`;
-        extras[key] = v instanceof Date ? v.toISOString() : v;
+    // Preserve extras (unmapped columns + known "note" columns) com sanitização
+    // de chaves perigosas e mascaramento de campos sensíveis (FASE 5.1).
+    // Object.create(null) impede que uma chave como __proto__ contamine a
+    // cadeia de protótipos (mitigação CVE-2023-30533).
+    const extras: Record<string, unknown> = Object.create(null);
+    const addExtra = (rawLabel: string, idx: number) => {
+      const key = safeKey(rawLabel) || `col_${idx}`;
+      const v = row[idx];
+      if (v == null || String(v).trim() === "") return;
+      const normalized = norm(rawLabel);
+      const masked = maskedSensitiveLabel(normalized);
+      if (masked) {
+        // Não armazena o valor sensível — apenas indica que veio informado.
+        // Usamos a label mascarada como própria chave/valor para que apareça
+        // em toda saída textual já protegida.
+        extras[key] = masked.split(": ").slice(1).join(": ") || "informado";
+        return;
       }
-    });
+      const valStr = v instanceof Date ? v.toISOString() : String(v);
+      const { text } = truncateLong(valStr);
+      extras[key] = text;
+    };
+
+    unmapped.forEach(({ index, label }) => addExtra(label, index));
     // Also capture explicitly-note-ish columns even if they collided with another mapping
     headerRow.forEach((cell, idx) => {
       const label = norm(String(cell ?? ""));
       if (!label) return;
       if (EXTRA_NOTE_KEYS.some((k) => label.includes(k))) {
-        const v = row[idx];
-        if (v != null && String(v).trim() !== "") {
-          extras[label] = v instanceof Date ? v.toISOString() : v;
-        }
+        addExtra(label, idx);
       }
     });
 
     // Ensure customer_name fallback
     if (!raw.customer_name) raw.customer_name = "Cliente";
 
-    // Smuggle extras through service_name suffix so they end up in validated.raw_row
-    if (Object.keys(extras).length > 0) {
-      const extraStr = Object.entries(extras)
-        .map(([k, v]) => `${k}: ${String(v)}`)
+    // Smuggle extras through service_name suffix so they end up in validated.raw_row.
+    // Já está sanitizado (sem __proto__/etc.) e mascarado (sem senha/token em texto).
+    const extraKeys = Object.keys(extras);
+    if (extraKeys.length > 0) {
+      const extraStr = extraKeys
+        .map((k) => `${k}: ${String(extras[k])}`)
         .join(" | ");
       raw.service_name = raw.service_name
         ? `${raw.service_name} — ${extraStr}`
