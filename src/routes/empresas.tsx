@@ -188,11 +188,16 @@ function EmpresasContent() {
         <Info className="mr-1 inline h-3.5 w-3.5" />
         Para editar os próprios dados, o dono usa <strong>Meus dados</strong>. Esta tela é apenas para gestão da plataforma.
       </div>
-      <div className="mb-3 rounded-lg border border-dashed border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-        <strong className="text-foreground">Configuração de termos e planos — em breve.</strong>
-        <br />
-        Aqui você poderá editar o texto do termo de aceite, versão e regras de cobrança recorrente
-        quando o pagamento automático for liberado.
+      <div className="mb-3 flex flex-col gap-2 rounded-lg border border-dashed border-border bg-muted/40 p-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <strong className="text-foreground">Planos e pagamentos</strong>
+          <br />
+          Configure planos, valor, dias de teste e recursos. Pagamento online
+          (Mercado Pago) ainda não está ativo.
+        </div>
+        <Link to="/admin-planos-pagamentos">
+          <Button size="sm" variant="outline">Abrir planos</Button>
+        </Link>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
