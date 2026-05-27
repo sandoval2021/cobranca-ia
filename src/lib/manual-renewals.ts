@@ -49,6 +49,7 @@ export type RenewalRecord = {
   payment_method?: PaymentMethod;
   app_amount?: string;
   notes?: string;
+  next_due_date?: string;
   confirmation_message: string;
 };
 
