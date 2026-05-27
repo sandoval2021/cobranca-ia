@@ -33,7 +33,12 @@ async function persistRenewalOnBackend(args: {
   oldDueISO?: string | null;
   totalAmount: string;
   monthlyAmount: string;
-}): Promise<{ ok: boolean; message?: string; persistedDue?: string | null }> {
+}): Promise<{
+  ok: boolean;
+  message?: string;
+  persistedDue?: string | null;
+  patch?: { due_date: string; due_day: number | null; status: string | null };
+}> {
   if (!supabase) {
     return { ok: false, message: "Renovação precisa ser ativada no servidor." };
   }
