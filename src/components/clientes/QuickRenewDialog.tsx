@@ -15,8 +15,8 @@ import {
   applyRenewal, buildConfirmationMessage, fmtDateBR,
   PAYMENT_LABEL, PaymentMethod,
 } from "@/lib/manual-renewals";
-import { clearCustomerDueOverride } from "@/lib/customer-due-override";
-import { clearImportedDueByWhatsapp } from "@/lib/imported-due-dates";
+import { setCustomerDueOverride } from "@/lib/customer-due-override";
+import { setImportedDueByWhatsapp } from "@/lib/imported-due-dates";
 import { supabase } from "@/integrations/supabase/compat";
 import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 
