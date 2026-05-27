@@ -127,8 +127,13 @@ function baseFromScreen(s: AppScreen): Date {
   return today;
 }
 
-function baseFromDueDay(dueDay: number | null | undefined): Date {
-  const today = new Date();
+// Mesma regra do card de Clientes: usa due_date completo quando for futuro;
+// se vencido/ausente, parte de hoje. due_day vira último recurso.
+function baseFromCustomer(dueIso: string | null | undefined, dueDay: number | null | undefined): Date {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const dt = parseISO(dueIso ?? undefined);
+  if (dt && dt > today) return dt;
+  if (dt) return today; // vencido => hoje
   if (!dueDay) return today;
   const d = new Date(today.getFullYear(), today.getMonth(), Math.min(dueDay, 28));
   if (d < today) d.setMonth(d.getMonth() + 1);
