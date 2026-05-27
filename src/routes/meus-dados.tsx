@@ -38,6 +38,7 @@ import {
 } from "@/lib/companies";
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentTermsCard } from "@/components/companies/PaymentTermsCard";
+import { BillingPaymentCard } from "@/components/billing/BillingPaymentCard";
 
 export const Route = createFileRoute("/meus-dados")({ component: MinhaContaPage });
 
@@ -326,7 +327,10 @@ function MinhaContaPage() {
           </Button>
         </Card>
 
-        {/* 6) Termos de pagamento */}
+        {/* 6) Pagamento (Mercado Pago — em preparação) */}
+        <BillingPaymentCard company={company} />
+
+        {/* 6b) Termos de pagamento */}
         <PaymentTermsCard />
 
         {/* 7) Ajuda */}
