@@ -53,7 +53,7 @@ export default defineConfig({
         pick("URL_SUPABASE", "VITE_SUPABASE_URL", "SUPABASE_URL") || EXPECTED_URL,
       ),
       "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(
-        pick(
+        pickExpected(
           "ANON_KEY_SUPABASE",
           "SUPABASE_ANON_KEY",
           "VITE_SUPABASE_ANON_KEY",
@@ -62,12 +62,12 @@ export default defineConfig({
         ),
       ),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
-        pick(
+        pickExpected(
           "ANON_KEY_SUPABASE",
-          "SUPABASE_PUBLISHABLE_KEY",
-          "VITE_SUPABASE_PUBLISHABLE_KEY",
           "SUPABASE_ANON_KEY",
           "VITE_SUPABASE_ANON_KEY",
+          "SUPABASE_PUBLISHABLE_KEY",
+          "VITE_SUPABASE_PUBLISHABLE_KEY",
         ),
       ),
       "import.meta.env.VITE_APP_ENV": JSON.stringify(
