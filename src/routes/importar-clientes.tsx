@@ -63,6 +63,7 @@ import {
 } from "@/lib/import-schedule";
 import {
   enrichImportRows,
+  groupValidRowsByWhatsApp,
   summarizeImport,
   type ImportEnrichment,
 } from "@/lib/import-mapping";
