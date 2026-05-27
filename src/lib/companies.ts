@@ -34,6 +34,8 @@ export type CompanyPlan = {
   limite_telas: number;
   limite_testes: number;
   limite_servidores: number;
+  dias_teste: number;
+  descricao?: string;
   modulos: CompanyModuleKey[];
   permite_ia: boolean;
   permite_dns: boolean;
