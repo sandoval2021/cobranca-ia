@@ -462,8 +462,11 @@ export function QuickRenewDialog({
           renew_app: false,
           screens: [],
         });
-        // Backend já tem a verdade: limpa override visual temporário.
-        clearCustomerDueOverride(customerId);
+        // Persiste a nova data no override local: a RPC list_customers_admin
+        // não retorna due_date, então sem isso o card volta a mostrar null
+        // após o reload(). O override é limpo automaticamente quando o
+        // backend passar a expor due_date >= override.
+        setCustomerDueOverride(customerId, finalDue);
         const msg = rec.confirmation_message || buildConfirmationMessage(rec);
         if (sendReceipt) autoSend(msg);
         setDone({ msg, newDue: finalDue, sent: sendReceipt });
