@@ -594,18 +594,10 @@ function ClientesPage() {
       const sb = allScreens[b.id] ?? [];
       const da = customerDueDays(a, sa);
       const db = customerDueDays(b, sb);
-      // Considera vencido se a data principal já passou OU qualquer tela ativa venceu.
-      const isOverdue = (c: Customer, screens: AppScreen[], d: number | null) => {
-        if (d != null && d < 0) return true;
-        for (const s of screens) {
-          if (s.status === "arquivada" || s.status === "pausada") continue;
-          if (!s.due_date) continue;
-          const today = new Date(); today.setHours(0, 0, 0, 0);
-          const sd = Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000);
-          if (sd < 0) return true;
-        }
-        if (classifyStatus(c.status) === "expirado") return true;
-        return false;
+      // Considera vencido APENAS pelo valor consolidado de dias (que já considera telas ativas).
+      // Não usar customer.status aqui — uma tela com data futura deve ser tratada como ativa.
+      const isOverdue = (_c: Customer, _screens: AppScreen[], d: number | null) => {
+        return d != null && d < 0;
       };
       // Para clientes vencidos, usa o "pior" atraso (mais negativo) para ordenar.
       const worstOverdue = (c: Customer, screens: AppScreen[], d: number | null) => {
