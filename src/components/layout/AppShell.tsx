@@ -9,6 +9,7 @@ import { useLocalAuth } from "@/lib/use-local-auth";
 import { useAuth } from "@/lib/use-auth";
 import { syncDefaultCompanyForUser } from "@/lib/rpc-admin";
 import { ownerRouteDenial, describeDenial, type AccessDenialReason } from "@/lib/permissions";
+import { AccountStatusBanner } from "@/components/companies/AccountStatusBanner";
 import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -121,6 +122,7 @@ export function AppShell() {
         <div className="flex min-w-0 flex-1 flex-col">
           <AppHeader title={title} onMenu={() => setOpenSheet(true)} />
           <main className="min-w-0 flex-1">
+            {isOwner && <AccountStatusBanner company={company} />}
             {denial ? <RestrictedView reason={denial} /> : <Outlet />}
           </main>
         </div>

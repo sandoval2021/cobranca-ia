@@ -34,6 +34,8 @@ export type CompanyPlan = {
   limite_telas: number;
   limite_testes: number;
   limite_servidores: number;
+  dias_teste: number;
+  descricao?: string;
   modulos: CompanyModuleKey[];
   permite_ia: boolean;
   permite_dns: boolean;
@@ -119,6 +121,8 @@ const DEFAULT_PLANS: CompanyPlan[] = [
     limite_telas: 200,
     limite_testes: 30,
     limite_servidores: 2,
+    dias_teste: 7,
+    descricao: "Para começar — clientes, telas e cobranças básicas.",
     modulos: [
       "clientes",
       "telas_app",
@@ -144,6 +148,8 @@ const DEFAULT_PLANS: CompanyPlan[] = [
     limite_telas: 1000,
     limite_testes: 200,
     limite_servidores: 5,
+    dias_teste: 7,
+    descricao: "Mais clientes, campanhas e indicações.",
     modulos: [
       "clientes",
       "telas_app",
@@ -173,6 +179,8 @@ const DEFAULT_PLANS: CompanyPlan[] = [
     limite_telas: 5000,
     limite_testes: 1000,
     limite_servidores: 20,
+    dias_teste: 7,
+    descricao: "Operação completa com IA e mais limites.",
     modulos: [
       "clientes",
       "telas_app",
@@ -203,6 +211,8 @@ const DEFAULT_PLANS: CompanyPlan[] = [
     limite_telas: 999999,
     limite_testes: 999999,
     limite_servidores: 999999,
+    dias_teste: 0,
+    descricao: "Plano interno do administrador.",
     modulos: [
       "clientes",
       "telas_app",
@@ -239,7 +249,17 @@ export function listCompanyPlans(): CompanyPlan[] {
     write(PLANS_KEY, DEFAULT_PLANS);
     return DEFAULT_PLANS;
   }
-  return stored;
+  // Migração leve: garante dias_teste presente em planos antigos.
+  let changed = false;
+  const migrated = stored.map((p) => {
+    if (typeof p.dias_teste !== "number") {
+      changed = true;
+      return { ...p, dias_teste: p.id === "plan_admin" ? 0 : 7 };
+    }
+    return p;
+  });
+  if (changed) write(PLANS_KEY, migrated);
+  return migrated;
 }
 
 export function saveCompanyPlan(plan: CompanyPlan): CompanyPlan {
@@ -490,22 +510,23 @@ export function ensureLocalAccount(
   if (!chosen) {
     const plans = listCompanyPlans();
     const plan =
-      plans.find((p) => p.id === "plan_premium") ??
-      plans.find((p) => p.id === "plan_profissional") ??
       plans.find((p) => p.id === "plan_basico") ??
+      plans.find((p) => p.id === "plan_profissional") ??
+      plans.find((p) => p.id === "plan_premium") ??
       plans[0]!;
+    const dias = Math.max(1, plan.dias_teste || 7);
     const today = new Date().toISOString().slice(0, 10);
-    const inOneYear = new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10);
+    const vencTeste = new Date(Date.now() + dias * 86400000).toISOString().slice(0, 10);
     chosen = saveCompany({
       nome: "Minha conta",
       slug: slugify("minha-conta-" + Math.random().toString(36).slice(2, 6)),
       dono_nome: userName ?? "Titular",
       dono_email: userEmail,
       dono_whatsapp: userWhatsapp ?? "",
-      status: "ativa",
+      status: "teste",
       plano_id: plan.id,
       data_inicio: today,
-      data_vencimento: inOneYear,
+      data_vencimento: vencTeste,
     });
   }
 
@@ -547,8 +568,7 @@ export function getCompanyLimits(company: Company | null) {
 
 export function getCompanyStatus(company: Company | null): CompanyStatus | "sem_empresa" {
   if (!company) return "sem_empresa";
-  // Atualiza status virtual com base na data
-  if (company.status === "ativa" && company.data_vencimento) {
+  if ((company.status === "ativa" || company.status === "teste") && company.data_vencimento) {
     const venc = new Date(company.data_vencimento).getTime();
     if (!Number.isNaN(venc) && venc < Date.now()) return "vencida";
   }
