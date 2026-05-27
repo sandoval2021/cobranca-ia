@@ -132,8 +132,8 @@ function rowToRecord(i: number, ctx: ReportContext): Record<string, string> {
     vencimento_detectado: fmtBR(r.expires_at, r.expires_raw),
     status_detectado: r.status,
     situacao_detectada: r.situation ?? "",
-    plano_detectado: e?.plan_label ?? "",
-    mensagem_detectada: e?.message_label ?? "",
+    plano_detectado: sanitizeForExport(e?.plan_label ?? ""),
+    mensagem_detectada: sanitizeForExport(e?.message_label ?? ""),
     telas_detectadas: String(e?.group_size ?? 1),
     grupo_whatsapp: e && e.group_size > 1 ? (r.whatsapp_e164 ?? "") : "",
     linha_principal:
@@ -145,7 +145,7 @@ function rowToRecord(i: number, ctx: ReportContext): Record<string, string> {
         : "SIM",
     conflito_valor: conflictAmount ? "SIM" : "NAO",
     conflito_vencimento: conflictDate ? "SIM" : "NAO",
-    observacao: e?.observation ?? "",
+    observacao: sanitizeForExport(e?.observation ?? ""),
     cliente_id: ex?.id ?? "",
     data_importacao: new Date().toISOString(),
   };
