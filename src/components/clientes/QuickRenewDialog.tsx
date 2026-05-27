@@ -19,9 +19,8 @@ import { clearCustomerDueOverride } from "@/lib/customer-due-override";
 import { supabase } from "@/integrations/supabase/compat";
 
 // Persiste a renovação no Supabase via RPC `renew_customer_admin`.
-// Salva due_date COMPLETO, atualiza due_day como fallback, status=em_dia
-// e concatena histórico em notes (preservado dentro da própria RPC).
-// Fallback: se a RPC nova ainda não existir no banco, cai para update_customer_admin (apenas due_day).
+// Salva due_date COMPLETO (não due_day). NÃO há fallback para
+// update_customer_admin: se a RPC nova falhar, abortamos com erro.
 async function persistRenewalOnBackend(args: {
   customerId: string;
   customerName: string;
@@ -32,7 +31,7 @@ async function persistRenewalOnBackend(args: {
   oldDueISO?: string | null;
   totalAmount: string;
   monthlyAmount: string;
-}): Promise<{ ok: boolean; message?: string }> {
+}): Promise<{ ok: boolean; message?: string; persistedDue?: string | null }> {
   if (!supabase) {
     return { ok: false, message: "Renovação precisa ser ativada no servidor." };
   }
@@ -53,56 +52,57 @@ async function persistRenewalOnBackend(args: {
     `- Valor total: ${args.totalAmount || "—"}`,
   ].join("\n");
 
-  // 1) Caminho preferido: RPC nova que salva due_date completo.
-  const renewRes = await supabase.rpc("renew_customer_admin", {
+  const payload = {
     p_customer_id: args.customerId,
     p_due_date: args.newDueISO,
     p_amount_cents: args.monthlyAmountCents,
     p_notes: historyBlock,
-  });
-  if (!renewRes.error) return { ok: true };
-
-  const msg = (renewRes.error.message || "").toLowerCase();
-  const rpcMissing =
-    msg.includes("could not find") ||
-    msg.includes("does not exist") ||
-    msg.includes("not find function") ||
-    renewRes.error.code === "PGRST202";
-
-  if (!rpcMissing) {
-    return { ok: false, message: renewRes.error.message || "Falha ao salvar no servidor." };
+  };
+  if (import.meta.env.DEV) {
+    console.log("[renew] rpc payload", payload);
   }
-
-  // 2) Fallback legado (só due_day) — exige preservar notes manualmente.
-  let currentNotes = "";
-  try {
-    const { data } = await supabase.rpc("get_customer_details_admin", {
-      p_customer_id: args.customerId,
-    });
-    const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
-    if (row && typeof row.notes === "string") currentNotes = row.notes;
-  } catch {
-    /* sem notes anteriores */
-  }
-  const mergedNotes = currentNotes ? `${currentNotes.trim()}\n\n${historyBlock}` : historyBlock;
-  const upd = await supabase.rpc("update_customer_admin", {
-    p_customer_id: args.customerId,
-    p_name: args.customerName,
-    p_whatsapp_e164: args.whatsappE164 ?? null,
-    p_amount_cents: args.monthlyAmountCents,
-    p_due_day: dueDate.getDate(),
-    p_status: "em_dia",
-    p_notes: mergedNotes,
-  });
-  if (upd.error) {
+  const renewRes = await supabase.rpc("renew_customer_admin", payload);
+  if (renewRes.error) {
+    if (import.meta.env.DEV) {
+      console.error("[renew] error", {
+        code: renewRes.error.code,
+        message: renewRes.error.message,
+        details: (renewRes.error as { details?: string }).details,
+        hint: (renewRes.error as { hint?: string }).hint,
+      });
+    }
     return {
       ok: false,
       message:
-        "Renovação precisa ser ativada no servidor (RPC renew_customer_admin ausente). " +
-        upd.error.message,
+        renewRes.error.message ||
+        "Falha ao salvar a renovação no servidor (renew_customer_admin).",
     };
   }
-  return { ok: true };
+
+  const row = Array.isArray(renewRes.data)
+    ? (renewRes.data[0] as Record<string, unknown> | undefined)
+    : (renewRes.data as Record<string, unknown> | null);
+  const persistedDue =
+    row && typeof row.due_date === "string" ? (row.due_date as string) : null;
+  if (import.meta.env.DEV) {
+    console.log("[renew] rpc result", {
+      ok: true,
+      due_date: persistedDue,
+      due_day: row && typeof row.due_day === "number" ? row.due_day : null,
+      status: row && typeof row.status === "string" ? row.status : null,
+    });
+  }
+  // Se a RPC retornou linha mas o due_date não bate com o enviado, aborta sem
+  // mostrar sucesso falso. Algumas implementações podem não retornar a linha
+  // (data null): nesse caso confiamos no status sem erro.
+  if (persistedDue && persistedDue.slice(0, 10) !== args.newDueISO.slice(0, 10)) {
+    return {
+      ok: false,
+      message: `Servidor retornou vencimento diferente do enviado (${persistedDue}).`,
+      persistedDue,
+    };
+  }
+  return { ok: true, persistedDue };
 }
 
 
