@@ -15,8 +15,8 @@ import {
   applyRenewal, buildConfirmationMessage, fmtDateBR,
   PAYMENT_LABEL, PaymentMethod,
 } from "@/lib/manual-renewals";
-import { clearCustomerDueOverride } from "@/lib/customer-due-override";
-import { clearImportedDueByWhatsapp } from "@/lib/imported-due-dates";
+import { setCustomerDueOverride } from "@/lib/customer-due-override";
+import { setImportedDueByWhatsapp } from "@/lib/imported-due-dates";
 import { supabase } from "@/integrations/supabase/compat";
 import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 
@@ -462,8 +462,11 @@ export function QuickRenewDialog({
           renew_app: false,
           screens: [],
         });
-        // Backend já tem a verdade: limpa override visual temporário.
-        clearCustomerDueOverride(customerId);
+        // Persiste a nova data no override local: a RPC list_customers_admin
+        // não retorna due_date, então sem isso o card volta a mostrar null
+        // após o reload(). O override é limpo automaticamente quando o
+        // backend passar a expor due_date >= override.
+        setCustomerDueOverride(customerId, finalDue);
         const msg = rec.confirmation_message || buildConfirmationMessage(rec);
         if (sendReceipt) autoSend(msg);
         setDone({ msg, newDue: finalDue, sent: sendReceipt });
@@ -523,15 +526,20 @@ export function QuickRenewDialog({
             messages.push(buildConfirmationMessage(appRec));
           }
         }
-        // Backend é a fonte de verdade — não precisa de override visual.
-        clearCustomerDueOverride(customerId);
+        // Persiste a nova data no override local (mesma razão do branch sem telas).
+        if (maxDue) setCustomerDueOverride(customerId, maxDue);
         const fullMsg = messages.join("\n\n———\n\n");
         if (sendReceipt) autoSend(fullMsg);
         setDone({ msg: fullMsg, newDue: maxDue, sent: sendReceipt });
       }
-      // Limpa caches locais que poderiam sobrescrever o novo due_date no card.
-      clearCustomerDueOverride(customerId);
-      if (whatsappE164) clearImportedDueByWhatsapp(whatsappE164);
+      // Reforça o override e o cache por whatsapp com a data confirmada
+      // pela RPC, para que o reload() seguinte (que usa list_customers_admin
+      // sem due_date) não restaure o vencimento antigo no card.
+      const confirmedDue = persist.patch?.due_date || finalDueForBackend;
+      if (confirmedDue) {
+        setCustomerDueOverride(customerId, confirmedDue);
+        if (whatsappE164) setImportedDueByWhatsapp(whatsappE164, confirmedDue);
+      }
       toast.success("Cliente renovado com sucesso.");
       onRenewed?.(persist.patch);
     } catch (e) {
