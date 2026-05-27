@@ -385,27 +385,23 @@ export function QuickRenewDialog({
     setBusy(true);
     try {
       // 1) PERSISTÊNCIA REAL no backend — bloqueia se falhar.
-      const finalDueForBackend = hasScreens
-        ? (() => {
-            const usingOverride = !!newDueOverride;
-            let maxDue = "";
-            for (const s of selectedScreens) {
-              const nd = usingOverride ? newDueOverride : addMonthsISO(baseFromScreen(s), months);
-              if (nd > maxDue) maxDue = nd;
-            }
-            return maxDue || computedNewDue;
-          })()
-        : (newDueOverride || customerNewDue);
+      // Fonte única: customerNewDue = customerDueIso (se futuro) + meses*30.
+      // NÃO usar baseFromScreen aqui — isso ignorava a data nova do cliente
+      // em renovações sequenciais e somava em cima de uma tela antiga.
+      const finalDueForBackend = newDueOverride || customerNewDue;
+      const oldDueISO = customerDueIso || oldDue || null;
+      const expectedDue = finalDueForBackend;
 
       if (import.meta.env.DEV) {
-        console.log("[renew] current due source", {
+        console.log("[renew-sequential] calculate", {
           customer_id: customerId,
-          due_date: customerDueIso ?? null,
-          due_day: customerDueDay,
-          dueIso: customerDueIso ?? null,
-          dueLabel: oldDue,
+          whatsapp: whatsappE164 ?? null,
+          base_date: `${baseDate.getFullYear()}-${String(baseDate.getMonth() + 1).padStart(2, "0")}-${String(baseDate.getDate()).padStart(2, "0")}`,
+          base_is_future: baseIsFuture,
           months,
-          newDueDate: finalDueForBackend,
+          old_due_date: oldDueISO,
+          expected_due_date: expectedDue,
+          using_override: !!newDueOverride,
         });
       }
 
@@ -416,7 +412,7 @@ export function QuickRenewDialog({
         monthlyAmountCents,
         newDueISO: finalDueForBackend,
         months,
-        oldDueISO: oldDue,
+        oldDueISO,
         totalAmount: fmtMoney(totalNum),
         monthlyAmount: amount ? `R$ ${amount}` : "",
       });
@@ -425,6 +421,32 @@ export function QuickRenewDialog({
         setBusy(false);
         return;
       }
+      // Guarda contra sucesso falso: a RPC retornou ok, mas due_date precisa
+      // bater com o esperado E ser diferente do antigo.
+      const returnedDue = persist.patch?.due_date ?? persist.persistedDue ?? null;
+      if (!returnedDue || returnedDue.slice(0, 10) !== expectedDue.slice(0, 10)) {
+        toast.error(
+          `Vencimento não foi atualizado (esperado ${expectedDue}, retornou ${returnedDue ?? "—"}).`,
+        );
+        setBusy(false);
+        return;
+      }
+      if (oldDueISO && returnedDue.slice(0, 10) === oldDueISO.slice(0, 10)) {
+        toast.error("Renovação não somou: o vencimento continua igual ao anterior.");
+        setBusy(false);
+        return;
+      }
+      if (import.meta.env.DEV) {
+        console.log("[renew-sequential] rpc result", {
+          customer_id: customerId,
+          returned_due_date: returnedDue,
+          returned_due_day: persist.patch?.due_day ?? null,
+          returned_status: persist.patch?.status ?? null,
+          expected_due_date: expectedDue,
+          old_due_date: oldDueISO,
+        });
+      }
+
 
       // 2) Histórico local + mensagem WhatsApp (já existente)
       if (!hasScreens) {
