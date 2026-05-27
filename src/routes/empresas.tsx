@@ -686,6 +686,7 @@ function PlanSheet({ plan, onClose }: { plan: CompanyPlan; onClose: () => void }
               placeholder="Ex.: Plano completo com IA e mais limites."
             />
           </Field>
+          <div>
             <Label className="text-xs">Módulos liberados</Label>
             <div className="mt-1 grid grid-cols-2 gap-1.5">
               {ALL_MODULES.map((m) => (
