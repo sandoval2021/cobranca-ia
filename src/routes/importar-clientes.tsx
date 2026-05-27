@@ -354,9 +354,37 @@ function ImportarClientesPage() {
     const isXlsx = /\.(xlsx|xls)$/i.test(file.name);
     const isCsv = /\.csv$/i.test(file.name);
     if (isXlsx) {
-      setParseError(
-        "Importação direta de Excel (.xlsx) será ativada em breve. Por enquanto, no Excel use Arquivo → Salvar como → CSV UTF-8, ou exporte como PDF pesquisável."
-      );
+      setParsing(true);
+      try {
+        const { parseExcelFile } = await import("@/lib/import-xlsx");
+        const { rows: parsed, totalSheets, sheetName, unmappedHeaders } = await parseExcelFile(file);
+        if (parsed.length === 0) {
+          setParseError(
+            "Planilha carregada, mas não encontramos linhas de clientes. Verifique se a primeira aba tem colunas como Nome e WhatsApp."
+          );
+          setParsing(false);
+          return;
+        }
+        const validated = validateRows(parsed);
+        setRows(validated);
+        toast.success(`Planilha carregada com sucesso. ${validated.length.toLocaleString("pt-BR")} linhas lidas.`);
+        if (totalSheets > 1) {
+          toast.message(`A planilha tem ${totalSheets} abas. Usamos a primeira ("${sheetName}").`);
+        }
+        if (unmappedHeaders.length > 0) {
+          toast.message("Algumas colunas não foram reconhecidas, mas os dados foram preservados em observações.");
+        }
+        if (validated.length >= 2000) {
+          toast.message(
+            `${validated.length.toLocaleString("pt-BR")} linhas lidas. A prévia mostra páginas de 100 para não travar o navegador.`,
+          );
+        }
+      } catch (err) {
+        console.error(err);
+        setParseError("Não conseguimos ler esta planilha. Verifique se o arquivo não está corrompido.");
+      } finally {
+        setParsing(false);
+      }
       return;
     }
     if (isCsv) {
@@ -882,12 +910,12 @@ function ImportarClientesPage() {
             {parsing ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Lendo PDF…
+                Lendo arquivo…
               </>
             ) : (
               <>
                 <FileText className="h-4 w-4" />
-                Selecionar PDF
+                Selecionar arquivo
               </>
             )}
           </Button>
@@ -898,9 +926,8 @@ function ImportarClientesPage() {
           )}
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Formato atual: <strong>PDF pesquisável</strong>. Importação direta de
-          Excel (.xlsx) e CSV será ativada na próxima atualização — por enquanto
-          exporte do Excel como PDF ou CSV UTF-8 (e converta para PDF).
+          Formatos aceitos: <strong>PDF pesquisável</strong> e <strong>Excel (.xlsx, .xls)</strong>.
+          Reconhecemos colunas como Nome, WhatsApp, Valor e Vencimento automaticamente.
         </p>
         {parseError && (
           <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
