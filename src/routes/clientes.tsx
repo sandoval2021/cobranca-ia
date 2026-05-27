@@ -604,38 +604,12 @@ function ClientesPage() {
       const sb = allScreens[b.id] ?? [];
       const da = customerDueDays(a, sa);
       const db = customerDueDays(b, sb);
-      // Vencido = qualquer tela ativa já passou da data, OU o consolidado é negativo,
-      // OU o status do cliente é "expirado" (precisa renovar agora, ignorar telas futuras).
-      const isOverdue = (c: Customer, screens: AppScreen[], d: number | null) => {
-        if (d != null && d < 0) return true;
-        if (classifyStatus(c.status) === "expirado") return true;
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        for (const s of screens) {
-          if (s.status === "arquivada" || s.status === "pausada") continue;
-          if (!s.due_date) continue;
-          const sd = Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000);
-          if (sd < 0) return true;
-        }
-        return false;
-      };
-      // Para vencidos: quanto mais atrasado, mais embaixo. Status "expirado" sem data
-      // negativa é tratado como muito antigo (precisa renovar agora).
-      const worstOverdue = (c: Customer, screens: AppScreen[], d: number | null) => {
-        let worst = d != null && d < 0 ? d : 0;
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        for (const s of screens) {
-          if (s.status === "arquivada" || s.status === "pausada") continue;
-          if (!s.due_date) continue;
-          const sd = Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000);
-          if (sd < worst) worst = sd;
-        }
-        if (worst === 0 && classifyStatus(c.status) === "expirado") worst = -100000;
-        return worst;
-      };
-      const rank = (c: Customer, screens: AppScreen[], d: number | null) => {
-        if (isOverdue(c, screens, d)) {
+      // Vencido = consolidado de dias negativo. Status do cliente NÃO entra mais aqui:
+      // a data do vencimento é a única verdade.
+      const rank = (_c: Customer, _screens: AppScreen[], d: number | null) => {
+        if (d != null && d < 0) {
           // Vencidos no fim. Menos atrasado primeiro (mais próximo do 0).
-          return 1_000_000 + Math.abs(worstOverdue(c, screens, d));
+          return 1_000_000 + Math.abs(d);
         }
         if (d == null) return 500_000; // sem data antes dos vencidos
         return d; // ativos no topo, mais próximos do vencimento primeiro
