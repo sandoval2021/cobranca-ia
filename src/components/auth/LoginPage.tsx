@@ -141,6 +141,13 @@ export function LoginPage() {
             <dd className={hasUrl ? "text-success font-medium" : "text-destructive font-medium"}>{hasUrl ? "Sim" : "Não"}</dd>
             <dt className="text-muted-foreground">Supabase anon key</dt>
             <dd className={hasKey ? "text-success font-medium" : "text-destructive font-medium"}>{hasKey ? "Sim" : "Não"}</dd>
+            <dt className="text-muted-foreground">Anon key projeto</dt>
+            <dd className={isAnonKeyForExpectedProject ? "text-success font-medium" : "text-destructive font-medium"}>
+              {supabaseAnonKeyRef ?? (hasKey ? `(${supabaseAnonKeyFormat})` : "—")}
+            </dd>
+            <dt className="text-muted-foreground">Anon key role</dt>
+            <dd className="font-medium">{supabaseAnonKeyRole ?? "—"}</dd>
+
             <dt className="text-muted-foreground">Ambiente</dt>
             <dd className="font-medium">{flags.appEnv}</dd>
             <dt className="text-muted-foreground">Pagamentos reais</dt>
