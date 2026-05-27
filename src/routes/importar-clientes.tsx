@@ -1157,6 +1157,87 @@ function ImportarClientesPage() {
             <ResultCard label="Duplicados" value={result.duplicated ?? 0} />
             <ResultCard label="Com erro" value={result.errored ?? 0} />
           </div>
+
+          {finalSummary && (
+            <div className="mt-3 rounded-xl border bg-card/60 p-3 text-sm">
+              <p className="mb-2 font-medium">{finalSummary.texto_amigavel}</p>
+              <div className="grid grid-cols-2 gap-1.5 text-[11px] sm:grid-cols-4">
+                <SummaryStat label="Total lido" value={finalSummary.total_lido} />
+                <SummaryStat label="WhatsApps únicos" value={finalSummary.whatsapps_unicos} />
+                <SummaryStat
+                  label="Repetidos agrupados"
+                  value={finalSummary.whatsapps_repetidos_agrupados}
+                />
+                <SummaryStat
+                  label="Telas/serviços"
+                  value={finalSummary.telas_servicos_detectados}
+                />
+                <SummaryStat label="Criados" value={finalSummary.clientes_criados} />
+                <SummaryStat
+                  label="Atualizados"
+                  value={finalSummary.clientes_atualizados}
+                />
+                <SummaryStat label="Conflito de valor" value={finalSummary.conflitos_valor} />
+                <SummaryStat
+                  label="Conflito de vencimento"
+                  value={finalSummary.conflitos_vencimento}
+                />
+                <SummaryStat label="Ignoradas" value={finalSummary.linhas_ignoradas} />
+                <SummaryStat label="Com erro" value={finalSummary.linhas_com_erro} />
+              </div>
+            </div>
+          )}
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => exportReport("completo")}>
+              Exportar relatório completo (CSV)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportReport("erros")}
+              disabled={pendingErrorsCount === 0}
+            >
+              Exportar somente erros
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportReport("conflitos")}
+            >
+              Exportar somente conflitos
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportReport("importados")}
+            >
+              Exportar importados/atualizados
+            </Button>
+            {pendingErrorsCount > 0 && (
+              <Button
+                size="sm"
+                onClick={retryErrors}
+                disabled={retryingErrors}
+              >
+                {retryingErrors ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Tentando novamente…
+                  </>
+                ) : (
+                  <>Tentar importar erros novamente ({pendingErrorsCount})</>
+                )}
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={clearResult}>
+              Limpar resultado
+            </Button>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            CSV compatível com Excel (UTF-8, separador “;”). Para abrir no Excel,
+            basta dar duplo clique.
+          </p>
         </Card>
       )}
 
