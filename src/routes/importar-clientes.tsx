@@ -100,6 +100,17 @@ const SOFT_WARN_BYTES = 25 * 1024 * 1024;
 // Tamanho do lote enviado para a RPC staging_import_customers_from_rows.
 // Evita timeout/payload gigante em bases de 5k–10k clientes.
 const IMPORT_CHUNK_SIZE = 250;
+// Quantas linhas da prévia mostrar por página. Renderizar 5k–10k cards
+// de uma vez trava o navegador no celular. 100 mantém UI responsiva.
+const PREVIEW_PAGE_SIZE = 100;
+
+type PreviewFilter =
+  | "todos"
+  | "validos"
+  | "erros"
+  | "duplicados"
+  | "conflitos"
+  | "repetidos";
 
 function ImportarClientesPage() {
   const { user, isAuthenticated } = useAuth();
