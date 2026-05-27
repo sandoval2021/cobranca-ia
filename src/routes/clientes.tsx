@@ -602,19 +602,17 @@ function ClientesPage() {
     return [...filtered].sort((a, b) => {
       const sa = allScreens[a.id] ?? [];
       const sb = allScreens[b.id] ?? [];
-      const da = customerDueDays(a, sa);
-      const db = customerDueDays(b, sb);
-      // Vencido = consolidado de dias negativo. Status do cliente NÃO entra mais aqui:
-      // a data do vencimento é a única verdade.
-      const rank = (_c: Customer, _screens: AppScreen[], d: number | null) => {
-        if (d != null && d < 0) {
-          // Vencidos no fim. Menos atrasado primeiro (mais próximo do 0).
-          return 1_000_000 + Math.abs(d);
-        }
-        if (d == null) return 500_000; // sem data antes dos vencidos
-        return d; // ativos no topo, mais próximos do vencimento primeiro
+      // Usa o mesmo "days" exibido no card (override sobrescreve base).
+      const oa = daysFromOverride(getCustomerDueOverride(a.id));
+      const ob = daysFromOverride(getCustomerDueOverride(b.id));
+      const da = oa != null ? oa : customerDueDays(a, sa);
+      const db = ob != null ? ob : customerDueDays(b, sb);
+      const rank = (d: number | null) => {
+        if (d != null && d < 0) return 1_000_000 + Math.abs(d); // vencidos no fim
+        if (d == null) return 500_000;
+        return d; // ativos: mais próximos do vencimento primeiro
       };
-      return rank(a, sa, da) - rank(b, sb, db);
+      return rank(da) - rank(db);
     });
   }, [filtered, allScreens, filter, dispatchQueueById]);
 
