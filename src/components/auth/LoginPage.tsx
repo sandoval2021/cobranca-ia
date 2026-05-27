@@ -5,15 +5,21 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
+import {
+  supabase,
+  supabaseConfigured,
+  supabaseAnonKeyPresent,
+  supabaseAnonKeyRef,
+  supabaseAnonKeyRole,
+  supabaseAnonKeyFormat,
+  isAnonKeyForExpectedProject,
+} from "@/integrations/supabase/compat";
 import { AUTH_REFRESH_EVENT, friendlyAuthError } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 
 const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
-const hasKey = Boolean(
-  import.meta.env.VITE_SUPABASE_ANON_KEY ??
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-);
+const hasKey = supabaseAnonKeyPresent;
+
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -67,10 +73,14 @@ export function LoginPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
           {!supabaseConfigured && (
             <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-              Conexão não configurada. Verifique as variáveis do Supabase no
-              ambiente do Lovable.
+              {!hasKey
+                ? "Anon key ausente para pkghjzbvmifmztqvpdeu. Configure o secret ANON_KEY_SUPABASE no Lovable Cloud com a chave anon do projeto correto e republique."
+                : !isAnonKeyForExpectedProject
+                  ? `Anon key embutida pertence ao projeto errado (ref=${supabaseAnonKeyRef ?? "?"}). Esperado pkghjzbvmifmztqvpdeu.`
+                  : "Conexão não configurada. Verifique as variáveis do Supabase no ambiente do Lovable."}
             </div>
           )}
+
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="login-email">E-mail</Label>
@@ -131,6 +141,13 @@ export function LoginPage() {
             <dd className={hasUrl ? "text-success font-medium" : "text-destructive font-medium"}>{hasUrl ? "Sim" : "Não"}</dd>
             <dt className="text-muted-foreground">Supabase anon key</dt>
             <dd className={hasKey ? "text-success font-medium" : "text-destructive font-medium"}>{hasKey ? "Sim" : "Não"}</dd>
+            <dt className="text-muted-foreground">Anon key projeto</dt>
+            <dd className={isAnonKeyForExpectedProject ? "text-success font-medium" : "text-destructive font-medium"}>
+              {supabaseAnonKeyRef ?? (hasKey ? `(${supabaseAnonKeyFormat})` : "—")}
+            </dd>
+            <dt className="text-muted-foreground">Anon key role</dt>
+            <dd className="font-medium">{supabaseAnonKeyRole ?? "—"}</dd>
+
             <dt className="text-muted-foreground">Ambiente</dt>
             <dd className="font-medium">{flags.appEnv}</dd>
             <dt className="text-muted-foreground">Pagamentos reais</dt>
