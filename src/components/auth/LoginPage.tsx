@@ -30,6 +30,8 @@ type View =
   | "forgot"
   | "forgot_otp";
 
+const OTP_LENGTH = 8;
+
 const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
 
 function isValidWhatsapp(v: string): boolean {
@@ -257,7 +259,7 @@ function SignupForm({
       email: trimmedEmail,
       password: senha,
       options: {
-        // Sem emailRedirectTo: queremos OTP de 6 dígitos, nunca link mágico.
+        // Sem emailRedirectTo: queremos OTP de 8 dígitos, nunca link mágico.
         data: {
           nome: nome.trim(),
           empresa: empresa.trim(),
@@ -370,7 +372,7 @@ function SignupForm({
 }
 
 /**
- * Tela de confirmação por código de 6 dígitos (cadastro).
+ * Tela de confirmação por código de 8 dígitos (cadastro).
  * Usa supabase.auth.verifyOtp({ type: "signup", email, token }).
  * Importante: o template "Confirm signup" no Supabase Auth precisa conter
  * {{ .Token }} para que o e-mail mostre o código, não só o link.
@@ -400,14 +402,14 @@ function SignupOtpForm({
   }, [cooldown]);
 
   function onlyDigits(v: string) {
-    return v.replace(/\D/g, "").slice(0, 6);
+    return v.replace(/\D/g, "").slice(0, OTP_LENGTH);
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     if (!supabase) return setError("Conexão não configurada.");
-    if (code.length !== 6) return setError("Digite os 6 dígitos do código.");
+    if (code.length !== OTP_LENGTH) return setError(`Digite os ${OTP_LENGTH} dígitos do código.`);
 
     setSubmitting(true);
     const { data, error: err } = await supabase.auth.verifyOtp({
@@ -461,23 +463,23 @@ function SignupOtpForm({
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
           <ShieldCheck className="h-6 w-6" />
         </div>
-        <h2 className="text-base font-semibold">Digite o código de 6 dígitos enviado para seu e-mail</h2>
+        <h2 className="text-base font-semibold">Digite o código de {OTP_LENGTH} dígitos enviado para seu e-mail</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Enviamos um código de 6 dígitos para <strong>{ctx.email}</strong>. Digite abaixo para
+          Enviamos um código de {OTP_LENGTH} dígitos para <strong>{ctx.email}</strong>. Digite abaixo para
           continuar.
         </p>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="otp-code">Código de 6 dígitos</Label>
+        <Label htmlFor="otp-code">Código de {OTP_LENGTH} dígitos</Label>
         <Input
           id="otp-code"
           ref={inputRef}
           inputMode="numeric"
           autoComplete="one-time-code"
-          pattern="\d{6}"
-          maxLength={6}
-          placeholder="••••••"
+          pattern={`\\d{${OTP_LENGTH}}`}
+          maxLength={OTP_LENGTH}
+          placeholder="••••••••"
           value={code}
           onChange={(e) => setCode(onlyDigits(e.target.value))}
           required
@@ -489,7 +491,7 @@ function SignupOtpForm({
         <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
       )}
 
-      <Button type="submit" disabled={submitting || code.length !== 6} className="h-11 w-full">
+      <Button type="submit" disabled={submitting || code.length !== OTP_LENGTH} className="h-11 w-full">
         {submitting ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -571,7 +573,7 @@ function ForgotForm({
         Voltar para entrar
       </button>
       <p className="text-sm text-muted-foreground">
-        Informe o e-mail da sua conta. Enviaremos um código de 6 dígitos para você criar uma nova
+        Informe o e-mail da sua conta. Enviaremos um código de {OTP_LENGTH} dígitos para você criar uma nova
         senha.
       </p>
       <div className="space-y-1.5">
@@ -637,14 +639,14 @@ function ForgotOtpForm({
   }, [cooldown]);
 
   function onlyDigits(v: string) {
-    return v.replace(/\D/g, "").slice(0, 6);
+    return v.replace(/\D/g, "").slice(0, OTP_LENGTH);
   }
 
   async function handleVerify(e: FormEvent) {
     e.preventDefault();
     setError(null);
     if (!supabase) return setError("Conexão não configurada.");
-    if (code.length !== 6) return setError("Digite os 6 dígitos do código.");
+    if (code.length !== OTP_LENGTH) return setError(`Digite os ${OTP_LENGTH} dígitos do código.`);
     setSubmitting(true);
     const { data, error: err } = await supabase.auth.verifyOtp({
       type: "recovery",
@@ -757,21 +759,21 @@ function ForgotOtpForm({
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
           <ShieldCheck className="h-6 w-6" />
         </div>
-        <h2 className="text-base font-semibold">Digite o código de 6 dígitos enviado para seu e-mail</h2>
+        <h2 className="text-base font-semibold">Digite o código de {OTP_LENGTH} dígitos enviado para seu e-mail</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Enviamos um código de 6 dígitos para <strong>{email}</strong>. Digite abaixo para
+          Enviamos um código de {OTP_LENGTH} dígitos para <strong>{email}</strong>. Digite abaixo para
           recuperar o acesso.
         </p>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="otp-recovery">Código de 6 dígitos</Label>
+        <Label htmlFor="otp-recovery">Código de {OTP_LENGTH} dígitos</Label>
         <Input
           id="otp-recovery"
           inputMode="numeric"
           autoComplete="one-time-code"
-          pattern="\d{6}"
-          maxLength={6}
-          placeholder="••••••"
+          pattern={`\\d{${OTP_LENGTH}}`}
+          maxLength={OTP_LENGTH}
+          placeholder="••••••••"
           value={code}
           onChange={(e) => setCode(onlyDigits(e.target.value))}
           required
@@ -781,7 +783,7 @@ function ForgotOtpForm({
       {error && (
         <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
       )}
-      <Button type="submit" disabled={submitting || code.length !== 6} className="h-11 w-full">
+      <Button type="submit" disabled={submitting || code.length !== OTP_LENGTH} className="h-11 w-full">
         {submitting ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
