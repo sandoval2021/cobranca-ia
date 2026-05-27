@@ -67,6 +67,13 @@ import {
   summarizeImport,
   type ImportEnrichment,
 } from "@/lib/import-mapping";
+import {
+  buildReportCsv,
+  buildFinalSummary,
+  downloadCsv,
+  type ReportContext,
+  type ReportScope,
+} from "@/lib/import-report";
 
 
 
@@ -118,7 +125,9 @@ function ImportarClientesPage() {
   const [notImportedIdx, setNotImportedIdx] = useState<number[]>([]);
   const [skippedIdx, setSkippedIdx] = useState<Set<number>>(new Set());
   const [forcedIdx, setForcedIdx] = useState<Set<number>>(new Set());
+  const [importedIdx, setImportedIdx] = useState<Set<number>>(new Set());
   const [forcingIdx, setForcingIdx] = useState<number | null>(null);
+  const [retryingErrors, setRetryingErrors] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   // Auto-seleciona a empresa atual da sessão (mantém UI igual).
@@ -262,6 +271,7 @@ function ImportarClientesPage() {
     setNotImportedIdx([]);
     setSkippedIdx(new Set());
     setForcedIdx(new Set());
+    setImportedIdx(new Set());
     setRows(null);
     setFileName(file.name);
 
@@ -427,12 +437,15 @@ function ImportarClientesPage() {
           errored: counts.error,
         });
         const notImported: number[] = [];
+        const imported = new Set<number>();
         (rows ?? []).forEach((row, i) => {
           if (row.status !== "valid") notImported.push(i);
+          else imported.add(i);
         });
         setNotImportedIdx(notImported);
         setSkippedIdx(new Set());
         setForcedIdx(new Set());
+        setImportedIdx(imported);
         // Reativa clientes arquivados que voltaram via importação.
         const toReactivate = new Set<string>();
         for (const r of validas) {
@@ -536,6 +549,134 @@ function ImportarClientesPage() {
       setForcingIdx(null);
     }
   }
+
+  // FASE 3 — Tenta reimportar SOMENTE as linhas pendentes (erro/duplicadas no
+  // arquivo), sem reenviar quem já entrou. Mantém o agrupamento por WhatsApp.
+  async function retryErrors() {
+    if (!supabase || !supabaseConfigured || !rows) return;
+    const effCompany =
+      companyId ??
+      (companyState.status === "ready" ? companyState.companyId : null);
+    if (!effCompany) {
+      toast.error("Empresa não encontrada.");
+      return;
+    }
+    const pending = notImportedIdx.filter(
+      (i) => !skippedIdx.has(i) && !forcedIdx.has(i),
+    );
+    if (pending.length === 0) {
+      toast.message("Nenhum erro pendente para tentar novamente.");
+      return;
+    }
+    setRetryingErrors(true);
+    try {
+      const payload = pending.map((i) => {
+        const r = rows[i];
+        const e = enrichments[i];
+        return {
+          external_code: r.external_code,
+          external_customer_code: r.external_customer_code,
+          customer_name: r.customer_name,
+          whatsapp_e164: r.whatsapp_e164,
+          service_name: r.service_name,
+          amount_cents: r.amount_cents,
+          expires_at: r.expires_at,
+          situation: r.situation,
+          notes: e?.observation ?? null,
+          raw_row: {
+            ...(r.raw_row ?? {}),
+            retried: true,
+            matched_service_id: e?.matched_service_id ?? null,
+            plan_label: e?.plan_label ?? null,
+            message_label: e?.message_label ?? null,
+            group_size: e?.group_size ?? 1,
+            group_conflict: e?.group_conflict ?? null,
+            observation: e?.observation ?? null,
+          },
+        };
+      });
+      const { data, error } = await supabase.rpc(
+        "staging_import_customers_from_rows",
+        { p_company_id: effCompany, p_rows: payload as unknown as object },
+      );
+      if (error) {
+        toast.error("Falha ao tentar novamente: " + error.message);
+        return;
+      }
+      const d = (data ?? {}) as Record<string, number>;
+      const ok = (d.imported ?? 0) + (d.updated ?? 0);
+      if (ok > 0) {
+        // Considera as pendentes que ainda têm dado mínimo como importadas.
+        setForcedIdx((prev) => {
+          const next = new Set(prev);
+          for (const i of pending) {
+            const r = rows[i];
+            if (r.whatsapp_e164 || r.customer_name) next.add(i);
+          }
+          return next;
+        });
+        setResult((prev) =>
+          prev
+            ? {
+                ...prev,
+                imported: (prev.imported ?? 0) + (d.imported ?? 0),
+                updated: (prev.updated ?? 0) + (d.updated ?? 0),
+                charges: (prev.charges ?? 0) + (d.charges ?? 0),
+                errored: Math.max(0, (prev.errored ?? 0) - ok),
+              }
+            : prev,
+        );
+        toast.success(`${ok} linha(s) reimportada(s) com sucesso.`);
+      } else {
+        toast.message("Nenhuma linha pôde ser reimportada. Revise os dados.");
+      }
+    } finally {
+      setRetryingErrors(false);
+    }
+  }
+
+  function clearResult() {
+    setResult(null);
+    setImportedIdx(new Set());
+    setForcedIdx(new Set());
+    setSkippedIdx(new Set());
+    setNotImportedIdx([]);
+  }
+
+  function getReportCtx(): ReportContext {
+    return {
+      rows: rows ?? [],
+      enrichments,
+      existingMap,
+      importedIdx,
+      forcedIdx,
+      skippedIdx,
+      notImportedIdx,
+    };
+  }
+
+  function exportReport(scope: ReportScope) {
+    if (!rows || rows.length === 0) {
+      toast.error("Nada para exportar.");
+      return;
+    }
+    const csv = buildReportCsv(scope, getReportCtx());
+    const d = new Date();
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    downloadCsv(`importacao-${scope}-${ymd}.csv`, csv);
+    toast.success("Relatório exportado (CSV compatível com Excel).");
+  }
+
+  const finalSummary =
+    result && !result.message && rows
+      ? buildFinalSummary(getReportCtx(), {
+          imported: result.imported ?? 0,
+          updated: result.updated ?? 0,
+        })
+      : null;
+  const pendingErrorsCount = notImportedIdx.filter(
+    (i) => !skippedIdx.has(i) && !forcedIdx.has(i),
+  ).length;
 
   const effectiveCompanyId =
     companyId ??
@@ -1016,22 +1157,107 @@ function ImportarClientesPage() {
             <ResultCard label="Duplicados" value={result.duplicated ?? 0} />
             <ResultCard label="Com erro" value={result.errored ?? 0} />
           </div>
+
+          {finalSummary && (
+            <div className="mt-3 rounded-xl border bg-card/60 p-3 text-sm">
+              <p className="mb-2 font-medium">{finalSummary.texto_amigavel}</p>
+              <div className="grid grid-cols-2 gap-1.5 text-[11px] sm:grid-cols-4">
+                <SummaryStat label="Total lido" value={finalSummary.total_lido} />
+                <SummaryStat label="WhatsApps únicos" value={finalSummary.whatsapps_unicos} />
+                <SummaryStat
+                  label="Repetidos agrupados"
+                  value={finalSummary.whatsapps_repetidos_agrupados}
+                />
+                <SummaryStat
+                  label="Telas/serviços"
+                  value={finalSummary.telas_servicos_detectados}
+                />
+                <SummaryStat label="Criados" value={finalSummary.clientes_criados} />
+                <SummaryStat
+                  label="Atualizados"
+                  value={finalSummary.clientes_atualizados}
+                />
+                <SummaryStat label="Conflito de valor" value={finalSummary.conflitos_valor} />
+                <SummaryStat
+                  label="Conflito de vencimento"
+                  value={finalSummary.conflitos_vencimento}
+                />
+                <SummaryStat label="Ignoradas" value={finalSummary.linhas_ignoradas} />
+                <SummaryStat label="Com erro" value={finalSummary.linhas_com_erro} />
+              </div>
+            </div>
+          )}
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => exportReport("completo")}>
+              Exportar relatório completo (CSV)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportReport("erros")}
+              disabled={pendingErrorsCount === 0}
+            >
+              Exportar somente erros
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportReport("conflitos")}
+            >
+              Exportar somente conflitos
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportReport("importados")}
+            >
+              Exportar importados/atualizados
+            </Button>
+            {pendingErrorsCount > 0 && (
+              <Button
+                size="sm"
+                onClick={retryErrors}
+                disabled={retryingErrors}
+              >
+                {retryingErrors ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Tentando novamente…
+                  </>
+                ) : (
+                  <>Tentar importar erros novamente ({pendingErrorsCount})</>
+                )}
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={clearResult}>
+              Limpar resultado
+            </Button>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            CSV compatível com Excel (UTF-8, separador “;”). Para abrir no Excel,
+            basta dar duplo clique.
+          </p>
         </Card>
       )}
 
-      {/* Clientes não importados — ação por linha */}
-      {result && !result.message && rows && notImportedIdx.length > 0 && (
+      {/* Pendências — só erros/duplicados que não foram resolvidos. */}
+      {result && !result.message && rows && pendingErrorsCount > 0 && (
         <Card className="mt-4 p-4">
           <div className="mb-2 flex items-center gap-1.5">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-medium">Clientes não importados</span>
+            <span className="text-sm font-medium">
+              Pendências ({pendingErrorsCount})
+            </span>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
-            Estes clientes foram pulados (duplicados no arquivo ou com erro).
-            Você pode importar mesmo assim ou ignorar.
+            Estas linhas não foram importadas. Corrija, importe mesmo assim,
+            ignore ou use “Tentar importar erros novamente” acima.
           </p>
           <div className="space-y-2">
-            {notImportedIdx.map((i) => {
+            {notImportedIdx
+              .filter((i) => !forcedIdx.has(i) && !skippedIdx.has(i))
+              .map((i) => {
               const r = rows[i];
               const forced = forcedIdx.has(i);
               const skipped = skippedIdx.has(i);
