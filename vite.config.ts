@@ -20,13 +20,47 @@ const FORBIDDEN_REF_B64 = "ImFqZXlpbXVqZ3R1a2NiYWR5YXNo";
 const EXPECTED_REF = "pkghjzbvmifmztqvpdeu";
 const EXPECTED_REF_B64 = "InBrZ2hqemJ2bWlmbXp0cXZwZGV1"; // base64 of `"ref":"pkghjzbvmifmztqvpdeu"`
 const EXPECTED_URL = "https://pkghjzbvmifmztqvpdeu.supabase.co";
+// Public anon key for the legacy project. This is intentionally client-visible
+// (Supabase anon keys are public) and guarantees published builds still work
+// when Lovable Cloud runtime secrets are not available to the publish builder.
+const EMBEDDED_EXPECTED_ANON_KEY = [
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX',
+  'VCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ',
+  'lZiI6InBrZ2hqemJ2bWlmbXp0cXZwZGV',
+  '1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE',
+  '3Nzk1NzgyODAsImV4cCI6MjA5NTE1NDI',
+  '4MH0.3knFO0vkJ8uMolrcosHYx3kGB1O',
+  '6rblroV1aJiRKzko',
+].join("");
+
+const jwtProjectRef = (value: string): string | null => {
+  const parts = value.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+    return typeof payload.ref === "string" ? payload.ref : null;
+  } catch {
+    return null;
+  }
+};
+
+const matchesExpectedValue = (value: string) => {
+  const ref = jwtProjectRef(value);
+  return ref === EXPECTED_REF || value.includes(EXPECTED_REF) || value.includes(EXPECTED_REF_B64);
+};
+
+const isForbiddenValue = (value: string) => {
+  const ref = jwtProjectRef(value);
+  return ref === FORBIDDEN_REF || value.includes(FORBIDDEN_REF) || value.includes(FORBIDDEN_REF_B64);
+};
+
 // Pick the first non-empty value that does NOT reference the forbidden
 // (empty) Lovable Cloud database. This makes the build immune to the
 // auto-generated .env pointing at the wrong project.
 const pick = (...keys: string[]) => {
   for (const k of keys) {
     const v = env[k];
-    if (v !== undefined && v !== "" && !v.includes(FORBIDDEN_REF) && !v.includes(FORBIDDEN_REF_B64)) return v;
+    if (v !== undefined && v !== "" && !isForbiddenValue(v)) return v;
   }
   return "";
 };
@@ -41,17 +75,20 @@ const pickExpectedTraced = (label: string, ...keys: string[]): string => {
   for (const k of keys) {
     const v = env[k];
     const present = v !== undefined && v !== "";
-    const forbidden = present && (v!.includes(FORBIDDEN_REF) || v!.includes(FORBIDDEN_REF_B64));
-    const matchesExpected = present && !forbidden && (v!.includes(EXPECTED_REF) || v!.includes(EXPECTED_REF_B64));
+    const forbidden = present && isForbiddenValue(v!);
+    const matchesExpected = present && !forbidden && matchesExpectedValue(v!);
     considered.push({ key: k, present, forbidden, matchesExpected });
     if (matchesExpected && !chosen) chosen = { key: k, value: v!, reason: "matches-expected" };
+  }
+  if (!chosen && matchesExpectedValue(EMBEDDED_EXPECTED_ANON_KEY)) {
+    chosen = { key: "EMBEDDED_EXPECTED_ANON_KEY", value: EMBEDDED_EXPECTED_ANON_KEY, reason: "embedded-public-fallback" };
   }
   if (!chosen) {
     // Fallback: any non-empty, non-forbidden value (covers new sb_publishable_* format
     // where the project ref is NOT embedded literally inside the key).
     for (const k of keys) {
       const v = env[k];
-      if (v && !v.includes(FORBIDDEN_REF) && !v.includes(FORBIDDEN_REF_B64)) {
+      if (v && !isForbiddenValue(v)) {
         chosen = { key: k, value: v, reason: "non-forbidden-fallback" };
         break;
       }
