@@ -12,6 +12,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/use-auth";
 import { LoginPage, SessionLoading } from "@/components/auth/LoginPage";
+import { SupabaseEnvBanner } from "@/components/dev/SupabaseEnvBanner";
 
 function AuthGateApp() {
   const { loading, user } = useAuth();
@@ -132,6 +133,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <SupabaseEnvBanner />
       <AuthGateApp />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
