@@ -1079,10 +1079,9 @@ function ClientCard({
 }) {
   const phone = prettyPhone(customer.whatsapp);
   const initial = customer.name.trim().charAt(0).toUpperCase() || "?";
-  const override = getCustomerDueOverride(customer.id);
-  const overrideDays = daysFromOverride(override);
-  const baseDays = customerDueDays(customer, screens);
-  const days = overrideDays != null ? overrideDays : baseDays;
+  // Fonte única: garante que "Expira", "Situação" e badge usem o mesmo iso.
+  const dueInfo = getCustomerDueInfo(customer, screens);
+  const days = dueInfo.days;
   const urg = urgencyFromDays(days);
   const activeScreens = screens.filter((s) => s.status !== "arquivada").slice(0, 4);
   const needsUpdate = screens.some((s) => s.needs_server_update && s.status !== "arquivada");
@@ -1101,22 +1100,9 @@ function ClientCard({
               ? "border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/15"
               : "border-border bg-card";
 
-  // Próxima data de vencimento (ISO).
-  // Prioridade: override local > due_date importado (data completa) > due_day (mensal).
-  const nextDueIso = (() => {
-    if (override) return override;
-    const imported = getCustomerDueIso(customer);
-    if (imported) return imported;
-    if (customer.due_day != null) {
-      const today = new Date();
-      const dd = Math.min(customer.due_day, 28);
-      const next = new Date(today.getFullYear(), today.getMonth(), dd);
-      if (next < today) next.setMonth(next.getMonth() + 1);
-      const p = (n: number) => String(n).padStart(2, "0");
-      return `${next.getFullYear()}-${p(next.getMonth() + 1)}-${p(next.getDate())}`;
-    }
-    return null;
-  })();
+  // Próxima data de vencimento (ISO) — derivada da MESMA fonte de "days".
+  const nextDueIso = dueInfo.iso;
+
 
   const primaryScreen = activeScreens[0];
   const primaryApp = primaryScreen ? APP_CATALOG[primaryScreen.app] : null;
