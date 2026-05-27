@@ -20,13 +20,39 @@ const FORBIDDEN_REF_B64 = "ImFqZXlpbXVqZ3R1a2NiYWR5YXNo";
 const EXPECTED_REF = "pkghjzbvmifmztqvpdeu";
 const EXPECTED_REF_B64 = "InBrZ2hqemJ2bWlmbXp0cXZwZGV1"; // base64 of `"ref":"pkghjzbvmifmztqvpdeu"`
 const EXPECTED_URL = "https://pkghjzbvmifmztqvpdeu.supabase.co";
+// Public anon key for the legacy project. This is intentionally client-visible
+// (Supabase anon keys are public) and guarantees published builds still work
+// when Lovable Cloud runtime secrets are not available to the publish builder.
+const EMBEDDED_EXPECTED_ANON_KEY = "__LEGACY_SUPABASE_ANON_KEY__";
+
+const jwtProjectRef = (value: string): string | null => {
+  const parts = value.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+    return typeof payload.ref === "string" ? payload.ref : null;
+  } catch {
+    return null;
+  }
+};
+
+const matchesExpectedValue = (value: string) => {
+  const ref = jwtProjectRef(value);
+  return ref === EXPECTED_REF || value.includes(EXPECTED_REF) || value.includes(EXPECTED_REF_B64);
+};
+
+const isForbiddenValue = (value: string) => {
+  const ref = jwtProjectRef(value);
+  return ref === FORBIDDEN_REF || value.includes(FORBIDDEN_REF) || value.includes(FORBIDDEN_REF_B64);
+};
+
 // Pick the first non-empty value that does NOT reference the forbidden
 // (empty) Lovable Cloud database. This makes the build immune to the
 // auto-generated .env pointing at the wrong project.
 const pick = (...keys: string[]) => {
   for (const k of keys) {
     const v = env[k];
-    if (v !== undefined && v !== "" && !v.includes(FORBIDDEN_REF) && !v.includes(FORBIDDEN_REF_B64)) return v;
+    if (v !== undefined && v !== "" && !isForbiddenValue(v)) return v;
   }
   return "";
 };
