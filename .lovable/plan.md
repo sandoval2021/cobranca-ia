@@ -1,57 +1,129 @@
-# Importação robusta para bases grandes — plano em fases
+## Objetivo
 
-A página `src/routes/importar-clientes.tsx` (1.448 linhas) já tem boa parte do fluxo: upload, parse PDF/Excel, dedup via RPC `get_import_customer_dedup_admin`, prévia, confirmação por lotes via `staging_import_customers_from_rows`, força/skip por linha, `imported-due-dates` para vencimentos reais. **Não vou reescrever do zero** — vou estender em camadas, sem migration e sem PR/merge.
+Adicionar IA de suporte ao CobraEasy usando OpenAI **somente server-side**, com duas frentes:
 
-Como a tarefa é grande e mexe com dados reais de cliente, divido em 4 PRs lógicos (todos só no branch atual, sem PR de verdade) para conseguir validar cada etapa antes de seguir:
+1. **Ajuda com IA (Dono do painel)** — tira dúvidas sobre uso do sistema.
+2. **IA Atendimento (Cliente final)** — responde sobre vencimento, status, pagamento, renovação, comprovante e suporte, restrito à empresa correta.
 
-## Fase 1 — Segurança imediata e base para escala
-Objetivo: remover travas artificiais e preparar terreno sem mudar comportamento visível ainda.
+Sem mexer em: OTP/login, Mercado Pago, Resend, Evolution/VPS. Sem SQL nesta entrega.
 
-- Remover `MAX_BYTES = 10 * 1024 * 1024` em `importar-clientes.tsx:89`. Substituir por:
-  - aviso suave acima de 25MB ("arquivo grande, processamento em lotes pode levar alguns minutos");
-  - sem bloqueio.
-- Parse em chunks: mover `parseRowsFromText` / `extractPdfText` para um Web Worker (`src/workers/import-parser.ts`) para não travar a UI. Fallback síncrono se Worker indisponível.
-- Adicionar barra de progresso real (linhas parseadas / total estimado) e botão **Cancelar** durante parse.
-- `CHUNK_SIZE = 250` ao chamar `staging_import_customers_from_rows` (hoje manda tudo de uma vez); progresso por chunk; cancelável entre chunks.
+---
 
-## Fase 2 — WhatsApp repetido = múltiplas telas no mesmo cliente
-- Em `src/lib/import-mapping.ts`, novo passo `groupRowsByWhatsApp(rows)` que agrupa por `whatsapp_e164` e produz:
-  - 1 cliente lógico por número;
-  - array `screens[]` com cada linha original (plano, valor, servidor, app, usuário, observações);
-  - `notes` consolidadas no formato "Tela 1: <plano R$X> | Tela 2: <plano R$Y>".
-- Prévia mostra "X clientes únicos · Y telas detectadas" e expansão por linha mostrando cada tela.
-- Backend: tentativa 1 — encaixar via colunas extras no payload existente da RPC. Se a RPC não suportar `screens[]`, **paro e aviso** antes de propor migration (regra do brief: "se precisar ajustar RPC, avisar antes").
+## Arquitetura (segurança em 1ª camada)
 
-## Fase 3 — Erros separados, retry e export
-- Estado dedicado `errorRows[]` separado de `pendingRows[]`. Após confirmar, aprovados somem da lista, só erros ficam.
-- Cada erro mostra: número da linha original, campo problemático, motivo em português, botão "corrigir" (edição inline) e "tentar novamente só os erros".
-- Export via `xlsx` (já deve estar no bundle ou instalo `xlsx` ~600KB):
-  - `Exportar relatório completo` (preserva colunas originais + status_importacao, motivo_erro, cliente_id, whatsapp_normalizado, telas_detectadas, plano_detectado, mensagem_detectada, vencimento_detectado);
-  - `Exportar só erros`;
-  - `Exportar só conflitos`;
-  - mantém ordem original via índice preservado em `raw_row_index`.
-- PDF de origem → exporta relatório Excel (mais útil que regerar PDF).
+- `OPENAI_API_KEY` armazenada como **secret** (server-only). Nunca `VITE_*`.
+- Toda chamada à OpenAI passa por **server function TanStack** (`createServerFn`) — frontend nunca fala com `api.openai.com` direto.
+- **Multi-tenant**: cada server function exige `requireSupabaseAuth` (Ajuda do Dono) ou validação de token público da empresa (Atendimento do Cliente final), e injeta apenas dados da empresa autorizada no contexto enviado ao modelo.
+- **Sanitização de saída**: filtro remove UUIDs, JSON cru e stack traces antes de mostrar ao usuário.
+- **Modelo econômico padrão**: `gpt-5-nano` (texto curto, custo baixo). Pode subir para `gpt-5-mini` em casos complexos.
+- **Registro de uso**: gravar em `localStorage` por enquanto (sem SQL nesta entrega) — `cobraeasy_ai_usage_v1` com `{ at, scope, tokens_in, tokens_out, ok }`. Quando o usuário aprovar SQL, migramos para tabela `ai_usage_log`.
 
-## Fase 4 — Performance da prévia e proteção de dados
-- Virtualização da prévia com `@tanstack/react-virtual` (já vem com TanStack) — renderiza só ~30 linhas visíveis mesmo com 10k.
-- Filtros: "todos / novos / existentes / conflitos / erros / duplicados".
-- Conflito = cliente existente cujo nome/valor/vencimento difere → modal "manter atual / sobrescrever / mesclar" antes de confirmar. Nunca sobrescreve silenciosamente.
-- Bloco de auditoria: salvar `raw_row` original em `customer_notes` ou tabela de auditoria (se não houver, registro só em `notes` com timestamp do bloco de importação).
-- Idempotência: hash SHA-256 do conteúdo do arquivo + tamanho guardado em `localStorage` por empresa; ao reimportar, aviso "este arquivo já foi importado em DD/MM HH:MM — continuar?".
+---
 
-## O que NÃO faço nesta tarefa
-- Não crio PR, não faço merge.
-- Não rodo migration. Se a RPC precisar mudar (provável na Fase 2 para `screens[]`), paro e apresento o SQL para você aprovar antes — assim como combinamos no MVP.
-- Não toco em WhatsApp real, IA, Mercado Pago, banco `ajeyimujgtukcbadyash`.
-- Não apago nem sobrescrevo cliente existente sem confirmação na UI.
+## Arquivos novos
 
-## Detalhes técnicos
-- Web Worker: `new Worker(new URL('../workers/import-parser.ts', import.meta.url), { type: 'module' })` — Vite suporta nativo.
-- PDF grande: `pdfjs-dist` em streaming page-by-page; libera memória de cada página após extrair texto.
-- Excel grande: `xlsx` com `{ dense: true, sheetRows: 0 }` e iteração linha-a-linha em vez de `sheet_to_json` em bloco.
-- Chunk de upload: `for (const chunk of chunks) { await rpc(chunk); setProgress(...); if (cancelled) break; }`.
+```
+src/lib/openai.server.ts                  // helper server-only (lê OPENAI_API_KEY, chama API)
+src/lib/ai-help.functions.ts              // serverFn: askDonoHelp (requireSupabaseAuth)
+src/lib/ai-customer.functions.ts          // serverFn: askCustomerHelp (token público + scope da empresa)
+src/lib/ai-sanitize.ts                    // util isomórfica: remove UUID/JSON/stack
+src/lib/ai-usage.ts                       // util local: registra uso/custo estimado
+src/components/ai/AjudaIaPanel.tsx        // UI mobile-first do chat para o dono
+src/components/ai/AtendimentoIaPanel.tsx  // UI mobile-first para o cliente final
+src/routes/ajuda-ia.tsx                   // rota /ajuda-ia (dono) — adicionada ao menu
+src/routes/atendimento-ia.$token.tsx      // rota pública para cliente final (link enviado por WhatsApp)
+```
 
-## Pergunta antes de começar
-Quer que eu execute **as 4 fases nesta resposta** (vai gerar ~15 arquivos novos/alterados, sem como você validar etapa por etapa), ou prefere que eu faça **só a Fase 1 agora** — remover o limite de 10MB, Worker de parse e chunking — e você testa antes de eu seguir para a Fase 2 (agrupamento por WhatsApp, que é a parte mais sensível para dados reais)?
+## Arquivos alterados (mínimo)
 
-Minha recomendação: **Fase 1 agora**, validar com arquivo real seu, depois Fase 2.
+```
+src/lib/nav.ts                            // adiciona item "Ajuda com IA"
+src/components/layout/AppSidebar.tsx      // só se necessário (provavelmente nav.ts basta)
+```
+
+> Não toco em: auth, billing, mercado-pago, evolution, resend, OTP.
+
+---
+
+## Variáveis necessárias
+
+- `OPENAI_API_KEY` — secret server-only (vou solicitar via `add_secret`).
+- (opcional, com default no código) `OPENAI_MODEL_DEFAULT=gpt-5-nano`.
+
+Nenhuma variável `VITE_*` é criada.
+
+---
+
+## Fluxo Dono (Ajuda com IA)
+
+1. Dono abre `/ajuda-ia` (logado).
+2. Digita pergunta em PT-BR.
+3. Frontend chama `askDonoHelp({ data: { question, contextHints } })`.
+4. Server function:
+   - valida sessão (`requireSupabaseAuth`)
+   - monta system prompt com escopo: clientes, cobranças, testes, serviços, importação XLSX/PDF, Mercado Pago (uso, não config), assinatura, vencimentos, mensagens automáticas, backup/exportação
+   - chama OpenAI (`responses` API, modelo econômico)
+   - sanitiza saída
+   - retorna `{ answer, usage }`
+5. UI exibe resposta curta, com botão "Falar com suporte humano" caso a IA não saiba.
+
+## Fluxo Cliente final (Atendimento IA)
+
+1. Cliente acessa `/atendimento-ia/<token>` (link enviado pela empresa via WhatsApp).
+2. Server function `askCustomerHelp` valida o token, descobre `company_id` + `customer_id` **server-side** (lookup), e injeta no contexto **apenas**:
+   - nome do plano
+   - vencimento
+   - status (em dia / vencido / em teste)
+   - última cobrança
+   - instruções de pagamento da empresa (PIX/link)
+3. **Nunca** envia para o modelo dados de outra empresa, UUIDs, e-mails de outros clientes, nem JSON cru.
+4. Se a pergunta sair do escopo: resposta padrão "Não consigo te ajudar com isso, fale com o suporte da sua empresa".
+
+> Observação: a geração desse token público de cliente entra em uma 2ª tarefa, quando o usuário aprovar SQL. Por enquanto a rota existe e fica em "modo demo seguro" — não retorna dados reais sem o backend de token pronto. Isso evita vazamento.
+
+---
+
+## Sanitização (regra fixa)
+
+`sanitizeAiOutput(text)`:
+- remove UUIDs `[0-9a-f-]{32,}`
+- remove blocos ```` ```json ... ``` ````
+- corta stack traces (`at \w+ \(.*:\d+:\d+\)`)
+- corta menções a tabelas/colunas internas (`auth.`, `public.`, `SUPABASE`, `RLS`)
+- substitui por texto amigável quando algo for removido
+
+---
+
+## Registro de uso (sem SQL)
+
+`ai-usage.ts` mantém últimos 500 eventos em `localStorage`, com estimativa de custo por modelo. Visível para o dono em `/ajuda-ia` (rodapé "Você usou X perguntas hoje").
+
+Quando o usuário aprovar SQL, migramos para `ai_usage_log (company_id, scope, model, tokens_in, tokens_out, created_at)` + RLS — entrega separada.
+
+---
+
+## UX (mobile-first, 390px)
+
+- Chat em coluna única, balões empilhados, input fixo no rodapé.
+- Sem rolagem horizontal.
+- Texto PT-BR simples, sem termos técnicos.
+- Botão "Limpar conversa" e "Falar com suporte humano" sempre visíveis.
+
+---
+
+## Entrega prevista
+
+- **Arquivos alterados/criados**: lista acima.
+- **Variáveis necessárias**: `OPENAI_API_KEY` (solicitada via `add_secret`).
+- **SQL aplicado**: NÃO.
+- **Build**: validado automaticamente após a implementação.
+- **PR**: NÃO.
+- **MERGE**: NÃO.
+
+---
+
+## O que preciso de você antes de codar
+
+1. Confirmar este plano (posso seguir?).
+2. Você vai colar `OPENAI_API_KEY` quando eu pedir via `add_secret`.
+3. Confirmar: a rota pública do cliente final pode ficar em "modo seguro / sem dados reais" nesta entrega? (O backend de token de cliente exige SQL — fica para tarefa separada.)
