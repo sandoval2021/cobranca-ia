@@ -125,7 +125,9 @@ function ImportarClientesPage() {
   const [notImportedIdx, setNotImportedIdx] = useState<number[]>([]);
   const [skippedIdx, setSkippedIdx] = useState<Set<number>>(new Set());
   const [forcedIdx, setForcedIdx] = useState<Set<number>>(new Set());
+  const [importedIdx, setImportedIdx] = useState<Set<number>>(new Set());
   const [forcingIdx, setForcingIdx] = useState<number | null>(null);
+  const [retryingErrors, setRetryingErrors] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   // Auto-seleciona a empresa atual da sessão (mantém UI igual).
