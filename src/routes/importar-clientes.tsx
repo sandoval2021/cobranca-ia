@@ -354,9 +354,37 @@ function ImportarClientesPage() {
     const isXlsx = /\.(xlsx|xls)$/i.test(file.name);
     const isCsv = /\.csv$/i.test(file.name);
     if (isXlsx) {
-      setParseError(
-        "Importação direta de Excel (.xlsx) será ativada em breve. Por enquanto, no Excel use Arquivo → Salvar como → CSV UTF-8, ou exporte como PDF pesquisável."
-      );
+      setParsing(true);
+      try {
+        const { parseExcelFile } = await import("@/lib/import-xlsx");
+        const { rows: parsed, totalSheets, sheetName, unmappedHeaders } = await parseExcelFile(file);
+        if (parsed.length === 0) {
+          setParseError(
+            "Planilha carregada, mas não encontramos linhas de clientes. Verifique se a primeira aba tem colunas como Nome e WhatsApp."
+          );
+          setParsing(false);
+          return;
+        }
+        const validated = validateRows(parsed);
+        setRows(validated);
+        toast.success(`Planilha carregada com sucesso. ${validated.length.toLocaleString("pt-BR")} linhas lidas.`);
+        if (totalSheets > 1) {
+          toast.message(`A planilha tem ${totalSheets} abas. Usamos a primeira ("${sheetName}").`);
+        }
+        if (unmappedHeaders.length > 0) {
+          toast.message("Algumas colunas não foram reconhecidas, mas os dados foram preservados em observações.");
+        }
+        if (validated.length >= 2000) {
+          toast.message(
+            `${validated.length.toLocaleString("pt-BR")} linhas lidas. A prévia mostra páginas de 100 para não travar o navegador.`,
+          );
+        }
+      } catch (err) {
+        console.error(err);
+        setParseError("Não conseguimos ler esta planilha. Verifique se o arquivo não está corrompido.");
+      } finally {
+        setParsing(false);
+      }
       return;
     }
     if (isCsv) {
