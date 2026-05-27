@@ -212,7 +212,10 @@ export function isAuthenticated(): boolean {
 }
 
 export function getCurrentRole(): LocalRole {
-  return getCurrentLocalUser()?.role ?? "super_admin";
+  // Cadastro público nunca cria super_admin: o padrão seguro é "owner".
+  // Super admin é determinado por allowlist de e-mail (ver super-admin.ts)
+  // e aplicado em useLocalAuth ao bridge com a sessão Supabase.
+  return getCurrentLocalUser()?.role ?? "owner";
 }
 
 export function isSuperAdmin(): boolean {
