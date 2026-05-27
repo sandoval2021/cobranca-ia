@@ -1136,7 +1136,8 @@ function ImportarClientesPage() {
                 )}
 
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Desktop: table */}
