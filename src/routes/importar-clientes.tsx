@@ -86,7 +86,12 @@ function companyLabel(c: Company): string {
   return (c.id as string | undefined) ?? "Empresa";
 }
 
-const MAX_BYTES = 10 * 1024 * 1024;
+// Sem limite fixo: bases reais podem passar de 10MB. Acima de 25MB só
+// avisamos o usuário que pode demorar; o parse roda em chunks.
+const SOFT_WARN_BYTES = 25 * 1024 * 1024;
+// Tamanho do lote enviado para a RPC staging_import_customers_from_rows.
+// Evita timeout/payload gigante em bases de 5k–10k clientes.
+const IMPORT_CHUNK_SIZE = 250;
 
 function ImportarClientesPage() {
   const { user, isAuthenticated } = useAuth();
