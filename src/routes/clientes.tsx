@@ -594,12 +594,22 @@ function ClientesPage() {
       const sb = allScreens[b.id] ?? [];
       const da = customerDueDays(a, sa);
       const db = customerDueDays(b, sb);
-      // Considera vencido APENAS pelo valor consolidado de dias (que já considera telas ativas).
-      // Não usar customer.status aqui — uma tela com data futura deve ser tratada como ativa.
-      const isOverdue = (_c: Customer, _screens: AppScreen[], d: number | null) => {
-        return d != null && d < 0;
+      // Vencido = qualquer tela ativa já passou da data, OU o consolidado é negativo,
+      // OU o status do cliente é "expirado" (precisa renovar agora, ignorar telas futuras).
+      const isOverdue = (c: Customer, screens: AppScreen[], d: number | null) => {
+        if (d != null && d < 0) return true;
+        if (classifyStatus(c.status) === "expirado") return true;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        for (const s of screens) {
+          if (s.status === "arquivada" || s.status === "pausada") continue;
+          if (!s.due_date) continue;
+          const sd = Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000);
+          if (sd < 0) return true;
+        }
+        return false;
       };
-      // Para clientes vencidos, usa o "pior" atraso (mais negativo) para ordenar.
+      // Para vencidos: quanto mais atrasado, mais embaixo. Status "expirado" sem data
+      // negativa é tratado como muito antigo (precisa renovar agora).
       const worstOverdue = (c: Customer, screens: AppScreen[], d: number | null) => {
         let worst = d != null && d < 0 ? d : 0;
         const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -609,7 +619,8 @@ function ClientesPage() {
           const sd = Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000);
           if (sd < worst) worst = sd;
         }
-        return worst; // negativo ou 0
+        if (worst === 0 && classifyStatus(c.status) === "expirado") worst = -100000;
+        return worst;
       };
       const rank = (c: Customer, screens: AppScreen[], d: number | null) => {
         if (isOverdue(c, screens, d)) {
