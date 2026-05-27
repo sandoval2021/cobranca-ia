@@ -253,11 +253,11 @@ function SignupForm({
 
     setSubmitting(true);
     const trimmedEmail = email.trim().toLowerCase();
-    const { data, error: err } = await supabase.auth.signUp({
+    const { error: err } = await supabase.auth.signUp({
       email: trimmedEmail,
       password: senha,
       options: {
-        // Sem emailRedirectTo: queremos OTP, não link.
+        // Sem emailRedirectTo: queremos OTP de 6 dígitos, nunca link mágico.
         data: {
           nome: nome.trim(),
           empresa: empresa.trim(),
@@ -271,21 +271,7 @@ function SignupForm({
       return;
     }
 
-    // Se confirmação por e-mail estiver desativada, a sessão já vem ativa.
-    if (data.session) {
-      try {
-        await syncDefaultCompanyForUser({
-          email: trimmedEmail,
-          nome: nome.trim(),
-          whatsapp: whatsapp.trim(),
-        });
-      } catch {
-        /* silencioso */
-      }
-      toast.success("Conta criada!");
-      return;
-    }
-
+    // Sempre ir para a etapa OTP — nunca mostrar tela legada de "Confira seu e-mail".
     setSubmitting(false);
     onSent({
       email: trimmedEmail,
@@ -449,7 +435,7 @@ function SignupOtpForm({
     } catch {
       /* silencioso */
     }
-    toast.success("E-mail confirmado com sucesso.");
+    toast.success("Cadastro confirmado!");
   }
 
   async function handleResend() {
@@ -475,10 +461,10 @@ function SignupOtpForm({
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
           <ShieldCheck className="h-6 w-6" />
         </div>
-        <h2 className="text-base font-semibold">Digite o código enviado para seu e-mail</h2>
+        <h2 className="text-base font-semibold">Digite o código de 6 dígitos enviado para seu e-mail</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Enviamos um código de 6 dígitos para <strong>{ctx.email}</strong>. Digite abaixo para
-          confirmar sua conta.
+          continuar.
         </p>
       </div>
 
@@ -771,7 +757,7 @@ function ForgotOtpForm({
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
           <ShieldCheck className="h-6 w-6" />
         </div>
-        <h2 className="text-base font-semibold">Digite o código enviado para seu e-mail</h2>
+        <h2 className="text-base font-semibold">Digite o código de 6 dígitos enviado para seu e-mail</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Enviamos um código de 6 dígitos para <strong>{email}</strong>. Digite abaixo para
           recuperar o acesso.
