@@ -568,8 +568,7 @@ export function getCompanyLimits(company: Company | null) {
 
 export function getCompanyStatus(company: Company | null): CompanyStatus | "sem_empresa" {
   if (!company) return "sem_empresa";
-  // Atualiza status virtual com base na data
-  if (company.status === "ativa" && company.data_vencimento) {
+  if ((company.status === "ativa" || company.status === "teste") && company.data_vencimento) {
     const venc = new Date(company.data_vencimento).getTime();
     if (!Number.isNaN(venc) && venc < Date.now()) return "vencida";
   }
