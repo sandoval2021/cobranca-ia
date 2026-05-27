@@ -169,7 +169,16 @@ export function BillingPaymentCard({ company }: Props) {
           </div>
         )}
 
-        {configured && (
+        {configured && !canCheckout && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="flex items-start gap-2">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>Pagamento online em validação. Fale com o suporte.</p>
+            </div>
+          </div>
+        )}
+
+        {configured && canCheckout && (
           <>
             {attemptLabel && (
               <div className="rounded-lg border bg-background p-3 text-sm">
