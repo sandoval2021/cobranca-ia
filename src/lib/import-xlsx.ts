@@ -111,7 +111,9 @@ function cellToDateString(value: unknown): string | null {
 function cellToString(value: unknown): string | null {
   if (value == null) return null;
   if (value instanceof Date) return value.toISOString();
-  const s = String(value).trim();
+  const raw = String(value);
+  const { text } = truncateLong(raw);
+  const s = text.trim();
   return s || null;
 }
 
