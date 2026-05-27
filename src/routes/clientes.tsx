@@ -1587,10 +1587,10 @@ function DetailView({
             label="Status"
             hint="Em dia até a data de vencimento; após isso, expirado."
             value={(() => {
-              const d = customerDueDays(merged, []);
+              const d = customerDueDays(customer, []);
               return (
-                <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(merged.status, d))}>
-                  {statusLabel(merged.status, d)}
+                <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(customer.status, d))}>
+                  {statusLabel(customer.status, d)}
                 </span>
               );
             })()}
