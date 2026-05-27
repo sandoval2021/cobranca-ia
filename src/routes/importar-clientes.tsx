@@ -281,8 +281,22 @@ function ImportarClientesPage() {
       );
     }
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    const isXlsx = /\.(xlsx|xls)$/i.test(file.name);
+    const isCsv = /\.csv$/i.test(file.name);
+    if (isXlsx) {
+      setParseError(
+        "Importação direta de Excel (.xlsx) será ativada em breve. Por enquanto, no Excel use Arquivo → Salvar como → CSV UTF-8, ou exporte como PDF pesquisável."
+      );
+      return;
+    }
+    if (isCsv) {
+      setParseError(
+        "Importação direta de CSV será ativada em breve. Por enquanto, exporte sua planilha como PDF pesquisável (texto selecionável)."
+      );
+      return;
+    }
     if (!isPdf) {
-      setParseError("Formato não suportado. Envie um PDF pesquisável.");
+      setParseError("Formato não suportado. Envie um PDF pesquisável (com texto selecionável).");
       return;
     }
 
@@ -292,7 +306,7 @@ function ImportarClientesPage() {
       const trimmed = text.trim();
       if (!trimmed || trimmed.length < 20) {
         setParseError(
-          "Não consegui ler este PDF automaticamente. Envie um PDF pesquisável, CSV ou Excel."
+          "Não consegui ler texto deste PDF. Provavelmente é uma imagem digitalizada/scanner. Reexporte do seu sistema como PDF pesquisável (texto selecionável) ou envie CSV/Excel exportado da origem."
         );
         setParsing(false);
         return;
@@ -300,16 +314,21 @@ function ImportarClientesPage() {
       const parsed = parseRowsFromText(text);
       if (parsed.length === 0) {
         setParseError(
-          "Não encontrei linhas de clientes neste PDF. Confira se ele contém colunas como Cliente, WhatsApp e Valor."
+          "PDF lido, mas não encontrei colunas reconhecíveis (Cliente, WhatsApp, Valor, Vencimento). Confira se é o relatório de clientes correto."
         );
         setParsing(false);
         return;
       }
       const validated = validateRows(parsed);
       setRows(validated);
+      if (validated.length >= 2000) {
+        toast.message(
+          `${validated.length.toLocaleString("pt-BR")} linhas lidas. A prévia mostra páginas de 100 para não travar o navegador.`,
+        );
+      }
     } catch (err) {
       setParseError(
-        "Falha ao ler o PDF. Envie um PDF pesquisável (com texto, não digitalizado)."
+        "Falha ao ler o PDF. Tente reexportar como PDF pesquisável (com texto, não digitalizado)."
       );
       console.error(err);
     } finally {
