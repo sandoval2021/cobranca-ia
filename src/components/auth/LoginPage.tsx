@@ -5,15 +5,21 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
+import {
+  supabase,
+  supabaseConfigured,
+  supabaseAnonKeyPresent,
+  supabaseAnonKeyRef,
+  supabaseAnonKeyRole,
+  supabaseAnonKeyFormat,
+  isAnonKeyForExpectedProject,
+} from "@/integrations/supabase/compat";
 import { AUTH_REFRESH_EVENT, friendlyAuthError } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 
 const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
-const hasKey = Boolean(
-  import.meta.env.VITE_SUPABASE_ANON_KEY ??
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-);
+const hasKey = supabaseAnonKeyPresent;
+
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
