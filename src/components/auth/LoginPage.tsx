@@ -1,5 +1,13 @@
-import { useState, type FormEvent } from "react";
-import { Loader2, LogIn, Sparkles, UserPlus, KeyRound, ArrowLeft, MailCheck } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  Loader2,
+  LogIn,
+  Sparkles,
+  UserPlus,
+  KeyRound,
+  ArrowLeft,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,19 +23,31 @@ import {
 import { friendlyAuthError } from "@/lib/use-auth";
 import { syncDefaultCompanyForUser } from "@/lib/rpc-admin";
 
-type View = "login" | "signup" | "forgot" | "signup_sent" | "forgot_sent";
+type View =
+  | "login"
+  | "signup"
+  | "signup_otp"
+  | "forgot"
+  | "forgot_otp";
 
 const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
 
 function isValidWhatsapp(v: string): boolean {
-  // aceita formatos BR/E.164 simples: pelo menos 10 dígitos
   const digits = v.replace(/\D/g, "");
   return digits.length >= 10 && digits.length <= 15;
 }
 
+type SignupContext = {
+  email: string;
+  nome: string;
+  empresa: string;
+  whatsapp: string;
+};
+
 export function LoginPage() {
   const [view, setView] = useState<View>("login");
-  const [pendingEmail, setPendingEmail] = useState("");
+  const [signupCtx, setSignupCtx] = useState<SignupContext | null>(null);
+  const [forgotEmail, setForgotEmail] = useState("");
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-surface to-primary-soft px-4 py-8 safe-top safe-bottom">
@@ -38,9 +58,9 @@ export function LoginPage() {
           </div>
           <h1 className="text-xl font-semibold tracking-tight">Painel de Cobrança IA</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {view === "signup"
+            {view === "signup" || view === "signup_otp"
               ? "Crie sua conta para começar"
-              : view === "forgot"
+              : view === "forgot" || view === "forgot_otp"
                 ? "Recupere o acesso à sua conta"
                 : "Acesse sua conta para continuar"}
           </p>
@@ -66,34 +86,31 @@ export function LoginPage() {
           {view === "signup" && (
             <SignupForm
               onBack={() => setView("login")}
-              onSent={(email) => {
-                setPendingEmail(email);
-                setView("signup_sent");
+              onSent={(ctx) => {
+                setSignupCtx(ctx);
+                setView("signup_otp");
               }}
+            />
+          )}
+          {view === "signup_otp" && signupCtx && (
+            <SignupOtpForm
+              ctx={signupCtx}
+              onBack={() => setView("login")}
             />
           )}
           {view === "forgot" && (
             <ForgotForm
               onBack={() => setView("login")}
               onSent={(email) => {
-                setPendingEmail(email);
-                setView("forgot_sent");
+                setForgotEmail(email);
+                setView("forgot_otp");
               }}
             />
           )}
-          {view === "signup_sent" && (
-            <SentNotice
-              icon={<MailCheck className="h-6 w-6" />}
-              title="Confira seu e-mail"
-              message={`Enviamos um e-mail de confirmação para ${pendingEmail}. Confirme seu e-mail para acessar o painel.`}
-              onBack={() => setView("login")}
-            />
-          )}
-          {view === "forgot_sent" && (
-            <SentNotice
-              icon={<MailCheck className="h-6 w-6" />}
-              title="Link enviado"
-              message={`Enviamos um link para recuperar sua senha para ${pendingEmail}. Confira sua caixa de entrada e spam.`}
+          {view === "forgot_otp" && forgotEmail && (
+            <ForgotOtpForm
+              email={forgotEmail}
+              onDone={() => setView("login")}
               onBack={() => setView("login")}
             />
           )}
@@ -146,7 +163,6 @@ function LoginForm({
       return;
     }
     toast.success("Bem-vindo!");
-    // onAuthStateChange troca para o app; mantém botão em loading até unmount.
   }
 
   return (
@@ -196,21 +212,11 @@ function LoginForm({
       </Button>
 
       <div className="flex flex-col gap-2 pt-1">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 w-full"
-          onClick={onSignup}
-        >
+        <Button type="button" variant="outline" className="h-11 w-full" onClick={onSignup}>
           <UserPlus className="h-4 w-4" />
           Criar nova conta
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-10 w-full text-sm"
-          onClick={onForgot}
-        >
+        <Button type="button" variant="ghost" className="h-10 w-full text-sm" onClick={onForgot}>
           <KeyRound className="h-4 w-4" />
           Esqueci minha senha
         </Button>
@@ -224,7 +230,7 @@ function SignupForm({
   onSent,
 }: {
   onBack: () => void;
-  onSent: (email: string) => void;
+  onSent: (ctx: SignupContext) => void;
 }) {
   const [nome, setNome] = useState("");
   const [empresa, setEmpresa] = useState("");
@@ -238,10 +244,7 @@ function SignupForm({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!supabase) {
-      setError("Conexão não configurada.");
-      return;
-    }
+    if (!supabase) return setError("Conexão não configurada.");
     if (!nome.trim()) return setError("Informe seu nome.");
     if (!empresa.trim()) return setError("Informe o nome da empresa.");
     if (!isValidWhatsapp(whatsapp)) return setError("Informe um WhatsApp válido.");
@@ -249,11 +252,12 @@ function SignupForm({
     if (senha !== senha2) return setError("As senhas não conferem.");
 
     setSubmitting(true);
+    const trimmedEmail = email.trim().toLowerCase();
     const { data, error: err } = await supabase.auth.signUp({
-      email: email.trim(),
+      email: trimmedEmail,
       password: senha,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        // Sem emailRedirectTo: queremos OTP, não link.
         data: {
           nome: nome.trim(),
           empresa: empresa.trim(),
@@ -267,12 +271,11 @@ function SignupForm({
       return;
     }
 
-    // Se confirmação por e-mail estiver desativada no Supabase Auth, a sessão
-    // já vem ativa. Garante base da empresa sem bloquear o fluxo.
+    // Se confirmação por e-mail estiver desativada, a sessão já vem ativa.
     if (data.session) {
       try {
         await syncDefaultCompanyForUser({
-          email: email.trim(),
+          email: trimmedEmail,
           nome: nome.trim(),
           whatsapp: whatsapp.trim(),
         });
@@ -284,7 +287,12 @@ function SignupForm({
     }
 
     setSubmitting(false);
-    onSent(email.trim());
+    onSent({
+      email: trimmedEmail,
+      nome: nome.trim(),
+      empresa: empresa.trim(),
+      whatsapp: whatsapp.trim(),
+    });
   }
 
   return (
@@ -375,6 +383,168 @@ function SignupForm({
   );
 }
 
+/**
+ * Tela de confirmação por código de 6 dígitos (cadastro).
+ * Usa supabase.auth.verifyOtp({ type: "signup", email, token }).
+ * Importante: o template "Confirm signup" no Supabase Auth precisa conter
+ * {{ .Token }} para que o e-mail mostre o código, não só o link.
+ */
+function SignupOtpForm({
+  ctx,
+  onBack,
+}: {
+  ctx: SignupContext;
+  onBack: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [cooldown]);
+
+  function onlyDigits(v: string) {
+    return v.replace(/\D/g, "").slice(0, 6);
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!supabase) return setError("Conexão não configurada.");
+    if (code.length !== 6) return setError("Digite os 6 dígitos do código.");
+
+    setSubmitting(true);
+    const { data, error: err } = await supabase.auth.verifyOtp({
+      type: "signup",
+      email: ctx.email,
+      token: code,
+    });
+    if (err || !data.session) {
+      setSubmitting(false);
+      setError(
+        err
+          ? friendlyAuthError(err.message) ||
+              "Código inválido ou expirado. Confira e tente novamente."
+          : "Código inválido ou expirado. Confira e tente novamente.",
+      );
+      return;
+    }
+
+    try {
+      await syncDefaultCompanyForUser({
+        email: ctx.email,
+        nome: ctx.nome,
+        whatsapp: ctx.whatsapp,
+      });
+    } catch {
+      /* silencioso */
+    }
+    toast.success("E-mail confirmado com sucesso.");
+  }
+
+  async function handleResend() {
+    if (!supabase || cooldown > 0) return;
+    setError(null);
+    setResending(true);
+    const { error: err } = await supabase.auth.resend({
+      type: "signup",
+      email: ctx.email,
+    });
+    setResending(false);
+    if (err) {
+      setError(friendlyAuthError(err.message));
+      return;
+    }
+    setCooldown(45);
+    toast.success("Novo código enviado.");
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+          <ShieldCheck className="h-6 w-6" />
+        </div>
+        <h2 className="text-base font-semibold">Digite o código enviado para seu e-mail</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Enviamos um código de 6 dígitos para <strong>{ctx.email}</strong>. Digite abaixo para
+          confirmar sua conta.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="otp-code">Código de 6 dígitos</Label>
+        <Input
+          id="otp-code"
+          ref={inputRef}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="\d{6}"
+          maxLength={6}
+          placeholder="••••••"
+          value={code}
+          onChange={(e) => setCode(onlyDigits(e.target.value))}
+          required
+          className="h-14 text-center text-2xl tracking-[0.5em] font-semibold"
+        />
+      </div>
+
+      {error && (
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
+      )}
+
+      <Button type="submit" disabled={submitting || code.length !== 6} className="h-11 w-full">
+        {submitting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Confirmando…
+          </>
+        ) : (
+          <>
+            <ShieldCheck className="h-4 w-4" />
+            Confirmar código
+          </>
+        )}
+      </Button>
+
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full"
+          onClick={handleResend}
+          disabled={resending || cooldown > 0}
+        >
+          {resending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Reenviando…
+            </>
+          ) : cooldown > 0 ? (
+            `Reenviar código (${cooldown}s)`
+          ) : (
+            "Reenviar código"
+          )}
+        </Button>
+        <Button type="button" variant="ghost" className="h-10 w-full text-sm" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para entrar
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 function ForgotForm({
   onBack,
   onSent,
@@ -394,15 +564,14 @@ function ForgotForm({
     }
     setError(null);
     setSubmitting(true);
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    // Sem redirectTo: queremos OTP de recuperação, não link.
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
     setSubmitting(false);
     if (err) {
       setError(friendlyAuthError(err.message));
       return;
     }
-    onSent(email.trim());
+    onSent(email.trim().toLowerCase());
   }
 
   return (
@@ -415,6 +584,10 @@ function ForgotForm({
         <ArrowLeft className="h-3 w-3" />
         Voltar para entrar
       </button>
+      <p className="text-sm text-muted-foreground">
+        Informe o e-mail da sua conta. Enviaremos um código de 6 dígitos para você criar uma nova
+        senha.
+      </p>
       <div className="space-y-1.5">
         <Label htmlFor="fg-email">E-mail</Label>
         <Input
@@ -440,7 +613,7 @@ function ForgotForm({
         ) : (
           <>
             <KeyRound className="h-4 w-4" />
-            Enviar link de recuperação
+            Enviar código
           </>
         )}
       </Button>
@@ -448,31 +621,218 @@ function ForgotForm({
   );
 }
 
-function SentNotice({
-  icon,
-  title,
-  message,
+/**
+ * OTP de recuperação de senha.
+ * 1) verifyOtp({ type: "recovery", email, token }) → cria sessão temporária.
+ * 2) updateUser({ password }) → grava a nova senha.
+ */
+function ForgotOtpForm({
+  email,
+  onDone,
   onBack,
 }: {
-  icon: React.ReactNode;
-  title: string;
-  message: string;
+  email: string;
+  onDone: () => void;
   onBack: () => void;
 }) {
+  const [step, setStep] = useState<"code" | "password">("code");
+  const [code, setCode] = useState("");
+  const [senha, setSenha] = useState("");
+  const [senha2, setSenha2] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [cooldown]);
+
+  function onlyDigits(v: string) {
+    return v.replace(/\D/g, "").slice(0, 6);
+  }
+
+  async function handleVerify(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!supabase) return setError("Conexão não configurada.");
+    if (code.length !== 6) return setError("Digite os 6 dígitos do código.");
+    setSubmitting(true);
+    const { data, error: err } = await supabase.auth.verifyOtp({
+      type: "recovery",
+      email,
+      token: code,
+    });
+    setSubmitting(false);
+    if (err || !data.session) {
+      setError(
+        err
+          ? friendlyAuthError(err.message) ||
+              "Código inválido ou expirado. Confira e tente novamente."
+          : "Código inválido ou expirado. Confira e tente novamente.",
+      );
+      return;
+    }
+    setStep("password");
+  }
+
+  async function handleUpdate(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!supabase) return setError("Conexão não configurada.");
+    if (senha.length < 6) return setError("Senha mínima de 6 caracteres.");
+    if (senha !== senha2) return setError("As senhas não conferem.");
+    setSubmitting(true);
+    const { error: err } = await supabase.auth.updateUser({ password: senha });
+    setSubmitting(false);
+    if (err) {
+      setError(friendlyAuthError(err.message));
+      return;
+    }
+    toast.success("Senha atualizada. Você já pode entrar.");
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      /* noop */
+    }
+    onDone();
+  }
+
+  async function handleResend() {
+    if (!supabase || cooldown > 0) return;
+    setError(null);
+    setResending(true);
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email);
+    setResending(false);
+    if (err) {
+      setError(friendlyAuthError(err.message));
+      return;
+    }
+    setCooldown(45);
+    toast.success("Novo código enviado.");
+  }
+
+  if (step === "password") {
+    return (
+      <form onSubmit={handleUpdate} className="space-y-3">
+        <div className="text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+            <KeyRound className="h-6 w-6" />
+          </div>
+          <h2 className="text-base font-semibold">Crie sua nova senha</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Mínimo de 6 caracteres.</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="np1">Nova senha</Label>
+          <Input
+            id="np1"
+            type="password"
+            autoComplete="new-password"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            required
+            className="h-11"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="np2">Confirmar nova senha</Label>
+          <Input
+            id="np2"
+            type="password"
+            autoComplete="new-password"
+            value={senha2}
+            onChange={(e) => setSenha2(e.target.value)}
+            required
+            className="h-11"
+          />
+        </div>
+        {error && (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
+        )}
+        <Button type="submit" disabled={submitting} className="h-11 w-full">
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Salvando…
+            </>
+          ) : (
+            "Salvar nova senha"
+          )}
+        </Button>
+      </form>
+    );
+  }
+
   return (
-    <div className="space-y-4 py-2 text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
-        {icon}
+    <form onSubmit={handleVerify} className="space-y-4">
+      <div className="text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+          <ShieldCheck className="h-6 w-6" />
+        </div>
+        <h2 className="text-base font-semibold">Digite o código enviado para seu e-mail</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Enviamos um código de 6 dígitos para <strong>{email}</strong>. Digite abaixo para
+          recuperar o acesso.
+        </p>
       </div>
-      <div>
-        <h2 className="text-base font-semibold">{title}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{message}</p>
+      <div className="space-y-1.5">
+        <Label htmlFor="otp-recovery">Código de 6 dígitos</Label>
+        <Input
+          id="otp-recovery"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="\d{6}"
+          maxLength={6}
+          placeholder="••••••"
+          value={code}
+          onChange={(e) => setCode(onlyDigits(e.target.value))}
+          required
+          className="h-14 text-center text-2xl tracking-[0.5em] font-semibold"
+        />
       </div>
-      <Button type="button" variant="outline" className="h-11 w-full" onClick={onBack}>
-        <ArrowLeft className="h-4 w-4" />
-        Voltar para entrar
+      {error && (
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
+      )}
+      <Button type="submit" disabled={submitting || code.length !== 6} className="h-11 w-full">
+        {submitting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Confirmando…
+          </>
+        ) : (
+          <>
+            <ShieldCheck className="h-4 w-4" />
+            Confirmar código
+          </>
+        )}
       </Button>
-    </div>
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full"
+          onClick={handleResend}
+          disabled={resending || cooldown > 0}
+        >
+          {resending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Reenviando…
+            </>
+          ) : cooldown > 0 ? (
+            `Reenviar código (${cooldown}s)`
+          ) : (
+            "Reenviar código"
+          )}
+        </Button>
+        <Button type="button" variant="ghost" className="h-10 w-full text-sm" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para entrar
+        </Button>
+      </div>
+    </form>
   );
 }
 
