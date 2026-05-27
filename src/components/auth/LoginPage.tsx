@@ -573,7 +573,7 @@ function ForgotForm({
         Voltar para entrar
       </button>
       <p className="text-sm text-muted-foreground">
-        Informe o e-mail da sua conta. Enviaremos um código de 6 dígitos para você criar uma nova
+        Informe o e-mail da sua conta. Enviaremos um código de {OTP_LENGTH} dígitos para você criar uma nova
         senha.
       </p>
       <div className="space-y-1.5">
