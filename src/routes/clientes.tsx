@@ -203,15 +203,23 @@ const classifyStatus = (s: string | null | undefined): StatusKind => {
   if (/ativ|active/.test(v)) return "ativo";
   return "outro";
 };
-const statusLabel = (s: string | null | undefined) => {
-  const k = classifyStatus(s);
-  if (k === "ativo") return "Ativo";
+// Status efetivo derivado da data de vencimento: passou 1 dia => expirado;
+// em dia até o vencimento. Mantém "arquivado" do status armazenado.
+const effectiveStatusKind = (s: string | null | undefined, days: number | null): StatusKind => {
+  const raw = classifyStatus(s);
+  if (raw === "arquivado") return "arquivado";
+  if (days != null) return days < 0 ? "expirado" : "ativo";
+  return raw;
+};
+const statusLabel = (s: string | null | undefined, days: number | null = null) => {
+  const k = effectiveStatusKind(s, days);
+  if (k === "ativo") return "Em dia";
   if (k === "expirado") return "Expirado";
   if (k === "arquivado") return "Arquivado";
   return (s ?? "—").replace(/_/g, " ");
 };
-const statusClass = (s: string | null | undefined) => {
-  const k = classifyStatus(s);
+const statusClass = (s: string | null | undefined, days: number | null = null) => {
+  const k = effectiveStatusKind(s, days);
   if (k === "ativo") return "bg-success-soft text-success";
   if (k === "expirado") return "bg-warning-soft text-warning";
   if (k === "arquivado") return "bg-muted text-muted-foreground";
