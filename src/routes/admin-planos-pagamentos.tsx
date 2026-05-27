@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Package, Plus, Pencil, ShieldAlert, Info } from "lucide-react";
+import { Plus, Pencil, ShieldAlert, Info } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { Button } from "@/components/ui/button";
