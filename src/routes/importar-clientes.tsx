@@ -1008,10 +1008,56 @@ function ImportarClientesPage() {
           )}
 
 
+          {/* FASE 4 — Filtros, busca e paginação para suportar 5k/10k linhas sem travar */}
+          <div className="mb-3 space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                ["todos", `Todos (${filterCounts.todos})`],
+                ["validos", `Válidos (${filterCounts.validos})`],
+                ["erros", `Erros (${filterCounts.erros})`],
+                ["duplicados", `Duplicados (${filterCounts.duplicados})`],
+                ["conflitos", `Conflitos (${filterCounts.conflitos})`],
+                ["repetidos", `WhatsApp repetido (${filterCounts.repetidos})`],
+              ] as Array<[PreviewFilter, string]>).map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setPreviewFilter(k)}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                    previewFilter === k
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card/40 text-muted-foreground hover:bg-card"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="search"
+                value={previewSearch}
+                onChange={(e) => setPreviewSearch(e.target.value)}
+                placeholder="Buscar por nome ou WhatsApp…"
+                className="h-8 min-w-0 flex-1 rounded-md border bg-background px-2 text-xs"
+              />
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {filteredIdx.length.toLocaleString("pt-BR")} resultado(s)
+              </span>
+            </div>
+          </div>
 
-          {/* Mobile: cards */}
+          {filteredIdx.length === 0 && (
+            <p className="rounded-md border bg-muted/30 p-3 text-center text-xs text-muted-foreground">
+              Nenhuma linha corresponde a este filtro/busca.
+            </p>
+          )}
+
+          {/* Mobile: cards (apenas página atual — não renderiza milhares) */}
           <div className="space-y-2 sm:hidden">
-            {rows.map((r, i) => (
+            {pageIdx.map((i) => {
+              const r = rows[i];
+              return (
               <div
                 key={i}
                 className="rounded-xl border bg-card/50 p-3 text-xs"
