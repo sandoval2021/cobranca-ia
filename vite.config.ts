@@ -23,7 +23,7 @@ const EXPECTED_URL = "https://pkghjzbvmifmztqvpdeu.supabase.co";
 // Public anon key for the legacy project. This is intentionally client-visible
 // (Supabase anon keys are public) and guarantees published builds still work
 // when Lovable Cloud runtime secrets are not available to the publish builder.
-const EMBEDDED_EXPECTED_ANON_KEY = "__LEGACY_SUPABASE_ANON_KEY__";
+const EMBEDDED_EXPECTED_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrZ2hqemJ2bWlmbXp0cXZwZGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzgyODAsImV4cCI6MjA5NTE1NDI4MH0.3knFO0vkJ8uMolrcosHYx3kGB1O6rblroV1aJiRKzko";
 
 const jwtProjectRef = (value: string): string | null => {
   const parts = value.split(".");
