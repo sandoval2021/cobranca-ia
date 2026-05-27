@@ -17,6 +17,7 @@ import {
 } from "@/lib/manual-renewals";
 import { clearCustomerDueOverride } from "@/lib/customer-due-override";
 import { supabase } from "@/integrations/supabase/compat";
+import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 
 // Persiste a renovação no Supabase via RPC `renew_customer_admin`.
 // Salva due_date COMPLETO (não due_day). NÃO há fallback para
