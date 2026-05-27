@@ -179,6 +179,8 @@ const DEFAULT_PLANS: CompanyPlan[] = [
     limite_telas: 5000,
     limite_testes: 1000,
     limite_servidores: 20,
+    dias_teste: 7,
+    descricao: "Operação completa com IA e mais limites.",
     modulos: [
       "clientes",
       "telas_app",
