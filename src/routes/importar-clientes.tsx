@@ -791,12 +791,12 @@ function ImportarClientesPage() {
         </div>
         <p className="mb-3 text-sm text-muted-foreground">
           Envie o PDF exportado do seu sistema com a lista de clientes.
-          Tamanho máximo 10 MB.
+          Suporta bases grandes (5 mil, 10 mil ou mais).
         </p>
         <input
           ref={fileRef}
           type="file"
-          accept="application/pdf,.pdf"
+          accept="application/pdf,.pdf,.xlsx,.xls,.csv"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
