@@ -271,6 +271,7 @@ function ImportarClientesPage() {
     setNotImportedIdx([]);
     setSkippedIdx(new Set());
     setForcedIdx(new Set());
+    setImportedIdx(new Set());
     setRows(null);
     setFileName(file.name);
 
