@@ -16,7 +16,7 @@ import {
   PAYMENT_LABEL, PaymentMethod,
 } from "@/lib/manual-renewals";
 import { clearCustomerDueOverride } from "@/lib/customer-due-override";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/compat";
 
 // Persiste a renovação no Supabase via RPC `renew_customer_admin`.
 // Salva due_date COMPLETO, atualiza due_day como fallback, status=em_dia

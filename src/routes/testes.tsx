@@ -42,7 +42,7 @@ import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
 import { canCreateTrialLead } from "@/lib/plan-limits";
 import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/compat";
 import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 import { validateWhatsapp, maskBR, maskIntl, onlyDigits } from "@/lib/whatsapp-validation";
 import { listActiveServices, formatBRL, type ServiceItem } from "@/lib/services-catalog";
