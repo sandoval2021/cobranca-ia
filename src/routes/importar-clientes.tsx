@@ -1241,19 +1241,23 @@ function ImportarClientesPage() {
         </Card>
       )}
 
-      {/* Clientes não importados — ação por linha */}
-      {result && !result.message && rows && notImportedIdx.length > 0 && (
+      {/* Pendências — só erros/duplicados que não foram resolvidos. */}
+      {result && !result.message && rows && pendingErrorsCount > 0 && (
         <Card className="mt-4 p-4">
           <div className="mb-2 flex items-center gap-1.5">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-medium">Clientes não importados</span>
+            <span className="text-sm font-medium">
+              Pendências ({pendingErrorsCount})
+            </span>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
-            Estes clientes foram pulados (duplicados no arquivo ou com erro).
-            Você pode importar mesmo assim ou ignorar.
+            Estas linhas não foram importadas. Corrija, importe mesmo assim,
+            ignore ou use “Tentar importar erros novamente” acima.
           </p>
           <div className="space-y-2">
-            {notImportedIdx.map((i) => {
+            {notImportedIdx
+              .filter((i) => !forcedIdx.has(i) && !skippedIdx.has(i))
+              .map((i) => {
               const r = rows[i];
               const forced = forcedIdx.has(i);
               const skipped = skippedIdx.has(i);
