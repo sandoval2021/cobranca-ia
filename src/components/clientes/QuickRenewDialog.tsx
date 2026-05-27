@@ -154,6 +154,7 @@ export function QuickRenewDialog({
   customerId,
   customerName,
   customerDueDay,
+  customerDueIso,
   monthlyAmountCents,
   whatsappE164,
   onRenewed,
@@ -163,6 +164,7 @@ export function QuickRenewDialog({
   customerId: string;
   customerName: string;
   customerDueDay: number | null;
+  customerDueIso?: string | null;
   monthlyAmountCents: number | null;
   whatsappE164?: string | null;
   onRenewed?: () => void;
