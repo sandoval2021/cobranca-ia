@@ -1236,6 +1236,57 @@ function ImportarClientesPage() {
             </div>
           </div>
 
+          {/* Paginação — mantém UI fluida mesmo com 10k linhas */}
+          {filteredIdx.length > PREVIEW_PAGE_SIZE && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="text-muted-foreground tabular-nums">
+                Página {safePage + 1} de {totalPages} ·{" "}
+                {(safePage * PREVIEW_PAGE_SIZE + 1).toLocaleString("pt-BR")}–
+                {Math.min((safePage + 1) * PREVIEW_PAGE_SIZE, filteredIdx.length).toLocaleString("pt-BR")}{" "}
+                de {filteredIdx.length.toLocaleString("pt-BR")}
+              </span>
+              <div className="flex gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={safePage === 0}
+                  onClick={() => setPreviewPage(0)}
+                >
+                  ««
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={safePage === 0}
+                  onClick={() => setPreviewPage((p) => Math.max(0, p - 1))}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={safePage >= totalPages - 1}
+                  onClick={() => setPreviewPage((p) => Math.min(totalPages - 1, p + 1))}
+                >
+                  Próxima
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={safePage >= totalPages - 1}
+                  onClick={() => setPreviewPage(totalPages - 1)}
+                >
+                  »»
+                </Button>
+              </div>
+            </div>
+          )}
+
+
           <div className="mt-4">
             <p className="text-xs text-muted-foreground">
               {counts.new} novos, {counts.existing} já cadastrados (serão atualizados),{" "}
