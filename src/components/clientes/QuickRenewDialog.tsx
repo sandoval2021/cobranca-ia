@@ -303,6 +303,18 @@ export function QuickRenewDialog({
           })()
         : (newDueOverride || customerNewDue);
 
+      if (import.meta.env.DEV) {
+        console.log("[renew] current due source", {
+          customer_id: customerId,
+          due_date: customerDueIso ?? null,
+          due_day: customerDueDay,
+          dueIso: customerDueIso ?? null,
+          dueLabel: oldDue,
+          months,
+          newDueDate: finalDueForBackend,
+        });
+      }
+
       const persist = await persistRenewalOnBackend({
         customerId,
         customerName,
