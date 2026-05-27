@@ -501,13 +501,11 @@ function ClientesPage() {
     };
 
     return items.filter((c) => {
-      const kind = classifyStatus(c.status);
       const screens = allScreens[c.id] ?? [];
       if (serverFilter !== "__all__") {
         const active = screens.filter((s) => s.status !== "arquivada");
         if (!screensHaveServer(active, serverFilter)) return false;
       }
-      // Por padrão, arquivados ficam fora da lista (só aparecem na aba "Arquivados").
       const rawKind = classifyStatus(c.status);
       // Por padrão, arquivados ficam fora da lista (só aparecem na aba "Arquivados").
       if (filter !== "arquivado" && rawKind === "arquivado") return false;
