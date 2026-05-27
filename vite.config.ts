@@ -30,6 +30,18 @@ const pick = (...keys: string[]) => {
   }
   return "";
 };
+// Prefer a JWT/value that positively matches the EXPECTED project, then
+// fall back to the standard pick. Guarantees the published bundle uses
+// the anon key of pkghjzbvmifmztqvpdeu even if other vars are present.
+const pickExpected = (...keys: string[]) => {
+  for (const k of keys) {
+    const v = env[k];
+    if (!v) continue;
+    if (v.includes(FORBIDDEN_REF) || v.includes(FORBIDDEN_REF_B64)) continue;
+    if (v.includes(EXPECTED_REF) || v.includes(EXPECTED_REF_B64)) return v;
+  }
+  return pick(...keys);
+};
 
 export default defineConfig({
   tanstackStart: {
