@@ -402,14 +402,14 @@ function SignupOtpForm({
   }, [cooldown]);
 
   function onlyDigits(v: string) {
-    return v.replace(/\D/g, "").slice(0, 6);
+    return v.replace(/\D/g, "").slice(0, OTP_LENGTH);
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     if (!supabase) return setError("Conexão não configurada.");
-    if (code.length !== 6) return setError("Digite os 6 dígitos do código.");
+    if (code.length !== OTP_LENGTH) return setError(`Digite os ${OTP_LENGTH} dígitos do código.`);
 
     setSubmitting(true);
     const { data, error: err } = await supabase.auth.verifyOtp({
