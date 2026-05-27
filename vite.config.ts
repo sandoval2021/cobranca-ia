@@ -33,14 +33,40 @@ const pick = (...keys: string[]) => {
 // Prefer a JWT/value that positively matches the EXPECTED project, then
 // fall back to the standard pick. Guarantees the published bundle uses
 // the anon key of pkghjzbvmifmztqvpdeu even if other vars are present.
-const pickExpected = (...keys: string[]) => {
+// Returns the value and the source key name so the build log can prove
+// (without exposing the secret) which secret was actually injected.
+const pickExpectedTraced = (label: string, ...keys: string[]): string => {
+  let chosen: { key: string; value: string; reason: string } | null = null;
+  const considered: Array<{ key: string; present: boolean; forbidden: boolean; matchesExpected: boolean }> = [];
   for (const k of keys) {
     const v = env[k];
-    if (!v) continue;
-    if (v.includes(FORBIDDEN_REF) || v.includes(FORBIDDEN_REF_B64)) continue;
-    if (v.includes(EXPECTED_REF) || v.includes(EXPECTED_REF_B64)) return v;
+    const present = v !== undefined && v !== "";
+    const forbidden = present && (v!.includes(FORBIDDEN_REF) || v!.includes(FORBIDDEN_REF_B64));
+    const matchesExpected = present && !forbidden && (v!.includes(EXPECTED_REF) || v!.includes(EXPECTED_REF_B64));
+    considered.push({ key: k, present, forbidden, matchesExpected });
+    if (matchesExpected && !chosen) chosen = { key: k, value: v!, reason: "matches-expected" };
   }
-  return pick(...keys);
+  if (!chosen) {
+    // Fallback: any non-empty, non-forbidden value (covers new sb_publishable_* format
+    // where the project ref is NOT embedded literally inside the key).
+    for (const k of keys) {
+      const v = env[k];
+      if (v && !v.includes(FORBIDDEN_REF) && !v.includes(FORBIDDEN_REF_B64)) {
+        chosen = { key: k, value: v, reason: "non-forbidden-fallback" };
+        break;
+      }
+    }
+  }
+  // Safe build log: no secret values, only metadata.
+  // eslint-disable-next-line no-console
+  console.log(
+    `[vite-config] ${label} selection:`,
+    JSON.stringify({
+      chosen: chosen ? { key: chosen.key, reason: chosen.reason, length: chosen.value.length } : null,
+      considered,
+    }),
+  );
+  return chosen?.value ?? "";
 };
 
 export default defineConfig({
@@ -53,7 +79,8 @@ export default defineConfig({
         pick("URL_SUPABASE", "VITE_SUPABASE_URL", "SUPABASE_URL") || EXPECTED_URL,
       ),
       "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(
-        pickExpected(
+        pickExpectedTraced(
+          "VITE_SUPABASE_ANON_KEY",
           "ANON_KEY_SUPABASE",
           "SUPABASE_ANON_KEY",
           "VITE_SUPABASE_ANON_KEY",
@@ -62,7 +89,8 @@ export default defineConfig({
         ),
       ),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
-        pickExpected(
+        pickExpectedTraced(
+          "VITE_SUPABASE_PUBLISHABLE_KEY",
           "ANON_KEY_SUPABASE",
           "SUPABASE_ANON_KEY",
           "VITE_SUPABASE_ANON_KEY",
@@ -70,6 +98,7 @@ export default defineConfig({
           "VITE_SUPABASE_PUBLISHABLE_KEY",
         ),
       ),
+
       "import.meta.env.VITE_APP_ENV": JSON.stringify(
         pick("APP_ENV", "VITE_APP_ENV") || "staging",
       ),
