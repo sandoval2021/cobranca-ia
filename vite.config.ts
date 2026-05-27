@@ -67,17 +67,20 @@ const pickExpectedTraced = (label: string, ...keys: string[]): string => {
   for (const k of keys) {
     const v = env[k];
     const present = v !== undefined && v !== "";
-    const forbidden = present && (v!.includes(FORBIDDEN_REF) || v!.includes(FORBIDDEN_REF_B64));
-    const matchesExpected = present && !forbidden && (v!.includes(EXPECTED_REF) || v!.includes(EXPECTED_REF_B64));
+    const forbidden = present && isForbiddenValue(v!);
+    const matchesExpected = present && !forbidden && matchesExpectedValue(v!);
     considered.push({ key: k, present, forbidden, matchesExpected });
     if (matchesExpected && !chosen) chosen = { key: k, value: v!, reason: "matches-expected" };
+  }
+  if (!chosen && matchesExpectedValue(EMBEDDED_EXPECTED_ANON_KEY)) {
+    chosen = { key: "EMBEDDED_EXPECTED_ANON_KEY", value: EMBEDDED_EXPECTED_ANON_KEY, reason: "embedded-public-fallback" };
   }
   if (!chosen) {
     // Fallback: any non-empty, non-forbidden value (covers new sb_publishable_* format
     // where the project ref is NOT embedded literally inside the key).
     for (const k of keys) {
       const v = env[k];
-      if (v && !v.includes(FORBIDDEN_REF) && !v.includes(FORBIDDEN_REF_B64)) {
+      if (v && !isForbiddenValue(v)) {
         chosen = { key: k, value: v, reason: "non-forbidden-fallback" };
         break;
       }
