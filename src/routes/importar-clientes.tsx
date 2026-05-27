@@ -827,6 +827,11 @@ function ImportarClientesPage() {
             </span>
           )}
         </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Formato atual: <strong>PDF pesquisável</strong>. Importação direta de
+          Excel (.xlsx) e CSV será ativada na próxima atualização — por enquanto
+          exporte do Excel como PDF ou CSV UTF-8 (e converta para PDF).
+        </p>
         {parseError && (
           <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
             {parseError}
