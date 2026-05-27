@@ -30,7 +30,7 @@ export default defineConfig({
   vite: {
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
-        pick("URL_SUPABASE", "VITE_SUPABASE_URL", "SUPABASE_URL"),
+        pick("URL_SUPABASE", "VITE_SUPABASE_URL", "SUPABASE_URL") || EXPECTED_URL,
       ),
       "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(
         pick(
