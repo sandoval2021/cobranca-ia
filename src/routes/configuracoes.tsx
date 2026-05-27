@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { flags } from "@/lib/flags";
-import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
+import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { useAuth } from "@/lib/use-auth";
 import {
   getCurrentCompanyAdmin,

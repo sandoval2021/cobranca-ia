@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
+import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { useAuth } from "@/lib/use-auth";
 import { flags } from "@/lib/flags";
 import { toast } from "sonner";

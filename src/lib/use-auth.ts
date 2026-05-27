@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
+import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 
 export const AUTH_REFRESH_EVENT = "cobranca-auth-refresh";
 

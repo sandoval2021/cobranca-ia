@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
+import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 
 export type LoadState<T> =
   | { status: "loading" }

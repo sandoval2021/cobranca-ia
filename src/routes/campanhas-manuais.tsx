@@ -39,7 +39,7 @@ import { applyRevendaVariables } from "@/lib/revenda-settings";
 import { getDnsVariablesForServer } from "@/lib/dns-routes";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/use-auth";
-import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
+import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { getCurrentCompanyAdmin, listCustomersAdmin } from "@/lib/rpc-admin";
 import {
   APP_CATALOG,

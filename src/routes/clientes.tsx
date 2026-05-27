@@ -68,7 +68,7 @@ import {
 import { cn } from "@/lib/utils";
 import { SimulatedMessagesPanel } from "@/components/messages/simulated-messages";
 import { AISuggestionsPanel } from "@/components/ai/ai-analysis";
-import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
+import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
 import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";

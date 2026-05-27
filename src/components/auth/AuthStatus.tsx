@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { AUTH_REFRESH_EVENT, useAuth } from "@/lib/use-auth";
-import { supabase, supabaseConfigured } from "@/integrations/supabase/client";
+import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { SignInDialog } from "./SignInDialog";
 
 export function AuthStatus({
