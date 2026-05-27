@@ -837,7 +837,28 @@ function ClientesPage() {
             customerDueIso={getCustomerDueIso(c)}
             monthlyAmountCents={c.amount_cents}
             whatsappE164={c.whatsapp}
-            onRenewed={reload}
+            onRenewed={(patch) => {
+              // Atualização otimista: refletir o novo due_date no card
+              // imediatamente, com base no retorno da RPC. O reload em seguida
+              // sincroniza com o backend.
+              if (patch && renewId) {
+                setItems((prev) =>
+                  prev
+                    ? prev.map((it) =>
+                        it.id === renewId
+                          ? {
+                              ...it,
+                              due_date: patch.due_date,
+                              due_day: patch.due_day ?? it.due_day,
+                              status: patch.status ?? it.status,
+                            }
+                          : it,
+                      )
+                    : prev,
+                );
+              }
+              reload();
+            }}
           />
         );
       })()}
