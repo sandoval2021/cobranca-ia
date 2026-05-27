@@ -503,8 +503,11 @@ export function QuickRenewDialog({
         if (sendReceipt) autoSend(fullMsg);
         setDone({ msg: fullMsg, newDue: maxDue, sent: sendReceipt });
       }
+      // Limpa caches locais que poderiam sobrescrever o novo due_date no card.
+      clearCustomerDueOverride(customerId);
+      if (whatsappE164) clearImportedDueByWhatsapp(whatsappE164);
       toast.success("Cliente renovado com sucesso.");
-      onRenewed?.();
+      onRenewed?.(persist.patch);
     } catch (e) {
       toast.error("Não foi possível registrar a renovação.");
     } finally {
