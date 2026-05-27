@@ -504,6 +504,7 @@ function ImportarClientesPage() {
           amount_cents: r.amount_cents,
           expires_at: r.expires_at,
           situation: r.situation,
+          notes: e?.observation ?? null,
           raw_row: {
             ...r.raw_row,
             forced: true,
