@@ -202,3 +202,193 @@ export function summarizeImport(
     conflicts,
   };
 }
+
+// =============================================================================
+// FASE 2 — Agrupamento por WhatsApp antes do envio para a RPC.
+//
+// Mesmo WhatsApp aparecendo N vezes deve virar 1 cliente + N telas/serviços,
+// nunca N clientes. Aqui consolidamos as linhas válidas em 1 payload por
+// WhatsApp, preservando todos os dados das linhas originais em `notes` e
+// `raw_row.members` para não perder histórico em caso de conflito.
+// =============================================================================
+
+export type GroupedImportRow = {
+  external_code: string | null;
+  external_customer_code: string | null;
+  customer_name: string | null;
+  whatsapp_e164: string;
+  service_name: string | null;
+  amount_cents: number | null;
+  expires_at: string | null;
+  situation: string | null;
+  notes: string;
+  raw_row: Record<string, unknown> & {
+    group_size: number;
+    group_conflict: ImportEnrichment["group_conflict"];
+    matched_service_id: string | null;
+    plan_label: string | null;
+    message_label: string | null;
+    observation: string;
+    primary_row_index: number;
+    member_row_indices: number[];
+    members: Array<Record<string, unknown>>;
+    conflicting_amounts_cents?: number[];
+    conflicting_expires_at?: string[];
+  };
+};
+
+export type GroupingReport = {
+  payload: GroupedImportRow[];
+  groupedCount: number;
+  uniqueWhatsapps: number;
+  repeatedWhatsapps: number;
+  totalScreens: number;
+  conflicts: number;
+  skippedNoWhatsapp: number;
+};
+
+function pickPrimaryIndex(group: Array<{ row: ValidatedRow; idx: number }>): number {
+  // Critério seguro: mais recente vencimento -> maior valor -> primeira ocorrência.
+  let bestIdx = group[0].idx;
+  let bestDate = group[0].row.expires_at ?? "";
+  let bestAmount = group[0].row.amount_cents ?? -1;
+  for (const g of group.slice(1)) {
+    const d = g.row.expires_at ?? "";
+    const a = g.row.amount_cents ?? -1;
+    if (d > bestDate || (d === bestDate && a > bestAmount)) {
+      bestIdx = g.idx;
+      bestDate = d;
+      bestAmount = a;
+    }
+  }
+  return bestIdx;
+}
+
+/**
+ * Agrupa linhas válidas por WhatsApp normalizado. Linhas sem WhatsApp são
+ * preservadas como entradas individuais (não dá para deduplicar sem chave).
+ *
+ * - Escolhe 1 linha principal por WhatsApp (vencimento mais recente, depois valor).
+ * - Preserva cada linha original em `raw_row.members`.
+ * - Monta observação humana com Tela 1 / Tela 2 / ... a partir de `enrichImportRows`.
+ * - Marca conflitos sem perder nenhum dado.
+ */
+export function groupValidRowsByWhatsApp(
+  validRows: ValidatedRow[],
+  enrichments: ImportEnrichment[],
+  rowIndexOf: (r: ValidatedRow) => number,
+): GroupingReport {
+  const groupsByWa = new Map<string, Array<{ row: ValidatedRow; idx: number }>>();
+  const noWa: Array<{ row: ValidatedRow; idx: number }> = [];
+
+  for (const row of validRows) {
+    const idx = rowIndexOf(row);
+    if (!row.whatsapp_e164) {
+      noWa.push({ row, idx });
+      continue;
+    }
+    const arr = groupsByWa.get(row.whatsapp_e164) ?? [];
+    arr.push({ row, idx });
+    groupsByWa.set(row.whatsapp_e164, arr);
+  }
+
+  const payload: GroupedImportRow[] = [];
+  let conflicts = 0;
+  let repeated = 0;
+  let totalScreens = 0;
+
+  for (const [wa, members] of groupsByWa.entries()) {
+    totalScreens += members.length;
+    if (members.length > 1) repeated++;
+    const primaryIdx = pickPrimaryIndex(members);
+    const primary = members.find((m) => m.idx === primaryIdx)!.row;
+    const enrich = enrichments[primaryIdx];
+    if (enrich?.group_conflict) conflicts++;
+
+    const amounts = Array.from(
+      new Set(members.map((m) => m.row.amount_cents).filter((v): v is number => v != null)),
+    );
+    const dates = Array.from(
+      new Set(members.map((m) => m.row.expires_at).filter((v): v is string => !!v)),
+    );
+
+    const observation = enrich?.observation ?? "";
+
+    payload.push({
+      external_code: primary.external_code,
+      external_customer_code: primary.external_customer_code,
+      customer_name: primary.customer_name,
+      whatsapp_e164: wa,
+      service_name: primary.service_name,
+      amount_cents: primary.amount_cents,
+      expires_at: primary.expires_at,
+      situation: primary.situation,
+      notes: observation, // RPC lê v_row->>'notes'
+      raw_row: {
+        ...(primary.raw_row ?? {}),
+        group_size: members.length,
+        group_conflict: enrich?.group_conflict ?? null,
+        matched_service_id: enrich?.matched_service_id ?? null,
+        plan_label: enrich?.plan_label ?? null,
+        message_label: enrich?.message_label ?? null,
+        observation,
+        primary_row_index: primaryIdx,
+        member_row_indices: members.map((m) => m.idx),
+        members: members.map((m) => ({
+          row_index: m.idx,
+          external_code: m.row.external_code,
+          external_customer_code: m.row.external_customer_code,
+          customer_name: m.row.customer_name,
+          service_name: m.row.service_name,
+          amount_cents: m.row.amount_cents,
+          amount_raw: m.row.amount_raw,
+          expires_at: m.row.expires_at,
+          expires_raw: m.row.expires_raw,
+          situation: m.row.situation,
+          raw_row: m.row.raw_row,
+        })),
+        ...(amounts.length > 1 ? { conflicting_amounts_cents: amounts } : {}),
+        ...(dates.length > 1 ? { conflicting_expires_at: dates } : {}),
+      },
+    });
+  }
+
+  // Linhas sem WhatsApp viram entradas individuais (a RPC vai marcar como inválidas
+  // se o nome também faltar). Mantemos para não esconder do usuário.
+  for (const { row, idx } of noWa) {
+    const enrich = enrichments[idx];
+    payload.push({
+      external_code: row.external_code,
+      external_customer_code: row.external_customer_code,
+      customer_name: row.customer_name,
+      whatsapp_e164: "",
+      service_name: row.service_name,
+      amount_cents: row.amount_cents,
+      expires_at: row.expires_at,
+      situation: row.situation,
+      notes: enrich?.observation ?? "",
+      raw_row: {
+        ...(row.raw_row ?? {}),
+        group_size: 1,
+        group_conflict: null,
+        matched_service_id: enrich?.matched_service_id ?? null,
+        plan_label: enrich?.plan_label ?? null,
+        message_label: enrich?.message_label ?? null,
+        observation: enrich?.observation ?? "",
+        primary_row_index: idx,
+        member_row_indices: [idx],
+        members: [],
+      },
+    });
+  }
+
+  return {
+    payload,
+    groupedCount: payload.length,
+    uniqueWhatsapps: groupsByWa.size,
+    repeatedWhatsapps: repeated,
+    totalScreens,
+    conflicts,
+    skippedNoWhatsapp: noWa.length,
+  };
+}
