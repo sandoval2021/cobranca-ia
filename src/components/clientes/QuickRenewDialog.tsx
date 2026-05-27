@@ -16,6 +16,7 @@ import {
   PAYMENT_LABEL, PaymentMethod,
 } from "@/lib/manual-renewals";
 import { clearCustomerDueOverride } from "@/lib/customer-due-override";
+import { clearImportedDueByWhatsapp } from "@/lib/imported-due-dates";
 import { supabase } from "@/integrations/supabase/compat";
 import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 
@@ -32,7 +33,12 @@ async function persistRenewalOnBackend(args: {
   oldDueISO?: string | null;
   totalAmount: string;
   monthlyAmount: string;
-}): Promise<{ ok: boolean; message?: string; persistedDue?: string | null }> {
+}): Promise<{
+  ok: boolean;
+  message?: string;
+  persistedDue?: string | null;
+  patch?: { due_date: string; due_day: number | null; status: string | null };
+}> {
   if (!supabase) {
     return { ok: false, message: "Renovação precisa ser ativada no servidor." };
   }
@@ -85,16 +91,35 @@ async function persistRenewalOnBackend(args: {
     : (renewRes.data as Record<string, unknown> | null);
   const persistedDue =
     row && typeof row.due_date === "string" ? (row.due_date as string) : null;
+  const persistedDueDay =
+    row && typeof row.due_day === "number" ? (row.due_day as number) : null;
+  const persistedStatus =
+    row && typeof row.status === "string" ? (row.status as string) : null;
   if (import.meta.env.DEV) {
-    console.log("[renew] rpc result", {
-      ok: true,
-      due_date: persistedDue,
-      due_day: row && typeof row.due_day === "number" ? row.due_day : null,
-      status: row && typeof row.status === "string" ? row.status : null,
+    console.log("[renew] rpc confirmed", {
+      customer_id: args.customerId,
+      returned_due_date: persistedDue,
+      returned_due_day: persistedDueDay,
+      returned_status: persistedStatus,
     });
   }
-  // Se a RPC retornou linha mas o due_date não bate com o enviado, aborta sem
-  // mostrar sucesso falso.
+
+  // Fonte da verdade primária: retorno da RPC.
+  // Se ela devolveu uma linha com due_date == enviado, confirmamos sucesso
+  // sem depender de refetch (RPC já garante persistência).
+  if (persistedDue && persistedDue.slice(0, 10) === args.newDueISO.slice(0, 10)) {
+    return {
+      ok: true,
+      persistedDue,
+      patch: {
+        due_date: persistedDue.slice(0, 10),
+        due_day: persistedDueDay,
+        status: persistedStatus,
+      },
+    };
+  }
+
+  // Se a RPC retornou linha mas com due_date divergente, é erro real.
   if (persistedDue && persistedDue.slice(0, 10) !== args.newDueISO.slice(0, 10)) {
     return {
       ok: false,
@@ -103,9 +128,8 @@ async function persistRenewalOnBackend(args: {
     };
   }
 
-  // REFETCH OBRIGATÓRIO: busca o cliente no backend para confirmar que
-  // due_date foi efetivamente atualizado. Sem isso, podemos mostrar sucesso
-  // falso quando a RPC retorna data=null mas nada foi gravado.
+  // RPC retornou data=null (sem linha). Cai para refetch via list_customers_admin
+  // para confirmar que due_date foi gravado.
   try {
     const { accountId } = await getActiveAccountId();
     if (accountId) {
@@ -123,45 +147,52 @@ async function persistRenewalOnBackend(args: {
           : [];
       const found = arr.find((r) => String(r.id ?? "") === args.customerId);
       const returnedDue =
-        found && typeof found.due_date === "string" ? (found.due_date as string) : null;
+        found && typeof found.due_date === "string"
+          ? (found.due_date as string)
+          : found && typeof found.expires_at === "string"
+            ? (found.expires_at as string)
+            : null;
+      const returnedDueDay =
+        found && typeof found.due_day === "number" ? (found.due_day as number) : null;
       const returnedStatus =
         found && typeof found.status === "string" ? (found.status as string) : null;
       if (import.meta.env.DEV) {
         console.log("[renew] refetch check", {
           expected_due_date: args.newDueISO,
           returned_due_date: returnedDue,
+          returned_due_day: returnedDueDay,
           returned_status: returnedStatus,
         });
       }
-      if (!found) {
+      if (returnedDue && returnedDue.slice(0, 10) === args.newDueISO.slice(0, 10)) {
         return {
-          ok: false,
-          message:
-            "Renovação enviada, mas não foi possível confirmar no backend. Atualize a página e tente novamente.",
-        };
-      }
-      if (!returnedDue || returnedDue.slice(0, 10) !== args.newDueISO.slice(0, 10)) {
-        return {
-          ok: false,
-          message:
-            "Renovação enviada, mas o vencimento não foi atualizado. Atualize a página e tente novamente.",
+          ok: true,
           persistedDue: returnedDue,
+          patch: {
+            due_date: returnedDue.slice(0, 10),
+            due_day: returnedDueDay,
+            status: returnedStatus,
+          },
         };
       }
-      return { ok: true, persistedDue: returnedDue };
+      return {
+        ok: false,
+        message:
+          "Renovação enviada, mas o vencimento não foi atualizado. Atualize a página e tente novamente.",
+        persistedDue: returnedDue,
+      };
     }
   } catch (e) {
     if (import.meta.env.DEV) {
       console.error("[renew] refetch error", e);
     }
-    return {
-      ok: false,
-      message:
-        "Renovação enviada, mas não foi possível confirmar no backend. Atualize a página e tente novamente.",
-    };
   }
 
-  return { ok: true, persistedDue };
+  return {
+    ok: false,
+    message:
+      "Renovação enviada, mas não foi possível confirmar no backend. Atualize a página e tente novamente.",
+  };
 }
 
 
@@ -226,7 +257,7 @@ export function QuickRenewDialog({
   customerDueIso?: string | null;
   monthlyAmountCents: number | null;
   whatsappE164?: string | null;
-  onRenewed?: () => void;
+  onRenewed?: (patch?: { due_date: string; due_day: number | null; status: string | null }) => void;
 }) {
   const [screens, setScreens] = useState<AppScreen[]>([]);
   const [choices, setChoices] = useState<Record<string, ScreenChoice>>({});
@@ -472,8 +503,11 @@ export function QuickRenewDialog({
         if (sendReceipt) autoSend(fullMsg);
         setDone({ msg: fullMsg, newDue: maxDue, sent: sendReceipt });
       }
+      // Limpa caches locais que poderiam sobrescrever o novo due_date no card.
+      clearCustomerDueOverride(customerId);
+      if (whatsappE164) clearImportedDueByWhatsapp(whatsappE164);
       toast.success("Cliente renovado com sucesso.");
-      onRenewed?.();
+      onRenewed?.(persist.patch);
     } catch (e) {
       toast.error("Não foi possível registrar a renovação.");
     } finally {
