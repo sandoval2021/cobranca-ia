@@ -257,7 +257,7 @@ export function QuickRenewDialog({
   customerDueIso?: string | null;
   monthlyAmountCents: number | null;
   whatsappE164?: string | null;
-  onRenewed?: () => void;
+  onRenewed?: (patch?: { due_date: string; due_day: number | null; status: string | null }) => void;
 }) {
   const [screens, setScreens] = useState<AppScreen[]>([]);
   const [choices, setChoices] = useState<Record<string, ScreenChoice>>({});
