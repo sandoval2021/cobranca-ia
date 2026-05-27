@@ -1,30 +1,43 @@
 import {
+  isAnonKeyForExpectedProject,
+  isAnonKeyForbidden,
   isCorrectSupabase,
   isForbiddenSupabase,
+  supabaseAnonKeyPresent,
+  supabaseAnonKeyRef,
   supabaseProjectRef,
   supabaseUrl,
 } from "@/integrations/supabase/compat";
 
 /**
  * Banner de diagnóstico de ambiente.
- * Mostra a qual projeto Supabase o app está conectado.
- * NUNCA exibe anon key, service role ou tokens.
+ * Mostra a qual projeto Supabase o app está conectado e se a anon key bate.
+ * NUNCA exibe anon key, service role ou tokens — apenas metadados.
  */
 export function SupabaseEnvBanner() {
   const env = (import.meta.env.VITE_APP_ENV as string | undefined) ?? "dev";
-  if (env === "production" && isCorrectSupabase) return null;
+  const allGood = isCorrectSupabase && supabaseAnonKeyPresent && isAnonKeyForExpectedProject;
+  if (env === "production" && allGood) return null;
 
-  const bg = isForbiddenSupabase
-    ? "bg-red-600 text-white"
-    : isCorrectSupabase
-      ? "bg-emerald-700 text-white"
-      : "bg-amber-600 text-white";
+  let bg = "bg-emerald-700 text-white";
+  let label = `Supabase: ${supabaseProjectRef}`;
 
-  const label = isForbiddenSupabase
-    ? "AMBIENTE INCORRETO — banco novo vazio conectado. Use o Supabase antigo."
-    : isCorrectSupabase
-      ? `Supabase: ${supabaseProjectRef}`
-      : `Supabase inesperado: ${supabaseProjectRef}`;
+  if (isForbiddenSupabase) {
+    bg = "bg-red-600 text-white";
+    label = "AMBIENTE INCORRETO — banco novo vazio conectado. Use o Supabase antigo.";
+  } else if (!isCorrectSupabase) {
+    bg = "bg-amber-600 text-white";
+    label = `Supabase inesperado: ${supabaseProjectRef}`;
+  } else if (!supabaseAnonKeyPresent) {
+    bg = "bg-red-600 text-white";
+    label = "Anon key AUSENTE no bundle — configure ANON_KEY_SUPABASE e republique.";
+  } else if (isAnonKeyForbidden) {
+    bg = "bg-red-600 text-white";
+    label = "Anon key embutida é do projeto ERRADO (ajeyimujgtukcbadyash).";
+  } else if (!isAnonKeyForExpectedProject) {
+    bg = "bg-amber-600 text-white";
+    label = `Anon key de projeto inesperado: ${supabaseAnonKeyRef ?? "?"}`;
+  }
 
   return (
     <div
