@@ -337,29 +337,19 @@ function ImportarClientesPage() {
     setResult(null);
     try {
       const idxByRef = new Map(rows!.map((r, i) => [r, i] as const));
-      const payload = validas.map((r) => {
-        const idx = idxByRef.get(r);
-        const e = idx != null ? enrichments[idx] : undefined;
-        return {
-          external_code: r.external_code,
-          external_customer_code: r.external_customer_code,
-          customer_name: r.customer_name,
-          whatsapp_e164: r.whatsapp_e164,
-          service_name: r.service_name,
-          amount_cents: r.amount_cents,
-          expires_at: r.expires_at,
-          situation: r.situation,
-          raw_row: {
-            ...r.raw_row,
-            matched_service_id: e?.matched_service_id ?? null,
-            plan_label: e?.plan_label ?? null,
-            message_label: e?.message_label ?? null,
-            group_size: e?.group_size ?? 1,
-            group_conflict: e?.group_conflict ?? null,
-            observation: e?.observation ?? null,
-          },
-        };
-      });
+      // FASE 2: agrupa por WhatsApp ANTES de enviar. Mesmo número repetido N
+      // vezes vira 1 cliente + N telas/serviços preservados em notes/raw_row.
+      const grouping = groupValidRowsByWhatsApp(
+        validas,
+        enrichments,
+        (r) => idxByRef.get(r) ?? -1,
+      );
+      const payload = grouping.payload;
+      if (grouping.repeatedWhatsapps > 0) {
+        toast.message(
+          `${grouping.repeatedWhatsapps} WhatsApp(s) repetido(s) agrupados em ${grouping.totalScreens} telas/serviços. Nenhum cliente será duplicado.`,
+        );
+      }
 
 
       // Envia em lotes para suportar bases grandes (5k–10k clientes) sem
