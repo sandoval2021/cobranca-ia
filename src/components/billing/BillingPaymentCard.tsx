@@ -10,7 +10,7 @@ import type { Company } from "@/lib/companies";
 import { getCompanyStatus, getPlanById } from "@/lib/companies";
 import {
   createBillingCheckout,
-  getBillingPublicConfig,
+  getBillingCompanyAccess,
   getLastPaymentAttempt,
 } from "@/lib/billing.functions";
 
@@ -42,29 +42,40 @@ export function BillingPaymentCard({ company }: Props) {
   const status = company ? getCompanyStatus(company) : "ativa";
   const plan = company?.plano_id ? getPlanById(company.plano_id) : null;
 
-  const fetchConfig = useServerFn(getBillingPublicConfig);
+  const fetchAccess = useServerFn(getBillingCompanyAccess);
   const fetchLast = useServerFn(getLastPaymentAttempt);
   const startCheckout = useServerFn(createBillingCheckout);
 
   const [configured, setConfigured] = useState<boolean | null>(null);
+  const [canCheckout, setCanCheckout] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [lastAttempt, setLastAttempt] = useState<any>(null);
 
   useEffect(() => {
     let alive = true;
+    if (!company?.id) {
+      setConfigured(false);
+      setCanCheckout(false);
+      return;
+    }
     (async () => {
       try {
-        const r = await fetchConfig();
-        if (alive) setConfigured(Boolean(r?.configured));
+        const r = await fetchAccess({ data: { companyId: company.id } });
+        if (!alive) return;
+        setConfigured(Boolean(r?.configured));
+        setCanCheckout(Boolean(r?.canCheckout));
       } catch {
-        if (alive) setConfigured(false);
+        if (alive) {
+          setConfigured(false);
+          setCanCheckout(false);
+        }
       }
     })();
     return () => {
       alive = false;
     };
-  }, [fetchConfig]);
+  }, [company?.id, fetchAccess]);
 
   useEffect(() => {
     let alive = true;
@@ -158,7 +169,16 @@ export function BillingPaymentCard({ company }: Props) {
           </div>
         )}
 
-        {configured && (
+        {configured && !canCheckout && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="flex items-start gap-2">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>Pagamento online em validação. Fale com o suporte.</p>
+            </div>
+          </div>
+        )}
+
+        {configured && canCheckout && (
           <>
             {attemptLabel && (
               <div className="rounded-lg border bg-background p-3 text-sm">

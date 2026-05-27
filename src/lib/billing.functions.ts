@@ -9,8 +9,6 @@ import {
 } from "@/lib/mercado-pago.server";
 
 // Tipos relaxados pois Database types não inclui as tabelas billing ainda.
-// supabaseAdmin é cast para any nas chamadas para evitar atrito de tipos.
-// RLS é contornado intencionalmente (service_role) — segurança via checks server-side.
 type AnyDB = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 const REUSE_PENDING_WINDOW_MIN = 10;
@@ -19,7 +17,41 @@ function admin(): AnyDB {
   return supabaseAdmin as unknown as AnyDB;
 }
 
-async function assertCompanyMember(userId: string, companyId: string): Promise<boolean> {
+// -------- modo controlado de produção --------
+function paymentsGloballyEnabled(): boolean {
+  const v = (process.env.PAYMENTS_ENABLED || "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
+function allowedCompanyIds(): Set<string> {
+  const raw = process.env.PAYMENTS_ALLOWED_COMPANY_IDS || "";
+  return new Set(
+    raw
+      .split(/[,;\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+function companyAllowedForPayments(companyId: string): boolean {
+  return allowedCompanyIds().has(companyId);
+}
+// ---------------------------------------------
+
+async function isSuperAdmin(userClient: AnyDB): Promise<boolean> {
+  try {
+    const { data } = await userClient.rpc("current_user_is_super_admin");
+    return Boolean(data);
+  } catch {
+    return false;
+  }
+}
+
+async function assertCompanyMember(
+  userClient: AnyDB,
+  userId: string,
+  companyId: string,
+): Promise<boolean> {
   const db = admin();
   const { data: member } = await db
     .from("company_members")
@@ -28,22 +60,45 @@ async function assertCompanyMember(userId: string, companyId: string): Promise<b
     .eq("user_id", userId)
     .maybeSingle();
   if (member) return true;
-  // Super admin bypass
-  const { data: sa } = await db
-    .rpc("current_user_is_super_admin");
-  return Boolean(sa);
+  return isSuperAdmin(userClient);
 }
 
 /**
- * Server-fn público: indica se pagamento online está configurado.
- * NÃO retorna o token.
+ * Config público (sem auth) — informa apenas se o provedor tem token e
+ * se há liberação global. NÃO retorna allowlist específica.
  */
 export const getBillingPublicConfig = createServerFn({ method: "GET" }).handler(
   async () => {
     const cfg = getMercadoPagoConfigStatus();
-    return { configured: cfg.configured };
+    return {
+      configured: cfg.configured,
+      paymentsEnabled: paymentsGloballyEnabled(),
+    };
   },
 );
+
+/**
+ * Config por empresa (com auth) — diz se ESTA empresa pode pagar agora.
+ * Liberado se: super admin OU global enabled OU company explicitamente liberada.
+ */
+export const getBillingCompanyAccess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ companyId: z.string().min(1).max(128) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const cfg = getMercadoPagoConfigStatus();
+    const sa = await isSuperAdmin(context.supabase as unknown as AnyDB);
+    const enabled = paymentsGloballyEnabled();
+    const allowed = companyAllowedForPayments(data.companyId);
+    return {
+      configured: cfg.configured,
+      paymentsEnabled: enabled,
+      companyAllowed: allowed,
+      isSuperAdmin: sa,
+      canCheckout: cfg.configured && (sa || enabled || allowed),
+    };
+  });
 
 /**
  * Última tentativa de pagamento da empresa.
@@ -55,7 +110,11 @@ export const getLastPaymentAttempt = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const allowed = await assertCompanyMember(userId, data.companyId);
+    const allowed = await assertCompanyMember(
+      context.supabase as unknown as AnyDB,
+      userId,
+      data.companyId,
+    );
     if (!allowed) return { attempt: null as any };
     const db = admin();
     const { data: attempt } = await db
@@ -72,6 +131,7 @@ export const getLastPaymentAttempt = createServerFn({ method: "POST" })
 
 /**
  * Cria checkout Mercado Pago (Pix/checkout único, sem cartão recorrente).
+ * Modo controlado: só Super Admin ou companies liberadas via env.
  */
 export const createBillingCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -106,12 +166,26 @@ export const createBillingCheckout = createServerFn({ method: "POST" })
     }
 
     const { userId, claims } = context;
-    const allowed = await assertCompanyMember(userId, data.companyId);
-    if (!allowed) {
+    const userClient = context.supabase as unknown as AnyDB;
+
+    const allowedMember = await assertCompanyMember(userClient, userId, data.companyId);
+    if (!allowedMember) {
       return {
         ok: false as const,
         reason: "forbidden" as const,
         message: "Você não tem permissão sobre esta empresa.",
+      };
+    }
+
+    // GATE: produção controlada
+    const sa = await isSuperAdmin(userClient);
+    const globallyEnabled = paymentsGloballyEnabled();
+    const companyAllowed = companyAllowedForPayments(data.companyId);
+    if (!sa && !globallyEnabled && !companyAllowed) {
+      return {
+        ok: false as const,
+        reason: "payments_not_enabled" as const,
+        message: "Pagamento online em validação. Fale com o suporte.",
       };
     }
 
@@ -138,13 +212,14 @@ export const createBillingCheckout = createServerFn({ method: "POST" })
       };
     }
 
-    // 2) Registra aceite de termos (idempotência leve: append-only)
+    // 2) Registra aceite de termos
     try {
       await db.from("terms_acceptances").insert({
         company_id: data.companyId,
         user_id: userId,
         terms_version: data.termsVersion,
-        terms_snapshot: data.termsSnapshot ?? `Termos de pagamento ${data.termsVersion}`,
+        terms_snapshot:
+          data.termsSnapshot ?? `Termos de pagamento ${data.termsVersion}`,
         payment_method_context: "mercado_pago_checkout",
       });
     } catch (e) {
@@ -152,7 +227,9 @@ export const createBillingCheckout = createServerFn({ method: "POST" })
     }
 
     // 3) Reaproveita tentativa pendente recente
-    const since = new Date(Date.now() - REUSE_PENDING_WINDOW_MIN * 60_000).toISOString();
+    const since = new Date(
+      Date.now() - REUSE_PENDING_WINDOW_MIN * 60_000,
+    ).toISOString();
     const { data: pending } = await db
       .from("payment_attempts")
       .select("id,checkout_url,provider_preference_id,status,created_at")
@@ -233,7 +310,8 @@ export const createBillingCheckout = createServerFn({ method: "POST" })
       return {
         ok: false as const,
         reason: "provider_error" as const,
-        message: "Não foi possível gerar o checkout agora. Tente novamente em instantes.",
+        message:
+          "Não foi possível gerar o checkout agora. Tente novamente em instantes.",
       };
     }
   });
