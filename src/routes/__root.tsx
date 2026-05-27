@@ -1,8 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Link,
+  Outlet,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -14,8 +16,13 @@ import { useAuth } from "@/lib/use-auth";
 import { LoginPage, SessionLoading } from "@/components/auth/LoginPage";
 import { SupabaseEnvBanner } from "@/components/dev/SupabaseEnvBanner";
 
+// Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
+const PUBLIC_ROUTES = new Set<string>(["/reset-password"]);
+
 function AuthGateApp() {
   const { loading, user } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (PUBLIC_ROUTES.has(pathname)) return <Outlet />;
   if (loading) return <SessionLoading />;
   if (!user) return <LoginPage />;
   return <AppShell />;

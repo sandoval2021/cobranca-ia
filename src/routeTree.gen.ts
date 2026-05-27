@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TestesRouteImport } from './routes/testes'
 import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
 import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
 import { Route as PreparacaoBackendRouteImport } from './routes/preparacao-backend'
@@ -52,6 +53,11 @@ const TestesRoute = TestesRouteImport.update({
 const SegurancaLocalRoute = SegurancaLocalRouteImport.update({
   id: '/seguranca-local',
   path: '/seguranca-local',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RelatorioRoute = RelatorioRouteImport.update({
@@ -248,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
 }
@@ -284,6 +291,7 @@ export interface FileRoutesByTo {
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
 }
@@ -321,6 +329,7 @@ export interface FileRoutesById {
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
 }
@@ -359,6 +368,7 @@ export interface FileRouteTypes {
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
+    | '/reset-password'
     | '/seguranca-local'
     | '/testes'
   fileRoutesByTo: FileRoutesByTo
@@ -395,6 +405,7 @@ export interface FileRouteTypes {
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
+    | '/reset-password'
     | '/seguranca-local'
     | '/testes'
   id:
@@ -431,6 +442,7 @@ export interface FileRouteTypes {
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
+    | '/reset-password'
     | '/seguranca-local'
     | '/testes'
   fileRoutesById: FileRoutesById
@@ -468,6 +480,7 @@ export interface RootRouteChildren {
   PreparacaoBackendRoute: typeof PreparacaoBackendRoute
   RegrasDisparoRoute: typeof RegrasDisparoRoute
   RelatorioRoute: typeof RelatorioRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
 }
@@ -486,6 +499,13 @@ declare module '@tanstack/react-router' {
       path: '/seguranca-local'
       fullPath: '/seguranca-local'
       preLoaderRoute: typeof SegurancaLocalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/relatorio': {
@@ -748,6 +768,7 @@ const rootRouteChildren: RootRouteChildren = {
   PreparacaoBackendRoute: PreparacaoBackendRoute,
   RegrasDisparoRoute: RegrasDisparoRoute,
   RelatorioRoute: RelatorioRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
 }
