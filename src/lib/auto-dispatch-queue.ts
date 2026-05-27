@@ -16,6 +16,8 @@ export type QueueClientLike = {
   whatsapp: string | null;
   due_day: number | null;
   amount_cents: number | null;
+  /** Data autoritativa do backend (YYYY-MM-DD), quando disponível. */
+  due_date?: string | null;
 };
 
 export type AutoDispatchQueueItem = {
@@ -40,6 +42,14 @@ function fmtDueDateBR(daysUntil: number): string {
   return d.toLocaleDateString("pt-BR");
 }
 
+function daysFromIso(iso?: string | null): number | null {
+  if (!iso) return null;
+  const dt = new Date(iso + "T00:00:00");
+  if (isNaN(+dt)) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.floor((+dt - +today) / (1000 * 60 * 60 * 24));
+}
+
 export function computeAutoDispatchQueue(
   items: QueueClientLike[] | null,
   allScreens: Record<string, AppScreen[]>,
@@ -55,17 +65,26 @@ export function computeAutoDispatchQueue(
   for (const c of items) {
     const screens = allScreens[c.id] ?? [];
     const overrideIso = getCustomerDueOverride(c.id);
-    let days: number;
-    if (overrideIso) {
-      const today = new Date(); today.setHours(0,0,0,0);
-      const dt = new Date(overrideIso + "T00:00:00");
-      days = Math.floor((+dt - +today) / (1000 * 60 * 60 * 24));
+    const backendIso = c.due_date ?? null;
+
+    // Mesma prioridade do card (getCustomerDueInfo):
+    // override (se for mais recente que backend) > backend > telas/due_day.
+    // Se backend já alcançou/ultrapassou o override, o override é obsoleto
+    // (renovação já confirmada) e deve ser ignorado para não ressuscitar
+    // cobranças antigas.
+    const useOverride = overrideIso && (!backendIso || backendIso < overrideIso);
+
+    let days: number | null = null;
+    if (useOverride) {
+      days = daysFromIso(overrideIso);
+    } else if (backendIso) {
+      days = daysFromIso(backendIso);
     } else {
       const nd = nextDueDays(c.due_day, screens);
       if (nd == null) continue;
       days = nd as number;
     }
-    if (!Number.isFinite(days)) continue;
+    if (days == null || !Number.isFinite(days)) continue;
     const rule = pickRule(days, rules);
     if (!rule) continue;
     const elapsed = -days;
