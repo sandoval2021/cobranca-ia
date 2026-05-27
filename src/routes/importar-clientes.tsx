@@ -361,10 +361,43 @@ function ImportarClientesPage() {
       });
 
 
-      const { data, error } = await supabase.rpc(
-        "staging_import_customers_from_rows",
-        { p_company_id: effCompany, p_rows: payload as unknown as object }
-      );
+      // Envia em lotes para suportar bases grandes (5k–10k clientes) sem
+      // estourar timeout/payload da RPC. Cancelável entre lotes.
+      cancelImportRef.current = false;
+      const totals = { imported: 0, updated: 0, charges: 0 };
+      let lastError: { message: string } | null = null;
+      const chunks: typeof payload[] = [];
+      for (let i = 0; i < payload.length; i += IMPORT_CHUNK_SIZE) {
+        chunks.push(payload.slice(i, i + IMPORT_CHUNK_SIZE));
+      }
+      setImportProgress({ done: 0, total: payload.length });
+      let processed = 0;
+      let cancelledByUser = false;
+      for (const chunk of chunks) {
+        if (cancelImportRef.current) {
+          cancelledByUser = true;
+          break;
+        }
+        const { data: chunkData, error: chunkError } = await supabase.rpc(
+          "staging_import_customers_from_rows",
+          { p_company_id: effCompany, p_rows: chunk as unknown as object },
+        );
+        if (chunkError) {
+          lastError = chunkError;
+          break;
+        }
+        const cr = (chunkData ?? {}) as Record<string, number>;
+        totals.imported += cr.imported ?? 0;
+        totals.updated += cr.updated ?? 0;
+        totals.charges += cr.charges ?? 0;
+        processed += chunk.length;
+        setImportProgress({ done: processed, total: payload.length });
+      }
+      const data = totals;
+      const error = lastError;
+      if (cancelledByUser) {
+        toast.message(`Importação cancelada. ${processed} de ${payload.length} linhas foram processadas antes do cancelamento.`);
+      }
 
       if (error) {
         const m = (error.message || "").toLowerCase();
