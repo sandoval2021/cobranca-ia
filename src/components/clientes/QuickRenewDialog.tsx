@@ -759,7 +759,13 @@ export function QuickRenewDialog({
                     onChange={(e) => setNewDueOverride(e.target.value)}
                     className="h-9 text-xs"
                   />
+                  <p className="text-[10px] text-muted-foreground">
+                    {baseIsFuture
+                      ? "Renovação somada a partir do vencimento atual."
+                      : "Renovação calculada a partir de hoje."}
+                  </p>
                 </div>
+
                 <div className="space-y-1 col-span-2">
                   <Label className="text-[11px] font-semibold">Data Contas a Receber</Label>
                   <Input
