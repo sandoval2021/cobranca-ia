@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 
 import { PageContainer } from "@/components/layout/PageContainer";
+import { ensureCanImportCustomers } from "@/lib/plan-gate";
 import { CompanyScopeNotice } from "@/components/companies/CompanyScopeNotice";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
@@ -444,6 +445,8 @@ function ImportarClientesPage() {
       toast.error("Faça login para importar clientes.");
       return;
     }
+    const gate = ensureCanImportCustomers();
+    if (!gate.allowed) return;
     if (flags.appEnv !== "staging") {
       toast.error("Importação disponível apenas em ambiente de testes.");
       return;
