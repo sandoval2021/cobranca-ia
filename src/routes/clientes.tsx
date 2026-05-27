@@ -508,11 +508,15 @@ function ClientesPage() {
         if (!screensHaveServer(active, serverFilter)) return false;
       }
       // Por padrão, arquivados ficam fora da lista (só aparecem na aba "Arquivados").
-      if (filter !== "arquivado" && kind === "arquivado") return false;
+      const rawKind = classifyStatus(c.status);
+      // Por padrão, arquivados ficam fora da lista (só aparecem na aba "Arquivados").
+      if (filter !== "arquivado" && rawKind === "arquivado") return false;
       if (filter === "disparo_hoje") {
         if (!dispatchQueueById.has(c.id)) return false;
       } else if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
-        if (kind !== filter) return false;
+        const d = customerDueDays(c, screens);
+        const eff = effectiveStatusKind(c.status, d);
+        if (eff !== filter) return false;
       } else if (filter === "hoje" || filter === "7d" || filter === "vencidos") {
         const d = customerDueDays(c, screens);
         if (d == null) return false;
