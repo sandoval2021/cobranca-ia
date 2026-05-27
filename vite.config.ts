@@ -38,6 +38,7 @@ export default defineConfig({
       ),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
         pick(
+          "ANON_KEY_SUPABASE",
           "SUPABASE_PUBLISHABLE_KEY",
           "VITE_SUPABASE_PUBLISHABLE_KEY",
           "SUPABASE_ANON_KEY",
