@@ -203,15 +203,23 @@ const classifyStatus = (s: string | null | undefined): StatusKind => {
   if (/ativ|active/.test(v)) return "ativo";
   return "outro";
 };
-const statusLabel = (s: string | null | undefined) => {
-  const k = classifyStatus(s);
-  if (k === "ativo") return "Ativo";
+// Status efetivo derivado da data de vencimento: passou 1 dia => expirado;
+// em dia até o vencimento. Mantém "arquivado" do status armazenado.
+const effectiveStatusKind = (s: string | null | undefined, days: number | null): StatusKind => {
+  const raw = classifyStatus(s);
+  if (raw === "arquivado") return "arquivado";
+  if (days != null) return days < 0 ? "expirado" : "ativo";
+  return raw;
+};
+const statusLabel = (s: string | null | undefined, days: number | null = null) => {
+  const k = effectiveStatusKind(s, days);
+  if (k === "ativo") return "Em dia";
   if (k === "expirado") return "Expirado";
   if (k === "arquivado") return "Arquivado";
   return (s ?? "—").replace(/_/g, " ");
 };
-const statusClass = (s: string | null | undefined) => {
-  const k = classifyStatus(s);
+const statusClass = (s: string | null | undefined, days: number | null = null) => {
+  const k = effectiveStatusKind(s, days);
   if (k === "ativo") return "bg-success-soft text-success";
   if (k === "expirado") return "bg-warning-soft text-warning";
   if (k === "arquivado") return "bg-muted text-muted-foreground";
@@ -493,18 +501,20 @@ function ClientesPage() {
     };
 
     return items.filter((c) => {
-      const kind = classifyStatus(c.status);
       const screens = allScreens[c.id] ?? [];
       if (serverFilter !== "__all__") {
         const active = screens.filter((s) => s.status !== "arquivada");
         if (!screensHaveServer(active, serverFilter)) return false;
       }
+      const rawKind = classifyStatus(c.status);
       // Por padrão, arquivados ficam fora da lista (só aparecem na aba "Arquivados").
-      if (filter !== "arquivado" && kind === "arquivado") return false;
+      if (filter !== "arquivado" && rawKind === "arquivado") return false;
       if (filter === "disparo_hoje") {
         if (!dispatchQueueById.has(c.id)) return false;
       } else if (filter === "ativo" || filter === "expirado" || filter === "arquivado") {
-        if (kind !== filter) return false;
+        const d = customerDueDays(c, screens);
+        const eff = effectiveStatusKind(c.status, d);
+        if (eff !== filter) return false;
       } else if (filter === "hoje" || filter === "7d" || filter === "vencidos") {
         const d = customerDueDays(c, screens);
         if (d == null) return false;
@@ -594,38 +604,12 @@ function ClientesPage() {
       const sb = allScreens[b.id] ?? [];
       const da = customerDueDays(a, sa);
       const db = customerDueDays(b, sb);
-      // Vencido = qualquer tela ativa já passou da data, OU o consolidado é negativo,
-      // OU o status do cliente é "expirado" (precisa renovar agora, ignorar telas futuras).
-      const isOverdue = (c: Customer, screens: AppScreen[], d: number | null) => {
-        if (d != null && d < 0) return true;
-        if (classifyStatus(c.status) === "expirado") return true;
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        for (const s of screens) {
-          if (s.status === "arquivada" || s.status === "pausada") continue;
-          if (!s.due_date) continue;
-          const sd = Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000);
-          if (sd < 0) return true;
-        }
-        return false;
-      };
-      // Para vencidos: quanto mais atrasado, mais embaixo. Status "expirado" sem data
-      // negativa é tratado como muito antigo (precisa renovar agora).
-      const worstOverdue = (c: Customer, screens: AppScreen[], d: number | null) => {
-        let worst = d != null && d < 0 ? d : 0;
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        for (const s of screens) {
-          if (s.status === "arquivada" || s.status === "pausada") continue;
-          if (!s.due_date) continue;
-          const sd = Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000);
-          if (sd < worst) worst = sd;
-        }
-        if (worst === 0 && classifyStatus(c.status) === "expirado") worst = -100000;
-        return worst;
-      };
-      const rank = (c: Customer, screens: AppScreen[], d: number | null) => {
-        if (isOverdue(c, screens, d)) {
+      // Vencido = consolidado de dias negativo. Status do cliente NÃO entra mais aqui:
+      // a data do vencimento é a única verdade.
+      const rank = (_c: Customer, _screens: AppScreen[], d: number | null) => {
+        if (d != null && d < 0) {
           // Vencidos no fim. Menos atrasado primeiro (mais próximo do 0).
-          return 1_000_000 + Math.abs(worstOverdue(c, screens, d));
+          return 1_000_000 + Math.abs(d);
         }
         if (d == null) return 500_000; // sem data antes dos vencidos
         return d; // ativos no topo, mais próximos do vencimento primeiro
@@ -645,12 +629,12 @@ function ClientesPage() {
     if (items) {
       c.todos = items.length;
       for (const it of items) {
-        const k = classifyStatus(it.status);
+        const screens = allScreens[it.id] ?? [];
+        const d = customerDueDays(it, screens);
+        const k = effectiveStatusKind(it.status, d);
         if (k === "ativo") c.ativo++;
         else if (k === "expirado") c.expirado++;
         else if (k === "arquivado") c.arquivado++;
-        const screens = allScreens[it.id] ?? [];
-        const d = customerDueDays(it, screens);
         if (d != null) {
           if (d === 0) c.hoje++;
           if (d >= 0 && d <= 7) c.d7++;
@@ -1172,8 +1156,8 @@ function ClientCard({
           label="Situação"
           value={
             <span className="inline-flex flex-wrap justify-end gap-1">
-              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", statusClass(customer.status))}>
-                {statusLabel(customer.status)}
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", statusClass(customer.status, days))}>
+                {statusLabel(customer.status, days)}
               </span>
               {days != null && (
                 <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>
@@ -1601,12 +1585,15 @@ function DetailView({
           />
           <DetailField
             label="Status"
-            hint="Ativo ou expirado."
-            value={
-              <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(customer.status))}>
-                {statusLabel(customer.status)}
-              </span>
-            }
+            hint="Em dia até a data de vencimento; após isso, expirado."
+            value={(() => {
+              const d = customerDueDays(customer, []);
+              return (
+                <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", statusClass(customer.status, d))}>
+                  {statusLabel(customer.status, d)}
+                </span>
+              );
+            })()}
           />
 
         </div>
