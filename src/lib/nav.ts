@@ -98,7 +98,7 @@ export const ownerMoreNav: NavItem[] = [
   { to: "/testes", label: "Indicações", icon: Gift },
   { to: "/meus-dados", label: "Minha conta", icon: UserCog },
   { to: "/configuracoes-revenda", label: "Minha revenda", icon: Store },
-  { to: "/backup-geral", label: "Backup", icon: HardDrive },
+  { to: "/backup", label: "Backup", icon: HardDrive },
   { to: "/ajuda", label: "Ajuda", icon: LifeBuoy },
 ];
 

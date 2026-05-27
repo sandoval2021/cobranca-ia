@@ -38,6 +38,7 @@ import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais
 import { Route as CadastrosServicosRouteImport } from './routes/cadastros-servicos'
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
+import { Route as BackupRouteImport } from './routes/backup'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as AgendaDisparoRouteImport } from './routes/agenda-disparo'
@@ -190,6 +191,11 @@ const BackupGeralRoute = BackupGeralRouteImport.update({
   path: '/backup-geral',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BackupRoute = BackupRouteImport.update({
+  id: '/backup',
+  path: '/backup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/auth': typeof AuthRoute
+  '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/cadastros-servicos': typeof CadastrosServicosRoute
@@ -265,6 +272,7 @@ export interface FileRoutesByTo {
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/auth': typeof AuthRoute
+  '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/cadastros-servicos': typeof CadastrosServicosRoute
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/auth': typeof AuthRoute
+  '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
   '/cadastros-servicos': typeof CadastrosServicosRoute
@@ -342,6 +351,7 @@ export interface FileRouteTypes {
     | '/agenda-disparo'
     | '/ajuda'
     | '/auth'
+    | '/backup'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/cadastros-servicos'
@@ -379,6 +389,7 @@ export interface FileRouteTypes {
     | '/agenda-disparo'
     | '/ajuda'
     | '/auth'
+    | '/backup'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/cadastros-servicos'
@@ -416,6 +427,7 @@ export interface FileRouteTypes {
     | '/agenda-disparo'
     | '/ajuda'
     | '/auth'
+    | '/backup'
     | '/backup-geral'
     | '/base-conhecimento'
     | '/cadastros-servicos'
@@ -454,6 +466,7 @@ export interface RootRouteChildren {
   AgendaDisparoRoute: typeof AgendaDisparoRoute
   AjudaRoute: typeof AjudaRoute
   AuthRoute: typeof AuthRoute
+  BackupRoute: typeof BackupRoute
   BackupGeralRoute: typeof BackupGeralRoute
   BaseConhecimentoRoute: typeof BaseConhecimentoRoute
   CadastrosServicosRoute: typeof CadastrosServicosRoute
@@ -690,6 +703,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BackupGeralRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/backup': {
+      id: '/backup'
+      path: '/backup'
+      fullPath: '/backup'
+      preLoaderRoute: typeof BackupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -742,6 +762,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgendaDisparoRoute: AgendaDisparoRoute,
   AjudaRoute: AjudaRoute,
   AuthRoute: AuthRoute,
+  BackupRoute: BackupRoute,
   BackupGeralRoute: BackupGeralRoute,
   BaseConhecimentoRoute: BaseConhecimentoRoute,
   CadastrosServicosRoute: CadastrosServicosRoute,
