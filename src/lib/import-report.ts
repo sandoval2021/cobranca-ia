@@ -98,6 +98,20 @@ function escapeCsv(v: unknown): string {
   return s;
 }
 
+// FASE 5.1 — Defesa em profundidade: caso algum dado sensível tenha vazado
+// para campos textuais (apesar do mascaramento já feito no parser xlsx),
+// trocamos por marcadores neutros antes de exportar.
+const SENSITIVE_FIELD_REGEX =
+  /\b(senha|password|pass)\s*[:=]\s*\S+/gi;
+const SENSITIVE_INLINE_REGEX =
+  /\b(token|key|chave|mac|login|usuario|usuário|user)\s*[:=]\s*\S+/gi;
+function sanitizeForExport(value: string): string {
+  if (!value) return value;
+  return value
+    .replace(SENSITIVE_FIELD_REGEX, "$1: não exibida por segurança")
+    .replace(SENSITIVE_INLINE_REGEX, "$1: informado");
+}
+
 function rowToRecord(i: number, ctx: ReportContext): Record<string, string> {
   const r = ctx.rows[i];
   const e = ctx.enrichments[i];
