@@ -30,6 +30,8 @@ type View =
   | "forgot"
   | "forgot_otp";
 
+const OTP_LENGTH = 8;
+
 const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
 
 function isValidWhatsapp(v: string): boolean {
