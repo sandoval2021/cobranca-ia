@@ -262,8 +262,14 @@ function ImportarClientesPage() {
     setRows(null);
     setFileName(file.name);
 
-    if (file.size > MAX_BYTES) {
-      setParseError("Arquivo maior que 10 MB. Envie um arquivo menor.");
+    if (file.size > SOFT_WARN_BYTES) {
+      toast.message(
+        `Arquivo grande (${(file.size / (1024 * 1024)).toFixed(1)} MB). O processamento será feito em lotes — pode levar alguns minutos.`,
+      );
+    }
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (!isPdf) {
+      setParseError("Formato não suportado. Envie um PDF pesquisável.");
       return;
     }
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
