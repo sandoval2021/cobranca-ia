@@ -380,7 +380,8 @@ function ImportarClientesPage() {
           );
         }
       } catch (err) {
-        console.error(err);
+        // FASE 5.1 — não imprimir conteúdo da planilha; só o tipo/mensagem do erro.
+        console.error("[xlsx] parse failed:", err instanceof Error ? err.message : "unknown");
         setParseError("Não conseguimos ler esta planilha. Verifique se o arquivo não está corrompido.");
       } finally {
         setParsing(false);
