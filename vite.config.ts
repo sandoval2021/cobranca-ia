@@ -20,7 +20,7 @@ const EXPECTED_URL = "https://pkghjzbvmifmztqvpdeu.supabase.co";
 const pick = (...keys: string[]) => {
   for (const k of keys) {
     const v = env[k];
-    if (v !== undefined && v !== "" && !v.includes(FORBIDDEN_REF)) return v;
+    if (v !== undefined && v !== "" && !v.includes(FORBIDDEN_REF) && !v.includes(FORBIDDEN_REF_B64)) return v;
   }
   return "";
 };
