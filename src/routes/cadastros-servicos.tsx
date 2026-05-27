@@ -25,6 +25,7 @@ import {
   renderTemplate, DEFAULT_COBRANCA, DEFAULT_ACOMP,
   SERVICES_EVENT, type ServiceItem, type ServiceMessage, type ServiceMessageKind,
 } from "@/lib/services-catalog";
+import { ensureCanEditService } from "@/lib/plan-gate";
 
 export const Route = createFileRoute("/cadastros-servicos")({
   component: CadastrosServicosPage,
@@ -46,6 +47,7 @@ function CadastrosServicosPage() {
   }, []);
 
   function openNew() {
+    if (!ensureCanEditService().allowed) return;
     const created = saveService({
       nome: "Novo plano",
       preco_cents: 0,
@@ -62,6 +64,7 @@ function CadastrosServicosPage() {
   }
 
   function toggleAtivo(s: ServiceItem) {
+    if (!ensureCanEditService().allowed) return;
     updateService(s.id, { ativo: !s.ativo });
     reload();
   }
@@ -252,6 +255,7 @@ function PlanInfoEditor({ service, onSaved }: { service: ServiceItem; onSaved: (
     if (!n) { toast.error("Informe o nome do plano."); return; }
     const num = Number((valor || "").replace(/\./g, "").replace(",", "."));
     if (!isFinite(num) || num < 0) { toast.error("Valor inválido."); return; }
+    if (!ensureCanEditService().allowed) return;
     updateService(service.id, {
       nome: n,
       preco_cents: Math.round(num * 100),

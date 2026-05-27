@@ -92,6 +92,7 @@ import { getCustomerExtras, setCustomerExtras } from "@/lib/customer-extras";
 import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge";
 import { getServerById, listActiveServers, screensHaveServer } from "@/lib/server-catalog";
 import { getPrimaryRouteForServer } from "@/lib/dns-routes";
+import { ensurePlanAction } from "@/lib/plan-gate";
 import { Tv, ExternalLink, Copy, Check } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -2643,6 +2644,8 @@ function NewCustomerSheet({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const gate = ensurePlanAction("clientes", "criar");
+    if (!gate.allowed) return;
     const waErr = validateWhatsApp(countryCode, customDdi, whatsapp);
     if (waErr) { toast.error(waErr); return; }
     const amt = amount.trim()

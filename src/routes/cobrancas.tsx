@@ -21,6 +21,7 @@ import {
   SimulatedMessagesPanel,
 } from "@/components/messages/simulated-messages";
 import { AnalyzeWithAIDialog, AISuggestionsPanel } from "@/components/ai/ai-analysis";
+import { ensureCanCreateCharge } from "@/lib/plan-gate";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
@@ -1138,6 +1139,8 @@ function CreateChargeDialog({
 
   const submit = async () => {
     if (!supabase) return;
+    const gate = ensureCanCreateCharge();
+    if (!gate.allowed) return;
     if (!customerId) {
       toast.error("Selecione um cliente.");
       return;
