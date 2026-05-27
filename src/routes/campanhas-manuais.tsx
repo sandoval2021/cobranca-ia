@@ -767,7 +767,7 @@ function CampanhasManuaisPage() {
   const exportCampaign = () => {
     const date = new Date().toLocaleDateString("pt-BR");
     const lines: string[] = [];
-    lines.push("Campanha manual — Cobrança IA");
+    lines.push("Campanha manual — CobraEasy");
     lines.push(`Data: ${date}`);
     lines.push(`Filtro: ${AUDIENCE_LABEL[audience]}`);
     lines.push(`Modelo: ${currentTemplate.label}`);

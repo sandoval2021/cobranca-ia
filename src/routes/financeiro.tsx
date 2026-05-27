@@ -51,7 +51,7 @@ import { FinanceDashboard } from "@/components/financeiro/FinanceDashboard";
 export const Route = createFileRoute("/financeiro")({
   head: () => ({
     meta: [
-      { title: "Financeiro — Cobrança IA" },
+      { title: "Financeiro — CobraEasy" },
       { name: "description", content: "Controle local de receitas, custos, lucro e objetivos." },
     ],
   }),

@@ -619,7 +619,7 @@ function PendenciasPage() {
   const exportTxt = () => {
     const date = new Date().toLocaleDateString("pt-BR");
     const lines: string[] = [];
-    lines.push("Central de Pendências — Cobrança IA");
+    lines.push("Central de Pendências — CobraEasy");
     lines.push(`Data: ${date}`);
     lines.push(`Ambiente: simulado (nada enviado)`);
     lines.push("");

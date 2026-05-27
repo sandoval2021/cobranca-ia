@@ -658,7 +658,7 @@ function todayStamp() {
 export function buildReadinessTxt(report?: ReadinessReport): string {
   const r = report || buildReadinessReport();
   const L: string[] = [];
-  L.push("Plano de Preparação para Backend — Cobrança IA");
+  L.push("Plano de Preparação para Backend — CobraEasy");
   L.push(`Gerado em: ${new Date(r.generated_at).toLocaleString("pt-BR")}`);
   L.push("");
   L.push("MÓDULOS LOCAIS ENCONTRADOS");

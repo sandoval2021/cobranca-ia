@@ -38,7 +38,7 @@ export const Route = createFileRoute("/configuracao-inicial")({
   component: ConfiguracaoInicialPage,
   head: () => ({
     meta: [
-      { title: "Configuração Inicial — Cobrança IA" },
+      { title: "Configuração Inicial — CobraEasy" },
       {
         name: "description",
         content:

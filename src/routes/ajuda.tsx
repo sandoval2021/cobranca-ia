@@ -30,7 +30,7 @@ export const Route = createFileRoute("/ajuda")({
   component: AjudaPage,
   head: () => ({
     meta: [
-      { title: "Ajuda — Cobrança IA" },
+      { title: "Ajuda — CobraEasy" },
       {
         name: "description",
         content: "Central local de ajuda. Aprenda como usar cada parte do sistema.",

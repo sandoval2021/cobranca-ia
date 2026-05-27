@@ -8,7 +8,7 @@ export type BackupModule = {
 };
 
 export const BACKUP_VERSION = 1;
-export const SYSTEM_NAME = "Cobrança IA";
+export const SYSTEM_NAME = "CobraEasy";
 
 export const BACKUP_MODULES: BackupModule[] = [
   { key: "cobranca_ia_app_screens_v1", label: "Telas e aplicativos", isList: true },
