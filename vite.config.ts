@@ -10,10 +10,15 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // Falls back to VITE_*-prefixed env if already provided that way.
 // Rebuild trigger: inject secrets URL_SUPABASE / ANON_KEY_SUPABASE into published bundle.
 const env = process.env;
+const FORBIDDEN_REF = "ajeyimujgtukcbadyash";
+const EXPECTED_URL = "https://pkghjzbvmifmztqvpdeu.supabase.co";
+// Pick the first non-empty value that does NOT reference the forbidden
+// (empty) Lovable Cloud database. This makes the build immune to the
+// auto-generated .env pointing at the wrong project.
 const pick = (...keys: string[]) => {
   for (const k of keys) {
     const v = env[k];
-    if (v !== undefined && v !== "") return v;
+    if (v !== undefined && v !== "" && !v.includes(FORBIDDEN_REF)) return v;
   }
   return "";
 };
