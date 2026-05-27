@@ -585,6 +585,76 @@ function Dashboard() {
 
       <OwnerRoleNotice />
 
+      {/* Próximo passo recomendado — linguagem simples para o Dono */}
+      {(() => {
+        const totalClientes =
+          counters.clientesHoje + counters.clientesVencidos + counters.proximos7;
+        let titulo = "Acompanhe seus próximos vencimentos.";
+        let descricao = "Está tudo em dia — confira a aba Clientes regularmente.";
+        let cta = "Abrir Clientes";
+        let para = "/clientes";
+        let tom = "success" as "success" | "warning" | "danger" | "default";
+
+        if (totalClientes === 0 && counters.testesAndamento === 0) {
+          titulo = "Cadastre ou importe seus clientes.";
+          descricao = "Comece adicionando seu primeiro cliente ou importando uma lista.";
+          cta = "Importar clientes";
+          para = "/importar-clientes";
+          tom = "default";
+        } else if (counters.clientesVencidos > 0) {
+          titulo = "Revise as cobranças pendentes.";
+          descricao = `${counters.clientesVencidos} cliente(s) com lista vencida aguardando contato.`;
+          cta = "Abrir Cobranças";
+          para = "/operacao-dia";
+          tom = "danger";
+        } else if (counters.clientesHoje > 0) {
+          titulo = "Você tem clientes vencendo hoje.";
+          descricao = `${counters.clientesHoje} cliente(s) vencem hoje — envie a mensagem de cobrança.`;
+          cta = "Abrir Cobranças";
+          para = "/operacao-dia";
+          tom = "warning";
+        } else if (counters.testesAcompanharHoje > 0) {
+          titulo = "Acompanhe seus testes.";
+          descricao = `${counters.testesAcompanharHoje} teste(s) precisam de retorno hoje.`;
+          cta = "Abrir Testes";
+          para = "/testes";
+          tom = "warning";
+        }
+
+        const toneCls =
+          tom === "danger"
+            ? "border-danger/30 bg-danger-soft/40"
+            : tom === "warning"
+              ? "border-warning/30 bg-warning-soft/40"
+              : tom === "success"
+                ? "border-success/30 bg-success-soft/40"
+                : "border-primary/30 bg-primary-soft/40";
+
+        return (
+          <div
+            className={cn(
+              "mb-4 flex flex-col gap-2 rounded-2xl border p-4 shadow-card sm:flex-row sm:items-center sm:justify-between",
+              toneCls,
+            )}
+          >
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Próximo passo recomendado
+              </p>
+              <p className="mt-0.5 text-sm font-semibold leading-snug">{titulo}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{descricao}</p>
+            </div>
+            <Link to={para} className="shrink-0">
+              <Button size="sm" className="w-full sm:w-auto">
+                {cta}
+              </Button>
+            </Link>
+          </div>
+        );
+      })()}
+
+
+
 
 
       {/* Cards principais */}

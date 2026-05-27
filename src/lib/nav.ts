@@ -79,13 +79,27 @@ export const ownerNav: NavItem[] = [
   { to: "/ajuda", label: "Ajuda", icon: LifeBuoy, hint: "Aprenda como usar cada parte do sistema" },
 ];
 
+// Bottom nav do Dono — 5 atalhos principais + botão "Mais" (renderizado pelo MobileBottomNav).
 export const ownerBottomNav: NavItem[] = [
+  { to: "/", label: "Início", icon: LayoutDashboard },
   { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/testes", label: "Testes", icon: Beaker },
-  { to: "/cadastros-servicos", label: "Cadastro", icon: Tv },
+  { to: "/cadastros-servicos", label: "Serviços", icon: Tv },
+  { to: "/operacao-dia", label: "Cobranças", icon: Receipt },
+];
+
+// Itens que aparecem dentro do drawer "Mais" do bottom nav (apenas o que o Dono deve ver).
+export const ownerMoreNav: NavItem[] = [
+  { to: "/importar-clientes", label: "Importar clientes", icon: Upload },
+  { to: "/campanhas-manuais", label: "Mensagens", icon: MessageCircle },
   { to: "/financeiro", label: "Financeiro", icon: Wallet },
   { to: "/catalogo-servidores", label: "Servidores", icon: Server },
   { to: "/agenda-disparo", label: "Disparo", icon: Send },
+  { to: "/testes", label: "Indicações", icon: Gift },
+  { to: "/meus-dados", label: "Minha conta", icon: UserCog },
+  { to: "/configuracoes-revenda", label: "Minha revenda", icon: Store },
+  { to: "/backup-geral", label: "Backup", icon: HardDrive },
+  { to: "/ajuda", label: "Ajuda", icon: LifeBuoy },
 ];
 
 
