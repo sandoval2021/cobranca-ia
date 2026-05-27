@@ -14,10 +14,13 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
  * Bridge entre sessão Supabase Auth e a role no frontend.
  *
  * Fonte da verdade da role (em ordem de prioridade):
- *   1) RPC public.current_user_is_super_admin() — backend, autoritativa.
- *   2) Allowlist VITE_SUPER_ADMIN_EMAILS — fallback de UX enquanto a RPC
- *      ainda não está disponível (ex.: migration não aplicada).
- *   3) "owner" — padrão seguro. Cadastro público NUNCA vira super_admin.
+ *   1) RPC public.current_user_is_super_admin()      — backend, autoritativa
+ *   2) RPC public.is_super_admin(uuid) com nomes de  — fallback direto
+ *      argumento testados: uid, user_id, p_user_id, _user_id
+ *   3) Allowlist VITE_SUPER_ADMIN_EMAILS             — fallback de UX
+ *   4) "owner"                                       — default seguro
+ *
+ * Cadastro público NUNCA vira super_admin (ver local-auth.ts:signUp).
  *
  * IMPORTANTE: o frontend só esconde/mostra telas. A segurança real está
  * nas RPCs *_admin que chamam is_super_admin(auth.uid()) no backend e
