@@ -184,6 +184,11 @@ export function buildConfirmationMessage(rec: RenewalRecord): string {
     telasLinha = lines.join("\n");
   }
 
+  // Fallback: cliente sem telas — usa next_due_date do registro.
+  if (!vencimento && rec.next_due_date) {
+    vencimento = fmtDateBR(rec.next_due_date);
+  }
+
   const settings = getRevendaSettings();
   const template =
     settings.mensagens?.renovacao_confirmada?.trim() ||
