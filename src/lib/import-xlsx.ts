@@ -17,6 +17,50 @@ const FIELD_SYNONYMS: Record<string, string[]> = {
 
 const EXTRA_NOTE_KEYS = ["observação", "observacao", "obs", "descrição", "descricao", "notas", "anotações", "anotacoes", "usuário", "usuario", "login", "user", "mac", "key"];
 
+// FASE 5.1 — Segurança/privacidade da importação Excel
+// Chaves perigosas: evitar poluição de protótipo (CVE-2023-30533).
+const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+
+// Limite por célula para evitar travamento / mitigar ReDoS (CVE-2024-22363)
+// na renderização de prévia e observações. Não limita o arquivo inteiro.
+const MAX_CELL_CHARS = 2000;
+
+// Padrões de rótulos sensíveis que NÃO devem ser exibidos em texto puro
+// na prévia ou em relatórios. O dado pode ser preservado internamente,
+// mas o que aparecer ao usuário/relatório vai mascarado.
+const SENSITIVE_PATTERNS: Array<{ test: (l: string) => boolean; label: string }> = [
+  { test: (l) => /\bsenha\b|\bpassword\b|\bpass\b/.test(l), label: "senha: não exibida por segurança" },
+  { test: (l) => /\btoken\b/.test(l), label: "token: informado" },
+  { test: (l) => /\bkey\b|\bchave\b/.test(l), label: "chave: informada" },
+  { test: (l) => /\bmac\b/.test(l), label: "mac: informado" },
+  { test: (l) => /\busuario\b|\busuário\b|\blogin\b|\buser\b/.test(l), label: "login: informado" },
+];
+
+function maskedSensitiveLabel(normalizedLabel: string): string | null {
+  for (const p of SENSITIVE_PATTERNS) {
+    if (p.test(normalizedLabel)) return p.label;
+  }
+  return null;
+}
+
+function safeKey(key: string): string | null {
+  // Sanitiza chaves: nunca deixar chave perigosa entrar em qualquer objeto
+  // que possa ser mesclado adiante (raw_row, notes, etc).
+  const k = key.trim();
+  if (!k) return null;
+  if (DANGEROUS_KEYS.has(k)) return null;
+  if (DANGEROUS_KEYS.has(k.toLowerCase())) return null;
+  return k;
+}
+
+function truncateLong(value: string): { text: string; truncated: boolean } {
+  if (value.length <= MAX_CELL_CHARS) return { text: value, truncated: false };
+  return {
+    text: value.slice(0, MAX_CELL_CHARS) + " […texto muito longo foi resumido para segurança]",
+    truncated: true,
+  };
+}
+
 function norm(s: unknown): string {
   return String(s ?? "")
     .toLowerCase()
