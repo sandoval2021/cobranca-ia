@@ -910,12 +910,12 @@ function ImportarClientesPage() {
             {parsing ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Lendo PDF…
+                Lendo arquivo…
               </>
             ) : (
               <>
                 <FileText className="h-4 w-4" />
-                Selecionar PDF
+                Selecionar arquivo
               </>
             )}
           </Button>
@@ -926,9 +926,8 @@ function ImportarClientesPage() {
           )}
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Formato atual: <strong>PDF pesquisável</strong>. Importação direta de
-          Excel (.xlsx) e CSV será ativada na próxima atualização — por enquanto
-          exporte do Excel como PDF ou CSV UTF-8 (e converta para PDF).
+          Formatos aceitos: <strong>PDF pesquisável</strong> e <strong>Excel (.xlsx, .xls)</strong>.
+          Reconhecemos colunas como Nome, WhatsApp, Valor e Vencimento automaticamente.
         </p>
         {parseError && (
           <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
