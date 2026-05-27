@@ -590,16 +590,47 @@ function ClientesPage() {
       });
     }
     return [...filtered].sort((a, b) => {
-      const da = customerDueDays(a, allScreens[a.id] ?? []);
-      const db = customerDueDays(b, allScreens[b.id] ?? []);
-      const rank = (d: number | null) => {
-        if (d == null) return 500;
-        if (d < 0) return 1000 + Math.abs(d); // vencidos no fim
-        return d; // 0,1,2,... primeiros
+      const sa = allScreens[a.id] ?? [];
+      const sb = allScreens[b.id] ?? [];
+      const da = customerDueDays(a, sa);
+      const db = customerDueDays(b, sb);
+      // Considera vencido se a data principal já passou OU qualquer tela ativa venceu.
+      const isOverdue = (c: Customer, screens: AppScreen[], d: number | null) => {
+        if (d != null && d < 0) return true;
+        for (const s of screens) {
+          if (s.status === "arquivada" || s.status === "pausada") continue;
+          if (!s.due_date) continue;
+          const today = new Date(); today.setHours(0, 0, 0, 0);
+          const sd = Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000);
+          if (sd < 0) return true;
+        }
+        if (classifyStatus(c.status) === "expirado") return true;
+        return false;
       };
-      return rank(da) - rank(db);
+      // Para clientes vencidos, usa o "pior" atraso (mais negativo) para ordenar.
+      const worstOverdue = (c: Customer, screens: AppScreen[], d: number | null) => {
+        let worst = d != null && d < 0 ? d : 0;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        for (const s of screens) {
+          if (s.status === "arquivada" || s.status === "pausada") continue;
+          if (!s.due_date) continue;
+          const sd = Math.floor((+new Date(s.due_date + "T00:00:00") - +today) / 86400000);
+          if (sd < worst) worst = sd;
+        }
+        return worst; // negativo ou 0
+      };
+      const rank = (c: Customer, screens: AppScreen[], d: number | null) => {
+        if (isOverdue(c, screens, d)) {
+          // Vencidos no fim. Menos atrasado primeiro (mais próximo do 0).
+          return 1_000_000 + Math.abs(worstOverdue(c, screens, d));
+        }
+        if (d == null) return 500_000; // sem data antes dos vencidos
+        return d; // ativos no topo, mais próximos do vencimento primeiro
+      };
+      return rank(a, sa, da) - rank(b, sb, db);
     });
   }, [filtered, allScreens, filter, dispatchQueueById]);
+
 
   const counts = useMemo(() => {
     const c = {
