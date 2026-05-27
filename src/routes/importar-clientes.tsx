@@ -100,6 +100,17 @@ const SOFT_WARN_BYTES = 25 * 1024 * 1024;
 // Tamanho do lote enviado para a RPC staging_import_customers_from_rows.
 // Evita timeout/payload gigante em bases de 5k–10k clientes.
 const IMPORT_CHUNK_SIZE = 250;
+// Quantas linhas da prévia mostrar por página. Renderizar 5k–10k cards
+// de uma vez trava o navegador no celular. 100 mantém UI responsiva.
+const PREVIEW_PAGE_SIZE = 100;
+
+type PreviewFilter =
+  | "todos"
+  | "validos"
+  | "erros"
+  | "duplicados"
+  | "conflitos"
+  | "repetidos";
 
 function ImportarClientesPage() {
   const { user, isAuthenticated } = useAuth();
@@ -262,6 +273,65 @@ function ImportarClientesPage() {
     [rows, enrichments],
   );
 
+  // FASE 4 — paginação/filtros/busca da prévia. Sem isso, 5k–10k linhas
+  // travavam o navegador ao renderizar todos os cards/linhas de uma vez.
+  const [previewFilter, setPreviewFilter] = useState<PreviewFilter>("todos");
+  const [previewSearch, setPreviewSearch] = useState("");
+  const [previewPage, setPreviewPage] = useState(0);
+
+  // Reset paginação quando troca arquivo/filtro/busca.
+  useEffect(() => {
+    setPreviewPage(0);
+  }, [rows, previewFilter, previewSearch]);
+
+  const filteredIdx = useMemo<number[]>(() => {
+    if (!rows) return [];
+    const q = previewSearch.trim().toLowerCase();
+    const out: number[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const e = enrichments[i];
+      // filtro por tipo
+      if (previewFilter === "validos" && r.status !== "valid") continue;
+      if (previewFilter === "erros" && r.status !== "invalid") continue;
+      if (previewFilter === "duplicados" && r.status !== "duplicate") continue;
+      if (previewFilter === "conflitos" && !e?.group_conflict) continue;
+      if (previewFilter === "repetidos" && (!e || e.group_size <= 1)) continue;
+      // busca livre por nome ou WhatsApp
+      if (q) {
+        const hay = `${r.customer_name ?? ""} ${r.whatsapp_raw ?? ""} ${r.whatsapp_e164 ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) continue;
+      }
+      out.push(i);
+    }
+    return out;
+  }, [rows, enrichments, previewFilter, previewSearch]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredIdx.length / PREVIEW_PAGE_SIZE));
+  const safePage = Math.min(previewPage, totalPages - 1);
+  const pageIdx = useMemo(
+    () => filteredIdx.slice(safePage * PREVIEW_PAGE_SIZE, (safePage + 1) * PREVIEW_PAGE_SIZE),
+    [filteredIdx, safePage],
+  );
+
+  // Contadores agregados para os chips de filtro.
+  const filterCounts = useMemo(() => {
+    const c = { todos: 0, validos: 0, erros: 0, duplicados: 0, conflitos: 0, repetidos: 0 };
+    if (!rows) return c;
+    c.todos = rows.length;
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const e = enrichments[i];
+      if (r.status === "valid") c.validos++;
+      if (r.status === "invalid") c.erros++;
+      if (r.status === "duplicate") c.duplicados++;
+      if (e?.group_conflict) c.conflitos++;
+      if (e && e.group_size > 1) c.repetidos++;
+    }
+    return c;
+  }, [rows, enrichments]);
+
+
 
 
 
@@ -281,8 +351,22 @@ function ImportarClientesPage() {
       );
     }
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    const isXlsx = /\.(xlsx|xls)$/i.test(file.name);
+    const isCsv = /\.csv$/i.test(file.name);
+    if (isXlsx) {
+      setParseError(
+        "Importação direta de Excel (.xlsx) será ativada em breve. Por enquanto, no Excel use Arquivo → Salvar como → CSV UTF-8, ou exporte como PDF pesquisável."
+      );
+      return;
+    }
+    if (isCsv) {
+      setParseError(
+        "Importação direta de CSV será ativada em breve. Por enquanto, exporte sua planilha como PDF pesquisável (texto selecionável)."
+      );
+      return;
+    }
     if (!isPdf) {
-      setParseError("Formato não suportado. Envie um PDF pesquisável.");
+      setParseError("Formato não suportado. Envie um PDF pesquisável (com texto selecionável).");
       return;
     }
 
@@ -292,7 +376,7 @@ function ImportarClientesPage() {
       const trimmed = text.trim();
       if (!trimmed || trimmed.length < 20) {
         setParseError(
-          "Não consegui ler este PDF automaticamente. Envie um PDF pesquisável, CSV ou Excel."
+          "Não consegui ler texto deste PDF. Provavelmente é uma imagem digitalizada/scanner. Reexporte do seu sistema como PDF pesquisável (texto selecionável) ou envie CSV/Excel exportado da origem."
         );
         setParsing(false);
         return;
@@ -300,16 +384,21 @@ function ImportarClientesPage() {
       const parsed = parseRowsFromText(text);
       if (parsed.length === 0) {
         setParseError(
-          "Não encontrei linhas de clientes neste PDF. Confira se ele contém colunas como Cliente, WhatsApp e Valor."
+          "PDF lido, mas não encontrei colunas reconhecíveis (Cliente, WhatsApp, Valor, Vencimento). Confira se é o relatório de clientes correto."
         );
         setParsing(false);
         return;
       }
       const validated = validateRows(parsed);
       setRows(validated);
+      if (validated.length >= 2000) {
+        toast.message(
+          `${validated.length.toLocaleString("pt-BR")} linhas lidas. A prévia mostra páginas de 100 para não travar o navegador.`,
+        );
+      }
     } catch (err) {
       setParseError(
-        "Falha ao ler o PDF. Envie um PDF pesquisável (com texto, não digitalizado)."
+        "Falha ao ler o PDF. Tente reexportar como PDF pesquisável (com texto, não digitalizado)."
       );
       console.error(err);
     } finally {
@@ -772,12 +861,12 @@ function ImportarClientesPage() {
         </div>
         <p className="mb-3 text-sm text-muted-foreground">
           Envie o PDF exportado do seu sistema com a lista de clientes.
-          Tamanho máximo 10 MB.
+          Suporta bases grandes (5 mil, 10 mil ou mais).
         </p>
         <input
           ref={fileRef}
           type="file"
-          accept="application/pdf,.pdf"
+          accept="application/pdf,.pdf,.xlsx,.xls,.csv"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -808,6 +897,11 @@ function ImportarClientesPage() {
             </span>
           )}
         </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Formato atual: <strong>PDF pesquisável</strong>. Importação direta de
+          Excel (.xlsx) e CSV será ativada na próxima atualização — por enquanto
+          exporte do Excel como PDF ou CSV UTF-8 (e converta para PDF).
+        </p>
         {parseError && (
           <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
             {parseError}
@@ -914,10 +1008,56 @@ function ImportarClientesPage() {
           )}
 
 
+          {/* FASE 4 — Filtros, busca e paginação para suportar 5k/10k linhas sem travar */}
+          <div className="mb-3 space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                ["todos", `Todos (${filterCounts.todos})`],
+                ["validos", `Válidos (${filterCounts.validos})`],
+                ["erros", `Erros (${filterCounts.erros})`],
+                ["duplicados", `Duplicados (${filterCounts.duplicados})`],
+                ["conflitos", `Conflitos (${filterCounts.conflitos})`],
+                ["repetidos", `WhatsApp repetido (${filterCounts.repetidos})`],
+              ] as Array<[PreviewFilter, string]>).map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setPreviewFilter(k)}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                    previewFilter === k
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card/40 text-muted-foreground hover:bg-card"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="search"
+                value={previewSearch}
+                onChange={(e) => setPreviewSearch(e.target.value)}
+                placeholder="Buscar por nome ou WhatsApp…"
+                className="h-8 min-w-0 flex-1 rounded-md border bg-background px-2 text-xs"
+              />
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {filteredIdx.length.toLocaleString("pt-BR")} resultado(s)
+              </span>
+            </div>
+          </div>
 
-          {/* Mobile: cards */}
+          {filteredIdx.length === 0 && (
+            <p className="rounded-md border bg-muted/30 p-3 text-center text-xs text-muted-foreground">
+              Nenhuma linha corresponde a este filtro/busca.
+            </p>
+          )}
+
+          {/* Mobile: cards (apenas página atual — não renderiza milhares) */}
           <div className="space-y-2 sm:hidden">
-            {rows.map((r, i) => (
+            {pageIdx.map((i) => {
+              const r = rows[i];
+              return (
               <div
                 key={i}
                 className="rounded-xl border bg-card/50 p-3 text-xs"
@@ -996,7 +1136,8 @@ function ImportarClientesPage() {
                 )}
 
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Desktop: table */}
@@ -1019,7 +1160,7 @@ function ImportarClientesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, i) => (
+                  {pageIdx.map((i) => { const r = rows[i]; return (
                     <tr key={i} className="border-b last:border-0">
                       <td className="p-2">
                         <KindPill kind={rowKind(r)} errors={r.errors} />
@@ -1089,11 +1230,62 @@ function ImportarClientesPage() {
                       </td>
 
                     </tr>
-                  ))}
+                  ); })}
                 </tbody>
               </table>
             </div>
           </div>
+
+          {/* Paginação — mantém UI fluida mesmo com 10k linhas */}
+          {filteredIdx.length > PREVIEW_PAGE_SIZE && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="text-muted-foreground tabular-nums">
+                Página {safePage + 1} de {totalPages} ·{" "}
+                {(safePage * PREVIEW_PAGE_SIZE + 1).toLocaleString("pt-BR")}–
+                {Math.min((safePage + 1) * PREVIEW_PAGE_SIZE, filteredIdx.length).toLocaleString("pt-BR")}{" "}
+                de {filteredIdx.length.toLocaleString("pt-BR")}
+              </span>
+              <div className="flex gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={safePage === 0}
+                  onClick={() => setPreviewPage(0)}
+                >
+                  ««
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={safePage === 0}
+                  onClick={() => setPreviewPage((p) => Math.max(0, p - 1))}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={safePage >= totalPages - 1}
+                  onClick={() => setPreviewPage((p) => Math.min(totalPages - 1, p + 1))}
+                >
+                  Próxima
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={safePage >= totalPages - 1}
+                  onClick={() => setPreviewPage(totalPages - 1)}
+                >
+                  »»
+                </Button>
+              </div>
+            </div>
+          )}
+
 
           <div className="mt-4">
             <p className="text-xs text-muted-foreground">
