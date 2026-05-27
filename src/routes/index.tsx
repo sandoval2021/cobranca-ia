@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Target,
   Info,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageContainer";
