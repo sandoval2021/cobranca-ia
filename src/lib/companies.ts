@@ -510,22 +510,23 @@ export function ensureLocalAccount(
   if (!chosen) {
     const plans = listCompanyPlans();
     const plan =
-      plans.find((p) => p.id === "plan_premium") ??
-      plans.find((p) => p.id === "plan_profissional") ??
       plans.find((p) => p.id === "plan_basico") ??
+      plans.find((p) => p.id === "plan_profissional") ??
+      plans.find((p) => p.id === "plan_premium") ??
       plans[0]!;
+    const dias = Math.max(1, plan.dias_teste || 7);
     const today = new Date().toISOString().slice(0, 10);
-    const inOneYear = new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10);
+    const vencTeste = new Date(Date.now() + dias * 86400000).toISOString().slice(0, 10);
     chosen = saveCompany({
       nome: "Minha conta",
       slug: slugify("minha-conta-" + Math.random().toString(36).slice(2, 6)),
       dono_nome: userName ?? "Titular",
       dono_email: userEmail,
       dono_whatsapp: userWhatsapp ?? "",
-      status: "ativa",
+      status: "teste",
       plano_id: plan.id,
       data_inicio: today,
-      data_vencimento: inOneYear,
+      data_vencimento: vencTeste,
     });
   }
 
