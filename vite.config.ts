@@ -10,10 +10,17 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // Falls back to VITE_*-prefixed env if already provided that way.
 // Rebuild trigger: inject secrets URL_SUPABASE / ANON_KEY_SUPABASE into published bundle.
 const env = process.env;
+const FORBIDDEN_REF = "ajeyimujgtukcbadyash";
+// JWT anon keys embed the project ref as base64 inside the payload.
+const FORBIDDEN_REF_B64 = "YWpleWltdWpndHVrY2JhZHlhc2"; // base64("ajeyimujgtukcbadyash") prefix
+const EXPECTED_URL = "https://pkghjzbvmifmztqvpdeu.supabase.co";
+// Pick the first non-empty value that does NOT reference the forbidden
+// (empty) Lovable Cloud database. This makes the build immune to the
+// auto-generated .env pointing at the wrong project.
 const pick = (...keys: string[]) => {
   for (const k of keys) {
     const v = env[k];
-    if (v !== undefined && v !== "") return v;
+    if (v !== undefined && v !== "" && !v.includes(FORBIDDEN_REF) && !v.includes(FORBIDDEN_REF_B64)) return v;
   }
   return "";
 };
@@ -25,7 +32,7 @@ export default defineConfig({
   vite: {
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
-        pick("URL_SUPABASE", "VITE_SUPABASE_URL", "SUPABASE_URL"),
+        pick("URL_SUPABASE", "VITE_SUPABASE_URL", "SUPABASE_URL") || EXPECTED_URL,
       ),
       "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(
         pick(
