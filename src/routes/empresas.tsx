@@ -656,7 +656,36 @@ function PlanSheet({ plan, onClose }: { plan: CompanyPlan; onClose: () => void }
               />
             </Field>
           </div>
-          <div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Dias de teste grátis">
+              <Input
+                type="number"
+                value={form.dias_teste ?? 7}
+                onChange={(e) => setForm({ ...form, dias_teste: Number(e.target.value) || 0 })}
+              />
+            </Field>
+            <Field label="Status do plano">
+              <Select
+                value={form.status}
+                onValueChange={(v) => setForm({ ...form, status: v as "ativo" | "arquivado" })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="arquivado">Arquivado</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+          <Field label="Descrição (mostrada ao Dono)">
+            <Input
+              value={form.descricao ?? ""}
+              onChange={(e) => setForm({ ...form, descricao: e.target.value })}
+              placeholder="Ex.: Plano completo com IA e mais limites."
+            />
+          </Field>
             <Label className="text-xs">Módulos liberados</Label>
             <div className="mt-1 grid grid-cols-2 gap-1.5">
               {ALL_MODULES.map((m) => (
