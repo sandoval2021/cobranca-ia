@@ -42,9 +42,11 @@ import { Route as BackupRouteImport } from './routes/backup'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as AgendaDisparoRouteImport } from './routes/agenda-disparo'
+import { Route as AdminPlanosPagamentosRouteImport } from './routes/admin-planos-pagamentos'
 import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as AcessoRestritoRouteImport } from './routes/acesso-restrito'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicWebhooksMercadoPagoRouteImport } from './routes/api/public/webhooks/mercado-pago'
 
 const TestesRoute = TestesRouteImport.update({
   id: '/testes',
@@ -211,6 +213,11 @@ const AgendaDisparoRoute = AgendaDisparoRouteImport.update({
   path: '/agenda-disparo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPlanosPagamentosRoute = AdminPlanosPagamentosRouteImport.update({
+  id: '/admin-planos-pagamentos',
+  path: '/admin-planos-pagamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDnsRotasRoute = AdminDnsRotasRouteImport.update({
   id: '/admin-dns-rotas',
   path: '/admin-dns-rotas',
@@ -226,11 +233,18 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWebhooksMercadoPagoRoute =
+  ApiPublicWebhooksMercadoPagoRouteImport.update({
+    id: '/api/public/webhooks/mercado-pago',
+    path: '/api/public/webhooks/mercado-pago',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/acesso-restrito': typeof AcessoRestritoRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
+  '/admin-planos-pagamentos': typeof AdminPlanosPagamentosRoute
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/auth': typeof AuthRoute
@@ -264,11 +278,13 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/acesso-restrito': typeof AcessoRestritoRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
+  '/admin-planos-pagamentos': typeof AdminPlanosPagamentosRoute
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/auth': typeof AuthRoute
@@ -302,12 +318,14 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/acesso-restrito': typeof AcessoRestritoRoute
   '/admin-dns-rotas': typeof AdminDnsRotasRoute
+  '/admin-planos-pagamentos': typeof AdminPlanosPagamentosRoute
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/auth': typeof AuthRoute
@@ -341,6 +359,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -348,6 +367,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acesso-restrito'
     | '/admin-dns-rotas'
+    | '/admin-planos-pagamentos'
     | '/agenda-disparo'
     | '/ajuda'
     | '/auth'
@@ -381,11 +401,13 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/seguranca-local'
     | '/testes'
+    | '/api/public/webhooks/mercado-pago'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/acesso-restrito'
     | '/admin-dns-rotas'
+    | '/admin-planos-pagamentos'
     | '/agenda-disparo'
     | '/ajuda'
     | '/auth'
@@ -419,11 +441,13 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/seguranca-local'
     | '/testes'
+    | '/api/public/webhooks/mercado-pago'
   id:
     | '__root__'
     | '/'
     | '/acesso-restrito'
     | '/admin-dns-rotas'
+    | '/admin-planos-pagamentos'
     | '/agenda-disparo'
     | '/ajuda'
     | '/auth'
@@ -457,12 +481,14 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/seguranca-local'
     | '/testes'
+    | '/api/public/webhooks/mercado-pago'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AcessoRestritoRoute: typeof AcessoRestritoRoute
   AdminDnsRotasRoute: typeof AdminDnsRotasRoute
+  AdminPlanosPagamentosRoute: typeof AdminPlanosPagamentosRoute
   AgendaDisparoRoute: typeof AgendaDisparoRoute
   AjudaRoute: typeof AjudaRoute
   AuthRoute: typeof AuthRoute
@@ -496,6 +522,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
+  ApiPublicWebhooksMercadoPagoRoute: typeof ApiPublicWebhooksMercadoPagoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -731,6 +758,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgendaDisparoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin-planos-pagamentos': {
+      id: '/admin-planos-pagamentos'
+      path: '/admin-planos-pagamentos'
+      fullPath: '/admin-planos-pagamentos'
+      preLoaderRoute: typeof AdminPlanosPagamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin-dns-rotas': {
       id: '/admin-dns-rotas'
       path: '/admin-dns-rotas'
@@ -752,6 +786,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/mercado-pago': {
+      id: '/api/public/webhooks/mercado-pago'
+      path: '/api/public/webhooks/mercado-pago'
+      fullPath: '/api/public/webhooks/mercado-pago'
+      preLoaderRoute: typeof ApiPublicWebhooksMercadoPagoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -759,6 +800,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcessoRestritoRoute: AcessoRestritoRoute,
   AdminDnsRotasRoute: AdminDnsRotasRoute,
+  AdminPlanosPagamentosRoute: AdminPlanosPagamentosRoute,
   AgendaDisparoRoute: AgendaDisparoRoute,
   AjudaRoute: AjudaRoute,
   AuthRoute: AuthRoute,
@@ -792,6 +834,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
+  ApiPublicWebhooksMercadoPagoRoute: ApiPublicWebhooksMercadoPagoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
