@@ -11,8 +11,14 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // Rebuild trigger: inject secrets URL_SUPABASE / ANON_KEY_SUPABASE into published bundle.
 const env = process.env;
 const FORBIDDEN_REF = "ajeyimujgtukcbadyash";
-// JWT anon keys embed the project ref as base64 inside the payload.
-const FORBIDDEN_REF_B64 = "YWpleWltdWpndHVrY2JhZHlhc2"; // base64("ajeyimujgtukcbadyash") prefix
+// JWT anon keys for the forbidden project embed this base64 fingerprint
+// (the base64 encoding of the JSON fragment `"ref":"ajeyimujgtukcbadyash"`
+// at its natural 3-byte alignment inside the JWT payload). Catches the
+// SUPABASE_PUBLISHABLE_KEY auto-injected by Lovable Cloud which points at
+// the empty database `ajeyimujgtukcbadyash`.
+const FORBIDDEN_REF_B64 = "ImFqZXlpbXVqZ3R1a2NiYWR5YXNo";
+const EXPECTED_REF = "pkghjzbvmifmztqvpdeu";
+const EXPECTED_REF_B64 = "InBrZ2hqemJ2bWlmbXp0cXZwZGV1"; // base64 of `"ref":"pkghjzbvmifmztqvpdeu"`
 const EXPECTED_URL = "https://pkghjzbvmifmztqvpdeu.supabase.co";
 // Pick the first non-empty value that does NOT reference the forbidden
 // (empty) Lovable Cloud database. This makes the build immune to the
@@ -23,6 +29,18 @@ const pick = (...keys: string[]) => {
     if (v !== undefined && v !== "" && !v.includes(FORBIDDEN_REF) && !v.includes(FORBIDDEN_REF_B64)) return v;
   }
   return "";
+};
+// Prefer a JWT/value that positively matches the EXPECTED project, then
+// fall back to the standard pick. Guarantees the published bundle uses
+// the anon key of pkghjzbvmifmztqvpdeu even if other vars are present.
+const pickExpected = (...keys: string[]) => {
+  for (const k of keys) {
+    const v = env[k];
+    if (!v) continue;
+    if (v.includes(FORBIDDEN_REF) || v.includes(FORBIDDEN_REF_B64)) continue;
+    if (v.includes(EXPECTED_REF) || v.includes(EXPECTED_REF_B64)) return v;
+  }
+  return pick(...keys);
 };
 
 export default defineConfig({
@@ -35,7 +53,7 @@ export default defineConfig({
         pick("URL_SUPABASE", "VITE_SUPABASE_URL", "SUPABASE_URL") || EXPECTED_URL,
       ),
       "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(
-        pick(
+        pickExpected(
           "ANON_KEY_SUPABASE",
           "SUPABASE_ANON_KEY",
           "VITE_SUPABASE_ANON_KEY",
@@ -44,12 +62,12 @@ export default defineConfig({
         ),
       ),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
-        pick(
+        pickExpected(
           "ANON_KEY_SUPABASE",
-          "SUPABASE_PUBLISHABLE_KEY",
-          "VITE_SUPABASE_PUBLISHABLE_KEY",
           "SUPABASE_ANON_KEY",
           "VITE_SUPABASE_ANON_KEY",
+          "SUPABASE_PUBLISHABLE_KEY",
+          "VITE_SUPABASE_PUBLISHABLE_KEY",
         ),
       ),
       "import.meta.env.VITE_APP_ENV": JSON.stringify(
