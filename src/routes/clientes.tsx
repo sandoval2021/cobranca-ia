@@ -1156,8 +1156,8 @@ function ClientCard({
           label="Situação"
           value={
             <span className="inline-flex flex-wrap justify-end gap-1">
-              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", statusClass(customer.status))}>
-                {statusLabel(customer.status)}
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", statusClass(customer.status, days))}>
+                {statusLabel(customer.status, days)}
               </span>
               {days != null && (
                 <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", urgencyClass(urg))}>
