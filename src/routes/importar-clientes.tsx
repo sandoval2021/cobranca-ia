@@ -550,6 +550,134 @@ function ImportarClientesPage() {
     }
   }
 
+  // FASE 3 — Tenta reimportar SOMENTE as linhas pendentes (erro/duplicadas no
+  // arquivo), sem reenviar quem já entrou. Mantém o agrupamento por WhatsApp.
+  async function retryErrors() {
+    if (!supabase || !supabaseConfigured || !rows) return;
+    const effCompany =
+      companyId ??
+      (companyState.status === "ready" ? companyState.companyId : null);
+    if (!effCompany) {
+      toast.error("Empresa não encontrada.");
+      return;
+    }
+    const pending = notImportedIdx.filter(
+      (i) => !skippedIdx.has(i) && !forcedIdx.has(i),
+    );
+    if (pending.length === 0) {
+      toast.message("Nenhum erro pendente para tentar novamente.");
+      return;
+    }
+    setRetryingErrors(true);
+    try {
+      const payload = pending.map((i) => {
+        const r = rows[i];
+        const e = enrichments[i];
+        return {
+          external_code: r.external_code,
+          external_customer_code: r.external_customer_code,
+          customer_name: r.customer_name,
+          whatsapp_e164: r.whatsapp_e164,
+          service_name: r.service_name,
+          amount_cents: r.amount_cents,
+          expires_at: r.expires_at,
+          situation: r.situation,
+          notes: e?.observation ?? null,
+          raw_row: {
+            ...(r.raw_row ?? {}),
+            retried: true,
+            matched_service_id: e?.matched_service_id ?? null,
+            plan_label: e?.plan_label ?? null,
+            message_label: e?.message_label ?? null,
+            group_size: e?.group_size ?? 1,
+            group_conflict: e?.group_conflict ?? null,
+            observation: e?.observation ?? null,
+          },
+        };
+      });
+      const { data, error } = await supabase.rpc(
+        "staging_import_customers_from_rows",
+        { p_company_id: effCompany, p_rows: payload as unknown as object },
+      );
+      if (error) {
+        toast.error("Falha ao tentar novamente: " + error.message);
+        return;
+      }
+      const d = (data ?? {}) as Record<string, number>;
+      const ok = (d.imported ?? 0) + (d.updated ?? 0);
+      if (ok > 0) {
+        // Considera as pendentes que ainda têm dado mínimo como importadas.
+        setForcedIdx((prev) => {
+          const next = new Set(prev);
+          for (const i of pending) {
+            const r = rows[i];
+            if (r.whatsapp_e164 || r.customer_name) next.add(i);
+          }
+          return next;
+        });
+        setResult((prev) =>
+          prev
+            ? {
+                ...prev,
+                imported: (prev.imported ?? 0) + (d.imported ?? 0),
+                updated: (prev.updated ?? 0) + (d.updated ?? 0),
+                charges: (prev.charges ?? 0) + (d.charges ?? 0),
+                errored: Math.max(0, (prev.errored ?? 0) - ok),
+              }
+            : prev,
+        );
+        toast.success(`${ok} linha(s) reimportada(s) com sucesso.`);
+      } else {
+        toast.message("Nenhuma linha pôde ser reimportada. Revise os dados.");
+      }
+    } finally {
+      setRetryingErrors(false);
+    }
+  }
+
+  function clearResult() {
+    setResult(null);
+    setImportedIdx(new Set());
+    setForcedIdx(new Set());
+    setSkippedIdx(new Set());
+    setNotImportedIdx([]);
+  }
+
+  function getReportCtx(): ReportContext {
+    return {
+      rows: rows ?? [],
+      enrichments,
+      existingMap,
+      importedIdx,
+      forcedIdx,
+      skippedIdx,
+      notImportedIdx,
+    };
+  }
+
+  function exportReport(scope: ReportScope) {
+    if (!rows || rows.length === 0) {
+      toast.error("Nada para exportar.");
+      return;
+    }
+    const csv = buildReportCsv(scope, getReportCtx());
+    const d = new Date();
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    downloadCsv(`importacao-${scope}-${ymd}.csv`, csv);
+    toast.success("Relatório exportado (CSV compatível com Excel).");
+  }
+
+  const finalSummary =
+    result && !result.message && rows
+      ? buildFinalSummary(getReportCtx(), {
+          imported: result.imported ?? 0,
+          updated: result.updated ?? 0,
+        })
+      : null;
+  const pendingErrorsCount = notImportedIdx.filter(
+    (i) => !skippedIdx.has(i) && !forcedIdx.has(i),
+  ).length;
+
   const effectiveCompanyId =
     companyId ??
     (companyState.status === "ready" ? companyState.companyId : null);
