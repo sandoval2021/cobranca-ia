@@ -253,11 +253,11 @@ function SignupForm({
 
     setSubmitting(true);
     const trimmedEmail = email.trim().toLowerCase();
-    const { data, error: err } = await supabase.auth.signUp({
+    const { error: err } = await supabase.auth.signUp({
       email: trimmedEmail,
       password: senha,
       options: {
-        // Sem emailRedirectTo: queremos OTP, não link.
+        // Sem emailRedirectTo: queremos OTP de 6 dígitos, nunca link mágico.
         data: {
           nome: nome.trim(),
           empresa: empresa.trim(),
@@ -271,21 +271,7 @@ function SignupForm({
       return;
     }
 
-    // Se confirmação por e-mail estiver desativada, a sessão já vem ativa.
-    if (data.session) {
-      try {
-        await syncDefaultCompanyForUser({
-          email: trimmedEmail,
-          nome: nome.trim(),
-          whatsapp: whatsapp.trim(),
-        });
-      } catch {
-        /* silencioso */
-      }
-      toast.success("Conta criada!");
-      return;
-    }
-
+    // Sempre ir para a etapa OTP — nunca mostrar tela legada de "Confira seu e-mail".
     setSubmitting(false);
     onSent({
       email: trimmedEmail,
