@@ -188,6 +188,12 @@ function EmpresasContent() {
         <Info className="mr-1 inline h-3.5 w-3.5" />
         Para editar os próprios dados, o dono usa <strong>Meus dados</strong>. Esta tela é apenas para gestão da plataforma.
       </div>
+      <div className="mb-3 rounded-lg border border-dashed border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+        <strong className="text-foreground">Configuração de termos e planos — em breve.</strong>
+        <br />
+        Aqui você poderá editar o texto do termo de aceite, versão e regras de cobrança recorrente
+        quando o pagamento automático for liberado.
+      </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         <TabsList className="mb-3">
