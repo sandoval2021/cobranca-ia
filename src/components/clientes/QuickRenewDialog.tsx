@@ -314,14 +314,22 @@ export function QuickRenewDialog({
   const hasScreens = screens.length > 0;
   const multi = screens.length > 1;
 
-  // Vencimento "geral" do cliente — usa o mesmo helper-base do card.
+  // Vencimento "geral" do cliente — fonte única: a MESMA iso exibida no card.
+  // baseFromCustomer retorna customerDueIso se for futuro, senão hoje.
+  const baseDate = useMemo(
+    () => baseFromCustomer(customerDueIso, customerDueDay),
+    [customerDueIso, customerDueDay],
+  );
+  const baseIsFuture = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return baseDate > today;
+  }, [baseDate]);
   const customerNewDue = useMemo(
-    () => addMonthsISO(baseFromCustomer(customerDueIso, customerDueDay), months),
-    [customerDueIso, customerDueDay, months],
+    () => addMonthsISO(baseDate, months),
+    [baseDate, months],
   );
 
-  // Data antiga (vencimento atual) — usa a data importada quando existe;
-  // depois cai para tela com vencimento mais próximo; por fim due_day.
+  // Data antiga (vencimento atual) — usa SEMPRE o iso do card quando existe.
   const oldDue = useMemo(() => {
     if (customerDueIso) return customerDueIso;
     if (selectedScreens.length > 0) {
@@ -351,16 +359,12 @@ export function QuickRenewDialog({
   const fmtMoney = (n: number) =>
     `R$ ${n.toFixed(2).replace(".", ",")}`;
 
-  // Vencimento final calculado (telas ou cliente)
-  const computedNewDue = useMemo(() => {
-    if (hasScreens && selectedScreens.length) {
-      return selectedScreens
-        .map((s) => addMonthsISO(baseFromScreen(s), months))
-        .sort()
-        .reverse()[0];
-    }
-    return customerNewDue;
-  }, [hasScreens, selectedScreens, months, customerNewDue]);
+  // Vencimento final calculado — SEMPRE a partir do iso do card (customerNewDue).
+  // Anteriormente este caminho usava screen.due_date quando havia telas, o que
+  // fazia a renovação sequencial perder a data nova do cliente (ex.: 25/06/2026)
+  // e somar a partir de uma data de tela antiga.
+  const computedNewDue = customerNewDue;
+
 
   const effectiveNewDue = newDueOverride || computedNewDue;
 
