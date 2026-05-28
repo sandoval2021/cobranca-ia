@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Link,
@@ -14,6 +15,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/use-auth";
 import { LoginPage, SessionLoading } from "@/components/auth/LoginPage";
+import { supabase } from "@/integrations/supabase/client";
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
