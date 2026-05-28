@@ -90,6 +90,10 @@ export function LoginPage() {
             <LoginForm
               onForgot={() => setView("forgot")}
               onSignup={() => setView("signup")}
+              onNeedsConfirm={(email, password) => {
+                setConfirmCtx({ email, password });
+                setView("confirm_email");
+              }}
             />
           )}
           {view === "signup" && (
