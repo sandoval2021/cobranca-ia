@@ -435,13 +435,9 @@ export const evolutionProvider: WhatsAppProvider = {
     }
     let endpointStatus: number | null = null;
     let endpointOk = false;
-    try {
-      const endpoint = await fetch(signedWebhookUrl, { method: "GET" });
-      endpointStatus = endpoint.status;
-      endpointOk = endpoint.ok;
-    } catch {
-      endpointStatus = 0;
-    }
+    const probe = await probeWebhookEndpoint(signedWebhookUrl, ref.provider_instance_id);
+    endpointStatus = probe.status;
+    endpointOk = probe.ok;
     return {
       ok: endpointOk,
       url: signedWebhookUrl,
