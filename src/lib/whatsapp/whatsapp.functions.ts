@@ -22,6 +22,26 @@ function buildEvolutionInstanceName(companyId: string, instanceId: string): stri
   return `cobraeasy_${companyId.replace(/-/g, "").slice(0, 12)}_${instanceId.replace(/-/g, "").slice(0, 12)}`;
 }
 
+async function syncInstanceStateFromEvolution(instanceId: string): Promise<void> {
+  const ref = await loadInstanceRef(instanceId);
+  if (!ref || hasInvalidLocalProviderId(ref.provider_instance_id)) return;
+
+  const state = await evolutionProvider.getInstanceState(ref);
+  const patch: Record<string, unknown> = {
+    status: state.status,
+    last_activity_at: new Date().toISOString(),
+  };
+  if (state.status === "connected") {
+    patch.qr_code = null;
+    patch.qr_expires_at = null;
+    patch.pairing_code = null;
+    patch.pairing_code_expires_at = null;
+  }
+  if (state.phone_number) patch.phone_number = state.phone_number;
+
+  await supabaseAdmin.from("whatsapp_instances").update(patch).eq("id", instanceId);
+}
+
 async function assertCompanyAccess(
   supabase: any,
   userId: string,
@@ -377,13 +397,33 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
 
     if (!inst) return { instance: null, queued: 0 };
 
+    let currentInst = inst;
+    if (inst.status !== "connected") {
+      try {
+        await syncInstanceStateFromEvolution(inst.id);
+        const { data: refreshed } = await supabaseAdmin
+          .from("whatsapp_instances")
+          .select(
+            "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id",
+          )
+          .eq("id", inst.id)
+          .maybeSingle();
+        if (refreshed) currentInst = refreshed;
+      } catch (err) {
+        if (isEvolutionNotFoundError(err)) {
+          await supabaseAdmin.from("whatsapp_instances").delete().eq("id", inst.id);
+          return { instance: null, queued: 0 };
+        }
+      }
+    }
+
     const { count: queued } = await supabaseAdmin
       .from("whatsapp_message_queue")
       .select("id", { count: "exact", head: true })
       .eq("instance_id", inst.id)
       .in("status", ["queued", "sending"]);
 
-    return { instance: inst, queued: queued ?? 0 };
+    return { instance: currentInst, queued: queued ?? 0 };
   });
 
 // -------- super admin: lista VPS --------
