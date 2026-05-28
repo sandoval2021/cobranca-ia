@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_company_settings: {
+        Row: {
+          ask_referral_for_new: boolean
+          company_id: string
+          created_at: string
+          escalate_when_referrer_missing: boolean
+          human_handoff_number: string | null
+          support_instructions: string | null
+          updated_at: string
+        }
+        Insert: {
+          ask_referral_for_new?: boolean
+          company_id: string
+          created_at?: string
+          escalate_when_referrer_missing?: boolean
+          human_handoff_number?: string | null
+          support_instructions?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ask_referral_for_new?: boolean
+          company_id?: string
+          created_at?: string
+          escalate_when_referrer_missing?: boolean
+          human_handoff_number?: string | null
+          support_instructions?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_usage_log: {
         Row: {
           company_id: string
@@ -76,6 +106,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      app_support_kb: {
+        Row: {
+          app_name: string
+          common_issues: string | null
+          company_id: string
+          created_at: string
+          default_reply: string | null
+          escalate_when: string | null
+          how_to_change_route: string | null
+          how_to_update: string | null
+          id: string
+          is_active: boolean
+          is_paid: boolean
+          login_type: string
+          stability_level: string
+          updated_at: string
+        }
+        Insert: {
+          app_name: string
+          common_issues?: string | null
+          company_id: string
+          created_at?: string
+          default_reply?: string | null
+          escalate_when?: string | null
+          how_to_change_route?: string | null
+          how_to_update?: string | null
+          id?: string
+          is_active?: boolean
+          is_paid?: boolean
+          login_type?: string
+          stability_level?: string
+          updated_at?: string
+        }
+        Update: {
+          app_name?: string
+          common_issues?: string | null
+          company_id?: string
+          created_at?: string
+          default_reply?: string | null
+          escalate_when?: string | null
+          how_to_change_route?: string | null
+          how_to_update?: string | null
+          id?: string
+          is_active?: boolean
+          is_paid?: boolean
+          login_type?: string
+          stability_level?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       auth_email_otps: {
         Row: {
@@ -296,6 +377,9 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          price_group_id: string | null
+          referral_customer_id: string | null
+          referral_raw: string | null
           updated_at: string
         }
         Insert: {
@@ -307,6 +391,9 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          price_group_id?: string | null
+          referral_customer_id?: string | null
+          referral_raw?: string | null
           updated_at?: string
         }
         Update: {
@@ -318,6 +405,9 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          price_group_id?: string | null
+          referral_customer_id?: string | null
+          referral_raw?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -414,6 +504,98 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      price_group_plans: {
+        Row: {
+          allow_installments: boolean
+          company_id: string
+          created_at: string
+          duration_days: number
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          price_cents: number
+          price_group_id: string
+          screens: number
+          updated_at: string
+        }
+        Insert: {
+          allow_installments?: boolean
+          company_id: string
+          created_at?: string
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          price_cents?: number
+          price_group_id: string
+          screens?: number
+          updated_at?: string
+        }
+        Update: {
+          allow_installments?: boolean
+          company_id?: string
+          created_at?: string
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          price_cents?: number
+          price_group_id?: string
+          screens?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_group_plans_price_group_id_fkey"
+            columns: ["price_group_id"]
+            isOneToOne: false
+            referencedRelation: "price_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_groups: {
+        Row: {
+          ai_notes: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          priority: number
+          updated_at: string
+        }
+        Insert: {
+          ai_notes?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          priority?: number
+          updated_at?: string
+        }
+        Update: {
+          ai_notes?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          priority?: number
+          updated_at?: string
         }
         Relationships: []
       }

@@ -1,88 +1,99 @@
 
-# IA CobraEasy — modo produção
+## O que vai ser construído
 
-Sair do demo seguro e habilitar atendimento real do cliente final + auditoria/custo, sem mexer em login/Resend/MP/Evolution/PWA.
+IA do WhatsApp deixa de ter preço/planos no prompt fixo e passa a usar dados reais do banco. Dono configura tudo em `/ia-config`. Cliente novo é perguntado sobre indicação; se citar indicador e ele existir, herda o mesmo grupo de preço. Se não achar, encaminha humano. IA também sabe responder dúvidas técnicas dos apps (XCIPTV, IBO, Smarters etc.) com base configurável.
 
-## 1. SQL proposto (NÃO aplicar ainda — aguardar confirmação)
+## Modelo de dados (migration única)
 
-### Tabela `ai_usage_log`
-- `company_id` (uuid, FK lógica)
-- `user_id` (uuid, nullable — só preenchido no fluxo do dono)
-- `usage_type` (enum: `dono` | `cliente`)
-- `model` (text)
-- `prompt_tokens`, `completion_tokens`, `total_tokens` (int, nullable)
-- `estimated_cost_usd` (numeric(10,6))
-- `status` (enum: `sucesso` | `erro`)
-- `error_reason` (text, nullable)
-- `created_at` (timestamptz)
+Novas tabelas (todas com `company_id`, RLS por `has_company_access`):
 
-GRANTs: `service_role` ALL; `authenticated` SELECT (só `has_company_access(company_id)`); sem `anon`.
-RLS: dono só lê uso da própria empresa; INSERT só via `service_role` (server-side).
+- **`price_groups`** — `name`, `description`, `is_default boolean`, `is_active`, `ai_notes text`, `priority int`. Restrição: um `is_default=true` por empresa.
+- **`price_group_plans`** — `price_group_id`, `name`, `screens int`, `duration_days int`, `price_cents int`, `allow_installments bool`, `notes`, `is_active`. Substitui preço fixo no prompt.
+- **`app_support_kb`** — `app_name` (XCIPTV, IBO, Smarters, Bob, IBO Revenda, Vu, Blink, Unitv, outros), `login_type` (`user_pass` | `mac_key`), `is_paid`, `stability_level`, `how_to_update`, `how_to_change_route`, `common_issues text`, `default_reply text`, `escalate_when text`, `is_active`.
+- **`ai_company_settings`** — uma linha por empresa: `support_instructions`, `ask_referral_for_new boolean default true`, `escalate_when_referrer_missing boolean default true`, `human_handoff_number text`.
 
-### Tabela `customer_support_tokens`
-- `token` (text único, gerado server-side com `gen_random_bytes(32)` → base64url, ~43 chars)
-- `company_id` (uuid)
-- `customer_id` (uuid, nullable — token pode ser por cliente OU genérico da empresa)
-- `expires_at` (timestamptz)
-- `is_active` (bool default true)
-- `last_used_at` (timestamptz, nullable)
-- `created_at` (timestamptz)
-- Índice único em `token`, índice em `(company_id, is_active)`
+Alterações em `customers`:
+- `price_group_id uuid null` (FK lógica)
+- `referral_customer_id uuid null` (quem indicou)
+- `referral_raw text null` (texto bruto se indicador não foi resolvido)
 
-GRANTs: `service_role` ALL; `authenticated` SELECT/INSERT/UPDATE só dentro da própria empresa; sem `anon` (validação do token é server-side via `supabaseAdmin`).
-RLS: dono só vê/gera tokens da empresa dele.
+Sem mexer em OTP, billing, Mercado Pago, VPS, DNS.
 
-### Função utilitária
-- `public.has_company_access(_company_id uuid)` — SECURITY DEFINER, checa via `company_users`/estrutura existente do projeto. Reusar função existente se já houver (vou verificar antes).
+## Motor determinístico antes da OpenAI
 
-## 2. Backend (server functions — sem Edge Functions)
+Novo `src/lib/whatsapp/ai-context.server.ts`:
 
-- `src/lib/ai-usage.server.ts` — `logAiUsage()` via `supabaseAdmin` (INSERT em `ai_usage_log`), com cálculo de custo estimado por modelo (tabela de preços hardcoded para `gpt-4o-mini`, `gpt-5-nano`, `gpt-5-mini`).
-- `src/lib/ai-limits.server.ts` — `checkDailyLimit(companyId)` e `checkMonthlyLimit(companyId)`. Limites default: 200 chamadas/dia, 3000/mês por empresa. Retorna `{ allowed, reason, used, limit }`.
-- `src/lib/ai-help.functions.ts` (atualizar):
-  - Antes da chamada: `checkDailyLimit`. Se bloqueado → erro amigável "Limite diário de IA atingido".
-  - Após chamada OpenAI: capturar `response.usage` real e gravar via `logAiUsage`.
-  - Em erro: gravar `status='erro'` + `error_reason` sanitizado.
-- `src/lib/ai-customer.functions.ts` (sair do demo):
-  - `askCustomerHelp({ token, question })` valida token via `supabaseAdmin` em `customer_support_tokens` (ativo + não expirado).
-  - Resolve `company_id` + `customer_id` server-side.
-  - Busca **somente** dados do próprio cliente: último vencimento, status, valor, instruções de pagamento da empresa.
-  - Injeta contexto mínimo no prompt; nunca envia UUID/JSON/dados de outros clientes.
-  - Atualiza `last_used_at`.
-  - Loga uso com `usage_type='cliente'`.
-  - Em token inválido/expirado: retorna mensagem amigável PT-BR ("Link de atendimento expirou. Solicite um novo ao suporte.").
-- `src/lib/customer-tokens.functions.ts` (novo) — `createCustomerToken({ customerId?, ttlDays })` para dono gerar token (usa `requireSupabaseAuth`).
+1. Normaliza telefone (DDI 55, dígitos).
+2. Busca `customer` por telefone na empresa.
+3. Detecta intenção por regex/keywords: `price`, `trial`, `support`, `renewal`, `payment`, `referral`, `app_issue`, `other`.
+4. Resolve `price_group_id`:
+   - cliente existente → seu próprio grupo
+   - cliente novo + menciona indicação → tenta achar indicador por nome/telefone citado → herda grupo dele; se não achar → marca `needs_human=true`
+   - cliente novo sem menção → IA pergunta "veio por indicação?" (flag `ask_referral`)
+5. Carrega só os planos daquele grupo (não envia banco inteiro).
+6. Se intenção é `app_issue`, detecta app citado e injeta entrada de `app_support_kb`.
+7. Monta prompt enxuto (system curto + contexto JSON pequeno) → `gpt-4o-mini`.
 
-## 3. Frontend
+Regras duras (no system prompt):
+- nunca inventar preço/plano/desconto
+- nunca confirmar pagamento/renovação
+- se faltar dado → pedir ou encaminhar humano
 
-- `src/components/ai/AjudaIaPanel.tsx` — manter; adicionar banner quando `checkDailyLimit` retornar bloqueio ou IA indisponível.
-- `src/components/ai/AtendimentoIaPanel.tsx` — remover modo demo, tratar erros amigáveis (token expirado/inválido).
-- Nova tela `src/routes/tokens-atendimento.tsx` (dono) — listar/gerar/desativar tokens, copiar link `app.cobraeasy.com.br/atendimento-ia/<token>`.
-- Sanitizador `ai-sanitize.ts` já existente: reusar.
-- Mobile-first, sem rolagem horizontal, textos curtos PT-BR.
+Refactor `src/lib/whatsapp/ai-reply.server.ts` para usar esse contexto em vez do prompt atual.
 
-## 4. Custo
+## Painel `/ia-config` (mobile-first)
 
-- Preço hardcoded por 1k tokens (USD): `gpt-4o-mini` input 0.00015 / output 0.0006; `gpt-5-nano` input 0.00005 / output 0.0004. Default = `gpt-4o-mini` (econômico, conforme pedido).
-- `estimated_cost_usd` calculado no momento do INSERT no log.
-- Tela futura de relatório de custo lê `ai_usage_log` agregado por empresa/dia.
+Nova rota com 4 abas:
 
-## 5. Segurança (resumo)
+1. **Grupos de preço** — listar/criar/editar `price_groups`, marcar padrão, adicionar planos dentro.
+2. **Apps suportados** — CRUD de `app_support_kb` com selects (tipo login, estabilidade).
+3. **Indicação** — toggles: perguntar indicação para cliente novo, encaminhar humano se indicador não achado, número humano.
+4. **Instruções gerais** — `support_instructions` (textarea), preview do que a IA vai usar.
 
-- Nenhuma secret no frontend; `OPENAI_API_KEY` continua server-only.
-- `supabaseAdmin` só em `*.server.ts` / `*.functions.ts`.
-- RLS em todas as novas tabelas; INSERT em log e validação de token só via service_role.
-- Sanitização de saída remove UUID/JSON/stack traces.
-- Cliente final nunca recebe dados de outra empresa (filtro por `company_id` resolvido pelo token, não pela URL).
+Usa componentes existentes (`Card`, `Input`, `Switch`, `Select`, `Textarea`, `Dialog`). Sem mostrar UUIDs. Tooltips com `?` nos campos sensíveis.
 
-## 6. Não tocar
+Vincular cliente a grupo de preço: campo `Select` na tela de cliente já existente (`/clientes` edit) — adição pequena, não refaz tela.
 
-OTP/login, Resend SMTP, Mercado Pago, Evolution/VPS, PWA/branding CobraEasy.
+## Server functions novas
 
-## 7. Entrega
+`src/lib/ia-config/ia-config.functions.ts`:
+- `listPriceGroups`, `upsertPriceGroup`, `deletePriceGroup`
+- `listPlans(groupId)`, `upsertPlan`, `deletePlan`
+- `listApps`, `upsertApp`, `deleteApp`
+- `getAiSettings`, `updateAiSettings`
 
-- SQL mostrado acima — **aguardar SIM** antes de aplicar a migration.
-- Após SIM: aplicar migration → implementar server fns → atualizar UI → validar build.
-- Build OK/NÃO, SQL aplicado SIM/NÃO, sem PR, sem merge.
+Todas com `requireSupabaseAuth` + validação Zod.
 
-**Posso aplicar a migration das duas tabelas (`ai_usage_log` + `customer_support_tokens`) com RLS conforme acima?** Responda **SIM** para prosseguir ou aponte ajustes.
+## Validação (cenários do brief)
+
+Após build, simulação server-to-server cobrindo:
+- "valor" sem contexto → grupo padrão
+- cliente R$12 pergunta valor → tabela R$12
+- "vim indicado pelo 82999..." com indicador existente → herda grupo
+- "vim indicado por João" sem achar → pede número; se ainda não achar → handoff
+- "meu IBO travou" → resposta do KB do IBO
+- "paguei" → pede comprovante, não confirma
+
+## Arquivos
+
+Novos:
+- `db/migrations/20260528120000_price_groups_apps_referral.sql`
+- `src/lib/ia-config/ia-config.functions.ts`
+- `src/lib/whatsapp/ai-context.server.ts`
+- `src/lib/whatsapp/intent.ts`
+- `src/routes/ia-config.tsx` + subcomponentes em `src/components/ia-config/`
+
+Alterados:
+- `src/lib/whatsapp/ai-reply.server.ts` (usa novo contexto)
+- `src/components/clientes/...` (campo grupo de preço — edição mínima)
+- `src/components/layout/AppSidebar.tsx` (link novo)
+
+Não tocar:
+- OTP/login, Resend, Mercado Pago, VPS, DNS, QR WhatsApp, `client.ts`, `types.ts`
+
+## Entrega final
+- Build OK/NÃO
+- SQL aplicado: SIM (migration nova)
+- PR: NÃO / MERGE: NÃO
+- Cenários testados em simulação
+- Custo estimado por atendimento (gpt-4o-mini com prompt enxuto: ~$0.0003–0.0008 por resposta)
