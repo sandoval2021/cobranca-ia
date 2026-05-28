@@ -16,7 +16,10 @@ export type ConvoMemory = {
   last_messages: Array<{ role: "user" | "assistant"; text: string; at: string }>;
   summary: string | null;
   flags: Record<string, unknown>;
+};
+
 export type AiContext = {
+
   intent: Intent;
   classification: CustomerClass;
   company: { id: string; name: string | null };
