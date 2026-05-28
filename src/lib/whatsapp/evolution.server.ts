@@ -518,9 +518,18 @@ export async function pickAvailableVps(): Promise<{ id: string } | null> {
   return null;
 }
 
-export function getEvolutionWebhookUrl(instanceId: string): string {
-  const base = process.env.PUBLIC_APP_URL || "";
+export function getEvolutionWebhookUrl(instanceId: string, baseUrl?: string): string {
+  const base = baseUrl || process.env.PUBLIC_APP_URL || "";
   return `${base.replace(/\/+$/, "")}/api/public/webhooks/evolution/${instanceId}`;
+}
+
+function webhookUrlMatchesInstance(value: string | null, instanceId: string): boolean {
+  if (!value) return false;
+  try {
+    return new URL(value).pathname === `/api/public/webhooks/evolution/${instanceId}`;
+  } catch {
+    return false;
+  }
 }
 
 export async function inspectEvolutionWebhook(ref: WAInstanceRef): Promise<WAWebhookResult> {
@@ -533,19 +542,16 @@ export async function inspectEvolutionWebhook(ref: WAInstanceRef): Promise<WAWeb
   );
   const savedUrl = provider.data?.url || provider.data?.webhook?.url || null;
   const savedEvents = provider.data?.events || provider.data?.webhook?.events || [];
-  const probe = await probeWebhookEndpoint(expectedUrl, ref.provider_instance_id);
-  const endpointStatus = probe.status;
-  const endpointOk = probe.ok;
   const hasEvents = events.every((event) => Array.isArray(savedEvents) && savedEvents.includes(event));
-  const urlOk = typeof savedUrl === "string" && savedUrl.startsWith(getEvolutionWebhookUrl(ref.id));
+  const urlOk = webhookUrlMatchesInstance(savedUrl, ref.id);
   return {
-    ok: provider.ok && endpointOk && hasEvents && urlOk,
+    ok: provider.ok && hasEvents && urlOk,
     url: savedUrl || expectedUrl,
     events: Array.isArray(savedEvents) ? savedEvents : [],
     providerStatus: provider.status,
     providerResponse: provider.text.slice(0, 500),
-    endpointStatus,
-    endpointOk,
-    error: provider.ok && endpointOk && hasEvents && urlOk ? null : "Webhook não está confirmado ponta a ponta.",
+    endpointStatus: null,
+    endpointOk: null,
+    error: provider.ok && hasEvents && urlOk ? null : "Webhook não está cadastrado corretamente na Evolution.",
   };
 }
