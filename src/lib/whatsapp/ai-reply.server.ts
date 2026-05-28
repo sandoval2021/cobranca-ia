@@ -102,7 +102,7 @@ export async function handleInboundForAiReply(
   // Carrega config da instância
   const { data: inst } = await supabaseAdmin
     .from("whatsapp_instances")
-    .select("id, company_id, ai_reply_enabled, ai_system_prompt, status")
+    .select("id, company_id, ai_reply_enabled, ai_system_prompt, status, daily_sent_count")
     .eq("id", ref.id)
     .maybeSingle();
   if (!inst) return { handled: false, reason: "instance_missing" };
