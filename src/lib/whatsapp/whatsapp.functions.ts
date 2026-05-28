@@ -1,6 +1,7 @@
 // Server functions WhatsApp — multi-tenant, owner/admin only.
 
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -22,6 +23,10 @@ function hasInvalidLocalProviderId(providerInstanceId?: string | null): boolean 
 
 function buildEvolutionInstanceName(companyId: string, instanceId: string): string {
   return `cobraeasy_${companyId.replace(/-/g, "").slice(0, 12)}_${instanceId.replace(/-/g, "").slice(0, 12)}`;
+}
+
+function currentPublicOrigin(): string | undefined {
+  return getRequestHeader("origin") || undefined;
 }
 
 async function syncInstanceStateFromEvolution(instanceId: string): Promise<void> {
@@ -204,7 +209,7 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
         },
         instance_name: evolutionInstanceName,
         friendly_name: data.friendly_name,
-        webhook_url: getEvolutionWebhookUrl(localInstanceId),
+        webhook_url: getEvolutionWebhookUrl(localInstanceId, currentPublicOrigin()),
         phone_number: data.phone_number,
       });
 
@@ -424,7 +429,7 @@ export const setWhatsAppAiReply = createServerFn({ method: "POST" })
     // Garante que o webhook está configurado para receber MESSAGES_UPSERT.
     if (data.enabled) {
       try {
-        await evolutionProvider.setWebhook(ref, getEvolutionWebhookUrl(ref.id));
+        await evolutionProvider.setWebhook(ref, getEvolutionWebhookUrl(ref.id, currentPublicOrigin()));
       } catch (err) {
         console.error("[setWhatsAppAiReply] setWebhook falhou", err);
       }
@@ -443,7 +448,7 @@ export const resetWhatsAppWebhook = createServerFn({ method: "POST" })
     const ref = await loadInstanceRef(data.instance_id);
     if (!ref) throw new Error("not_found");
     await assertCompanyAccess(supabase, userId, ref.company_id);
-    const result = await evolutionProvider.setWebhook(ref, getEvolutionWebhookUrl(ref.id));
+    const result = await evolutionProvider.setWebhook(ref, getEvolutionWebhookUrl(ref.id, currentPublicOrigin()));
     await logWhatsAppAutomation({
       instance_id: ref.id,
       company_id: ref.company_id,

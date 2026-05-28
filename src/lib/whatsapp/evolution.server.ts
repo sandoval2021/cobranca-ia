@@ -46,6 +46,23 @@ function withWebhookSecret(webhookUrl: string, secret: string): string {
   return url.toString();
 }
 
+async function probeWebhookEndpoint(url: string, providerInstanceId: string): Promise<{ status: number | null; ok: boolean }> {
+  try {
+    const endpoint = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "COBRAEASY_WEBHOOK_TEST",
+        instance: providerInstanceId,
+        data: { probe: true, at: new Date().toISOString() },
+      }),
+    });
+    return { status: endpoint.status, ok: endpoint.ok };
+  } catch {
+    return { status: 0, ok: false };
+  }
+}
+
 async function callEvolution(
   vps: WAVpsNode,
   path: string,
@@ -418,13 +435,9 @@ export const evolutionProvider: WhatsAppProvider = {
     }
     let endpointStatus: number | null = null;
     let endpointOk = false;
-    try {
-      const endpoint = await fetch(signedWebhookUrl, { method: "GET" });
-      endpointStatus = endpoint.status;
-      endpointOk = endpoint.ok;
-    } catch {
-      endpointStatus = 0;
-    }
+    const probe = await probeWebhookEndpoint(signedWebhookUrl, ref.provider_instance_id);
+    endpointStatus = probe.status;
+    endpointOk = probe.ok;
     return {
       ok: endpointOk,
       url: signedWebhookUrl,
@@ -505,9 +518,24 @@ export async function pickAvailableVps(): Promise<{ id: string } | null> {
   return null;
 }
 
-export function getEvolutionWebhookUrl(instanceId: string): string {
-  const base = process.env.PUBLIC_APP_URL || "";
-  return `${base.replace(/\/+$/, "")}/api/public/webhooks/evolution/${instanceId}`;
+export function getEvolutionWebhookUrl(instanceId: string, baseUrl?: string): string {
+  const base = baseUrl || process.env.PUBLIC_APP_URL || "";
+  const url = new URL(`${base.replace(/\/+$/, "")}/api/public/webhooks/evolution`);
+  url.searchParams.set("instance_id", instanceId);
+  return url.toString();
+}
+
+function webhookUrlMatchesInstance(value: string | null, instanceId: string): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return (
+      url.pathname === `/api/public/webhooks/evolution/${instanceId}` ||
+      (url.pathname === "/api/public/webhooks/evolution" && url.searchParams.get("instance_id") === instanceId)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export async function inspectEvolutionWebhook(ref: WAInstanceRef): Promise<WAWebhookResult> {
@@ -520,25 +548,16 @@ export async function inspectEvolutionWebhook(ref: WAInstanceRef): Promise<WAWeb
   );
   const savedUrl = provider.data?.url || provider.data?.webhook?.url || null;
   const savedEvents = provider.data?.events || provider.data?.webhook?.events || [];
-  let endpointStatus: number | null = null;
-  let endpointOk = false;
-  try {
-    const endpoint = await fetch(expectedUrl, { method: "GET" });
-    endpointStatus = endpoint.status;
-    endpointOk = endpoint.ok;
-  } catch {
-    endpointStatus = 0;
-  }
   const hasEvents = events.every((event) => Array.isArray(savedEvents) && savedEvents.includes(event));
-  const urlOk = typeof savedUrl === "string" && savedUrl.startsWith(getEvolutionWebhookUrl(ref.id));
+  const urlOk = webhookUrlMatchesInstance(savedUrl, ref.id);
   return {
-    ok: provider.ok && endpointOk && hasEvents && urlOk,
+    ok: provider.ok && hasEvents && urlOk,
     url: savedUrl || expectedUrl,
     events: Array.isArray(savedEvents) ? savedEvents : [],
     providerStatus: provider.status,
     providerResponse: provider.text.slice(0, 500),
-    endpointStatus,
-    endpointOk,
-    error: provider.ok && endpointOk && hasEvents && urlOk ? null : "Webhook não está confirmado ponta a ponta.",
+    endpointStatus: null,
+    endpointOk: undefined,
+    error: provider.ok && hasEvents && urlOk ? null : "Webhook não está cadastrado corretamente na Evolution.",
   };
 }
