@@ -443,8 +443,65 @@ export const resetWhatsAppWebhook = createServerFn({ method: "POST" })
     const ref = await loadInstanceRef(data.instance_id);
     if (!ref) throw new Error("not_found");
     await assertCompanyAccess(supabase, userId, ref.company_id);
-    await evolutionProvider.setWebhook(ref, getEvolutionWebhookUrl(ref.id));
-    return { ok: true };
+    const result = await evolutionProvider.setWebhook(ref, getEvolutionWebhookUrl(ref.id));
+    await logWhatsAppAutomation({
+      instance_id: ref.id,
+      company_id: ref.company_id,
+      event_type: "webhook_reconfigured",
+      status: result.ok ? "ok" : "error",
+      provider_instance: ref.provider_instance_id,
+      details: {
+        url: result.url,
+        events: result.events,
+        providerStatus: result.providerStatus,
+        endpointStatus: result.endpointStatus ?? null,
+      },
+      error: result.error,
+    });
+    if (!result.ok) {
+      throw new Error("WhatsApp conectado, mas automação não está recebendo mensagens.");
+    }
+    return result;
+  });
+
+export const getWhatsAppAutomationDebug = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ instance_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const ref = await loadInstanceRef(data.instance_id);
+    if (!ref) throw new Error("not_found");
+    await assertCompanyAccess(supabase, userId, ref.company_id);
+
+    let webhook = null;
+    try {
+      webhook = await inspectEvolutionWebhook(ref);
+    } catch (err: any) {
+      webhook = { ok: false, error: String(err?.message ?? err), events: [], providerStatus: 0 };
+    }
+
+    const { data: lastLogs } = await supabaseAdmin
+      .from("whatsapp_automation_logs")
+      .select("event_type, status, provider_event, provider_instance, from_phone, message_preview, error, details, created_at")
+      .eq("instance_id", ref.id)
+      .order("created_at", { ascending: false })
+      .limit(12);
+
+    const { data: lastInbound } = await supabaseAdmin
+      .from("whatsapp_inbound_messages")
+      .select("from_phone, body, reply_text, reply_status, reply_error, created_at, replied_at")
+      .eq("instance_id", ref.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return {
+      webhook,
+      openai: { ok: Boolean(process.env.OPENAI_API_KEY), status: process.env.OPENAI_API_KEY ? "Configurada" : "IA indisponível no momento." },
+      evolution: { instance: ref.provider_instance_id },
+      lastInbound: lastInbound ?? null,
+      logs: lastLogs ?? [],
+    };
   });
 
 
