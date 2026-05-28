@@ -9,6 +9,7 @@ import type {
   WAStatus,
   WASendResult,
   WACreateResult,
+  WAInstanceState,
   WhatsAppProvider,
 } from "./provider";
 
@@ -97,6 +98,55 @@ function extractPairing(d: any): string | null {
     if (typeof c === "string" && c.length >= 6) return c;
   }
   return null;
+}
+
+function cleanPhone(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const digits = value.replace(/@s\.whatsapp\.net|@c\.us|\D/g, "");
+  return digits.length >= 8 ? digits : null;
+}
+
+function extractPhone(d: any): string | null {
+  const candidates: unknown[] = [
+    d?.instance?.number,
+    d?.instance?.ownerJid,
+    d?.instance?.wuid,
+    d?.number,
+    d?.ownerJid,
+    d?.wuid,
+    d?.data?.number,
+    d?.data?.ownerJid,
+    d?.data?.wuid,
+  ];
+  for (const candidate of candidates) {
+    const phone = cleanPhone(candidate);
+    if (phone) return phone;
+  }
+  return null;
+}
+
+function extractProfileName(d: any): string | null {
+  const candidates: unknown[] = [d?.instance?.profileName, d?.profileName, d?.data?.profileName];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+  }
+  return null;
+}
+
+function parseInstanceState(d: any): WAInstanceState {
+  const status = mapEvolutionStatus(
+    d?.instance?.state ||
+      d?.instance?.connectionStatus ||
+      d?.instance?.status ||
+      d?.state ||
+      d?.connectionStatus ||
+      d?.status,
+  );
+  return {
+    status,
+    phone_number: extractPhone(d),
+    profile_name: extractProfileName(d),
+  };
 }
 
 export const evolutionProvider: WhatsAppProvider = {
@@ -214,6 +264,19 @@ export const evolutionProvider: WhatsAppProvider = {
       { method: "GET" },
     );
     return mapEvolutionStatus(res.data?.instance?.state || res.data?.state);
+  },
+
+  async getInstanceState(ref) {
+    assertReal();
+    const res = await callEvolution(
+      ref.vps,
+      `/instance/connectionState/${encodeURIComponent(ref.provider_instance_id)}`,
+      { method: "GET" },
+    );
+    if (!res.ok) {
+      throw new Error(`evolution.connectionState falhou (${res.status}): ${res.text.slice(0, 300)}`);
+    }
+    return parseInstanceState(res.data);
   },
 
   async sendText(ref, to, body): Promise<WASendResult> {
