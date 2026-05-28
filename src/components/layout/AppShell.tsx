@@ -16,8 +16,6 @@ import {
   COMPANIES_EVENT,
   ensureLocalAccount,
   getCompanyForUser,
-  getCurrentCompany,
-  setCurrentCompany,
 } from "@/lib/companies";
 
 const titles: Record<string, string> = {
@@ -67,7 +65,7 @@ function useActiveCompany() {
     if (existing) return existing;
     return ensureLocalAccount(user?.email, user?.nome, user?.whatsapp);
   }
-  return getCurrentCompany();
+  return null;
 }
 
 export function AppShell() {
@@ -94,20 +92,6 @@ export function AppShell() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <StagingBanner />
-      {isSuperAdmin && company && (
-        <div className="flex items-center justify-between gap-2 border-b border-border bg-primary-soft/40 px-3 py-1.5 text-xs">
-          <span className="truncate">
-            <strong>Visualizando como:</strong> {company.nome}
-          </span>
-          <button
-            type="button"
-            onClick={() => setCurrentCompany(null)}
-            className="shrink-0 text-primary underline-offset-2 hover:underline"
-          >
-            Voltar para visão Super Admin
-          </button>
-        </div>
-      )}
       <div className="flex min-h-0 w-full flex-1">
         <div className="hidden md:block">
           <AppSidebar onNavigate={() => setOpenSheet(false)} />
