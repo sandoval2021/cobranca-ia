@@ -205,7 +205,22 @@ export function logoutLocalUser() {
   emitChange();
 }
 
+// Cache em memória do usuário "bridged" (sessão Supabase + role resolvida pelo backend).
+// Preenchido por useLocalAuth para que chamadas estáticas (getCurrentRole/isSuperAdmin)
+// também enxerguem a role correta — evita falso "owner sem empresa" em super_admin.
+let bridgedUser: LocalUser | null = null;
+
+export function setBridgedLocalUser(user: LocalUser | null) {
+  const prev = bridgedUser;
+  bridgedUser = user;
+  const changed =
+    (prev?.id ?? null) !== (user?.id ?? null) ||
+    (prev?.role ?? null) !== (user?.role ?? null);
+  if (changed) emitChange();
+}
+
 export function getCurrentLocalUser(): LocalUser | null {
+  if (bridgedUser) return bridgedUser;
   const session = read<LocalSession | null>(SESSION_KEY, null);
   if (!session) return null;
   return listLocalUsers().find((u) => u.id === session.user_id) ?? null;
