@@ -53,10 +53,12 @@ import { Route as AdminPlanosPagamentosRouteImport } from './routes/admin-planos
 import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as AcessoRestritoRouteImport } from './routes/acesso-restrito'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PagarRefRouteImport } from './routes/pagar.$ref'
 import { Route as PagamentosMercadoPagoRouteImport } from './routes/pagamentos.mercado-pago'
 import { Route as PagamentosHistoricoRouteImport } from './routes/pagamentos.historico'
 import { Route as AtendimentoIaTokenRouteImport } from './routes/atendimento-ia.$token'
 import { Route as AdminVpsRouteImport } from './routes/admin.vps'
+import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -287,6 +289,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PagarRefRoute = PagarRefRouteImport.update({
+  id: '/pagar/$ref',
+  path: '/pagar/$ref',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PagamentosMercadoPagoRoute = PagamentosMercadoPagoRouteImport.update({
   id: '/pagamentos/mercado-pago',
   path: '/pagamentos/mercado-pago',
@@ -305,6 +312,11 @@ const AtendimentoIaTokenRoute = AtendimentoIaTokenRouteImport.update({
 const AdminVpsRoute = AdminVpsRouteImport.update({
   id: '/admin/vps',
   path: '/admin/vps',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminMarketplaceRoute = AdminMarketplaceRouteImport.update({
+  id: '/admin/marketplace',
+  path: '/admin/marketplace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LovableEmailQueueProcessRoute =
@@ -405,10 +417,12 @@ export interface FileRoutesByFullPath {
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/whatsapp': typeof WhatsappRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
+  '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -464,10 +478,12 @@ export interface FileRoutesByTo {
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/whatsapp': typeof WhatsappRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
+  '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -524,10 +540,12 @@ export interface FileRoutesById {
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/whatsapp': typeof WhatsappRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
+  '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -585,10 +603,12 @@ export interface FileRouteTypes {
     | '/seguranca-local'
     | '/testes'
     | '/whatsapp'
+    | '/admin/marketplace'
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
+    | '/pagar/$ref'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -644,10 +664,12 @@ export interface FileRouteTypes {
     | '/seguranca-local'
     | '/testes'
     | '/whatsapp'
+    | '/admin/marketplace'
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
+    | '/pagar/$ref'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -703,10 +725,12 @@ export interface FileRouteTypes {
     | '/seguranca-local'
     | '/testes'
     | '/whatsapp'
+    | '/admin/marketplace'
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
+    | '/pagar/$ref'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -763,10 +787,12 @@ export interface RootRouteChildren {
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
   WhatsappRoute: typeof WhatsappRoute
+  AdminMarketplaceRoute: typeof AdminMarketplaceRoute
   AdminVpsRoute: typeof AdminVpsRoute
   AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
   PagamentosHistoricoRoute: typeof PagamentosHistoricoRoute
   PagamentosMercadoPagoRoute: typeof PagamentosMercadoPagoRoute
+  PagarRefRoute: typeof PagarRefRoute
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicMpMarketplaceWebhookRoute: typeof ApiPublicMpMarketplaceWebhookRoute
   ApiPublicMpOauthCallbackRoute: typeof ApiPublicMpOauthCallbackRoute
@@ -1087,6 +1113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pagar/$ref': {
+      id: '/pagar/$ref'
+      path: '/pagar/$ref'
+      fullPath: '/pagar/$ref'
+      preLoaderRoute: typeof PagarRefRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pagamentos/mercado-pago': {
       id: '/pagamentos/mercado-pago'
       path: '/pagamentos/mercado-pago'
@@ -1113,6 +1146,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/vps'
       fullPath: '/admin/vps'
       preLoaderRoute: typeof AdminVpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/marketplace': {
+      id: '/admin/marketplace'
+      path: '/admin/marketplace'
+      fullPath: '/admin/marketplace'
+      preLoaderRoute: typeof AdminMarketplaceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lovable/email/queue/process': {
@@ -1241,10 +1281,12 @@ const rootRouteChildren: RootRouteChildren = {
   SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
   WhatsappRoute: WhatsappRoute,
+  AdminMarketplaceRoute: AdminMarketplaceRoute,
   AdminVpsRoute: AdminVpsRoute,
   AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
   PagamentosHistoricoRoute: PagamentosHistoricoRoute,
   PagamentosMercadoPagoRoute: PagamentosMercadoPagoRoute,
+  PagarRefRoute: PagarRefRoute,
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicMpMarketplaceWebhookRoute: ApiPublicMpMarketplaceWebhookRoute,
   ApiPublicMpOauthCallbackRoute: ApiPublicMpOauthCallbackRoute,
