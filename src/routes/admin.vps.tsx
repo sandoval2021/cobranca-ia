@@ -42,7 +42,7 @@ function AdminVpsPage() {
   if (q.isLoading) {
     return (
       <PageContainer>
-        <SectionHeader icon={Server} title="VPS Evolution" subtitle="Status da infraestrutura" />
+        <SectionHeader title="VPS Evolution" subtitle="Status da infraestrutura" />
         <p className="text-sm text-muted-foreground mt-4">Carregando…</p>
       </PageContainer>
     );
@@ -51,7 +51,7 @@ function AdminVpsPage() {
   if (q.error) {
     return (
       <PageContainer>
-        <SectionHeader icon={Server} title="VPS Evolution" subtitle="Status da infraestrutura" />
+        <SectionHeader title="VPS Evolution" subtitle="Status da infraestrutura" />
         <Card className="p-4 mt-4">
           <div className="flex items-center gap-2 text-sm text-rose-700">
             <AlertCircle className="w-4 h-4" />
@@ -67,7 +67,7 @@ function AdminVpsPage() {
 
   return (
     <PageContainer>
-      <SectionHeader icon={Server} title="VPS Evolution" subtitle="Status da infraestrutura WhatsApp" />
+      <SectionHeader title="VPS Evolution" subtitle="Status da infraestrutura WhatsApp" />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
         <Card className="p-3">

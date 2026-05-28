@@ -120,7 +120,7 @@ function WhatsAppPage() {
   return (
     <PageContainer>
       <SectionHeader
-        icon={Smartphone}
+        
         title="WhatsApp da empresa"
         subtitle="Conecte seu WhatsApp para enviar cobranças e mensagens automáticas."
       />
