@@ -259,6 +259,34 @@ function WhatsAppPage() {
     }
   }
 
+  async function handleSaveAi(nextEnabled?: boolean) {
+    if (!instance) return;
+    const enabled = typeof nextEnabled === "boolean" ? nextEnabled : aiEnabled;
+    setSavingAi(true);
+    if (typeof nextEnabled === "boolean") setAiEnabled(nextEnabled);
+    try {
+      await setAiFn({
+        data: {
+          instance_id: instance.id,
+          enabled,
+          system_prompt: aiPrompt.trim() || null,
+        },
+      });
+      toast.success(
+        enabled
+          ? "Respostas automáticas por IA ativadas."
+          : "Respostas automáticas desativadas.",
+      );
+    } catch (e: any) {
+      if (typeof nextEnabled === "boolean") setAiEnabled(!nextEnabled);
+      toast.error(e?.message ?? "Falha ao salvar configuração de IA.");
+    } finally {
+      setSavingAi(false);
+    }
+  }
+
+
+
 
   return (
     <PageContainer>
