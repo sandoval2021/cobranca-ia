@@ -12,7 +12,9 @@ import type {
   WhatsAppProvider,
 } from "./provider";
 
-const REAL = (process.env.ALLOW_REAL_WHATSAPP ?? "false").toLowerCase() === "true";
+// Por padrão usa a Evolution API real. Defina ALLOW_REAL_WHATSAPP="false"
+// apenas para forçar modo simulado em ambientes de desenvolvimento.
+const REAL = (process.env.ALLOW_REAL_WHATSAPP ?? "true").toLowerCase() !== "false";
 
 function headers(vps: WAVpsNode): HeadersInit {
   return {
