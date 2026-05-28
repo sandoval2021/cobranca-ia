@@ -597,20 +597,22 @@ export function QuickRenewDialog({
 
         {!done && (
           <div className="space-y-3 py-1">
-            {/* Telas (se houver mais de uma) */}
-            {hasScreens && multi && (
+            {/* Telas — sempre lista (mesmo com 1), com credenciais visíveis */}
+            {hasScreens && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs flex items-center gap-1">
-                    <Tv className="h-3.5 w-3.5" /> Telas a renovar ({selectedScreens.length}/{screens.length})
+                    <Tv className="h-3.5 w-3.5" /> Telas ({selectedScreens.length}/{screens.length})
                   </Label>
-                  <button
-                    type="button"
-                    className="text-[11px] text-primary hover:underline"
-                    onClick={() => selectAll(!allSelected)}
-                  >
-                    {allSelected ? "Desmarcar todas" : "Marcar todas"}
-                  </button>
+                  {multi && (
+                    <button
+                      type="button"
+                      className="text-[11px] text-primary hover:underline"
+                      onClick={() => selectAll(!allSelected)}
+                    >
+                      {allSelected ? "Desmarcar todas" : "Marcar todas"}
+                    </button>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   {screens.map((s) => {
@@ -632,7 +634,7 @@ export function QuickRenewDialog({
                             onCheckedChange={(v) => toggle(s.id, { selected: !!v })}
                             className="mt-0.5"
                           />
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-semibold truncate">{s.name || "Tela"}</span>
                               {meta && (
@@ -641,6 +643,25 @@ export function QuickRenewDialog({
                                 </span>
                               )}
                             </div>
+                            {(s.username || s.mac || s.app_key) && (
+                              <div className="space-y-0.5 text-[11px] text-muted-foreground font-mono leading-tight break-all">
+                                {s.username && (
+                                  <div>
+                                    Usuário: <strong className="text-foreground font-bold">{s.username}</strong>
+                                  </div>
+                                )}
+                                {s.mac && (
+                                  <div>
+                                    MAC: <strong className="text-foreground font-bold">{s.mac}</strong>
+                                  </div>
+                                )}
+                                {s.app_key && (
+                                  <div>
+                                    Key: <strong className="text-foreground font-bold">{s.app_key}</strong>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
                               <Calendar className="h-3 w-3" />
                               <span>
@@ -666,6 +687,7 @@ export function QuickRenewDialog({
                 </div>
               </div>
             )}
+
 
             {/* Card único — tudo editável */}
             <div className="rounded-xl border bg-card overflow-hidden">
