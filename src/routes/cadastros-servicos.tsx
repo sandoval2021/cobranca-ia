@@ -191,17 +191,30 @@ function CadastrosServicosPage() {
 
 
 // ============================================================================
-// Editor de plano (dialog com lista de mensagens + editor com prévia)
-// ============================================================================
-
 function PlanEditorDialog({
-  open, serviceId, onClose,
-}: { open: boolean; serviceId: string | null; onClose: () => void }) {
+  open, serviceId, isNew, onCreated, onClose,
+}: {
+  open: boolean;
+  serviceId: string | null;
+  isNew: boolean;
+  onCreated: (id: string) => void;
+  onClose: () => void;
+}) {
   const [service, setService] = useState<ServiceItem | null>(null);
   const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || !serviceId) return;
+    if (!open) {
+      setService(null);
+      setSelectedMsgId(null);
+      return;
+    }
+    if (!serviceId) {
+      // Modo "novo" — sem service ainda; PlanInfoEditor cria no primeiro Salvar.
+      setService(null);
+      setSelectedMsgId(null);
+      return;
+    }
     const s = getServiceById(serviceId);
     setService(s);
     setSelectedMsgId(s?.messages[0]?.id ?? null);
@@ -212,6 +225,22 @@ function PlanEditorDialog({
     window.addEventListener(SERVICES_EVENT, h);
     return () => window.removeEventListener(SERVICES_EVENT, h);
   }, [open, serviceId]);
+
+  if (isNew && !service) {
+    return (
+      <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="space-y-0.5">
+            <DialogTitle className="text-base">Novo plano</DialogTitle>
+            <DialogDescription className="text-[11px]">
+              Preencha nome e valor e clique em <strong>Salvar</strong> para criar. Depois você poderá adicionar mensagens.
+            </DialogDescription>
+          </DialogHeader>
+          <NewPlanForm onCreated={onCreated} onCancel={onClose} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (!service) {
     return (
@@ -237,27 +266,6 @@ function PlanEditorDialog({
 
         <PlanInfoEditor service={service} onSaved={onClose} />
 
-        <div>
-          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mensagens do plano</h3>
-          <MessagesList
-            service={service}
-            selectedId={selectedMsgId}
-            onSelect={setSelectedMsgId}
-          />
-        </div>
-
-        {selectedMsg && (
-          <MessageEditor
-            key={selectedMsg.id}
-            service={service}
-            message={selectedMsg}
-          />
-        )}
-
-        <DialogFooter className="pt-1">
-          <Button size="sm" onClick={onClose}>Fechar</Button>
-        </DialogFooter>
-      </DialogContent>
     </Dialog>
   );
 }
