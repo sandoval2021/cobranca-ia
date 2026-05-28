@@ -1858,7 +1858,11 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
     setEditingId(s.id);
     setDueDate(s.due_date ?? "");
     setApp(s.app);
-    setServerId(s.primary_server_id || s.server_ids?.[0] || "");
+    // Fallback: tenta primary_server_id → server_ids[0] → procura pelo nome legado "s.server"
+    const legacyServerMatch = !s.primary_server_id && !s.server_ids?.length && s.server
+      ? servers.find((srv) => srv.name.toLowerCase() === s.server!.toLowerCase())?.id
+      : "";
+    setServerId(s.primary_server_id || s.server_ids?.[0] || legacyServerMatch || "");
     setName(s.name ?? "");
     setPlanId(s.plan_id ?? "");
     setMacInput(s.mac ?? "");
@@ -1869,13 +1873,9 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
     setAdding(true);
   };
 
-  const canSave = Boolean(dueDate) && Boolean(planId) && (!isPaid || (macInput.trim() && keyInput.trim()));
+  const canSave = Boolean(planId) && (!isPaid || (macInput.trim() && keyInput.trim()));
 
   const handleAdd = () => {
-    if (!dueDate) {
-      toast.error("Informe a data de vencimento da tela.");
-      return;
-    }
     if (!planId) {
       toast.error("Selecione o serviço/plano.");
       return;
@@ -1884,6 +1884,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       toast.error("Apps pagos exigem MAC e Key.");
       return;
     }
+
     const plan = services.find((s) => s.id === planId);
     const now = new Date().toISOString();
     const existing = editingId ? screens.find((s) => s.id === editingId) : null;
@@ -1896,7 +1897,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       app,
       tier: m?.tier,
       access_type: m?.access ?? "nao_informado",
-      due_date: dueDate,
+      due_date: dueDate || undefined,
       plan_id: plan?.id,
       plan_name: plan?.nome,
       plan_value: plan ? (plan.preco_cents / 100).toFixed(2).replace(".", ",") : undefined,
@@ -2032,13 +2033,12 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       {adding && (
         <div className="space-y-1.5 rounded-md border border-border bg-card p-2">
           <div className="grid grid-cols-2 gap-1.5">
-            <Field label="Vencimento *">
+            <Field label="Vencimento (opcional)">
               <Input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="h-8 text-xs"
-                required
               />
             </Field>
             <Field label="Nome (opcional)">
@@ -2165,7 +2165,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
           )}
           {!canSave && (
             <p className="px-1 text-[10px] text-amber-700 dark:text-amber-300">
-              Preencha o vencimento{!planId ? " e o serviço/plano" : ""}{isPaid && (!macInput.trim() || !keyInput.trim()) ? ", MAC e Key" : ""} para habilitar o botão.
+              Selecione o serviço/plano{isPaid && (!macInput.trim() || !keyInput.trim()) ? ", MAC e Key" : ""} para habilitar o botão.
             </p>
           )}
           <div className="flex gap-1.5 pt-1">
