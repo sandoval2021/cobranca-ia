@@ -31,6 +31,7 @@ import {
   Send,
   Smartphone,
   Bot,
+  RefreshCcw,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
