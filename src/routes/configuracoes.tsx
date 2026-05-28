@@ -36,7 +36,7 @@ import { flags } from "@/lib/flags";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { useAuth } from "@/lib/use-auth";
 import {
-  getCurrentCompanyAdmin,
+  getActiveAccountId,
   listChargesForSelectAdmin,
 } from "@/lib/rpc-admin";
 import type { LucideIcon } from "lucide-react";
