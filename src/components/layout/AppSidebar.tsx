@@ -2,7 +2,6 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { ownerNav, adminNav, filterNavByRole, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import {
-  Sparkles,
   ShieldCheck,
   ChevronRight,
   Home,
@@ -10,10 +9,11 @@ import {
   Users,
   Bot,
   BarChart3,
-  
   Settings2,
   MoreHorizontal,
 } from "lucide-react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
+
 import type { LucideIcon } from "lucide-react";
 import { AuthStatus } from "@/components/auth/AuthStatus";
 import { LocalUserBadge } from "@/components/auth/LocalUserBadge";
@@ -169,22 +169,23 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
   return (
     <aside className="flex h-full w-[var(--sidebar-width)] flex-col border-r border-border bg-surface">
       <div className="flex h-[var(--header-height)] items-center gap-2 border-b border-border px-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-          {role === "super_admin" ? (
+        {role === "super_admin" ? (
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
             <ShieldCheck className="h-4 w-4" />
-          ) : (
-            <Sparkles className="h-4 w-4" />
-          )}
-        </div>
+          </div>
+        ) : (
+          <BrandLogo variant="mark" className="h-9 w-9" />
+        )}
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold tracking-tight">
-            {role === "super_admin" ? "Painel Admin" : "Meu Painel"}
+            {role === "super_admin" ? "Painel Admin" : "CobraEasy"}
           </p>
           <p className="truncate text-xs text-muted-foreground">
             {user ? roleLabel(role) : "Sem sessão local"}
           </p>
         </div>
       </div>
+
 
       <nav className="flex-1 overflow-y-auto p-2">
         <ul className="space-y-1">
