@@ -1858,7 +1858,11 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
     setEditingId(s.id);
     setDueDate(s.due_date ?? "");
     setApp(s.app);
-    setServerId(s.primary_server_id || s.server_ids?.[0] || "");
+    // Fallback: tenta primary_server_id → server_ids[0] → procura pelo nome legado "s.server"
+    const legacyServerMatch = !s.primary_server_id && !s.server_ids?.length && s.server
+      ? servers.find((srv) => srv.name.toLowerCase() === s.server!.toLowerCase())?.id
+      : "";
+    setServerId(s.primary_server_id || s.server_ids?.[0] || legacyServerMatch || "");
     setName(s.name ?? "");
     setPlanId(s.plan_id ?? "");
     setMacInput(s.mac ?? "");
@@ -1869,13 +1873,9 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
     setAdding(true);
   };
 
-  const canSave = Boolean(dueDate) && Boolean(planId) && (!isPaid || (macInput.trim() && keyInput.trim()));
+  const canSave = Boolean(planId) && (!isPaid || (macInput.trim() && keyInput.trim()));
 
   const handleAdd = () => {
-    if (!dueDate) {
-      toast.error("Informe a data de vencimento da tela.");
-      return;
-    }
     if (!planId) {
       toast.error("Selecione o serviço/plano.");
       return;
@@ -1884,6 +1884,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       toast.error("Apps pagos exigem MAC e Key.");
       return;
     }
+
     const plan = services.find((s) => s.id === planId);
     const now = new Date().toISOString();
     const existing = editingId ? screens.find((s) => s.id === editingId) : null;
