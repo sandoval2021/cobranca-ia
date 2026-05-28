@@ -23,6 +23,7 @@ import {
   Store,
   ShieldCheck,
   Network,
+  RefreshCcw,
   Database,
   Wand2,
   LifeBuoy,
@@ -31,7 +32,6 @@ import {
   Send,
   Smartphone,
   Bot,
-  RefreshCcw,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
