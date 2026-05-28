@@ -1897,7 +1897,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       app,
       tier: m?.tier,
       access_type: m?.access ?? "nao_informado",
-      due_date: dueDate,
+      due_date: dueDate || undefined,
       plan_id: plan?.id,
       plan_name: plan?.nome,
       plan_value: plan ? (plan.preco_cents / 100).toFixed(2).replace(".", ",") : undefined,
