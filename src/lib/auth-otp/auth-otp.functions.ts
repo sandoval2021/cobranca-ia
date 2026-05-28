@@ -377,5 +377,90 @@ export const resendOtp = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+// ===================================================================
+// CONFIRM EMAIL — para contas legadas criadas sem confirmação.
+// Reusa purpose='signup' (mesmo template "Confirme seu cadastro").
+// ===================================================================
+export const requestConfirmEmailOtp = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z.object({ email: z.string().min(3).max(254) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const email = normalizeEmail(data.email);
+    if (!isValidEmail(email)) return { ok: false as const, error: "E-mail inválido." };
+    const ctx = reqContext();
+    if (await isLocked(email, ctx.ip)) {
+      return { ok: false as const, error: "Bloqueado temporariamente. Tente em 15 min." };
+    }
+
+    const { data: list } = await supabaseAdmin.auth.admin.listUsers();
+    const user = list?.users?.find((u) => (u.email ?? "").toLowerCase() === email);
+    if (!user) return { ok: false as const, error: "Conta não encontrada para este e-mail." };
+    if (user.email_confirmed_at) {
+      return { ok: true as const, already_confirmed: true };
+    }
+
+    const code = generateOtpCode();
+    const up = await upsertActiveOtp({
+      emailNormalized: email,
+      purpose: "signup",
+      otpCode: code,
+      metadata: {
+        ip: ctx.ip,
+        user_agent: ctx.user_agent,
+        confirm_user_id: user.id,
+      } as unknown as Record<string, unknown>,
+    });
+    if (up.alreadyRecent) {
+      return { ok: false as const, error: "Aguarde antes de pedir outro código." };
+    }
+    try {
+      await sendOtpEmail({ to: email, code, purpose: "signup" });
+    } catch (e) {
+      console.error("[auth-otp] sendOtpEmail confirm failed", e);
+      return { ok: false as const, error: "Falha ao enviar e-mail. Tente novamente." };
+    }
+    return { ok: true as const, already_confirmed: false };
+  });
+
+export const verifyConfirmEmailOtp = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        email: z.string().min(3).max(254),
+        code: z.string().regex(/^\d{8}$/),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const email = normalizeEmail(data.email);
+    const ctx = reqContext();
+    if (await isLocked(email, ctx.ip)) {
+      return { ok: false as const, error: "Bloqueado temporariamente. Tente em 15 min." };
+    }
+
+    const r = await consumeOtp({ emailNormalized: email, purpose: "signup", code: data.code });
+    if (!r.ok) {
+      await registerFailure(email, ctx.ip);
+      return { ok: false as const, error: r.reason };
+    }
+
+    const { data: list } = await supabaseAdmin.auth.admin.listUsers();
+    const user = list?.users?.find((u) => (u.email ?? "").toLowerCase() === email);
+    if (!user) return { ok: false as const, error: "Usuário não encontrado." };
+
+    if (!user.email_confirmed_at) {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        email_confirm: true,
+      });
+      if (error) {
+        console.error("[auth-otp] confirm updateUserById failed", error);
+        return { ok: false as const, error: "Falha ao confirmar e-mail." };
+      }
+    }
+    await clearFailures(email, ctx.ip);
+    return { ok: true as const };
+  });
+
 // constants re-export for client UI
 export { MAX_OTP_ATTEMPTS };
