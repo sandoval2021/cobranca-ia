@@ -463,7 +463,7 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
     const { data: inst } = await supabaseAdmin
       .from("whatsapp_instances")
       .select(
-        "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id",
+        "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id, ai_reply_enabled, ai_system_prompt",
       )
       .eq("company_id", data.company_id)
       .maybeSingle();
@@ -484,7 +484,7 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
         const { data: refreshed } = await supabaseAdmin
           .from("whatsapp_instances")
           .select(
-            "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id",
+            "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id, ai_reply_enabled, ai_system_prompt",
           )
           .eq("id", inst.id)
           .maybeSingle();
