@@ -39,7 +39,7 @@ async function syncInstanceStateFromEvolution(instanceId: string): Promise<void>
   }
   if (state.phone_number) patch.phone_number = state.phone_number;
 
-  await supabaseAdmin.from("whatsapp_instances").update(patch).eq("id", instanceId);
+  await supabaseAdmin.from("whatsapp_instances").update(patch as any).eq("id", instanceId);
 }
 
 async function assertCompanyAccess(
