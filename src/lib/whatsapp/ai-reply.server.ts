@@ -421,6 +421,10 @@ export async function handleInboundForAiReply(
       })
       .eq("id", inst.id);
 
+    // Incrementa contador de quota IA do mês (fonte da verdade do plano SaaS)
+    await incrementAiUsage(inst.company_id);
+
+
     // Atualiza memória curta + flags + limites
     const nowIso = new Date().toISOString();
     const updatedMessages = [
