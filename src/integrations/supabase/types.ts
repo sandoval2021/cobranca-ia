@@ -635,6 +635,7 @@ export type Database = {
           company_id: string
           created_at: string
           document: string | null
+          due_date: string | null
           due_day: number | null
           email: string | null
           id: string
@@ -644,6 +645,7 @@ export type Database = {
           price_group_id: string | null
           referral_customer_id: string | null
           referral_raw: string | null
+          status: string
           updated_at: string
         }
         Insert: {
@@ -651,6 +653,7 @@ export type Database = {
           company_id: string
           created_at?: string
           document?: string | null
+          due_date?: string | null
           due_day?: number | null
           email?: string | null
           id?: string
@@ -660,6 +663,7 @@ export type Database = {
           price_group_id?: string | null
           referral_customer_id?: string | null
           referral_raw?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -667,6 +671,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           document?: string | null
+          due_date?: string | null
           due_day?: number | null
           email?: string | null
           id?: string
@@ -676,6 +681,7 @@ export type Database = {
           price_group_id?: string | null
           referral_customer_id?: string | null
           referral_raw?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -1868,6 +1874,16 @@ export type Database = {
         }
       }
       is_super_admin: { Args: never; Returns: boolean }
+      list_customers_admin: {
+        Args: {
+          p_company_id: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
