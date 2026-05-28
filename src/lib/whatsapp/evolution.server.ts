@@ -12,14 +12,18 @@ import type {
   WhatsAppProvider,
 } from "./provider";
 
-const REAL = (process.env.ALLOW_REAL_WHATSAPP ?? "true").toLowerCase() !== "false";
-
 function assertReal(): void {
-  if (!REAL) {
+  const real = (process.env.ALLOW_REAL_WHATSAPP ?? "true").toLowerCase() !== "false";
+  if (!real) {
     throw new Error(
       "Envio real do WhatsApp está desativado pelo administrador (ALLOW_REAL_WHATSAPP=false).",
     );
   }
+}
+
+export function isEvolutionNotFoundError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /evolution\.[^\s]+ falhou \(404\)|\b404\b.*instance does not exist/i.test(message);
 }
 
 function headers(vps: WAVpsNode): HeadersInit {
@@ -96,11 +100,11 @@ function extractPairing(d: any): string | null {
 }
 
 export const evolutionProvider: WhatsAppProvider = {
-  async createInstance({ vps, friendly_name, webhook_url, phone_number }) {
+  async createInstance({ vps, instance_name, webhook_url, phone_number }) {
     assertReal();
 
     const body: Record<string, unknown> = {
-      instanceName: friendly_name,
+      instanceName: instance_name,
       qrcode: !phone_number,
       integration: "WHATSAPP-BAILEYS",
       webhook: {
@@ -124,10 +128,14 @@ export const evolutionProvider: WhatsAppProvider = {
       throw new Error(`evolution.createInstance falhou (${res.status}): ${res.text.slice(0, 300)}`);
     }
 
-    const providerId: string =
+    const providerId: string | null =
       res.data?.instance?.instanceName ||
       res.data?.instance?.instanceId ||
-      friendly_name;
+      res.data?.instanceName ||
+      null;
+    if (!providerId) {
+      throw new Error("evolution.createInstance não retornou instanceName/instanceId.");
+    }
     const qr = extractQr(res.data);
     const pairing = extractPairing(res.data);
 
