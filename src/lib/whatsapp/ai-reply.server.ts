@@ -4,6 +4,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { evolutionProvider } from "./evolution.server";
 import { openaiChat } from "@/lib/openai.server";
+import { logWhatsAppAutomation } from "./automation-log.server";
 import type { WAInstanceRef } from "./provider";
 
 const DEFAULT_SYSTEM_PROMPT = [
@@ -41,6 +42,7 @@ type InboundParts = {
   providerMsgId: string;
   fromPhone: string;
   text: string;
+  ageSeconds?: number | null;
 };
 
 function parseInbound(payload: any): InboundParts | null {
