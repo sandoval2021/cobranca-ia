@@ -370,7 +370,7 @@ export const evolutionProvider: WhatsAppProvider = {
     }
   },
 
-  async setWebhook(ref, webhook_url) {
+  async setWebhook(ref, webhook_url): Promise<WAWebhookResult> {
     assertReal();
     const signedWebhookUrl = withWebhookSecret(webhook_url, ref.vps.webhook_secret);
     const events = [
@@ -394,6 +394,8 @@ export const evolutionProvider: WhatsAppProvider = {
       `/webhook/set/${encodeURIComponent(ref.provider_instance_id)}`,
       { method: "POST", body: JSON.stringify(v2Body) },
     );
+    let providerStatus = res.status;
+    let providerResponse = res.text;
     if (!res.ok) {
       // fallback: Evolution v1 (flat body)
       const legacy = {
@@ -408,10 +410,31 @@ export const evolutionProvider: WhatsAppProvider = {
         `/webhook/set/${encodeURIComponent(ref.provider_instance_id)}`,
         { method: "POST", body: JSON.stringify(legacy) },
       );
+      providerStatus = res2.status;
+      providerResponse = res2.text;
       if (!res2.ok) {
         throw new Error(`evolution.setWebhook falhou (${res.status}): ${res.text.slice(0, 300)}`);
       }
     }
+    let endpointStatus: number | null = null;
+    let endpointOk = false;
+    try {
+      const endpoint = await fetch(signedWebhookUrl, { method: "GET" });
+      endpointStatus = endpoint.status;
+      endpointOk = endpoint.ok;
+    } catch {
+      endpointStatus = 0;
+    }
+    return {
+      ok: endpointOk,
+      url: signedWebhookUrl,
+      events,
+      providerStatus,
+      providerResponse: providerResponse.slice(0, 500),
+      endpointStatus,
+      endpointOk,
+      error: endpointOk ? null : `Endpoint webhook retornou ${endpointStatus ?? 0}`,
+    };
   },
 
 
