@@ -648,7 +648,8 @@ function Dashboard() {
 
       {(() => {
         const cid = getActiveCompanyId();
-        return cid ? <div className="mb-4"><AiQuotaCard companyId={cid} /></div> : null;
+        const isUuid = typeof cid === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cid);
+        return isUuid ? <div className="mb-4"><AiQuotaCard companyId={cid as string} /></div> : null;
       })()}
 
 
