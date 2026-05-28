@@ -559,12 +559,14 @@ function OperacaoDiaPage() {
       <CompanyScopeNotice moduleKey="cobranca_ia_app_screens_v1" />
 
       {/* aviso fixo */}
-      <div className="mb-3 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft/60 px-3 py-2 text-xs text-warning-foreground">
-        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-        <span>
-          <b>Ambiente de testes:</b> nada será enviado automaticamente. Mensagens e dados são apenas copiados para você usar manualmente.
-        </span>
-      </div>
+      {flags.stagingMode && (
+        <div className="mb-3 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft/60 px-3 py-2 text-xs text-warning-foreground">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            <b>Ambiente de testes:</b> nada será enviado automaticamente. Mensagens e dados são apenas copiados para você usar manualmente.
+          </span>
+        </div>
+      )}
 
       {/* Cards de resumo */}
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
