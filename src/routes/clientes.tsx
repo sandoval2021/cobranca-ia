@@ -2033,14 +2033,14 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       {adding && (
         <div className="space-y-1.5 rounded-md border border-border bg-card p-2">
           <div className="grid grid-cols-2 gap-1.5">
-            <Field label="Vencimento *">
+            <Field label="Vencimento (opcional)">
               <Input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="h-8 text-xs"
-                required
               />
+            </Field>
             </Field>
             <Field label="Nome (opcional)">
               <Input
