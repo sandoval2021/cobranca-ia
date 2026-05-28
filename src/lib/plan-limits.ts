@@ -163,14 +163,15 @@ export function checkPlanLimit(kind: LimitKind, action: LimitAction = "criar"): 
   const role = getCurrentRole();
   const company = getActiveCompany();
 
-  // Super Admin em visão global: nunca bloqueia.
-  if (role === "super_admin" && !company) {
+  // Super Admin: nunca é bloqueado (com ou sem empresa em foco).
+  if (role === "super_admin") {
     return { allowed: true };
   }
 
   if (!company) {
     return { allowed: false, reason: "no_company", message: "Sua conta ainda não está vinculada a uma empresa.", status: "sem_empresa" };
   }
+
 
   const plan = getPlanById(company.plano_id);
   if (!plan) {
