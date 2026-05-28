@@ -239,7 +239,7 @@ function SignupForm({
       email: trimmedEmail,
       password: senha,
       options: {
-        // Sem emailRedirectTo: queremos OTP de 8 dígitos, nunca link mágico.
+        // Sem emailRedirectTo: queremos OTP de 6 dígitos, nunca link mágico.
         data: {
           nome: nome.trim(),
           empresa: empresa.trim(),
