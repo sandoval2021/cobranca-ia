@@ -5,6 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { loadInstanceRef } from "@/lib/whatsapp/evolution.server";
+import { handleInboundForAiReply } from "@/lib/whatsapp/ai-reply.server";
 
 function safeEqual(a: string, b: string): boolean {
   const ba = Buffer.from(a);
@@ -87,6 +88,15 @@ export const Route = createFileRoute("/api/public/webhooks/evolution/$instance")
           .from("whatsapp_instances")
           .update(patch)
           .eq("id", ref.id);
+
+        // Mensagens recebidas → resposta automática por IA (se ativada).
+        if (event.includes("messages.upsert") || event.includes("message")) {
+          try {
+            await handleInboundForAiReply(ref, payload);
+          } catch (err) {
+            console.error("[wa-webhook] ai-reply error", err);
+          }
+        }
 
         return new Response("ok", { status: 200 });
       },
