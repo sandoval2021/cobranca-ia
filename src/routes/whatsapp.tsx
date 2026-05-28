@@ -34,7 +34,9 @@ import {
   setWhatsAppRejectCall,
   sendWhatsAppTestMessage,
   setWhatsAppAiReply,
+  resetWhatsAppWebhook,
 } from "@/lib/whatsapp/whatsapp.functions";
+
 
 export const Route = createFileRoute("/whatsapp")({
   component: WhatsAppPage,
@@ -98,6 +100,22 @@ function WhatsAppPage() {
   const setRejectFn = useServerFn(setWhatsAppRejectCall);
   const sendTestFn = useServerFn(sendWhatsAppTestMessage);
   const setAiFn = useServerFn(setWhatsAppAiReply);
+  const resetWebhookFn = useServerFn(resetWhatsAppWebhook);
+  const [resettingWebhook, setResettingWebhook] = useState(false);
+
+  const handleResetWebhook = async () => {
+    if (!instance) return;
+    setResettingWebhook(true);
+    try {
+      await resetWebhookFn({ data: { instance_id: instance.id } });
+      toast.success("Webhook reconfigurado. Mande uma mensagem para testar.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao reconfigurar webhook.");
+    } finally {
+      setResettingWebhook(false);
+    }
+  };
+
 
   // Garante uma empresa real (UUID) no backend para o usuário logado.
   useEffect(() => {
@@ -553,8 +571,21 @@ function WhatsAppPage() {
                   {savingAi && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Salvar instruções
                 </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleResetWebhook}
+                  disabled={resettingWebhook || instance.status !== "connected"}
+                >
+                  {resettingWebhook && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Reconfigurar webhook
+                </Button>
+                <p className="text-[11px] text-muted-foreground">
+                  Use se a IA não estiver respondendo. Isso reinscreve a instância nos eventos de mensagem.
+                </p>
               </div>
             </div>
+
 
             <div className="border-t pt-4 space-y-2">
               <div className="font-medium flex items-center gap-2">

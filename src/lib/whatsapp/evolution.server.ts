@@ -361,6 +361,53 @@ export const evolutionProvider: WhatsAppProvider = {
     }
   },
 
+  async setWebhook(ref, webhook_url) {
+    assertReal();
+    const body = {
+      webhook: {
+        enabled: true,
+        url: webhook_url,
+        webhookByEvents: false,
+        webhookBase64: false,
+        events: [
+          "QRCODE_UPDATED",
+          "CONNECTION_UPDATE",
+          "MESSAGES_UPSERT",
+          "SEND_MESSAGE",
+        ],
+      },
+    };
+    const res = await callEvolution(
+      ref.vps,
+      `/webhook/set/${encodeURIComponent(ref.provider_instance_id)}`,
+      { method: "POST", body: JSON.stringify(body) },
+    );
+    if (!res.ok) {
+      // tenta shape antigo (Evolution v1)
+      const legacy = {
+        enabled: true,
+        url: webhook_url,
+        webhook_by_events: false,
+        events: [
+          "QRCODE_UPDATED",
+          "CONNECTION_UPDATE",
+          "MESSAGES_UPSERT",
+          "SEND_MESSAGE",
+        ],
+      };
+      const res2 = await callEvolution(
+        ref.vps,
+        `/webhook/set/${encodeURIComponent(ref.provider_instance_id)}`,
+        { method: "POST", body: JSON.stringify(legacy) },
+      );
+      if (!res2.ok) {
+        throw new Error(`evolution.setWebhook falhou (${res.status}): ${res.text.slice(0, 300)}`);
+      }
+    }
+  },
+
+
+
 
 
   async markHealthy(vps) {
