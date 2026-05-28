@@ -2041,7 +2041,6 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                 className="h-8 text-xs"
               />
             </Field>
-            </Field>
             <Field label="Nome (opcional)">
               <Input
                 value={name}
