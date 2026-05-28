@@ -205,6 +205,7 @@ export async function buildAiContext(params: {
 
   // 7) App suporte
   const appName = detectApp(text);
+  const appIssue = detectAppIssue(text);
   let appEntry: AiContext["app"]["entry"] = null;
   if (appName) {
     const { data: kb } = await supabaseAdmin
@@ -217,8 +218,22 @@ export async function buildAiContext(params: {
     if (kb) appEntry = kb;
   }
 
+  // 8) Override needsHuman para sinais fortes (cancel, reclamação, pedido humano)
+  if (!needsHuman) {
+    if (intent === "cancel") { needsHuman = true; reason = "cancel_intent"; }
+    else if (intent === "complaint") { needsHuman = true; reason = "complaint"; }
+    else if (intent === "human_request") { needsHuman = true; reason = "human_requested"; }
+  }
+
+  const classification = classifyCustomer({
+    hasCustomer: !!customer,
+    intent,
+    needsHuman,
+  });
+
   return {
     intent,
+    classification,
     company: { id: companyId, name: company?.name ?? null },
     customer: customer
       ? {
@@ -231,12 +246,14 @@ export async function buildAiContext(params: {
       : null,
     priceGroup,
     referral: { mentioned: referralMentioned, indicator, hint },
-    app: { name: appName, entry: appEntry },
+    app: { name: appName, issue: appIssue, entry: appEntry },
+    memory,
     settings,
     needsHuman,
     reason,
   };
 }
+
 
 /**
  * Monta o system prompt enxuto + bloco de contexto JSON pequeno.
