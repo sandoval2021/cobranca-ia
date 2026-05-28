@@ -23,6 +23,7 @@ export async function openaiChat(opts: {
   model?: string;
   max_tokens?: number;
   temperature?: number;
+  timeout_ms?: number;
 }): Promise<OpenAIChatResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -30,20 +31,28 @@ export async function openaiChat(opts: {
   }
 
   const model = opts.model || DEFAULT_MODEL;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), opts.timeout_ms ?? 25_000);
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages: opts.messages,
-      max_tokens: opts.max_tokens ?? 350,
-      temperature: opts.temperature ?? 0.4,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        messages: opts.messages,
+        max_tokens: opts.max_tokens ?? 350,
+        temperature: opts.temperature ?? 0.4,
+      }),
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
