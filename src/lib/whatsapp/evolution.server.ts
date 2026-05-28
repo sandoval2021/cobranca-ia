@@ -1,5 +1,5 @@
 // Implementação real do provider Evolution (server-only).
-// Respeita flag ALLOW_REAL_WHATSAPP — em "false" simula sem chamar a VPS.
+// SEM fallback simulado. Se ALLOW_REAL_WHATSAPP=false → erro explícito.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type {
@@ -12,9 +12,15 @@ import type {
   WhatsAppProvider,
 } from "./provider";
 
-// Por padrão usa a Evolution API real. Defina ALLOW_REAL_WHATSAPP="false"
-// apenas para forçar modo simulado em ambientes de desenvolvimento.
 const REAL = (process.env.ALLOW_REAL_WHATSAPP ?? "true").toLowerCase() !== "false";
+
+function assertReal(): void {
+  if (!REAL) {
+    throw new Error(
+      "Envio real do WhatsApp está desativado pelo administrador (ALLOW_REAL_WHATSAPP=false).",
+    );
+  }
+}
 
 function headers(vps: WAVpsNode): HeadersInit {
   return {
@@ -56,21 +62,42 @@ function mapEvolutionStatus(s: unknown): WAStatus {
   return "error";
 }
 
+// Normaliza QR retornado pela Evolution (string base64, data URL ou objeto aninhado).
+function extractQr(d: any): string | null {
+  if (!d) return null;
+  const candidates: any[] = [
+    d?.base64,
+    d?.qrcode?.base64,
+    d?.qrcode?.code,
+    d?.qr?.base64,
+    d?.qr?.code,
+    d?.code,
+    typeof d?.qrcode === "string" ? d.qrcode : null,
+    typeof d?.qr === "string" ? d.qr : null,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.length > 20) return c;
+  }
+  return null;
+}
+
+function extractPairing(d: any): string | null {
+  if (!d) return null;
+  const candidates: any[] = [
+    d?.pairingCode,
+    d?.qrcode?.pairingCode,
+    d?.qr?.pairingCode,
+    d?.instance?.pairingCode,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.length >= 6) return c;
+  }
+  return null;
+}
+
 export const evolutionProvider: WhatsAppProvider = {
   async createInstance({ vps, friendly_name, webhook_url, phone_number }) {
-    if (!REAL) {
-      const now = Date.now();
-      return {
-        provider_instance_id: `sim_${now}`,
-        qr_code: phone_number ? null : `sim-qr-${now}`,
-        qr_expires_at: phone_number ? null : new Date(now + 45_000).toISOString(),
-        pairing_code: phone_number ? "ABCD-1234" : null,
-        pairing_code_expires_at: phone_number
-          ? new Date(now + 60_000).toISOString()
-          : null,
-        status: "awaiting_qr",
-      } satisfies WACreateResult;
-    }
+    assertReal();
 
     const body: Record<string, unknown> = {
       instanceName: friendly_name,
@@ -94,19 +121,15 @@ export const evolutionProvider: WhatsAppProvider = {
     });
 
     if (!res.ok) {
-      throw new Error(`evolution.createInstance failed: ${res.status} ${res.text}`);
+      throw new Error(`evolution.createInstance falhou (${res.status}): ${res.text.slice(0, 300)}`);
     }
 
     const providerId: string =
       res.data?.instance?.instanceName ||
       res.data?.instance?.instanceId ||
       friendly_name;
-    const qr = res.data?.qrcode?.base64 || res.data?.qrcode?.code || null;
-    const pairing =
-      res.data?.qrcode?.pairingCode ||
-      res.data?.pairingCode ||
-      res.data?.instance?.pairingCode ||
-      null;
+    const qr = extractQr(res.data);
+    const pairing = extractPairing(res.data);
 
     return {
       provider_instance_id: providerId,
@@ -115,31 +138,23 @@ export const evolutionProvider: WhatsAppProvider = {
       pairing_code: pairing,
       pairing_code_expires_at: pairing ? new Date(Date.now() + 60_000).toISOString() : null,
       status: qr || pairing ? "awaiting_qr" : "disconnected",
-    };
+    } satisfies WACreateResult;
   },
 
   async getQrCode(ref, phone_number): Promise<WAQrResult> {
-    if (!REAL) {
-      const now = Date.now();
-      return {
-        qr_code: phone_number ? null : `sim-qr-${now}`,
-        qr_expires_at: phone_number ? null : new Date(now + 45_000).toISOString(),
-        pairing_code: phone_number ? "ABCD-1234" : null,
-        pairing_code_expires_at: phone_number
-          ? new Date(now + 60_000).toISOString()
-          : null,
-        status: "awaiting_qr",
-      };
-    }
+    assertReal();
     const path = `/instance/connect/${encodeURIComponent(ref.provider_instance_id)}${
       phone_number ? `?number=${encodeURIComponent(phone_number)}` : ""
     }`;
     const res = await callEvolution(ref.vps, path, { method: "GET" });
-    if (!res.ok) throw new Error(`evolution.getQrCode failed: ${res.status}`);
-    const qr = res.data?.base64 || res.data?.qrcode?.base64 || res.data?.code || null;
-    const pairing =
-      res.data?.pairingCode || res.data?.qrcode?.pairingCode || null;
-    const status = mapEvolutionStatus(res.data?.instance?.state || res.data?.state);
+    if (!res.ok) {
+      throw new Error(`evolution.getQrCode falhou (${res.status}): ${res.text.slice(0, 300)}`);
+    }
+    const qr = extractQr(res.data);
+    const pairing = extractPairing(res.data);
+    const status = mapEvolutionStatus(
+      res.data?.instance?.state || res.data?.state || (qr || pairing ? "qr" : ""),
+    );
     return {
       qr_code: qr,
       qr_expires_at: qr ? new Date(Date.now() + 45_000).toISOString() : null,
@@ -151,7 +166,7 @@ export const evolutionProvider: WhatsAppProvider = {
 
 
   async connect(ref) {
-    if (!REAL) return "awaiting_qr";
+    assertReal();
     const res = await callEvolution(
       ref.vps,
       `/instance/connect/${encodeURIComponent(ref.provider_instance_id)}`,
@@ -161,18 +176,18 @@ export const evolutionProvider: WhatsAppProvider = {
   },
 
   async disconnect(ref) {
-    if (!REAL) return "disconnected";
+    assertReal();
     const res = await callEvolution(
       ref.vps,
       `/instance/logout/${encodeURIComponent(ref.provider_instance_id)}`,
       { method: "DELETE" },
     );
-    if (!res.ok) throw new Error(`evolution.disconnect failed: ${res.status}`);
+    if (!res.ok) throw new Error(`evolution.disconnect falhou (${res.status})`);
     return "disconnected";
   },
 
   async getStatus(ref) {
-    if (!REAL) return "disconnected";
+    assertReal();
     const res = await callEvolution(
       ref.vps,
       `/instance/connectionState/${encodeURIComponent(ref.provider_instance_id)}`,
@@ -182,9 +197,7 @@ export const evolutionProvider: WhatsAppProvider = {
   },
 
   async sendText(ref, to, body): Promise<WASendResult> {
-    if (!REAL) {
-      return { ok: true, provider_msg_id: `sim_${Date.now()}` };
-    }
+    assertReal();
     const res = await callEvolution(
       ref.vps,
       `/message/sendText/${encodeURIComponent(ref.provider_instance_id)}`,
