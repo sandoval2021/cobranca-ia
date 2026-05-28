@@ -48,6 +48,7 @@ export type WASendResult = {
 export interface WhatsAppProvider {
   createInstance(args: {
     vps: WAVpsNode;
+    instance_name: string;
     friendly_name: string;
     webhook_url: string;
     phone_number?: string;
@@ -57,6 +58,7 @@ export interface WhatsAppProvider {
 
   connect(ref: WAInstanceRef): Promise<WAStatus>;
   disconnect(ref: WAInstanceRef): Promise<WAStatus>;
+  deleteInstance(ref: WAInstanceRef): Promise<void>;
   getStatus(ref: WAInstanceRef): Promise<WAStatus>;
 
   sendText(ref: WAInstanceRef, to: string, body: string): Promise<WASendResult>;
