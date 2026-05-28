@@ -81,7 +81,7 @@ function WhatsAppPage() {
     let cancelled = false;
     (async () => {
       try {
-        const r = await ensureCompany({ data: {} });
+        const r = await ensureCompany();
         if (!cancelled) setCompanyId(r.company_id);
       } catch (e: any) {
         if (!cancelled) setBootError(e?.message ?? "Falha ao preparar empresa.");
