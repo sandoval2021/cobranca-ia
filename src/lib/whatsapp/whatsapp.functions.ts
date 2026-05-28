@@ -6,16 +6,30 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   evolutionProvider,
+  isEvolutionNotFoundError,
   loadInstanceRef,
   pickAvailableVps,
   getEvolutionWebhookUrl,
 } from "./evolution.server";
+
+const LOCAL_INVALID_INSTANCE_PREFIXES = ["sim_", "pending_"] as const;
+
+function hasInvalidLocalProviderId(providerInstanceId?: string | null): boolean {
+  return LOCAL_INVALID_INSTANCE_PREFIXES.some((prefix) => providerInstanceId?.startsWith(prefix));
+}
+
+function buildEvolutionInstanceName(companyId: string, instanceId: string): string {
+  return `cobraeasy_${companyId.replace(/-/g, "").slice(0, 12)}_${instanceId.replace(/-/g, "").slice(0, 12)}`;
+}
 
 async function assertCompanyAccess(
   supabase: any,
   userId: string,
   companyId: string,
 ): Promise<void> {
+  const { data: isSuper } = await supabase.rpc("is_super_admin");
+  if (isSuper) return;
+
   // owner ou membro da empresa
   const { data: owner } = await supabase
     .from("companies")
@@ -104,12 +118,8 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id)
       .maybeSingle();
 
-    // Resíduo de modo simulado ou placeholder nunca criado na Evolution → recria.
-    if (
-      existing &&
-      (existing.provider_instance_id?.startsWith("sim_") ||
-        existing.provider_instance_id?.startsWith("pending_"))
-    ) {
+    // Resíduo local inválido nunca criado na Evolution → remove e recria real.
+    if (existing && hasInvalidLocalProviderId(existing.provider_instance_id)) {
       await supabaseAdmin.from("whatsapp_instances").delete().eq("id", existing.id);
     } else if (existing) {
       const ref = await loadInstanceRef(existing.id);
@@ -133,11 +143,14 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
           pairing_code: qr.pairing_code ?? null,
         };
       } catch (err: any) {
-        // Limpa eventuais valores fake/expirados deixados em modo simulado.
-        await supabaseAdmin
-          .from("whatsapp_instances")
-          .update({ qr_code: null, pairing_code: null, qr_expires_at: null, pairing_code_expires_at: null })
-          .eq("id", existing.id);
+        if (isEvolutionNotFoundError(err)) {
+          await supabaseAdmin.from("whatsapp_instances").delete().eq("id", existing.id);
+        } else {
+          await supabaseAdmin
+            .from("whatsapp_instances")
+            .update({ qr_code: null, pairing_code: null, qr_expires_at: null, pairing_code_expires_at: null, status: "error" })
+            .eq("id", existing.id);
+        }
         throw new Error(err?.message || "Falha ao obter QR Code da Evolution.");
       }
     }
