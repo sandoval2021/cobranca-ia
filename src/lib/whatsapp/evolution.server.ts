@@ -371,19 +371,18 @@ export const evolutionProvider: WhatsAppProvider = {
 
   async setWebhook(ref, webhook_url) {
     assertReal();
+    const signedWebhookUrl = withWebhookSecret(webhook_url, ref.vps.webhook_secret);
     const body = {
-      webhook: {
-        enabled: true,
-        url: webhook_url,
-        webhookByEvents: false,
-        webhookBase64: false,
-        events: [
-          "QRCODE_UPDATED",
-          "CONNECTION_UPDATE",
-          "MESSAGES_UPSERT",
-          "SEND_MESSAGE",
-        ],
-      },
+      enabled: true,
+      url: signedWebhookUrl,
+      webhookByEvents: false,
+      webhookBase64: false,
+      events: [
+        "QRCODE_UPDATED",
+        "CONNECTION_UPDATE",
+        "MESSAGES_UPSERT",
+        "SEND_MESSAGE",
+      ],
     };
     const res = await callEvolution(
       ref.vps,
@@ -394,8 +393,9 @@ export const evolutionProvider: WhatsAppProvider = {
       // tenta shape antigo (Evolution v1)
       const legacy = {
         enabled: true,
-        url: webhook_url,
+        url: signedWebhookUrl,
         webhook_by_events: false,
+        webhook_base64: false,
         events: [
           "QRCODE_UPDATED",
           "CONNECTION_UPDATE",
