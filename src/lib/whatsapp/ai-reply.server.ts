@@ -5,15 +5,9 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { evolutionProvider } from "./evolution.server";
 import { openaiChat } from "@/lib/openai.server";
 import { logWhatsAppAutomation } from "./automation-log.server";
+import { buildAiContext, buildPromptFromContext } from "./ai-context.server";
 import type { WAInstanceRef } from "./provider";
 
-const DEFAULT_SYSTEM_PROMPT = [
-  "Você é um atendente de WhatsApp educado, objetivo e útil.",
-  "Responda em português, com no máximo 4 frases.",
-  "Se o cliente perguntar sobre pagamento, vencimento, 2ª via ou cobrança,",
-  "informe que um atendente humano irá confirmar os detalhes em seguida.",
-  "Nunca invente valores, datas ou prazos.",
-].join(" ");
 
 function normalizePhone(value: unknown): string | null {
   if (typeof value !== "string") return null;
