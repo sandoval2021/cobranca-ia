@@ -152,29 +152,22 @@ export async function handleInboundForAiReply(
     return { handled: false, reason: `db:${insErr.message}` };
   }
   const inboundId = inserted!.id;
+  if (insErr) {
+    // unique violation = já processada
+    if ((insErr as any).code === "23505") return { handled: false, reason: "duplicate" };
+    return { handled: false, reason: `db:${insErr.message}` };
+  }
+  const inboundId = inserted!.id;
 
-  // Busca cliente pelo telefone (best-effort)
-  const { data: customer } = await supabaseAdmin
-    .from("customers")
-    .select("name, notes, phone")
-    .eq("company_id", inst.company_id)
-    .ilike("phone", `%${parts.fromPhone.slice(-8)}%`)
-    .limit(1)
-    .maybeSingle();
-
-  const { data: company } = await supabaseAdmin
-    .from("companies")
-    .select("name")
-    .eq("id", inst.company_id)
-    .maybeSingle();
-
-  const sys = (inst.ai_system_prompt && inst.ai_system_prompt.trim()) || DEFAULT_SYSTEM_PROMPT;
-  const contextLines: string[] = [];
-  if (company?.name) contextLines.push(`Empresa: ${company.name}.`);
-  if (customer?.name) contextLines.push(`Cliente identificado: ${customer.name}.`);
-  else contextLines.push(`Cliente não identificado no cadastro (telefone ${parts.fromPhone}).`);
-  if (customer?.notes) contextLines.push(`Notas internas: ${customer.notes}`);
-  const prompt = `${sys}\n\nContexto:\n${contextLines.join("\n")}`;
+  // Monta contexto determinístico (cliente, grupo de preço, indicação, app)
+  const ctx = await buildAiContext({
+    companyId: inst.company_id,
+    fromPhone: parts.fromPhone,
+    text: parts.text,
+  });
+  const { system, contextBlock } = buildPromptFromContext(ctx);
+  const baseSystem = (inst.ai_system_prompt && inst.ai_system_prompt.trim()) || "";
+  const finalSystem = [baseSystem, system, contextBlock].filter(Boolean).join("\n\n");
 
   try {
     await logWhatsAppAutomation({
@@ -186,18 +179,25 @@ export async function handleInboundForAiReply(
       provider_instance: ref.provider_instance_id,
       from_phone: parts.fromPhone,
       message_preview: parts.text,
-      details: { prompt },
+      details: {
+        intent: ctx.intent,
+        priceGroup: ctx.priceGroup?.name ?? null,
+        plansCount: ctx.priceGroup?.plans.length ?? 0,
+        referrerFound: !!ctx.referral.indicator,
+        needsHuman: ctx.needsHuman,
+        app: ctx.app.name,
+      },
     });
     const result = await openaiChat({
       messages: [
-        { role: "system", content: prompt },
+        { role: "system", content: finalSystem },
         { role: "user", content: parts.text },
       ],
       max_tokens: 280,
       temperature: 0.4,
       timeout_ms: 25_000,
     });
-    const reply = result.text?.trim();
+
     if (!reply) throw new Error("resposta vazia");
 
     await logWhatsAppAutomation({
