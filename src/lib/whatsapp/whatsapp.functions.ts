@@ -368,12 +368,8 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id)
       .maybeSingle();
 
-    // Limpa resíduos do modo simulado/placeholder para a UI voltar ao estado inicial.
-    if (
-      inst &&
-      (inst.provider_instance_id?.startsWith("sim_") ||
-        inst.provider_instance_id?.startsWith("pending_"))
-    ) {
+    // Limpa resíduos locais inválidos para a UI voltar ao estado inicial.
+    if (inst && hasInvalidLocalProviderId(inst.provider_instance_id)) {
       await supabaseAdmin.from("whatsapp_instances").delete().eq("id", inst.id);
       return { instance: null, queued: 0 };
     }
