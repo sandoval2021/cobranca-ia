@@ -1,5 +1,4 @@
-// Empresas, planos e membros — 100% local (localStorage).
-// Simula multi-tenant. Em produção: Supabase + RLS + company_id.
+// Empresas, planos e membros — cache local da UI.
 
 export type CompanyStatus = "teste" | "ativa" | "vencida" | "suspensa" | "cancelada";
 export type MemberRole = "owner" | "atendente" | "financeiro" | "suporte";
@@ -361,8 +360,8 @@ const UUID_LOCAL_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 
 /**
  * Garante que exista uma Company local com o UUID real informado.
- * Se já houver uma Company local com ID "co_..." (preferindo "TESTANDO"),
- * faz relink para o UUID. Caso contrário cria nova entrada com o UUID.
+ * Se já houver uma Company local com ID "co_...", faz relink para o UUID.
+ * Caso contrário cria nova entrada com o UUID.
  */
 export function upsertRealCompany(
   realId: string,
@@ -373,10 +372,8 @@ export function upsertRealCompany(
   const existing = list.find((c) => c.id === realId);
   if (existing) return existing;
 
-  // Relink local "co_..." (prefere TESTANDO, depois primeiro local) para o UUID real.
-  const localCandidate =
-    list.find((c) => c.nome.trim().toUpperCase() === "TESTANDO" && !UUID_LOCAL_RE.test(c.id)) ??
-    list.find((c) => !UUID_LOCAL_RE.test(c.id));
+  // Relink local "co_..." para o UUID real sem selecionar conta de demonstração por nome.
+  const localCandidate = list.find((c) => !UUID_LOCAL_RE.test(c.id));
   if (localCandidate) {
     return relinkCompanyId(localCandidate.id, realId);
   }
@@ -486,8 +483,7 @@ export function getCompanyForUser(userEmail?: string | null): Company | null {
  * Ordem de seleção:
  *  1. Conta já vinculada ao e-mail (owner ativo).
  *  2. Conta única existente (usar automaticamente).
- *  3. Conta chamada "TESTANDO" (ambiente de teste).
- *  4. Cria "Minha conta" e vincula como owner.
+ *  3. Cria "Minha conta" e vincula como owner.
  */
 export function ensureLocalAccount(
   userEmail?: string | null,
@@ -502,9 +498,6 @@ export function ensureLocalAccount(
   let chosen: Company | null = null;
   if (all.length === 1) {
     chosen = all[0]!;
-  } else if (all.length > 1) {
-    const testando = all.find((c) => c.nome.trim().toUpperCase() === "TESTANDO");
-    if (testando) chosen = testando;
   }
 
   if (!chosen) {
