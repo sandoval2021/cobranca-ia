@@ -144,17 +144,18 @@ export function useLocalAuth() {
       const whatsapp =
         (typeof meta.whatsapp === "string" && meta.whatsapp) || localUser?.whatsapp || "";
 
-      // 1) Backend é autoritativo quando responde.
-      // 2) Senão, allowlist como fallback otimista.
-      // 3) Senão, owner (default seguro).
+      // Prioridade da role:
+      // 1) Backend confirmou super_admin → super_admin (autoritativo positivo).
+      // 2) Allowlist de e-mail confirma super_admin → super_admin
+      //    (UX: evita "rebaixar" alguém da allowlist enquanto o backend
+      //     ainda não respondeu ou retorna false em janela transitória).
+      // 3) Caso contrário → owner.
       const resolvedRole: LocalRole =
         backendSuperAdmin === true
           ? "super_admin"
-          : backendSuperAdmin === false
-            ? "owner"
-            : isSuperAdminEmail(supaUser.email)
-              ? "super_admin"
-              : "owner";
+          : isSuperAdminEmail(supaUser.email)
+            ? "super_admin"
+            : "owner";
 
       const bridged: LocalUser = {
         id: supaUser.id,
@@ -166,7 +167,7 @@ export function useLocalAuth() {
         status: "ativo",
         email_confirmed: true,
         created_at: supaUser.created_at ?? new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        updated_at: supaUser.updated_at ?? supaUser.created_at ?? "",
       };
       return { user: bridged, role: resolvedRole };
     }
@@ -174,12 +175,17 @@ export function useLocalAuth() {
   }, [supaUser, localUser, localRole, backendSuperAdmin]);
 
   // Sincroniza cache global para que chamadas estáticas (getCurrentRole/isSuperAdmin)
-  // e helpers como getActiveCompany enxerguem a role bridged já no primeiro render.
-  if (supaUser?.email) {
-    setBridgedLocalUser(user);
-  } else if (!localUser) {
-    setBridgedLocalUser(null);
-  }
+  // e helpers como getActiveCompany enxerguem a role bridged.
+  // IMPORTANTE: dentro de useEffect — chamar setBridgedLocalUser durante o
+  // render dispara LOCAL_AUTH_EVENT, que volta como setState nos listeners e
+  // gera "Maximum update depth exceeded" / "Página sem resposta".
+  useEffect(() => {
+    if (supaUser?.email) {
+      setBridgedLocalUser(user);
+    } else if (!localUser) {
+      setBridgedLocalUser(null);
+    }
+  }, [supaUser?.email, user, localUser]);
 
   return { user, role, isOwner: role === "owner", isSuperAdmin: role === "super_admin" };
 }
