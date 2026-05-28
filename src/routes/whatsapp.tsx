@@ -571,8 +571,21 @@ function WhatsAppPage() {
                   {savingAi && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Salvar instruções
                 </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleResetWebhook}
+                  disabled={resettingWebhook || instance.status !== "connected"}
+                >
+                  {resettingWebhook && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Reconfigurar webhook
+                </Button>
+                <p className="text-[11px] text-muted-foreground">
+                  Use se a IA não estiver respondendo. Isso reinscreve a instância nos eventos de mensagem.
+                </p>
               </div>
             </div>
+
 
             <div className="border-t pt-4 space-y-2">
               <div className="font-medium flex items-center gap-2">
