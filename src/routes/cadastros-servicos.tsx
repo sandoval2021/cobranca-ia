@@ -20,7 +20,7 @@ import {
 
 import {
   listServices, saveService, updateService, deleteService, formatBRL,
-  seedDefaultPlansIfEmpty,
+  seedDefaultPlansIfEmpty, getServiceById,
   addServiceMessage, updateServiceMessage, removeServiceMessage,
   renderTemplate, DEFAULT_COBRANCA, DEFAULT_ACOMP,
   SERVICES_EVENT, type ServiceItem, type ServiceMessage, type ServiceMessageKind,
