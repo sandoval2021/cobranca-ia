@@ -184,11 +184,11 @@ function PlanEditorDialog({
 
   useEffect(() => {
     if (!open || !serviceId) return;
-    const s = listServices().find((x) => x.id === serviceId) ?? null;
+    const s = getServiceById(serviceId);
     setService(s);
     setSelectedMsgId(s?.messages[0]?.id ?? null);
     const h = () => {
-      const fresh = listServices().find((x) => x.id === serviceId) ?? null;
+      const fresh = getServiceById(serviceId);
       setService(fresh);
     };
     window.addEventListener(SERVICES_EVENT, h);
