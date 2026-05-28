@@ -46,6 +46,23 @@ function withWebhookSecret(webhookUrl: string, secret: string): string {
   return url.toString();
 }
 
+async function probeWebhookEndpoint(url: string, providerInstanceId: string): Promise<{ status: number | null; ok: boolean }> {
+  try {
+    const endpoint = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "COBRAEASY_WEBHOOK_TEST",
+        instance: providerInstanceId,
+        data: { probe: true, at: new Date().toISOString() },
+      }),
+    });
+    return { status: endpoint.status, ok: endpoint.ok };
+  } catch {
+    return { status: 0, ok: false };
+  }
+}
+
 async function callEvolution(
   vps: WAVpsNode,
   path: string,
