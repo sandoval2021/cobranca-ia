@@ -70,7 +70,7 @@ function statusLabel(s: ReturnType<typeof getCompanyStatus>): {
 }
 
 function MinhaContaPage() {
-  const { user } = useLocalAuth();
+  const { user, isSuperAdmin } = useLocalAuth();
   const [, setTick] = useState(0);
   useEffect(() => {
     const r = () => setTick((n) => n + 1);
@@ -78,17 +78,21 @@ function MinhaContaPage() {
     return () => window.removeEventListener(COMPANIES_EVENT, r);
   }, []);
 
+  // Super admin não tem empresa/plano — é a conta administrativa do sistema.
+  // NUNCA criar empresa "Básico" automática para super admin (bug histórico).
   const company = useMemo<Company | null>(() => {
+    if (isSuperAdmin) return null;
     const existing = getCompanyForUser(user?.email);
     if (existing) return existing;
     return ensureLocalAccount(user?.email, user?.nome, user?.whatsapp);
-  }, [user?.email, user?.nome, user?.whatsapp]);
+  }, [user?.email, user?.nome, user?.whatsapp, isSuperAdmin]);
 
   const plan = getPlanById(company?.plano_id);
   const status = getCompanyStatus(company);
   const statusInfo = statusLabel(status);
   const dias = daysUntilDue(company);
   const emTeste = status === "teste";
+
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(() => ({
