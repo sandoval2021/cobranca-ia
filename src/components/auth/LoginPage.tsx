@@ -123,6 +123,12 @@ export function LoginPage() {
               onBack={() => setView("login")}
             />
           )}
+          {view === "confirm_email" && confirmCtx && (
+            <ConfirmEmailForm
+              ctx={confirmCtx}
+              onBack={() => setView("login")}
+            />
+          )}
         </div>
       </div>
     </div>
