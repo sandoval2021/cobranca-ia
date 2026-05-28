@@ -416,20 +416,19 @@ export async function handleInboundForAiReply(
     await supabaseAdmin
       .from("whatsapp_conversation_state")
       .update({
-        last_messages: updatedMessages,
-        flags: updatedFlags,
+        last_messages: updatedMessages as any,
+        flags: updatedFlags as any,
         classification: ctx.classification,
         needs_human: willMuteForHuman || state.needs_human,
         human_reason: willMuteForHuman ? ctx.reason : (state.needs_human ? state.classification : null),
         muted_until: mutedUntil ?? state.muted_until,
-        responses_hour_window: [...window, nowIso],
+        responses_hour_window: [...window, nowIso] as any,
         last_response_hash: replyHash,
         last_response_at: nowIso,
         total_messages_in: (state.total_messages_in ?? 0) + 1,
         total_messages_out: (state.total_messages_out ?? 0) + 1,
         updated_at: nowIso,
-      })
-      .eq("id", state.id);
+
 
     if (willMuteForHuman && handoffNumber && !state.human_notified_at) {
       await notifyHuman(ref, handoffNumber, parts.fromPhone, ctx.reason ?? "handoff", parts.text);
