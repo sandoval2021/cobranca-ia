@@ -103,9 +103,14 @@ function write(items: ServiceItem[]) {
 function inScope(s: ServiceItem): boolean {
   const role = getCurrentRole();
   const activeId = getActiveCompanyId();
+  // Super admin sem empresa selecionada: visão global.
   if (role === "super_admin" && !activeId) return true;
-  if (!activeId) return false;
-  return s.company_id === activeId;
+  // Sem empresa ativa (ex.: owner ainda sem empresa vinculada):
+  // mostra registros órfãos criados nesse mesmo estado para não "sumir".
+  if (!activeId) return s.company_id == null;
+  // Com empresa ativa: mostra os da empresa + órfãos (criados antes da
+  // empresa ser resolvida), para que planos recém-criados sempre apareçam.
+  return s.company_id === activeId || s.company_id == null;
 }
 
 export function listServices(): ServiceItem[] {
