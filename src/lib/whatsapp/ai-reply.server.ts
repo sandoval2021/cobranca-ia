@@ -11,6 +11,12 @@ import { buildAiContext, buildPromptFromContext, type ConvoMemory } from "./ai-c
 import { isLowSignal } from "./intent";
 import { ensureAiQuota, incrementAiUsage, markPausedByLimit } from "@/lib/billing-saas/quota.server";
 import type { WAInstanceRef } from "./provider";
+import {
+  detectPaymentRequest,
+  generateWhatsAppPaymentCharge,
+  formatChargeReply,
+  type SimplePlan,
+} from "@/lib/payments/whatsapp-charge.server";
 
 const COOLDOWN_MS = 8_000;
 const HOURLY_LIMIT = 20;
