@@ -344,6 +344,20 @@ function AdminDnsRotasPage() {
                         <Archive className="h-3.5 w-3.5 mr-1" /> Arquivar
                       </Button>
                     )}
+                    <Button
+                      size="sm" variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => guard({
+                        kind: "delete",
+                        title: "Excluir rota definitivamente",
+                        description: `Esta ação não pode ser desfeita. A rota ${r.host || ""} será removida permanentemente.`,
+                        actionLabel: "Excluir",
+                        onConfirm: () => { deleteDnsRoute(r.id); refresh(); toast.success("Rota excluída."); },
+                      })}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir
+                    </Button>
+
                   </div>
                 </div>
               );
