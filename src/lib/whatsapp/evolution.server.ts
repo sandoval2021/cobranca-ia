@@ -149,6 +149,16 @@ function parseInstanceState(d: any): WAInstanceState {
   };
 }
 
+function pickFetchInstancePayload(d: any, providerInstanceId: string): any {
+  const list = Array.isArray(d) ? d : Array.isArray(d?.instances) ? d.instances : Array.isArray(d?.data) ? d.data : [d];
+  return (
+    list.find((item: any) => {
+      const instance = item?.instance ?? item;
+      return instance?.instanceName === providerInstanceId || instance?.instanceId === providerInstanceId;
+    }) ?? list[0]
+  );
+}
+
 export const evolutionProvider: WhatsAppProvider = {
   async createInstance({ vps, instance_name, webhook_url, phone_number }) {
     assertReal();
@@ -276,7 +286,23 @@ export const evolutionProvider: WhatsAppProvider = {
     if (!res.ok) {
       throw new Error(`evolution.connectionState falhou (${res.status}): ${res.text.slice(0, 300)}`);
     }
-    return parseInstanceState(res.data);
+    const state = parseInstanceState(res.data);
+
+    const details = await callEvolution(
+      ref.vps,
+      `/instance/fetchInstances?instanceName=${encodeURIComponent(ref.provider_instance_id)}`,
+      { method: "GET" },
+    );
+    if (details.ok) {
+      const detailState = parseInstanceState(pickFetchInstancePayload(details.data, ref.provider_instance_id));
+      return {
+        status: detailState.status === "error" ? state.status : detailState.status,
+        phone_number: detailState.phone_number ?? state.phone_number,
+        profile_name: detailState.profile_name ?? state.profile_name,
+      };
+    }
+
+    return state;
   },
 
   async sendText(ref, to, body): Promise<WASendResult> {
