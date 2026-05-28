@@ -52,7 +52,7 @@ function parseInbound(payload: any): InboundParts | null {
     if (!item) continue;
     const key = item?.key ?? {};
     if (key?.fromMe) continue;
-    if (item?.status || item?.broadcast || key?.remoteJid === "status@broadcast") continue;
+    if (item?.broadcast || key?.remoteJid === "status@broadcast") continue;
     const remoteJid: string = key?.remoteJid ?? "";
     if (remoteJid.endsWith("@broadcast")) continue;
     if (remoteJid.endsWith("@g.us")) continue; // ignora grupos
