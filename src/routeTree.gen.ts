@@ -50,6 +50,7 @@ import { Route as AcessoRestritoRouteImport } from './routes/acesso-restrito'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtendimentoIaTokenRouteImport } from './routes/atendimento-ia.$token'
 import { Route as AdminVpsRouteImport } from './routes/admin.vps'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicWebhooksMercadoPagoRouteImport } from './routes/api/public/webhooks/mercado-pago'
 import { Route as ApiPublicHooksWaDispatchRouteImport } from './routes/api/public/hooks/wa-dispatch'
 import { Route as ApiPublicWebhooksEvolutionInstanceRouteImport } from './routes/api/public/webhooks/evolution.$instance'
@@ -259,6 +260,12 @@ const AdminVpsRoute = AdminVpsRouteImport.update({
   path: '/admin/vps',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWebhooksMercadoPagoRoute =
   ApiPublicWebhooksMercadoPagoRouteImport.update({
     id: '/api/public/webhooks/mercado-pago',
@@ -322,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 export interface FileRoutesByTo {
@@ -368,6 +376,7 @@ export interface FileRoutesByTo {
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 export interface FileRoutesById {
@@ -415,6 +424,7 @@ export interface FileRoutesById {
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 export interface FileRouteTypes {
@@ -463,6 +473,7 @@ export interface FileRouteTypes {
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/lovable/email/queue/process'
     | '/api/public/webhooks/evolution/$instance'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -509,6 +520,7 @@ export interface FileRouteTypes {
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/lovable/email/queue/process'
     | '/api/public/webhooks/evolution/$instance'
   id:
     | '__root__'
@@ -555,6 +567,7 @@ export interface FileRouteTypes {
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/lovable/email/queue/process'
     | '/api/public/webhooks/evolution/$instance'
   fileRoutesById: FileRoutesById
 }
@@ -602,6 +615,7 @@ export interface RootRouteChildren {
   AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicWebhooksMercadoPagoRoute: typeof ApiPublicWebhooksMercadoPagoRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicWebhooksEvolutionInstanceRoute: typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 
@@ -894,6 +908,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVpsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/mercado-pago': {
       id: '/api/public/webhooks/mercado-pago'
       path: '/api/public/webhooks/mercado-pago'
@@ -962,6 +983,7 @@ const rootRouteChildren: RootRouteChildren = {
   AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicWebhooksMercadoPagoRoute: ApiPublicWebhooksMercadoPagoRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicWebhooksEvolutionInstanceRoute:
     ApiPublicWebhooksEvolutionInstanceRoute,
 }
