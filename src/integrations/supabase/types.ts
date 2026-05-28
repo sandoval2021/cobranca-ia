@@ -455,6 +455,87 @@ export type Database = {
           },
         ]
       }
+      credential_access_log: {
+        Row: {
+          action: string
+          company_id: string
+          created_at: string
+          id: string
+          target_id: string
+          target_kind: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          company_id: string
+          created_at?: string
+          id?: string
+          target_id: string
+          target_kind: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          target_id?: string
+          target_kind?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      customer_iptv_credentials: {
+        Row: {
+          app_used: string | null
+          company_id: string
+          created_at: string
+          customer_id: string
+          device_key: string | null
+          expires_at: string | null
+          id: string
+          iptv_password_enc: string | null
+          iptv_username: string | null
+          mac: string | null
+          notes: string | null
+          plan_days: number | null
+          server_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_used?: string | null
+          company_id: string
+          created_at?: string
+          customer_id: string
+          device_key?: string | null
+          expires_at?: string | null
+          id?: string
+          iptv_password_enc?: string | null
+          iptv_username?: string | null
+          mac?: string | null
+          notes?: string | null
+          plan_days?: number | null
+          server_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_used?: string | null
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          device_key?: string | null
+          expires_at?: string | null
+          id?: string
+          iptv_password_enc?: string | null
+          iptv_username?: string | null
+          mac?: string | null
+          notes?: string | null
+          plan_days?: number | null
+          server_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_support_tokens: {
         Row: {
           company_id: string
@@ -738,6 +819,63 @@ export type Database = {
         }
         Relationships: []
       }
+      renewal_tasks: {
+        Row: {
+          assigned_to: string | null
+          attempts: number
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          credential_id: string | null
+          customer_id: string
+          id: string
+          kind: string
+          last_error: string | null
+          notes: string | null
+          plan_days: number | null
+          screenshot_url: string | null
+          server_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          attempts?: number
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          credential_id?: string | null
+          customer_id: string
+          id?: string
+          kind?: string
+          last_error?: string | null
+          notes?: string | null
+          plan_days?: number | null
+          screenshot_url?: string | null
+          server_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          attempts?: number
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          credential_id?: string | null
+          customer_id?: string
+          id?: string
+          kind?: string
+          last_error?: string | null
+          notes?: string | null
+          plan_days?: number | null
+          screenshot_url?: string | null
+          server_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       saas_extra_packs: {
         Row: {
           ai_extra_responses: number
@@ -808,6 +946,57 @@ export type Database = {
           name?: string
           price_cents?: number
           slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      servers: {
+        Row: {
+          color: string
+          company_id: string
+          created_at: string
+          customer_search_url_template: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          panel_password_enc: string | null
+          panel_type: string
+          panel_url: string | null
+          panel_username: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          company_id: string
+          created_at?: string
+          customer_search_url_template?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          panel_password_enc?: string | null
+          panel_type?: string
+          panel_url?: string | null
+          panel_username?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          company_id?: string
+          created_at?: string
+          customer_search_url_template?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          panel_password_enc?: string | null
+          panel_type?: string
+          panel_url?: string | null
+          panel_username?: string | null
           sort_order?: number
           updated_at?: string
         }
