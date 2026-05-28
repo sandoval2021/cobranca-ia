@@ -327,7 +327,7 @@ export const updateVpsNode = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase);
 
-    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const patch: Record<string, any> = { updated_at: new Date().toISOString() };
     if (data.name !== undefined) patch.name = data.name;
     if (data.base_url !== undefined) patch.base_url = data.base_url.replace(/\/+$/, "");
     if (data.api_token !== undefined) patch.api_token_enc = data.api_token;
