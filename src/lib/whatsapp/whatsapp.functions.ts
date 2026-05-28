@@ -387,7 +387,34 @@ export const sendWhatsAppTestMessage = createServerFn({ method: "POST" })
   });
 
 
-// -------- enqueue --------
+// -------- set AI auto-reply settings --------
+export const setWhatsAppAiReply = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        instance_id: z.string().uuid(),
+        enabled: z.boolean(),
+        system_prompt: z.string().max(2000).optional().nullable(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const ref = await loadInstanceRef(data.instance_id);
+    if (!ref) throw new Error("not_found");
+    await assertCompanyAccess(supabase, userId, ref.company_id);
+    await supabaseAdmin
+      .from("whatsapp_instances")
+      .update({
+        ai_reply_enabled: data.enabled,
+        ai_system_prompt: data.system_prompt ?? null,
+      } as any)
+      .eq("id", ref.id);
+    return { ok: true };
+  });
+
+
 export const enqueueWhatsAppMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
