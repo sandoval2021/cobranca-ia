@@ -38,6 +38,7 @@ import {
   updateVpsNode,
   probeVpsNode,
 } from "@/lib/whatsapp/whatsapp.functions";
+import { useLocalAuth } from "@/lib/use-local-auth";
 
 export const Route = createFileRoute("/admin/vps")({
   component: AdminVpsPage,
