@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Server,
   Activity,
@@ -241,6 +241,31 @@ function AdminVpsPage() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha no probe"),
   });
+
+  useEffect(() => {
+    const msg = String((q.error as Error | null)?.message ?? "");
+    if (!/Unauthorized:\s*Invalid token|invalid (JWT|token)|bad_jwt/i.test(msg)) return;
+
+    let cancelled = false;
+    async function recoverAuth() {
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // ignore
+      }
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {
+        // ignore
+      }
+      if (!cancelled) window.location.replace("/?auth=expired");
+    }
+    void recoverAuth();
+    return () => {
+      cancelled = true;
+    };
+  }, [q.error]);
 
   if (q.isLoading) {
     return (

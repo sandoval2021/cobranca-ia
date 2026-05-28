@@ -4,6 +4,24 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 
 export const AUTH_REFRESH_EVENT = "cobranca-auth-refresh";
 
+function isInvalidAuthToken(message: string): boolean {
+  return /invalid.*token|invalid.*jwt|bad_jwt|jwt.*invalid|unauthorized/i.test(message);
+}
+
+async function clearStaleSession() {
+  try {
+    await supabase!.auth.signOut();
+  } catch {
+    // ignore
+  }
+  try {
+    localStorage.clear();
+    sessionStorage.clear();
+  } catch {
+    // ignore
+  }
+}
+
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -15,9 +33,11 @@ export function useAuth() {
     }
     let alive = true;
 
-    // Listener fires SIGNED_IN/SIGNED_OUT/INITIAL_SESSION synchronously.
+    // INITIAL_SESSION vem do storage local e pode conter JWT antigo após rotação
+    // de chaves. Não confiar nele antes de revalidar com getUser().
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       if (!alive) return;
+      if (_e === "INITIAL_SESSION") return;
       setSession(s);
       setLoading(false);
     });
@@ -30,7 +50,8 @@ export function useAuth() {
       if (data.session) {
         const { error } = await supabase!.auth.getUser();
         if (error) {
-          await supabase!.auth.signOut().catch(() => undefined);
+          if (isInvalidAuthToken(error.message)) await clearStaleSession();
+          else await supabase!.auth.signOut().catch(() => undefined);
           if (!alive) return;
           setSession(null);
           setLoading(false);

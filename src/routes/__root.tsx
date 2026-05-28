@@ -55,6 +55,28 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const isInvalidToken = /Unauthorized:\s*Invalid token|invalid (JWT|token)|bad_jwt/i.test(
+    `${error.message} ${error.stack ?? ""}`,
+  );
+
+  useEffect(() => {
+    if (!isInvalidToken) return;
+    async function recover() {
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // ignore
+      }
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {
+        // ignore
+      }
+      window.location.replace("/?auth=expired");
+    }
+    void recover();
+  }, [isInvalidToken]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -144,13 +166,23 @@ function RootComponent() {
   // (sessão obsoleta após rotação de chaves JWT do Supabase), limpamos a
   // sessão local e mandamos pra tela de login em vez de mostrar erro.
   useEffect(() => {
+    function errorMessage(reason: unknown): string {
+      if (reason instanceof Error) return reason.message;
+      if (typeof reason === "string") return reason;
+      if (typeof reason === "object" && reason) {
+        const obj = reason as { message?: unknown; error?: unknown; stack?: unknown };
+        return [obj.message, obj.error, obj.stack]
+          .filter(Boolean)
+          .map(String)
+          .join(" ");
+      }
+      return "";
+    }
+
     function isInvalidTokenError(reason: unknown): boolean {
       const msg =
-        (reason instanceof Error && reason.message) ||
-        (typeof reason === "string" ? reason : "") ||
-        (typeof reason === "object" && reason && "message" in reason
-          ? String((reason as { message?: unknown }).message ?? "")
-          : "");
+        errorMessage(reason) ||
+        (typeof reason === "object" && reason ? JSON.stringify(reason) : "");
       return /Unauthorized:\s*Invalid token|invalid (JWT|token)|bad_jwt/i.test(msg);
     }
 
@@ -169,7 +201,7 @@ function RootComponent() {
       } catch {
         // ignore
       }
-      window.location.replace("/");
+      window.location.replace("/?auth=expired");
     }
 
     const onRejection = (e: PromiseRejectionEvent) => {
