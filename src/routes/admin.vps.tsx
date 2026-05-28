@@ -235,8 +235,24 @@ function AdminVpsPage() {
   const probeMut = useMutation({
     mutationFn: (id: string) => probe({ data: { id } }),
     onSuccess: (res: any) => {
-      if (res?.ok) toast.success("VPS respondendo OK");
-      else toast.error(`VPS sem resposta (status ${res?.status ?? 0})`);
+      if (res?.ok) {
+        toast.success("VPS respondendo OK");
+      } else {
+        const status = res?.status ?? 0;
+        const reason = res?.error ? String(res.error) : "";
+        const hint =
+          status === 0
+            ? "Não foi possível conectar (DNS, TLS, URL inválida, servidor offline ou bloqueado)."
+            : status === 401 || status === 403
+              ? "API Token inválido ou sem permissão."
+              : status === 404
+                ? "URL base não responde no endpoint /instance/fetchInstances."
+                : `HTTP ${status}.`;
+        toast.error(`VPS sem resposta: ${hint}${reason ? ` Detalhe: ${reason}` : ""}`, {
+          duration: 8000,
+        });
+        console.error("[probeVpsNode]", res);
+      }
       qc.invalidateQueries({ queryKey: ["vps-nodes"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha no probe"),
