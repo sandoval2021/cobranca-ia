@@ -644,6 +644,12 @@ function Dashboard() {
       <OwnerRoleNotice />
       <PwaInstallPrompt />
 
+      {(() => {
+        const cid = getActiveCompanyId();
+        return cid ? <div className="mb-4"><AiQuotaCard companyId={cid} /></div> : null;
+      })()}
+
+
       {/* Próximo passo recomendado — linguagem simples para o Dono */}
       {(() => {
         const totalClientes =
