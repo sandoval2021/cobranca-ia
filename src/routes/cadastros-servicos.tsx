@@ -266,7 +266,29 @@ function PlanEditorDialog({
 
         <PlanInfoEditor service={service} onSaved={onClose} />
 
+        <div>
+          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mensagens do plano</h3>
+          <MessagesList
+            service={service}
+            selectedId={selectedMsgId}
+            onSelect={setSelectedMsgId}
+          />
+        </div>
+
+        {selectedMsg && (
+          <MessageEditor
+            key={selectedMsg.id}
+            service={service}
+            message={selectedMsg}
+          />
+        )}
+
+        <DialogFooter className="pt-1">
+          <Button size="sm" onClick={onClose}>Fechar</Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
+
   );
 }
 
