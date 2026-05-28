@@ -294,6 +294,119 @@ export async function handleInboundForAiReply(
     memory,
   });
 
+  // ===== Geração determinística de cobrança Mercado Pago via IA =====
+  // Se o cliente pediu Pix/link/cartão/renovar de forma explícita, gera cobrança
+  // e responde com o link /pagar/$ref — pulando a chamada à OpenAI.
+  const payReq = detectPaymentRequest(parts.text);
+  if (payReq.wantsCharge && ctx.priceGroup && ctx.priceGroup.plans.length > 0) {
+    await logWhatsAppAutomation({
+      instance_id: inst.id, company_id: inst.company_id,
+      event_type: "payment_charge_requested", status: "ok",
+      from_phone: parts.fromPhone, message_preview: parts.text,
+      details: { method: payReq.method, priceGroup: ctx.priceGroup.name },
+    });
+
+    // Recarrega planos com price_cents (ctx só tem price_brl formatado)
+    const { data: planRows } = await supabaseAdmin
+      .from("price_group_plans")
+      .select("name,duration_days,price_cents")
+      .eq("price_group_id", ctx.priceGroup.id)
+      .eq("is_active", true);
+    const plans: SimplePlan[] = (planRows ?? []).map((p) => ({
+      name: p.name,
+      duration_days: p.duration_days,
+      price_cents: p.price_cents,
+    }));
+
+    const charge = await generateWhatsAppPaymentCharge({
+      companyId: inst.company_id,
+      customerId: ctx.customer?.id ?? null,
+      phone: parts.fromPhone,
+      plans,
+      text: parts.text,
+      method: payReq.method,
+    });
+
+    if (charge.ok) {
+      const reply = formatChargeReply(charge);
+      await logWhatsAppAutomation({
+        instance_id: inst.id, company_id: inst.company_id,
+        event_type: charge.reused ? "payment_link_sent" : "payment_charge_created",
+        status: "ok",
+        from_phone: parts.fromPhone, message_preview: reply,
+        details: {
+          externalReference: charge.externalReference,
+          method: charge.method,
+          amountCents: charge.amountCents,
+          feeCents: charge.feeCents,
+          feeMode: charge.feeMode,
+          reused: charge.reused,
+        },
+      });
+
+      const send = await evolutionProvider.sendText(ref, parts.fromPhone, reply);
+      if (send.ok) {
+        await logWhatsAppAutomation({
+          instance_id: inst.id, company_id: inst.company_id,
+          event_type: "whatsapp_reply_sent", status: "ok",
+          from_phone: parts.fromPhone, message_preview: reply,
+          details: { providerMsgId: send.provider_msg_id ?? null, kind: "payment_link" },
+        });
+        await supabaseAdmin
+          .from("whatsapp_inbound_messages")
+          .update({
+            reply_text: reply,
+            reply_status: "sent",
+            replied_at: new Date().toISOString(),
+          })
+          .eq("id", inboundId);
+
+        // Atualiza memória curta e janela horária
+        const nowIso = new Date().toISOString();
+        const updatedMessages = [
+          ...memory.last_messages,
+          { role: "user" as const, text: parts.text, at: nowIso },
+          { role: "assistant" as const, text: reply, at: nowIso },
+        ].slice(-MAX_MEMORY_MESSAGES);
+        const replyHash = hashText(reply);
+        await supabaseAdmin
+          .from("whatsapp_conversation_state")
+          .update({
+            last_messages: updatedMessages as any,
+            flags: { ...(memory.flags ?? {}), sent_payment_link: true } as any,
+            classification: "billing",
+            responses_hour_window: [...window, nowIso] as any,
+            last_response_hash: replyHash,
+            last_response_at: nowIso,
+            total_messages_in: (state.total_messages_in ?? 0) + 1,
+            total_messages_out: (state.total_messages_out ?? 0) + 1,
+            updated_at: nowIso,
+          })
+          .eq("id", state.id);
+
+        return { handled: true };
+      }
+      // se envio falhou, segue para fluxo IA normal (fallback)
+    } else if (charge.reason === "not_connected") {
+      // MP não conectado — segue fluxo IA normal (fallback manual / handoff)
+      await logWhatsAppAutomation({
+        instance_id: inst.id, company_id: inst.company_id,
+        event_type: "payment_charge_failed", status: "skipped",
+        from_phone: parts.fromPhone, message_preview: parts.text,
+        details: { reason: charge.reason, message: charge.message },
+      });
+    } else {
+      // ambiguous_plan / no_price_data → deixa a IA pedir o plano usando o contexto
+      await logWhatsAppAutomation({
+        instance_id: inst.id, company_id: inst.company_id,
+        event_type: "payment_charge_failed", status: "skipped",
+        from_phone: parts.fromPhone, message_preview: parts.text,
+        details: { reason: charge.reason, message: charge.message },
+      });
+    }
+  }
+
+
   // Carrega settings p/ notificar humano
   const { data: aiSettings } = await supabaseAdmin
     .from("ai_company_settings")
