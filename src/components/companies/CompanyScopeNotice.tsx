@@ -21,9 +21,11 @@ export function CompanyScopeNotice({ moduleKey, className }: Props) {
     const onChange = () => force((n) => n + 1);
     window.addEventListener("storage", onChange);
     window.addEventListener("cobranca_ia_companies:changed", onChange as EventListener);
+    window.addEventListener("cobranca-local-auth-changed", onChange as EventListener);
     return () => {
       window.removeEventListener("storage", onChange);
       window.removeEventListener("cobranca_ia_companies:changed", onChange as EventListener);
+      window.removeEventListener("cobranca-local-auth-changed", onChange as EventListener);
     };
   }, []);
 

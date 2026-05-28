@@ -3,6 +3,7 @@ import {
   LOCAL_AUTH_EVENT,
   getCurrentLocalUser,
   getCurrentRole,
+  setBridgedLocalUser,
   type LocalRole,
   type LocalUser,
 } from "@/lib/local-auth";
@@ -171,6 +172,14 @@ export function useLocalAuth() {
     }
     return { user: localUser, role: localRole };
   }, [supaUser, localUser, localRole, backendSuperAdmin]);
+
+  // Sincroniza cache global para que chamadas estáticas (getCurrentRole/isSuperAdmin)
+  // e helpers como getActiveCompany enxerguem a role bridged já no primeiro render.
+  if (supaUser?.email) {
+    setBridgedLocalUser(user);
+  } else if (!localUser) {
+    setBridgedLocalUser(null);
+  }
 
   return { user, role, isOwner: role === "owner", isSuperAdmin: role === "super_admin" };
 }
