@@ -221,10 +221,25 @@ function VpsDialog({
 }
 
 function AdminVpsPage() {
+  const { isSuperAdmin } = useLocalAuth();
   const fn = useServerFn(listVpsNodes);
   const probe = useServerFn(probeVpsNode);
   const qc = useQueryClient();
   const [edit, setEdit] = useState<EditState>(null);
+
+  if (!isSuperAdmin) {
+    return (
+      <PageContainer>
+        <Card className="p-6 text-center">
+          <ShieldCheck className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+          <h2 className="text-lg font-semibold">Acesso restrito</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Apenas Super Admin pode configurar VPS. Donos de conta não têm acesso a esta área.
+          </p>
+        </Card>
+      </PageContainer>
+    );
+  }
 
   const q = useQuery({
     queryKey: ["vps-nodes"],
