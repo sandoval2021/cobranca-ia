@@ -334,6 +334,59 @@ export const disconnectWhatsAppInstance = createServerFn({ method: "POST" })
     }
   });
 
+// -------- set settings (reject calls) --------
+export const setWhatsAppRejectCall = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        instance_id: z.string().uuid(),
+        reject_call: z.boolean(),
+        msg_call: z.string().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const ref = await loadInstanceRef(data.instance_id);
+    if (!ref) throw new Error("not_found");
+    await assertCompanyAccess(supabase, userId, ref.company_id);
+    if (hasInvalidLocalProviderId(ref.provider_instance_id)) {
+      throw new Error("Instância inválida. Recrie a conexão.");
+    }
+    await evolutionProvider.setSettings(ref, {
+      rejectCall: data.reject_call,
+      msgCall: data.msg_call,
+    });
+    return { ok: true };
+  });
+
+// -------- send test message --------
+export const sendWhatsAppTestMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        instance_id: z.string().uuid(),
+        to_phone: z.string().min(8).max(20).regex(/^[0-9]+$/),
+        body: z.string().min(1).max(2000),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const ref = await loadInstanceRef(data.instance_id);
+    if (!ref) throw new Error("not_found");
+    await assertCompanyAccess(supabase, userId, ref.company_id);
+    if (hasInvalidLocalProviderId(ref.provider_instance_id)) {
+      throw new Error("Instância inválida. Recrie a conexão.");
+    }
+    const result = await evolutionProvider.sendText(ref, data.to_phone, data.body);
+    if (!result.ok) throw new Error(result.error || "Falha ao enviar mensagem.");
+    return { ok: true, provider_msg_id: result.provider_msg_id ?? null };
+  });
+
+
 // -------- enqueue --------
 export const enqueueWhatsAppMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
