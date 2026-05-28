@@ -142,9 +142,11 @@ export function SimulatedMessagesPanel({
         <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <MessageSquare className="h-3.5 w-3.5" /> {title}
         </h3>
-        <span className="inline-flex items-center gap-1 rounded-full bg-info-soft px-2 py-0.5 text-[10px] font-medium text-info">
-          <FlaskConical className="h-3 w-3" /> Ambiente de testes
-        </span>
+        {flags.stagingMode && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-info-soft px-2 py-0.5 text-[10px] font-medium text-info">
+            <FlaskConical className="h-3 w-3" /> Ambiente de testes
+          </span>
+        )}
       </div>
 
       {state.status === "loading" && (
