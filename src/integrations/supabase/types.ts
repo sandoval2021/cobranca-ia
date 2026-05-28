@@ -77,6 +77,108 @@ export type Database = {
           },
         ]
       }
+      auth_email_otps: {
+        Row: {
+          attempts: number
+          consumed_at: string | null
+          created_at: string
+          email_normalized: string
+          expires_at: string
+          id: string
+          max_attempts: number
+          metadata: Json
+          otp_hash: string
+          purpose: Database["public"]["Enums"]["otp_purpose"]
+          resend_available_at: string
+        }
+        Insert: {
+          attempts?: number
+          consumed_at?: string | null
+          created_at?: string
+          email_normalized: string
+          expires_at: string
+          id?: string
+          max_attempts?: number
+          metadata?: Json
+          otp_hash: string
+          purpose: Database["public"]["Enums"]["otp_purpose"]
+          resend_available_at?: string
+        }
+        Update: {
+          attempts?: number
+          consumed_at?: string | null
+          created_at?: string
+          email_normalized?: string
+          expires_at?: string
+          id?: string
+          max_attempts?: number
+          metadata?: Json
+          otp_hash?: string
+          purpose?: Database["public"]["Enums"]["otp_purpose"]
+          resend_available_at?: string
+        }
+        Relationships: []
+      }
+      auth_login_locks: {
+        Row: {
+          created_at: string
+          email_normalized: string
+          failed_attempts: number
+          id: string
+          ip: string
+          last_failed_at: string
+          locked_until: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_normalized: string
+          failed_attempts?: number
+          id?: string
+          ip: string
+          last_failed_at?: string
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_normalized?: string
+          failed_attempts?: number
+          id?: string
+          ip?: string
+          last_failed_at?: string
+          locked_until?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      auth_pending_signups: {
+        Row: {
+          created_at: string
+          email_normalized: string
+          expires_at: string
+          id: string
+          metadata: Json
+          password_hash: string
+        }
+        Insert: {
+          created_at?: string
+          email_normalized: string
+          expires_at: string
+          id?: string
+          metadata?: Json
+          password_hash: string
+        }
+        Update: {
+          created_at?: string
+          email_normalized?: string
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          password_hash?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           created_at: string
@@ -561,6 +663,7 @@ export type Database = {
     }
     Functions: {
       claim_super_admin_bootstrap: { Args: never; Returns: Json }
+      cleanup_auth_ephemeral: { Args: never; Returns: undefined }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -600,6 +703,7 @@ export type Database = {
       ai_usage_status: "success" | "error"
       ai_usage_type: "owner" | "customer"
       app_role: "super_admin" | "owner" | "member"
+      otp_purpose: "signup" | "login" | "recovery"
       wa_instance_status:
         | "connected"
         | "disconnected"
@@ -748,6 +852,7 @@ export const Constants = {
       ai_usage_status: ["success", "error"],
       ai_usage_type: ["owner", "customer"],
       app_role: ["super_admin", "owner", "member"],
+      otp_purpose: ["signup", "login", "recovery"],
       wa_instance_status: [
         "connected",
         "disconnected",
