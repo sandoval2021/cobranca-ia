@@ -35,6 +35,8 @@ function CadastrosServicosPage() {
   const [items, setItems] = useState<ServiceItem[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isNew, setIsNew] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ServiceItem | null>(null);
 
   const reload = () => setItems(listServices());
@@ -48,18 +50,15 @@ function CadastrosServicosPage() {
 
   function openNew() {
     if (!ensureCanEditService().allowed) return;
-    const created = saveService({
-      nome: "Novo plano",
-      preco_cents: 0,
-      telas: 1,
-      meses: 1,
-    });
-    setEditingId(created.id);
+    // Não pré-cria mais. Abre o editor em modo "novo" e só persiste no primeiro Salvar.
+    setEditingId(null);
+    setIsNew(true);
     setOpen(true);
   }
 
   function openEdit(s: ServiceItem) {
     setEditingId(s.id);
+    setIsNew(false);
     setOpen(true);
   }
 
@@ -82,6 +81,21 @@ function CadastrosServicosPage() {
     if (n > 0) toast.success(`${n} planos criados`);
     else toast.info("Catálogo já possui planos. Apague-os primeiro para semear.");
     reload();
+  }
+
+  function handleDialogClose() {
+    setOpen(false);
+    setEditingId(null);
+    setIsNew(false);
+    reload();
+  }
+
+  function handleCreated(id: string) {
+    setEditingId(id);
+    setIsNew(false);
+    setHighlightId(id);
+    reload();
+    setTimeout(() => setHighlightId(null), 2500);
   }
 
   return (
@@ -110,7 +124,12 @@ function CadastrosServicosPage() {
           </Card>
         )}
         {items.map((s) => (
-          <Card key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+          <Card
+            key={s.id}
+            className={`flex flex-wrap items-center justify-between gap-3 p-3 transition-colors ${
+              highlightId === s.id ? "ring-2 ring-primary bg-primary-soft/40" : ""
+            }`}
+          >
             <div className="min-w-0">
               <p className="font-medium">{s.nome}</p>
               <p className="text-sm text-muted-foreground">
@@ -142,11 +161,9 @@ function CadastrosServicosPage() {
       <PlanEditorDialog
         open={open}
         serviceId={editingId}
-        onClose={() => {
-          setOpen(false);
-          setEditingId(null);
-          reload();
-        }}
+        isNew={isNew}
+        onCreated={handleCreated}
+        onClose={handleDialogClose}
       />
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
@@ -171,6 +188,7 @@ function CadastrosServicosPage() {
     </PageContainer>
   );
 }
+
 
 // ============================================================================
 // Editor de plano (dialog com lista de mensagens + editor com prévia)
