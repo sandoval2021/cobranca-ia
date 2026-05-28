@@ -356,13 +356,13 @@ function MessageComposer({
       // se o usuário marcou outros planos, cria a mesma mensagem neles também
       const extras = selectedPlans.filter((id) => id !== editing.planId);
       extras.forEach((pid) => {
-        addServiceMessage(pid, { offset_days: offsetDays, template });
+        addServiceMessage(pid, { kind: offsetDays === 0 ? "cobranca" : "acompanhamento", offset_days: offsetDays, template });
       });
       toast.success("Mensagem salva");
     } else {
       // criar em cada plano selecionado
       selectedPlans.forEach((pid) => {
-        addServiceMessage(pid, { offset_days: offsetDays, template });
+        addServiceMessage(pid, { kind: offsetDays === 0 ? "cobranca" : "acompanhamento", offset_days: offsetDays, template });
       });
       toast.success(
         selectedPlans.length === 1
