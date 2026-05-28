@@ -68,11 +68,7 @@ export function LoginPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
           {!supabaseConfigured && (
             <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-              {!supabaseAnonKeyPresent
-                ? "Conexão não configurada. Tente novamente em instantes."
-                : !isAnonKeyForExpectedProject
-                  ? `Conexão apontando para projeto errado (${supabaseAnonKeyRef ?? "?"}).`
-                  : "Conexão não configurada."}
+              Conexão indisponível. Tente novamente em instantes.
             </div>
           )}
 
