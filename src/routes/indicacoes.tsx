@@ -370,8 +370,16 @@ function IndicacoesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <NewReferralDialog
+        open={newOpen}
+        onClose={() => setNewOpen(false)}
+        onCreated={() => { setNewOpen(false); reload(); toast.success("Indicação registrada"); }}
+      />
+
       {securityDialog}
     </PageContainer>
+
 
   );
 }
