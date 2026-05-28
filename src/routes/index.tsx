@@ -626,8 +626,9 @@ function Dashboard() {
           <ShieldCheck className="h-3 w-3" />
           Modo protegido ativo
         </div>
-      <HeaderChips />
+      )}
 
+      <HeaderChips />
 
 
       {/* SEÇÃO 1 — Resumo rápido */}
