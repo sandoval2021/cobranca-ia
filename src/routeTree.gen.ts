@@ -61,6 +61,7 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 import { Route as ApiPublicWebhooksMercadoPagoRouteImport } from './routes/api/public/webhooks/mercado-pago'
 import { Route as ApiPublicWebhooksEvolutionRouteImport } from './routes/api/public/webhooks/evolution'
 import { Route as ApiPublicMpOauthCallbackRouteImport } from './routes/api/public/mp/oauth-callback'
+import { Route as ApiPublicMpMarketplaceWebhookRouteImport } from './routes/api/public/mp/marketplace-webhook'
 import { Route as ApiPublicHooksWaDispatchRouteImport } from './routes/api/public/hooks/wa-dispatch'
 import { Route as ApiPublicWebhooksEvolutionInstanceRouteImport } from './routes/api/public/webhooks/evolution.$instance'
 
@@ -328,6 +329,12 @@ const ApiPublicMpOauthCallbackRoute =
     path: '/api/public/mp/oauth-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicMpMarketplaceWebhookRoute =
+  ApiPublicMpMarketplaceWebhookRouteImport.update({
+    id: '/api/public/mp/marketplace-webhook',
+    path: '/api/public/mp/marketplace-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksWaDispatchRoute =
   ApiPublicHooksWaDispatchRouteImport.update({
     id: '/api/public/hooks/wa-dispatch',
@@ -389,6 +396,7 @@ export interface FileRoutesByFullPath {
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
+  '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
   '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRouteWithChildren
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
@@ -445,6 +453,7 @@ export interface FileRoutesByTo {
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
+  '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
   '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRouteWithChildren
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
@@ -502,6 +511,7 @@ export interface FileRoutesById {
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
+  '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
   '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRouteWithChildren
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
@@ -560,6 +570,7 @@ export interface FileRouteTypes {
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
+    | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
     | '/api/public/webhooks/evolution'
     | '/api/public/webhooks/mercado-pago'
@@ -616,6 +627,7 @@ export interface FileRouteTypes {
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
+    | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
     | '/api/public/webhooks/evolution'
     | '/api/public/webhooks/mercado-pago'
@@ -672,6 +684,7 @@ export interface FileRouteTypes {
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
+    | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
     | '/api/public/webhooks/evolution'
     | '/api/public/webhooks/mercado-pago'
@@ -729,6 +742,7 @@ export interface RootRouteChildren {
   AdminVpsRoute: typeof AdminVpsRoute
   AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
+  ApiPublicMpMarketplaceWebhookRoute: typeof ApiPublicMpMarketplaceWebhookRoute
   ApiPublicMpOauthCallbackRoute: typeof ApiPublicMpOauthCallbackRoute
   ApiPublicWebhooksEvolutionRoute: typeof ApiPublicWebhooksEvolutionRouteWithChildren
   ApiPublicWebhooksMercadoPagoRoute: typeof ApiPublicWebhooksMercadoPagoRoute
@@ -1103,6 +1117,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpOauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/mp/marketplace-webhook': {
+      id: '/api/public/mp/marketplace-webhook'
+      path: '/api/public/mp/marketplace-webhook'
+      fullPath: '/api/public/mp/marketplace-webhook'
+      preLoaderRoute: typeof ApiPublicMpMarketplaceWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/wa-dispatch': {
       id: '/api/public/hooks/wa-dispatch'
       path: '/api/public/hooks/wa-dispatch'
@@ -1183,6 +1204,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminVpsRoute: AdminVpsRoute,
   AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
+  ApiPublicMpMarketplaceWebhookRoute: ApiPublicMpMarketplaceWebhookRoute,
   ApiPublicMpOauthCallbackRoute: ApiPublicMpOauthCallbackRoute,
   ApiPublicWebhooksEvolutionRoute: ApiPublicWebhooksEvolutionRouteWithChildren,
   ApiPublicWebhooksMercadoPagoRoute: ApiPublicWebhooksMercadoPagoRoute,
