@@ -584,10 +584,11 @@ function WhatsAppPage() {
                   disabled={resettingWebhook || instance.status !== "connected"}
                 >
                   {resettingWebhook && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Reconfigurar webhook
+                  Atualizar conexão do WhatsApp
                 </Button>
-                <p className="text-[11px] text-muted-foreground">
-                  Use se a IA não estiver respondendo. Isso reinscreve a instância nos eventos de mensagem.
+                <p className="text-xs text-muted-foreground">
+                  Use se a IA não estiver respondendo. Reativa o recebimento de mensagens.
+
                 </p>
               </div>
             </div>

@@ -372,36 +372,35 @@ export const evolutionProvider: WhatsAppProvider = {
   async setWebhook(ref, webhook_url) {
     assertReal();
     const signedWebhookUrl = withWebhookSecret(webhook_url, ref.vps.webhook_secret);
-    const body = {
-      enabled: true,
-      url: signedWebhookUrl,
-      webhookByEvents: false,
-      webhookBase64: false,
-      events: [
-        "QRCODE_UPDATED",
-        "CONNECTION_UPDATE",
-        "MESSAGES_UPSERT",
-        "SEND_MESSAGE",
-      ],
+    const events = [
+      "QRCODE_UPDATED",
+      "CONNECTION_UPDATE",
+      "MESSAGES_UPSERT",
+      "SEND_MESSAGE",
+    ];
+    // Evolution v2 shape: { webhook: { enabled, url, events, ... } }
+    const v2Body = {
+      webhook: {
+        enabled: true,
+        url: signedWebhookUrl,
+        webhookByEvents: false,
+        webhookBase64: false,
+        events,
+      },
     };
     const res = await callEvolution(
       ref.vps,
       `/webhook/set/${encodeURIComponent(ref.provider_instance_id)}`,
-      { method: "POST", body: JSON.stringify(body) },
+      { method: "POST", body: JSON.stringify(v2Body) },
     );
     if (!res.ok) {
-      // tenta shape antigo (Evolution v1)
+      // fallback: Evolution v1 (flat body)
       const legacy = {
         enabled: true,
         url: signedWebhookUrl,
         webhook_by_events: false,
         webhook_base64: false,
-        events: [
-          "QRCODE_UPDATED",
-          "CONNECTION_UPDATE",
-          "MESSAGES_UPSERT",
-          "SEND_MESSAGE",
-        ],
+        events,
       };
       const res2 = await callEvolution(
         ref.vps,
@@ -413,6 +412,7 @@ export const evolutionProvider: WhatsAppProvider = {
       }
     }
   },
+
 
 
 
