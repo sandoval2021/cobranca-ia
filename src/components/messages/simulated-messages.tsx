@@ -430,16 +430,18 @@ export function GenerateMessageDialog({
           </div>
 
           {/* Aviso staging */}
-          <div className="flex items-start gap-2 rounded-lg border border-info/30 bg-info-soft p-3 text-xs text-info">
-            <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <p>
-              <strong>Ambiente de testes:</strong> esta mensagem não será enviada pelo
-              WhatsApp.{" "}
-              <span className="opacity-80">
-                Use para validar o texto antes de habilitar envio real.
-              </span>
-            </p>
-          </div>
+          {flags.stagingMode && (
+            <div className="flex items-start gap-2 rounded-lg border border-info/30 bg-info-soft p-3 text-xs text-info">
+              <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <p>
+                <strong>Ambiente de testes:</strong> esta mensagem não será enviada pelo
+                WhatsApp.{" "}
+                <span className="opacity-80">
+                  Use para validar o texto antes de habilitar envio real.
+                </span>
+              </p>
+            </div>
+          )}
 
           {/* Tom */}
           <div>
