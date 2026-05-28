@@ -128,6 +128,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "CobraEasy — Cobrança inteligente para o seu negócio" },
       { name: "twitter:description", content: "CobraEasy: gestão de clientes, cobranças automáticas e mensagens inteligentes em um só painel." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b8e133ea-90db-44d2-a19d-72cadc435ea6" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b8e133ea-90db-44d2-a19d-72cadc435ea6" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
