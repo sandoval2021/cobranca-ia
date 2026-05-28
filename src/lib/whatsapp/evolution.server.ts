@@ -111,12 +111,18 @@ function extractPhone(d: any): string | null {
     d?.instance?.number,
     d?.instance?.ownerJid,
     d?.instance?.wuid,
+    d?.instance?.connectionStatus?.number,
+    d?.instance?.connectionStatus?.ownerJid,
+    d?.instance?.connectionStatus?.wuid,
     d?.number,
     d?.ownerJid,
     d?.wuid,
     d?.data?.number,
     d?.data?.ownerJid,
     d?.data?.wuid,
+    d?.connectionStatus?.number,
+    d?.connectionStatus?.ownerJid,
+    d?.connectionStatus?.wuid,
   ];
   for (const candidate of candidates) {
     const phone = cleanPhone(candidate);
