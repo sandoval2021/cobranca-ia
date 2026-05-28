@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { checkPlanLimit, type LimitKind, type LimitAction } from "@/lib/plan-limits";
 import { getRevendaSettings } from "@/lib/revenda-settings";
+import { useLocalAuth } from "@/lib/use-local-auth";
 
 export function PlanLimitNotice({
   moduleKey,
@@ -17,6 +18,9 @@ export function PlanLimitNotice({
   compact?: boolean;
   className?: string;
 }) {
+  const { isSuperAdmin } = useLocalAuth();
+  // Super Admin nunca é bloqueado por plano — não renderiza aviso algum.
+  if (isSuperAdmin) return null;
   const d = checkPlanLimit(moduleKey, action);
   const support = getRevendaSettings().dados.whatsapp_suporte?.replace(/\D/g, "");
   const supportHref = support ? `https://wa.me/${support}` : null;
