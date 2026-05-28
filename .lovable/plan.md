@@ -1,176 +1,102 @@
-## Escopo
-Base profissional para vender CobraEasy: planos SaaS com limite mensal de respostas IA, contador no painel, e estrutura de renovação assistida (sem API de painel IPTV) + apps MAC/Key.
+# Integração Mercado Pago Marketplace/Split — CobraEasy
 
-Antes de aplicar SQL, segue arquitetura proposta para sua aprovação.
+## Visão geral
 
----
+Integração multi-tenant onde cada dono conecta sua conta Mercado Pago via OAuth. O CobraEasy cobra 1% via `application_fee` em cada pagamento (split nativo do Mercado Pago). Backend é fonte da verdade; tokens criptografados; webhook idempotente.
 
-## 1. Tabelas propostas
+## Fase 1 — Fundação (SQL + OAuth)
 
-### A) Planos SaaS e assinaturas (CobraEasy → dono do painel)
+### 1.1 Migration SQL (será apresentada antes de aplicar)
 
-**`saas_plans`** (catálogo, gerenciado pelo super_admin)
-- `id`, `slug` (essencial|profissional|escala), `name`, `price_cents`, `ai_monthly_limit` (int), `is_active`, `sort_order`
+Tabelas novas em `public`:
 
-**`saas_extra_packs`** (pacotes adicionais de respostas)
-- `id`, `slug`, `name`, `ai_extra_responses`, `price_cents`, `is_active`
+- **`marketplace_accounts`** — conta MP conectada por empresa
+  - `company_id` (unique), `mp_user_id`, `access_token_enc`, `refresh_token_enc`, `expires_at`, `public_key`, `status` (`connected`/`disconnected`/`error`/`expired`), `last_error`, `connected_at`
+- **`payment_settings`** — config de taxa por empresa
+  - `company_id` (unique), `platform_fee_bps` (default 100 = 1%), `fee_mode` (`customer_pays`/`owner_pays`, default `customer_pays`), `is_active`
+- **`payment_transactions`** — cobranças geradas
+  - `company_id`, `customer_id`, `amount_cents` (valor do plano), `processing_fee_cents`, `total_amount_cents` (o que cliente paga), `fee_mode`, `status` (`pending`/`approved`/`rejected`/`cancelled`/`refunded`), `payment_method` (`pix`/`card`/`link`), `external_reference` (unique), `mp_payment_id`, `mp_preference_id`, `qr_code`, `qr_code_base64`, `ticket_url`, `paid_at`, `expires_at`, `raw_response` jsonb
+- **`payment_split_logs`** — log de cada split executado
+  - `transaction_id`, `application_fee_cents`, `owner_amount_cents`, `mp_response` jsonb, `status`, `error`
+- **`mercado_pago_webhook_events`** — idempotência
+  - `mp_event_id` (unique), `mp_topic`, `mp_resource_id`, `processed_at`, `status`, `raw_payload` jsonb, `transaction_id`
 
-**`company_subscriptions`** (assinatura ativa de cada empresa)
-- `id`, `company_id` (unique), `plan_id`, `status` (trial|active|past_due|canceled|paused_limit), `current_period_start`, `current_period_end`, `cancel_at_period_end`, `last_payment_at`
+RLS: dono via `has_company_access(company_id)`, super_admin bypass, escrita sensível via `service_role`. GRANTs explícitos. Tokens nunca lidos pelo cliente — usar coluna `_enc` + função server-side.
 
-**`company_ai_usage_cycle`** (contador mensal — fonte da verdade)
-- `id`, `company_id`, `cycle_start`, `cycle_end`, `base_limit`, `extra_limit`, `used_count`, `last_increment_at`
-- unique (company_id, cycle_start)
+### 1.2 Secrets necessários
 
-**`company_extra_pack_purchases`** (pacotes comprados no ciclo atual)
-- `id`, `company_id`, `pack_id`, `cycle_start`, `extra_responses`, `purchased_at`
+Pedir ao usuário via `add_secret`:
+- `MERCADO_PAGO_CLIENT_ID` — OAuth do app marketplace CobraEasy
+- `MERCADO_PAGO_CLIENT_SECRET` — OAuth secret
+- `MERCADO_PAGO_PLATFORM_ACCESS_TOKEN` — conta MP do CobraEasy (recebe os 1%)
+- `MERCADO_PAGO_WEBHOOK_SECRET` — validação de assinatura
+- `CREDENTIALS_ENC_KEY` — já existe ✓
 
-### B) Renovação assistida IPTV (servidores/painéis)
+### 1.3 OAuth (server-side)
 
-Reaproveitar `servers` existente + adicionar colunas:
-- `panel_url`, `panel_username`, `panel_password_enc` (criptografada server-side), `panel_type` (sigma|xui|xtream|outros), `customer_search_url_template` (ex: `https://painel.com/users?search={username}`), `notes`
+- `src/lib/payments/mp-oauth.server.ts` — troca code→token, refresh
+- Server fn `getMpAuthUrl` — gera URL `https://auth.mercadopago.com.br/authorization?...&state=<companyId-signed>`
+- Server route `/api/public/mp/oauth/callback` — recebe `code`, troca por token, criptografa, salva
+- Server fn `disconnectMercadoPago`, `getMpAccountStatus`
 
-**`customer_iptv_credentials`** (1:N por cliente)
-- `id`, `company_id`, `customer_id`, `server_id`, `iptv_username`, `iptv_password_enc`, `mac`, `device_key`, `app_used`, `plan_days`, `expires_at`, `notes`
+## Fase 2 — Cobrança + Split
 
-### C) Apps portal (Bob/IBO/VU/Smarters etc.)
+### 2.1 Server fns (`src/lib/payments/payments.functions.ts`)
 
-**`portal_apps`** (cadastro por empresa)
-- `id`, `company_id`, `app_name`, `panel_url`, `panel_login`, `panel_password_enc`, `id_type` (mac|key|both), `mac_url_template`, `key_url_template`, `notes`, `is_active`
+- `createPayment({ customerId, amountCents, method, description })` — usa token do dono, aplica `application_fee` = 1%, cria preference (link) ou payment Pix, persiste em `payment_transactions`, retorna `{ qrCode, ticketUrl, externalReference }`
+- `listPayments({ filter })` — histórico para painel dono
+- `getPaymentSettings` / `updatePaymentSettings` — config taxa
 
-**`customer_portal_devices`** (cliente x app)
-- `id`, `company_id`, `customer_id`, `portal_app_id`, `mac`, `device_key`, `current_route`, `last_updated_at`
-
-### D) Fila de renovação (base para Playwright futuro)
-
-**`renewal_tasks`**
-- `id`, `company_id`, `customer_id`, `server_id`, `kind` (iptv|portal), `status` (pending|trying|renewed|failed|needs_human), `attempts`, `last_error`, `screenshot_url`, `created_at`, `completed_at`, `assigned_to`
-
-### E) Logs de acesso a credenciais
-
-**`credential_access_log`**
-- `id`, `company_id`, `user_id`, `target_kind` (server|customer_iptv|portal_app|customer_portal), `target_id`, `action` (view|copy|reveal), `created_at`
-
----
-
-## 2. Fluxo de limite IA
+### 2.2 Cálculo da taxa
 
 ```
-mensagem chega → buildAiContext
-  ↓
-ensureAiQuota(company_id)
-  ├─ pega/cria ciclo corrente (saas_plans.ai_monthly_limit + soma extras)
-  ├─ used >= base+extra?
-  │   ├─ SIM → marca subscription.status=paused_limit
-  │   │        envia alerta para human_handoff_number (1x por ciclo)
-  │   │        responde "limite atingido, aguarde renovação" OU silencia
-  │   │        NÃO chama OpenAI
-  │   └─ NÃO → chama OpenAI normalmente
-  ↓
-após resposta enviada → incrementAiUsage()
-  ├─ UPDATE company_ai_usage_cycle SET used_count = used_count + 1
-  └─ já gravamos custo em ai_usage_log (existente)
+plano = 100,00
+fee = 1% = 1,00
+customer_pays → total = 101,00; owner recebe 100,00; CobraEasy 1,00
+owner_pays    → total = 100,00; owner recebe 99,00;  CobraEasy 1,00
 ```
 
-Reset: ao renovar (`current_period_start` muda) → cria novo registro `company_ai_usage_cycle`, `used_count=0`, `extra_limit=0`. Saldo não acumula.
+### 2.3 Webhook idempotente
 
----
+- `src/routes/api/public/mp/webhook.ts` — POST
+- Valida assinatura (`x-signature` HMAC do MP), insere em `mercado_pago_webhook_events` (UNIQUE em `mp_event_id` garante idempotência), busca payment por `external_reference`, atualiza status, registra split em `payment_split_logs`, dispara renovação (cria `renewal_tasks`) e WhatsApp.
 
-## 3. Card no painel (rota `/meus-dados` ou novo widget no dashboard)
+## Fase 3 — Telas
 
-```
-┌──────────────────────────────────────────┐
-│ IA do mês · Plano Profissional           │
-│ ████████████░░░░░░  3.250 / 15.000 (22%) │
-│ Ciclo termina em 12 dias                 │
-│ ⚠ aviso aos 70% · alerta aos 90% · pausa 100% │
-│ [Comprar pacote extra] [Ver histórico]   │
-└──────────────────────────────────────────┘
-```
+### 3.1 Painel do dono
+- **`/pagamentos/mercado-pago`** — status conexão, botão conectar/desconectar, escolha `fee_mode` com explicação amigável dos dois cenários, exemplo de cálculo dinâmico
+- **`/pagamentos/historico`** — lista transações com filtros (aprovados/pendentes/falhos), totais
+- Adicionar item no `src/lib/nav.ts`
 
-Server fn `getAiQuotaStatus()` retorna `{ plan, used, base_limit, extra_limit, percent, days_left, status }`.
+### 3.2 Tela pública do cliente
+- **`/pagar/$externalReference`** — mostra "Valor do plano", "Taxa de processamento" (só se `customer_pays`), "Total a pagar", QR Pix + copia-cola + botão link. Nunca usar termos "comissão", "taxa do dono", "CobraEasy" no rótulo.
 
----
+### 3.3 Super admin
+- **`/admin/marketplace`** — empresas conectadas, volume processado, taxas geradas, erros de webhook/split
 
-## 4. Renovação assistida — UI
+## Fase 4 — IA + Renovação
 
-Pagamento confirmado (webhook MP já existe) → cria `renewal_tasks(status=pending)` → aparece em **/operacao-dia** como card:
+- `src/lib/whatsapp/ai-reply.server.ts` — adicionar tool `generate_payment_link` que só dispara se `marketplace_accounts.status='connected'`. Se não conectado, IA responde pedindo dono configurar.
+- Após webhook `approved`: criar `renewal_tasks` (assistida) — só confirma renovação ao cliente após execução real.
 
-```
-Renovar João Silva · servidor SuperFlix
-┌─ Dados ──────────────────────────┐
-│ Usuário: joaosilva  [📋 copiar]  │
-│ Senha:   •••••••   [👁 revelar] [📋]│
-│ MAC:     00:1A:..  [📋]          │
-│ Plano:   30 dias                 │
-└──────────────────────────────────┘
-[🌐 Abrir painel] [✅ Marcar renovado] [👤 Precisa humano]
-```
+## Detalhes técnicos
 
-Cada clique em copiar/revelar → INSERT em `credential_access_log`.
+- **Bibliotecas**: usar `fetch` direto (Mercado Pago REST). Não instalar SDK Node (Worker runtime).
+- **Endpoints MP**:
+  - OAuth: `POST https://api.mercadopago.com/oauth/token`
+  - Preference: `POST /checkout/preferences` com `marketplace_fee`
+  - Pix payment: `POST /v1/payments` com `application_fee`, header `Authorization: Bearer <ownerToken>`
+- **Criptografia**: reusar `src/lib/iptv/crypto.server.ts` (AES-GCM com `CREDENTIALS_ENC_KEY`).
+- **State OAuth**: HMAC do `companyId` com `MERCADO_PAGO_WEBHOOK_SECRET` para prevenir CSRF.
 
----
+## Não mexer
+OTP/login, Resend, Evolution QR, webhook WhatsApp existente, IA atual, DNS, VPS.
 
-## 5. Segurança
+## Entrega
+Build OK | SQL aplicado: SIM (após aprovação) | PR: NÃO | MERGE: NÃO
 
-- `panel_password_enc`, `iptv_password_enc` → criptografadas com `pgsodium` ou AES via server function (chave em env `CREDENTIALS_ENC_KEY`)
-- Revelação só via server fn (`requireSupabaseAuth` + `has_company_access`) + log
-- RLS por `company_id` em todas as novas tabelas
-- Service role só server-side (padrão do projeto)
-- Frontend mostra senha mascarada por default; botão "revelar" faz round-trip server
+## Próximo passo
 
----
-
-## 6. Telas a adicionar
-
-| Rota | Função |
-|------|--------|
-| `/saas-planos` (super_admin) | CRUD de `saas_plans` e `saas_extra_packs` |
-| `/minha-assinatura` (dono) | Plano atual, ciclo, card de uso IA, compra de extras |
-| `/operacao-dia` (existente) | Adiciona seção "Renovações pendentes" |
-| `/catalogo-servidores` (existente) | Adiciona campos de credencial de painel |
-| `/apps-portal` (novo) | CRUD de `portal_apps` |
-| Ficha do cliente (existente) | Aba "Credenciais IPTV" + "Dispositivos/MAC" |
-
----
-
-## 7. Escopo desta entrega (FASE 1 — base)
-
-Para evitar SQL gigante de uma vez, proponho dividir em 3 migrações:
-
-**Migração 1 — Planos SaaS + contador IA + gate (CRÍTICO, alta prioridade)**
-- `saas_plans`, `saas_extra_packs`, `company_subscriptions`, `company_ai_usage_cycle`, `company_extra_pack_purchases`
-- Seed dos 3 planos (Essencial/Profissional/Escala)
-- Server fns: `getAiQuotaStatus`, `ensureAiQuota`, `incrementAiUsage`
-- Hook em `ai-reply.server.ts` (gate antes do OpenAI + incremento depois)
-- Card no painel + rota `/minha-assinatura` (read-only desta fase)
-- Rota `/saas-planos` para super_admin
-
-**Migração 2 — Credenciais IPTV + renovação assistida**
-- Colunas em `servers`, tabela `customer_iptv_credentials`, `renewal_tasks`, `credential_access_log`
-- UI de renovação assistida no `/operacao-dia`
-- Criptografia de senhas + server fns reveal/copy com log
-
-**Migração 3 — Apps portal MAC/Key**
-- `portal_apps`, `customer_portal_devices`
-- Rota `/apps-portal` + aba no cliente
-
----
-
-## 8. Riscos
-
-- **Criptografia de senhas**: precisa de `CREDENTIALS_ENC_KEY` (secret novo). Se você esquecer, perde acesso às senhas salvas. Alternativa: pgsodium server-side keys.
-- **Gate de IA**: se ciclo não estiver criado, primeira mensagem pode bloquear. Mitigação: `ensureAiQuota` auto-cria ciclo na primeira chamada.
-- **Migração de empresas existentes**: todas vão ganhar plano "Essencial" trial 14 dias por default. Confirmar se OK.
-- **Playwright**: NÃO entra agora. Só estrutura de fila (`renewal_tasks`).
-
----
-
-## 9. Perguntas antes de aplicar
-
-1. **Aprovar dividir em 3 migrações** (Fase 1 primeiro) ou aplicar tudo de uma vez?
-2. **Empresas existentes**: começam em "Essencial trial 14 dias" ou "Profissional liberado até você ajustar"?
-3. **Comportamento ao atingir 100%**: IA responde "limite atingido, fale com o suporte" OU silencia totalmente?
-4. **Criptografia de senhas de painel**: usar `pgsodium` (mais seguro, lock-in Supabase) ou AES com secret `CREDENTIALS_ENC_KEY` (portável)?
-
-Confirma esses 4 pontos e eu sigo direto para a **Migração 1** + código. SQL aplicado: NÃO ainda. Build: não tocado. PR/MERGE: NÃO.
+Confirme:
+1. Aprovar este plano para eu começar pela **migration SQL** (apresento o SQL para você aprovar antes de aplicar).
+2. Você tem app Mercado Pago Marketplace criado em https://www.mercadopago.com.br/developers/panel/app? Precisarei dos secrets `MERCADO_PAGO_CLIENT_ID`, `MERCADO_PAGO_CLIENT_SECRET`, `MERCADO_PAGO_PLATFORM_ACCESS_TOKEN`, `MERCADO_PAGO_WEBHOOK_SECRET`.

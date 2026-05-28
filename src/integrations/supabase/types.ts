@@ -769,6 +769,258 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_accounts: {
+        Row: {
+          access_token_enc: string | null
+          company_id: string
+          connected_at: string | null
+          created_at: string
+          disconnected_at: string | null
+          expires_at: string | null
+          id: string
+          last_error: string | null
+          live_mode: boolean
+          mp_user_id: string | null
+          provider: string
+          public_key: string | null
+          refresh_token_enc: string | null
+          scope: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          access_token_enc?: string | null
+          company_id: string
+          connected_at?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          expires_at?: string | null
+          id?: string
+          last_error?: string | null
+          live_mode?: boolean
+          mp_user_id?: string | null
+          provider?: string
+          public_key?: string | null
+          refresh_token_enc?: string | null
+          scope?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token_enc?: string | null
+          company_id?: string
+          connected_at?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          expires_at?: string | null
+          id?: string
+          last_error?: string | null
+          live_mode?: boolean
+          mp_user_id?: string | null
+          provider?: string
+          public_key?: string | null
+          refresh_token_enc?: string | null
+          scope?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mercado_pago_webhook_events: {
+        Row: {
+          company_id: string | null
+          error: string | null
+          id: string
+          mp_action: string | null
+          mp_event_id: string | null
+          mp_resource_id: string | null
+          mp_topic: string | null
+          mp_type: string | null
+          processed_at: string | null
+          raw_payload: Json | null
+          received_at: string
+          signature_valid: boolean | null
+          status: string
+          transaction_id: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          error?: string | null
+          id?: string
+          mp_action?: string | null
+          mp_event_id?: string | null
+          mp_resource_id?: string | null
+          mp_topic?: string | null
+          mp_type?: string | null
+          processed_at?: string | null
+          raw_payload?: Json | null
+          received_at?: string
+          signature_valid?: boolean | null
+          status?: string
+          transaction_id?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          error?: string | null
+          id?: string
+          mp_action?: string | null
+          mp_event_id?: string | null
+          mp_resource_id?: string | null
+          mp_topic?: string | null
+          mp_type?: string | null
+          processed_at?: string | null
+          raw_payload?: Json | null
+          received_at?: string
+          signature_valid?: boolean | null
+          status?: string
+          transaction_id?: string | null
+        }
+        Relationships: []
+      }
+      payment_settings: {
+        Row: {
+          company_id: string
+          created_at: string
+          fee_mode: string
+          id: string
+          is_active: boolean
+          platform_fee_bps: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          fee_mode?: string
+          id?: string
+          is_active?: boolean
+          platform_fee_bps?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          fee_mode?: string
+          id?: string
+          is_active?: boolean
+          platform_fee_bps?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_split_logs: {
+        Row: {
+          application_fee_cents: number
+          company_id: string
+          created_at: string
+          error: string | null
+          id: string
+          mp_response: Json | null
+          owner_amount_cents: number
+          status: string
+          total_amount_cents: number
+          transaction_id: string
+        }
+        Insert: {
+          application_fee_cents?: number
+          company_id: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          mp_response?: Json | null
+          owner_amount_cents?: number
+          status?: string
+          total_amount_cents?: number
+          transaction_id: string
+        }
+        Update: {
+          application_fee_cents?: number
+          company_id?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          mp_response?: Json | null
+          owner_amount_cents?: number
+          status?: string
+          total_amount_cents?: number
+          transaction_id?: string
+        }
+        Relationships: []
+      }
+      payment_transactions: {
+        Row: {
+          amount_cents: number
+          company_id: string
+          created_at: string
+          customer_id: string | null
+          description: string | null
+          expires_at: string | null
+          external_reference: string
+          fee_mode: string
+          id: string
+          init_point: string | null
+          mp_payment_id: string | null
+          mp_preference_id: string | null
+          paid_at: string | null
+          payment_method: string
+          processing_fee_cents: number
+          qr_code: string | null
+          qr_code_base64: string | null
+          raw_response: Json | null
+          status: string
+          ticket_url: string | null
+          total_amount_cents: number
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          company_id: string
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          expires_at?: string | null
+          external_reference: string
+          fee_mode?: string
+          id?: string
+          init_point?: string | null
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          paid_at?: string | null
+          payment_method?: string
+          processing_fee_cents?: number
+          qr_code?: string | null
+          qr_code_base64?: string | null
+          raw_response?: Json | null
+          status?: string
+          ticket_url?: string | null
+          total_amount_cents: number
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          company_id?: string
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          expires_at?: string | null
+          external_reference?: string
+          fee_mode?: string
+          id?: string
+          init_point?: string | null
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          paid_at?: string | null
+          payment_method?: string
+          processing_fee_cents?: number
+          qr_code?: string | null
+          qr_code_base64?: string | null
+          raw_response?: Json | null
+          status?: string
+          ticket_url?: string | null
+          total_amount_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       portal_apps: {
         Row: {
           app_name: string
