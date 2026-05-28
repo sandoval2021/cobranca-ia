@@ -29,9 +29,7 @@ import {
   Tv,
   UserCog,
   Send,
-
-
-
+  Smartphone,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
