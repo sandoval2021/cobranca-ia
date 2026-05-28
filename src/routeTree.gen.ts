@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as TestesRouteImport } from './routes/testes'
 import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -48,8 +49,16 @@ import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as AcessoRestritoRouteImport } from './routes/acesso-restrito'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtendimentoIaTokenRouteImport } from './routes/atendimento-ia.$token'
+import { Route as AdminVpsRouteImport } from './routes/admin.vps'
 import { Route as ApiPublicWebhooksMercadoPagoRouteImport } from './routes/api/public/webhooks/mercado-pago'
+import { Route as ApiPublicHooksWaDispatchRouteImport } from './routes/api/public/hooks/wa-dispatch'
+import { Route as ApiPublicWebhooksEvolutionInstanceRouteImport } from './routes/api/public/webhooks/evolution.$instance'
 
+const WhatsappRoute = WhatsappRouteImport.update({
+  id: '/whatsapp',
+  path: '/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TestesRoute = TestesRouteImport.update({
   id: '/testes',
   path: '/testes',
@@ -245,10 +254,27 @@ const AtendimentoIaTokenRoute = AtendimentoIaTokenRouteImport.update({
   path: '/atendimento-ia/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminVpsRoute = AdminVpsRouteImport.update({
+  id: '/admin/vps',
+  path: '/admin/vps',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksMercadoPagoRoute =
   ApiPublicWebhooksMercadoPagoRouteImport.update({
     id: '/api/public/webhooks/mercado-pago',
     path: '/api/public/webhooks/mercado-pago',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksWaDispatchRoute =
+  ApiPublicHooksWaDispatchRouteImport.update({
+    id: '/api/public/hooks/wa-dispatch',
+    path: '/api/public/hooks/wa-dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicWebhooksEvolutionInstanceRoute =
+  ApiPublicWebhooksEvolutionInstanceRouteImport.update({
+    id: '/api/public/webhooks/evolution/$instance',
+    path: '/api/public/webhooks/evolution/$instance',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -291,8 +317,12 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/whatsapp': typeof WhatsappRoute
+  '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
+  '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -333,8 +363,12 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/whatsapp': typeof WhatsappRoute
+  '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
+  '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -376,8 +410,12 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/whatsapp': typeof WhatsappRoute
+  '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
+  '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -420,8 +458,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/seguranca-local'
     | '/testes'
+    | '/whatsapp'
+    | '/admin/vps'
     | '/atendimento-ia/$token'
+    | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/api/public/webhooks/evolution/$instance'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -462,8 +504,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/seguranca-local'
     | '/testes'
+    | '/whatsapp'
+    | '/admin/vps'
     | '/atendimento-ia/$token'
+    | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/api/public/webhooks/evolution/$instance'
   id:
     | '__root__'
     | '/'
@@ -504,8 +550,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/seguranca-local'
     | '/testes'
+    | '/whatsapp'
+    | '/admin/vps'
     | '/atendimento-ia/$token'
+    | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/api/public/webhooks/evolution/$instance'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -547,12 +597,23 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
+  WhatsappRoute: typeof WhatsappRoute
+  AdminVpsRoute: typeof AdminVpsRoute
   AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
+  ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicWebhooksMercadoPagoRoute: typeof ApiPublicWebhooksMercadoPagoRoute
+  ApiPublicWebhooksEvolutionInstanceRoute: typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/whatsapp': {
+      id: '/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/whatsapp'
+      preLoaderRoute: typeof WhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/testes': {
       id: '/testes'
       path: '/testes'
@@ -826,11 +887,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AtendimentoIaTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/vps': {
+      id: '/admin/vps'
+      path: '/admin/vps'
+      fullPath: '/admin/vps'
+      preLoaderRoute: typeof AdminVpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/mercado-pago': {
       id: '/api/public/webhooks/mercado-pago'
       path: '/api/public/webhooks/mercado-pago'
       fullPath: '/api/public/webhooks/mercado-pago'
       preLoaderRoute: typeof ApiPublicWebhooksMercadoPagoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/wa-dispatch': {
+      id: '/api/public/hooks/wa-dispatch'
+      path: '/api/public/hooks/wa-dispatch'
+      fullPath: '/api/public/hooks/wa-dispatch'
+      preLoaderRoute: typeof ApiPublicHooksWaDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/webhooks/evolution/$instance': {
+      id: '/api/public/webhooks/evolution/$instance'
+      path: '/api/public/webhooks/evolution/$instance'
+      fullPath: '/api/public/webhooks/evolution/$instance'
+      preLoaderRoute: typeof ApiPublicWebhooksEvolutionInstanceRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -875,8 +957,13 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
+  WhatsappRoute: WhatsappRoute,
+  AdminVpsRoute: AdminVpsRoute,
   AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
+  ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicWebhooksMercadoPagoRoute: ApiPublicWebhooksMercadoPagoRoute,
+  ApiPublicWebhooksEvolutionInstanceRoute:
+    ApiPublicWebhooksEvolutionInstanceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
