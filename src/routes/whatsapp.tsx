@@ -69,6 +69,7 @@ function WhatsAppPage() {
   const [mode, setMode] = useState<"qr" | "pairing">("qr");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [busy, setBusy] = useState(false);
+  const [brokenConnection, setBrokenConnection] = useState(false);
 
   const ensureCompany = useServerFn(ensureMyCompany);
   const fetchData = useServerFn(getCompanyWhatsApp);
@@ -102,6 +103,10 @@ function WhatsAppPage() {
   const instance = query.data?.instance ?? null;
   const queued = query.data?.queued ?? 0;
 
+  useEffect(() => {
+    if (instance) setBrokenConnection(false);
+  }, [instance]);
+
   function digitsOnly(v: string) {
     return v.replace(/\D/g, "");
   }
@@ -125,6 +130,7 @@ function WhatsAppPage() {
       await connectFn({
         data: { company_id: companyId, friendly_name: name, phone_number: phone },
       });
+      setBrokenConnection(false);
       await query.refetch();
       toast.success(
         phone
@@ -153,6 +159,13 @@ function WhatsAppPage() {
       await fetchQr({ data: { instance_id: instance.id, phone_number: phone } });
       await query.refetch();
     } catch (e: any) {
+      const message = e?.message ?? "Falha ao reconectar.";
+      if (/404|instance does not exist|Instância local inválida/i.test(message)) {
+        setBrokenConnection(true);
+        await query.refetch();
+        toast.error("Conexão quebrada removida. Clique em Recriar conexão.");
+        return;
+      }
       toast.error(e?.message ?? "Falha ao reconectar.");
     } finally {
       setBusy(false);
@@ -195,6 +208,11 @@ function WhatsAppPage() {
 
       {companyId && !instance && (
         <Card className="p-4 mt-4 space-y-4">
+          {brokenConnection && (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700">
+              A conexão anterior não existe mais na Evolution. Recrie a conexão para gerar um QR real.
+            </div>
+          )}
           <div>
             <Label htmlFor="fname">Nome da conexão</Label>
             <Input
@@ -248,7 +266,11 @@ function WhatsAppPage() {
             ) : (
               <KeyRound className="w-4 h-4 mr-2" />
             )}
-            {mode === "qr" ? "Gerar QR Code" : "Gerar código de pareamento"}
+            {brokenConnection
+              ? "Recriar conexão"
+              : mode === "qr"
+              ? "Gerar QR Code"
+              : "Gerar código de pareamento"}
           </Button>
         </Card>
       )}
