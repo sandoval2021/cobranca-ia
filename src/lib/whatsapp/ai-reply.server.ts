@@ -74,7 +74,30 @@ export async function handleInboundForAiReply(
   payload: any,
 ): Promise<{ handled: boolean; reason?: string }> {
   const parts = parseInbound(payload);
-  if (!parts) return { handled: false, reason: "no_inbound" };
+  if (!parts) {
+    await logWhatsAppAutomation({
+      instance_id: ref.id,
+      company_id: ref.company_id,
+      event_type: "message_ignored",
+      status: "skipped",
+      provider_event: payload?.event ?? payload?.type ?? null,
+      provider_instance: payload?.instance ?? ref.provider_instance_id,
+      details: { reason: "no_valid_inbound" },
+    });
+    return { handled: false, reason: "no_inbound" };
+  }
+
+  await logWhatsAppAutomation({
+    instance_id: ref.id,
+    company_id: ref.company_id,
+    event_type: "message_received",
+    status: "ok",
+    provider_event: payload?.event ?? payload?.type ?? null,
+    provider_instance: payload?.instance ?? ref.provider_instance_id,
+    from_phone: parts.fromPhone,
+    message_preview: parts.text,
+    details: { providerMsgId: parts.providerMsgId, ageSeconds: parts.ageSeconds ?? null },
+  });
 
   // Carrega config da instância
   const { data: inst } = await supabaseAdmin
