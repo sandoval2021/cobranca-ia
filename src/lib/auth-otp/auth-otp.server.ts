@@ -234,7 +234,7 @@ export async function consumeOtp(params: {
 
 // ----------------- Resend email -----------------
 
-const EMAIL_FROM = "CobraEasy <no-reply@cobraeasy.com.br>";
+const EMAIL_FROM = process.env.RESEND_FROM || "CobraEasy <onboarding@resend.dev>";
 
 function buildOtpEmailHtml(opts: { code: string; purpose: OtpPurpose }): string {
   const titulo =
