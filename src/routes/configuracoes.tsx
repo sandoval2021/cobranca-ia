@@ -256,7 +256,7 @@ function CollectionRulesBlock() {
     }
     let alive = true;
     (async () => {
-      const { companyId: id, error } = await getCurrentCompanyAdmin();
+      const { accountId: id, error } = await getActiveAccountId();
       if (!alive) return;
       if (error) {
         setLoadErr(friendlyErr(error.message ?? ""));
