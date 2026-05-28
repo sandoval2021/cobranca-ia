@@ -142,9 +142,11 @@ export function LoginPage() {
 function LoginForm({
   onForgot,
   onSignup,
+  onNeedsConfirm,
 }: {
   onForgot: () => void;
   onSignup: () => void;
+  onNeedsConfirm: (email: string, password: string) => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -159,11 +161,17 @@ function LoginForm({
     }
     setError(null);
     setSubmitting(true);
+    const trimmed = email.trim();
     const { error: err } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: trimmed,
       password,
     });
     if (err) {
+      if (err.message?.toLowerCase().includes("email not confirmed")) {
+        setSubmitting(false);
+        onNeedsConfirm(trimmed, password);
+        return;
+      }
       setError(friendlyAuthError(err.message));
       setSubmitting(false);
       return;
