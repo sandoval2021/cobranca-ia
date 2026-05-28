@@ -36,6 +36,8 @@ export const Route = createFileRoute("/api/public/webhooks/evolution/$instance")
         if (!ref) return new Response("not found", { status: 404 });
 
         const body = await request.text();
+        const url = new URL(request.url);
+        const secretParam = url.searchParams.get("secret") || "";
         const sig =
           request.headers.get("x-evolution-signature") ||
           request.headers.get("x-hub-signature-256") ||
@@ -46,7 +48,9 @@ export const Route = createFileRoute("/api/public/webhooks/evolution/$instance")
           .digest("hex");
 
         const normalized = sig.replace(/^sha256=/, "");
-        if (!normalized || !safeEqual(normalized, expected)) {
+        const hasValidSignature = Boolean(normalized && safeEqual(normalized, expected));
+        const hasValidSecretParam = Boolean(secretParam && safeEqual(secretParam, ref.vps.webhook_secret));
+        if (!hasValidSignature && !hasValidSecretParam) {
           return new Response("invalid signature", { status: 401 });
         }
 

@@ -38,6 +38,13 @@ function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
 }
 
+function withWebhookSecret(webhookUrl: string, secret: string): string {
+  if (!secret) return webhookUrl;
+  const url = new URL(webhookUrl);
+  url.searchParams.set("secret", secret);
+  return url.toString();
+}
+
 async function callEvolution(
   vps: WAVpsNode,
   path: string,
@@ -173,12 +180,13 @@ export const evolutionProvider: WhatsAppProvider = {
   async createInstance({ vps, instance_name, webhook_url, phone_number }) {
     assertReal();
 
+    const signedWebhookUrl = withWebhookSecret(webhook_url, vps.webhook_secret);
     const body: Record<string, unknown> = {
       instanceName: instance_name,
       qrcode: !phone_number,
       integration: "WHATSAPP-BAILEYS",
       webhook: {
-        url: webhook_url,
+        url: signedWebhookUrl,
         events: [
           "QRCODE_UPDATED",
           "CONNECTION_UPDATE",
@@ -363,19 +371,18 @@ export const evolutionProvider: WhatsAppProvider = {
 
   async setWebhook(ref, webhook_url) {
     assertReal();
+    const signedWebhookUrl = withWebhookSecret(webhook_url, ref.vps.webhook_secret);
     const body = {
-      webhook: {
-        enabled: true,
-        url: webhook_url,
-        webhookByEvents: false,
-        webhookBase64: false,
-        events: [
-          "QRCODE_UPDATED",
-          "CONNECTION_UPDATE",
-          "MESSAGES_UPSERT",
-          "SEND_MESSAGE",
-        ],
-      },
+      enabled: true,
+      url: signedWebhookUrl,
+      webhookByEvents: false,
+      webhookBase64: false,
+      events: [
+        "QRCODE_UPDATED",
+        "CONNECTION_UPDATE",
+        "MESSAGES_UPSERT",
+        "SEND_MESSAGE",
+      ],
     };
     const res = await callEvolution(
       ref.vps,
@@ -386,8 +393,9 @@ export const evolutionProvider: WhatsAppProvider = {
       // tenta shape antigo (Evolution v1)
       const legacy = {
         enabled: true,
-        url: webhook_url,
+        url: signedWebhookUrl,
         webhook_by_events: false,
+        webhook_base64: false,
         events: [
           "QRCODE_UPDATED",
           "CONNECTION_UPDATE",
