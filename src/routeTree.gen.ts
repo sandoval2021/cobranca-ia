@@ -45,6 +45,7 @@ import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
 import { Route as BackupRouteImport } from './routes/backup'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AppsPortalRouteImport } from './routes/apps-portal'
 import { Route as AjudaIaRouteImport } from './routes/ajuda-ia'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as AgendaDisparoRouteImport } from './routes/agenda-disparo'
@@ -242,6 +243,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppsPortalRoute = AppsPortalRouteImport.update({
+  id: '/apps-portal',
+  path: '/apps-portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AjudaIaRoute = AjudaIaRouteImport.update({
   id: '/ajuda-ia',
   path: '/ajuda-ia',
@@ -336,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/ajuda-ia': typeof AjudaIaRoute
+  '/apps-portal': typeof AppsPortalRoute
   '/auth': typeof AuthRoute
   '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
@@ -390,6 +397,7 @@ export interface FileRoutesByTo {
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/ajuda-ia': typeof AjudaIaRoute
+  '/apps-portal': typeof AppsPortalRoute
   '/auth': typeof AuthRoute
   '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
@@ -445,6 +453,7 @@ export interface FileRoutesById {
   '/agenda-disparo': typeof AgendaDisparoRoute
   '/ajuda': typeof AjudaRoute
   '/ajuda-ia': typeof AjudaIaRoute
+  '/apps-portal': typeof AppsPortalRoute
   '/auth': typeof AuthRoute
   '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
@@ -501,6 +510,7 @@ export interface FileRouteTypes {
     | '/agenda-disparo'
     | '/ajuda'
     | '/ajuda-ia'
+    | '/apps-portal'
     | '/auth'
     | '/backup'
     | '/backup-geral'
@@ -555,6 +565,7 @@ export interface FileRouteTypes {
     | '/agenda-disparo'
     | '/ajuda'
     | '/ajuda-ia'
+    | '/apps-portal'
     | '/auth'
     | '/backup'
     | '/backup-geral'
@@ -609,6 +620,7 @@ export interface FileRouteTypes {
     | '/agenda-disparo'
     | '/ajuda'
     | '/ajuda-ia'
+    | '/apps-portal'
     | '/auth'
     | '/backup'
     | '/backup-geral'
@@ -664,6 +676,7 @@ export interface RootRouteChildren {
   AgendaDisparoRoute: typeof AgendaDisparoRoute
   AjudaRoute: typeof AjudaRoute
   AjudaIaRoute: typeof AjudaIaRoute
+  AppsPortalRoute: typeof AppsPortalRoute
   AuthRoute: typeof AuthRoute
   BackupRoute: typeof BackupRoute
   BackupGeralRoute: typeof BackupGeralRoute
@@ -964,6 +977,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/apps-portal': {
+      id: '/apps-portal'
+      path: '/apps-portal'
+      fullPath: '/apps-portal'
+      preLoaderRoute: typeof AppsPortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ajuda-ia': {
       id: '/ajuda-ia'
       path: '/ajuda-ia'
@@ -1102,6 +1122,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgendaDisparoRoute: AgendaDisparoRoute,
   AjudaRoute: AjudaRoute,
   AjudaIaRoute: AjudaIaRoute,
+  AppsPortalRoute: AppsPortalRoute,
   AuthRoute: AuthRoute,
   BackupRoute: BackupRoute,
   BackupGeralRoute: BackupGeralRoute,

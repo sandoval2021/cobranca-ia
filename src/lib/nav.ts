@@ -56,6 +56,7 @@ export const ownerNav: NavItem[] = [
   { to: "/gestao-servicos", label: "Gestão Serviços", icon: Tv, hint: "Renove, edite e acompanhe cada serviço" },
   { to: "/operacao-dia", label: "Operação do dia", icon: CalendarClock, hint: "Quem precisa de atenção hoje" },
   { to: "/renovacoes-paineis", label: "Renovações e painéis", icon: RefreshCcw, hint: "Fila de renovações IPTV e credenciais dos painéis" },
+  { to: "/apps-portal", label: "Apps de portal (MAC/Key)", icon: Smartphone, hint: "Bob, IBO, Smarters e outros — gerencie por MAC/Key" },
   { to: "/campanhas-manuais", label: "Campanhas manuais", icon: Megaphone, hint: "Monte listas e copie mensagens" },
   { to: "/pendencias", label: "Pendências", icon: AlertCircle, hint: "Tudo que precisa de atenção" },
   { to: "/importar-clientes", label: "Importar clientes", icon: Upload, hint: "Importar clientes a partir de PDF/Excel" },
