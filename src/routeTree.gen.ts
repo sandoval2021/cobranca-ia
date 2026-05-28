@@ -53,6 +53,7 @@ import { Route as AdminPlanosPagamentosRouteImport } from './routes/admin-planos
 import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as AcessoRestritoRouteImport } from './routes/acesso-restrito'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PagarRefRouteImport } from './routes/pagar.$ref'
 import { Route as PagamentosMercadoPagoRouteImport } from './routes/pagamentos.mercado-pago'
 import { Route as PagamentosHistoricoRouteImport } from './routes/pagamentos.historico'
 import { Route as AtendimentoIaTokenRouteImport } from './routes/atendimento-ia.$token'
@@ -287,6 +288,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PagarRefRoute = PagarRefRouteImport.update({
+  id: '/pagar/$ref',
+  path: '/pagar/$ref',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PagamentosMercadoPagoRoute = PagamentosMercadoPagoRouteImport.update({
   id: '/pagamentos/mercado-pago',
   path: '/pagamentos/mercado-pago',
@@ -409,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
+  '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -468,6 +475,7 @@ export interface FileRoutesByTo {
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
+  '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -528,6 +536,7 @@ export interface FileRoutesById {
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
+  '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -589,6 +598,7 @@ export interface FileRouteTypes {
     | '/atendimento-ia/$token'
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
+    | '/pagar/$ref'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -648,6 +658,7 @@ export interface FileRouteTypes {
     | '/atendimento-ia/$token'
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
+    | '/pagar/$ref'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -707,6 +718,7 @@ export interface FileRouteTypes {
     | '/atendimento-ia/$token'
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
+    | '/pagar/$ref'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -767,6 +779,7 @@ export interface RootRouteChildren {
   AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
   PagamentosHistoricoRoute: typeof PagamentosHistoricoRoute
   PagamentosMercadoPagoRoute: typeof PagamentosMercadoPagoRoute
+  PagarRefRoute: typeof PagarRefRoute
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicMpMarketplaceWebhookRoute: typeof ApiPublicMpMarketplaceWebhookRoute
   ApiPublicMpOauthCallbackRoute: typeof ApiPublicMpOauthCallbackRoute
@@ -1087,6 +1100,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pagar/$ref': {
+      id: '/pagar/$ref'
+      path: '/pagar/$ref'
+      fullPath: '/pagar/$ref'
+      preLoaderRoute: typeof PagarRefRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pagamentos/mercado-pago': {
       id: '/pagamentos/mercado-pago'
       path: '/pagamentos/mercado-pago'
@@ -1245,6 +1265,7 @@ const rootRouteChildren: RootRouteChildren = {
   AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
   PagamentosHistoricoRoute: PagamentosHistoricoRoute,
   PagamentosMercadoPagoRoute: PagamentosMercadoPagoRoute,
+  PagarRefRoute: PagarRefRoute,
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicMpMarketplaceWebhookRoute: ApiPublicMpMarketplaceWebhookRoute,
   ApiPublicMpOauthCallbackRoute: ApiPublicMpOauthCallbackRoute,
