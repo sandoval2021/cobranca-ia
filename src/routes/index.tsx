@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { AiQuotaCard } from "@/components/billing-saas/AiQuotaCard";
+import { getActiveCompanyId } from "@/lib/company-scope";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { StatCard } from "@/components/ui-premium/StatCard";
 import { Button } from "@/components/ui/button";
