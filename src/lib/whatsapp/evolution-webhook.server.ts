@@ -11,6 +11,36 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ba, bb);
 }
 
+function jsonResponse(body: Record<string, unknown>, status = 200): Response {
+  return Response.json(body, {
+    status,
+    headers: { "Cache-Control": "no-store" },
+  });
+}
+
+function webhookRequestDetails(request: Request, reason: string, instanceId: string | null): Record<string, unknown> {
+  const url = new URL(request.url);
+  if (url.searchParams.has("secret")) url.searchParams.set("secret", "[redacted]");
+  const headerNames = [
+    "content-type",
+    "user-agent",
+    "x-evolution-signature",
+    "x-hub-signature-256",
+    "x-cobraeasy-webhook-secret",
+    "x-forwarded-for",
+    "cf-connecting-ip",
+  ];
+  return {
+    reason,
+    instanceId,
+    method: request.method,
+    url: url.toString(),
+    headers: Object.fromEntries(
+      headerNames.map((name) => [name, request.headers.has(name) ? "present" : "missing"]),
+    ),
+  };
+}
+
 function mapState(s: unknown): "connected" | "disconnected" | "awaiting_qr" | "blocked" | "error" {
   const v = String(s ?? "").toLowerCase();
   if (["open", "connected"].includes(v)) return "connected";
@@ -28,37 +58,64 @@ function resolveInstanceId(request: Request, pathInstance?: string): string | nu
 
 export async function handleEvolutionWebhookGet(request: Request, pathInstance?: string): Promise<Response> {
   const instanceId = resolveInstanceId(request, pathInstance);
-  if (!instanceId) return new Response("bad instance", { status: 400 });
+  if (!instanceId) return jsonResponse({ ok: false, error: "bad_instance" }, 400);
   const ref = await loadInstanceRef(instanceId);
-  if (!ref) return new Response("not found", { status: 404 });
+  if (!ref) return jsonResponse({ ok: false, error: "instance_not_found" }, 404);
   return Response.json({ ok: true, instance: ref.id, provider_instance: ref.provider_instance_id });
 }
 
 export async function handleEvolutionWebhookPost(request: Request, pathInstance?: string): Promise<Response> {
   const instanceId = resolveInstanceId(request, pathInstance);
-  if (!instanceId) return new Response("bad instance", { status: 400 });
+  if (!instanceId) {
+    console.error("[wa-webhook] blocked", webhookRequestDetails(request, "bad_instance", null));
+    return jsonResponse({ ok: false, error: "bad_instance" }, 400);
+  }
 
   const ref = await loadInstanceRef(instanceId);
-  if (!ref) return new Response("not found", { status: 404 });
+  if (!ref) {
+    console.error("[wa-webhook] blocked", webhookRequestDetails(request, "instance_not_found", instanceId));
+    return jsonResponse({ ok: false, error: "instance_not_found" }, 404);
+  }
 
   const body = await request.text();
   const url = new URL(request.url);
   const secretParam = url.searchParams.get("secret") || "";
+  const secretHeader = request.headers.get("x-cobraeasy-webhook-secret") || "";
   const sig = request.headers.get("x-evolution-signature") || request.headers.get("x-hub-signature-256") || "";
   const expected = createHmac("sha256", ref.vps.webhook_secret).update(body).digest("hex");
   const normalized = sig.replace(/^sha256=/, "");
   const hasValidSignature = Boolean(normalized && safeEqual(normalized, expected));
   const hasValidSecretParam = Boolean(secretParam && safeEqual(secretParam, ref.vps.webhook_secret));
-  if (!hasValidSignature && !hasValidSecretParam) {
-    console.error("[wa-webhook] invalid signature", { instanceId, hasSignature: Boolean(sig), hasSecretParam: Boolean(secretParam) });
-    return new Response("invalid signature", { status: 401 });
+  const hasValidSecretHeader = Boolean(secretHeader && safeEqual(secretHeader, ref.vps.webhook_secret));
+  if (!hasValidSignature && !hasValidSecretParam && !hasValidSecretHeader) {
+    const details = {
+      ...webhookRequestDetails(request, "invalid_secret_or_signature", instanceId),
+      instanceFound: true,
+      hasSignature: Boolean(sig),
+      hasSecretParam: Boolean(secretParam),
+      hasSecretHeader: Boolean(secretHeader),
+      signatureValid: hasValidSignature,
+      secretParamValid: hasValidSecretParam,
+      secretHeaderValid: hasValidSecretHeader,
+    };
+    console.error("[wa-webhook] blocked", details);
+    await logWhatsAppAutomation({
+      instance_id: ref.id,
+      company_id: ref.company_id,
+      event_type: "webhook_blocked",
+      status: "error",
+      provider_instance: ref.provider_instance_id,
+      error: "invalid_secret_or_signature",
+      details,
+    });
+    return jsonResponse({ ok: false, error: "invalid_secret_or_signature" }, 401);
   }
 
   let payload: any;
   try {
     payload = JSON.parse(body);
   } catch {
-    return new Response("invalid json", { status: 400 });
+    return jsonResponse({ ok: false, error: "invalid_json" }, 400);
   }
 
   const event = String(payload?.event || payload?.type || "").toLowerCase();
@@ -115,5 +172,5 @@ export async function handleEvolutionWebhookPost(request: Request, pathInstance?
     }
   }
 
-  return new Response("ok", { status: 200 });
+  return jsonResponse({ ok: true }, 200);
 }
