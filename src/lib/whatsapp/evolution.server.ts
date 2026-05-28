@@ -194,6 +194,18 @@ export const evolutionProvider: WhatsAppProvider = {
     return "disconnected";
   },
 
+  async deleteInstance(ref) {
+    assertReal();
+    const res = await callEvolution(
+      ref.vps,
+      `/instance/delete/${encodeURIComponent(ref.provider_instance_id)}`,
+      { method: "DELETE" },
+    );
+    if (!res.ok && res.status !== 404) {
+      throw new Error(`evolution.deleteInstance falhou (${res.status}): ${res.text.slice(0, 300)}`);
+    }
+  },
+
   async getStatus(ref) {
     assertReal();
     const res = await callEvolution(
