@@ -39,9 +39,11 @@ function IaPage() {
           </Button>
         }
       />
-      <div className="mb-3 rounded-xl border border-primary/30 bg-primary-soft px-3 py-2 text-xs text-primary">
-        Ambiente de testes: a geração real com IA está bloqueada.
-      </div>
+      {flags.stagingMode && (
+        <div className="mb-3 rounded-xl border border-primary/30 bg-primary-soft px-3 py-2 text-xs text-primary">
+          Ambiente de testes: a geração real com IA está bloqueada.
+        </div>
+      )}
       {state.status === "loading" && (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
