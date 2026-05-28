@@ -380,6 +380,8 @@ function SignupOtpForm({
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const verifyFn = useServerFn(verifySignupOtp);
+  const resendFn = useServerFn(resendOtp);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -402,50 +404,60 @@ function SignupOtpForm({
     if (code.length !== OTP_LENGTH) return setError(`Digite os ${OTP_LENGTH} dígitos do código.`);
 
     setSubmitting(true);
-    const { data, error: err } = await supabase.auth.verifyOtp({
-      type: "signup",
-      email: ctx.email,
-      token: code,
-    });
-    if (err || !data.session) {
-      setSubmitting(false);
-      setError(
-        err
-          ? friendlyAuthError(err.message) ||
-              "Código inválido ou expirado. Confira e tente novamente."
-          : "Código inválido ou expirado. Confira e tente novamente.",
-      );
-      return;
-    }
-
     try {
-      await syncDefaultCompanyForUser({
-        email: ctx.email,
-        nome: ctx.nome,
-        whatsapp: ctx.whatsapp,
+      const r = await verifyFn({
+        data: { email: ctx.email, code, password: ctx.password },
       });
+      if (!r.ok) {
+        setSubmitting(false);
+        setError(r.error);
+        return;
+      }
+      // Cria sessão no browser com a senha original
+      const { error: signErr } = await supabase.auth.signInWithPassword({
+        email: ctx.email,
+        password: ctx.password,
+      });
+      if (signErr) {
+        setSubmitting(false);
+        setError(friendlyAuthError(signErr.message));
+        return;
+      }
+      try {
+        await syncDefaultCompanyForUser({
+          email: ctx.email,
+          nome: ctx.nome,
+          whatsapp: ctx.whatsapp,
+        });
+      } catch {
+        /* silencioso */
+      }
+      toast.success("Cadastro confirmado!");
     } catch {
-      /* silencioso */
+      setSubmitting(false);
+      setError("Falha de conexão. Tente novamente.");
     }
-    toast.success("Cadastro confirmado!");
   }
 
   async function handleResend() {
-    if (!supabase || cooldown > 0) return;
+    if (cooldown > 0) return;
     setError(null);
     setResending(true);
-    const { error: err } = await supabase.auth.resend({
-      type: "signup",
-      email: ctx.email,
-    });
-    setResending(false);
-    if (err) {
-      setError(friendlyAuthError(err.message));
-      return;
+    try {
+      const r = await resendFn({ data: { email: ctx.email, purpose: "signup" } });
+      setResending(false);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setCooldown(60);
+      toast.success("Novo código enviado.");
+    } catch {
+      setResending(false);
+      setError("Falha de conexão. Tente novamente.");
     }
-    setCooldown(45);
-    toast.success("Novo código enviado.");
   }
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -533,24 +545,24 @@ function ForgotForm({
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const reqRecovery = useServerFn(requestRecoveryOtp);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!supabase) {
-      setError("Conexão não configurada.");
-      return;
-    }
     setError(null);
     setSubmitting(true);
-    // Sem redirectTo: queremos OTP de recuperação, não link.
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
-    setSubmitting(false);
-    if (err) {
-      setError(friendlyAuthError(err.message));
-      return;
+    const normalized = email.trim().toLowerCase();
+    try {
+      await reqRecovery({ data: { email: normalized } });
+      setSubmitting(false);
+      // Resposta sempre genérica — independentemente de existir conta
+      onSent(normalized);
+    } catch {
+      setSubmitting(false);
+      setError("Falha de conexão. Tente novamente.");
     }
-    onSent(email.trim().toLowerCase());
   }
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
@@ -600,9 +612,9 @@ function ForgotForm({
 }
 
 /**
- * OTP de recuperação de senha.
- * 1) verifyOtp({ type: "recovery", email, token }) → cria sessão temporária.
- * 2) updateUser({ password }) → grava a nova senha.
+ * OTP de recuperação de senha (fluxo próprio).
+ * 1) verifyRecoveryOtp → retorna reset_token JWT curto.
+ * 2) resetPasswordWithToken → atualiza a senha via admin API.
  */
 function ForgotOtpForm({
   email,
@@ -617,10 +629,14 @@ function ForgotOtpForm({
   const [code, setCode] = useState("");
   const [senha, setSenha] = useState("");
   const [senha2, setSenha2] = useState("");
+  const [resetToken, setResetToken] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
+  const verifyFn = useServerFn(verifyRecoveryOtp);
+  const resetFn = useServerFn(resetPasswordWithToken);
+  const resendFn = useServerFn(resendOtp);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -635,62 +651,71 @@ function ForgotOtpForm({
   async function handleVerify(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!supabase) return setError("Conexão não configurada.");
     if (code.length !== OTP_LENGTH) return setError(`Digite os ${OTP_LENGTH} dígitos do código.`);
     setSubmitting(true);
-    const { data, error: err } = await supabase.auth.verifyOtp({
-      type: "recovery",
-      email,
-      token: code,
-    });
-    setSubmitting(false);
-    if (err || !data.session) {
-      setError(
-        err
-          ? friendlyAuthError(err.message) ||
-              "Código inválido ou expirado. Confira e tente novamente."
-          : "Código inválido ou expirado. Confira e tente novamente.",
-      );
-      return;
+    try {
+      const r = await verifyFn({ data: { email, code } });
+      setSubmitting(false);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setResetToken(r.reset_token);
+      setStep("password");
+    } catch {
+      setSubmitting(false);
+      setError("Falha de conexão. Tente novamente.");
     }
-    setStep("password");
   }
 
   async function handleUpdate(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!supabase) return setError("Conexão não configurada.");
-    if (senha.length < 6) return setError("Senha mínima de 6 caracteres.");
+    if (senha.length < 8) return setError("Senha mínima de 8 caracteres.");
     if (senha !== senha2) return setError("As senhas não conferem.");
+    if (!resetToken) return setError("Sessão de recuperação expirada. Refaça.");
     setSubmitting(true);
-    const { error: err } = await supabase.auth.updateUser({ password: senha });
-    setSubmitting(false);
-    if (err) {
-      setError(friendlyAuthError(err.message));
-      return;
-    }
-    toast.success("Senha atualizada. Você já pode entrar.");
     try {
-      await supabase.auth.signOut();
+      const r = await resetFn({ data: { reset_token: resetToken, new_password: senha } });
+      setSubmitting(false);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      toast.success("Senha atualizada. Você já pode entrar.");
+      if (supabase) {
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          /* noop */
+        }
+      }
+      onDone();
     } catch {
-      /* noop */
+      setSubmitting(false);
+      setError("Falha de conexão. Tente novamente.");
     }
-    onDone();
   }
 
   async function handleResend() {
-    if (!supabase || cooldown > 0) return;
+    if (cooldown > 0) return;
     setError(null);
     setResending(true);
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email);
-    setResending(false);
-    if (err) {
-      setError(friendlyAuthError(err.message));
-      return;
+    try {
+      const r = await resendFn({ data: { email, purpose: "recovery" } });
+      setResending(false);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setCooldown(60);
+      toast.success("Novo código enviado.");
+    } catch {
+      setResending(false);
+      setError("Falha de conexão. Tente novamente.");
     }
-    setCooldown(45);
-    toast.success("Novo código enviado.");
   }
+
 
   if (step === "password") {
     return (
@@ -700,7 +725,7 @@ function ForgotOtpForm({
             <KeyRound className="h-6 w-6" />
           </div>
           <h2 className="text-base font-semibold">Crie sua nova senha</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Mínimo de 6 caracteres.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Mínimo de 8 caracteres.</p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="np1">Nova senha</Label>
