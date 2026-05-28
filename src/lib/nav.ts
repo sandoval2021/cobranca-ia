@@ -62,6 +62,9 @@ export const ownerNav: NavItem[] = [
   { to: "/importar-clientes", label: "Importar clientes", icon: Upload, hint: "Importar clientes a partir de PDF/Excel" },
   
   { to: "/cobrancas", label: "Cobranças", icon: Receipt, hint: "Cobranças geradas", superAdminOnly: true },
+  { to: "/pagamentos/mercado-pago", label: "Pagamentos · Mercado Pago", icon: Wallet, hint: "Conecte sua conta e receba via Pix/cartão" },
+  { to: "/pagamentos/historico", label: "Histórico de pagamentos", icon: Receipt, hint: "Cobranças online geradas e seus status" },
+  { to: "/admin/marketplace", label: "Marketplace (Admin)", icon: Store, hint: "Visão consolidada do marketplace MP", superAdminOnly: true },
   { to: "/mensagens", label: "Mensagens", icon: MessageCircle, hint: "Mensagens enviadas", superAdminOnly: true },
   { to: "/ia", label: "IA Cobrança", icon: Sparkles, hint: "Mensagens geradas pela IA", superAdminOnly: true },
   { to: "/fila-simulada", label: "Fila simulada", icon: ListChecks, hint: "Cobranças planejadas antes de envio", superAdminOnly: true },
