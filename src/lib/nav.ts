@@ -23,6 +23,7 @@ import {
   Store,
   ShieldCheck,
   Network,
+  RefreshCcw,
   Database,
   Wand2,
   LifeBuoy,
