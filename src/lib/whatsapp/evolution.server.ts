@@ -46,11 +46,15 @@ function withWebhookSecret(webhookUrl: string, secret: string): string {
   return url.toString();
 }
 
-async function probeWebhookEndpoint(url: string, providerInstanceId: string): Promise<{ status: number | null; ok: boolean }> {
+function withWebhookSecretHeader(secret: string): Record<string, string> {
+  return secret ? { "x-cobraeasy-webhook-secret": secret } : {};
+}
+
+async function probeWebhookEndpoint(url: string, providerInstanceId: string, secret: string): Promise<{ status: number | null; ok: boolean }> {
   try {
     const endpoint = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...withWebhookSecretHeader(secret) },
       body: JSON.stringify({
         event: "COBRAEASY_WEBHOOK_TEST",
         instance: providerInstanceId,
