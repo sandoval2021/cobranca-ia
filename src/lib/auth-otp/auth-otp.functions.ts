@@ -130,6 +130,7 @@ export const verifySignupOtp = createServerFn({ method: "POST" })
       .object({
         email: z.string().min(3).max(254),
         code: z.string().regex(/^\d{8}$/),
+        password: z.string().min(8).max(128),
       })
       .parse(input),
   )
@@ -148,7 +149,7 @@ export const verifySignupOtp = createServerFn({ method: "POST" })
 
     const pendingId = r.metadata.pending_signup_id;
     if (!pendingId) {
-      return { ok: false as const, error: "Cadastro pendente expirado." };
+      return { ok: false as const, error: "Cadastro pendente expirado. Refaça o cadastro." };
     }
     const { data: pending } = await supabaseAdmin
       .from("auth_pending_signups")
@@ -159,6 +160,17 @@ export const verifySignupOtp = createServerFn({ method: "POST" })
     if (!pending || new Date(pending.expires_at).getTime() < Date.now()) {
       return { ok: false as const, error: "Cadastro pendente expirado. Refaça o cadastro." };
     }
+    if (pending.email_normalized !== email) {
+      return { ok: false as const, error: "Inconsistência no cadastro." };
+    }
+
+    // Confirma que a senha enviada confere com a hash registrada na fase de request.
+    const { verifySecret } = await import("./auth-otp.server");
+    const pwOk = await verifySecret(data.password, pending.password_hash);
+    if (!pwOk) {
+      await registerFailure(email, ctx.ip);
+      return { ok: false as const, error: "Sessão de cadastro inválida. Reinicie o cadastro." };
+    }
 
     const md = (pending.metadata ?? {}) as {
       nome?: string;
@@ -166,24 +178,37 @@ export const verifySignupOtp = createServerFn({ method: "POST" })
       whatsapp?: string;
     };
 
-    // bcrypt → não dá para recuperar a senha em texto. O frontend retém a senha
-    // durante a sessão de cadastro e a usa para signInWithPassword após receber
-    // ok=true. Aqui criamos o usuário SEM senha em texto, definindo a hash via
-    // updateUserById com encrypted_password (admin-only path).
-    // Mas a admin API não aceita encrypted_password direto. Estratégia adotada:
-    // exigir que o cliente reenvie a senha em verifySignupOtp via verify? NÃO.
-    // Solução: criar usuário com password aleatória forte e devolver um
-    // "session bootstrap token" — porém isso reintroduz dependência GoTrue.
-    // Mantemos a senha em texto no metadata do pending (criptografado em repouso
-    // pelo Postgres). Ajuste: armazenamos em pending.metadata.password_plain
-    // descartando imediatamente após createUser. Para isso, refizemos
-    // requestSignupOtp salvando password_plain TEMPORARIAMENTE.
+    // Cria usuário já confirmado via admin API
+    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: {
+        nome: md.nome ?? "",
+        empresa: md.empresa ?? "",
+        whatsapp: md.whatsapp ?? "",
+      },
+    });
+    if (createErr || !created?.user) {
+      const msg = (createErr?.message ?? "").toLowerCase();
+      if (msg.includes("already") || msg.includes("registered")) {
+        return { ok: false as const, error: "Já existe uma conta com este e-mail." };
+      }
+      console.error("[auth-otp] createUser failed", createErr);
+      return { ok: false as const, error: "Falha ao criar conta." };
+    }
+
+    // Remove pending imediatamente
+    await supabaseAdmin.from("auth_pending_signups").delete().eq("id", pending.id);
+    await clearFailures(email, ctx.ip);
+
     return {
-      ok: false as const,
-      error: "Reenvie o cadastro: senha plana não disponível para criar usuário.",
-      pending_id: pending.id,
-      email: pending.email_normalized,
-      metadata: md,
+      ok: true as const,
+      user_id: created.user.id,
+      email,
+      nome: md.nome ?? "",
+      empresa: md.empresa ?? "",
+      whatsapp: md.whatsapp ?? "",
     };
   });
 
