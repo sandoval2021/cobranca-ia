@@ -75,7 +75,7 @@ function AdminDnsRotasPage() {
 
   // dialogs / sheets
   const [domainSheet, setDomainSheet] = useState<{ open: boolean; data?: DnsDomain | null }>({ open: false });
-  const [routeSheet, setRouteSheet] = useState<{ open: boolean; data?: DnsRoute | null }>({ open: false });
+  const [routeSheet, setRouteSheet] = useState<{ open: boolean; data?: DnsRoute | null; defaultServerId?: string }>({ open: false });
   const [primaryConflict, setPrimaryConflict] = useState<{
     open: boolean;
     pendingSave?: () => void;
@@ -384,6 +384,26 @@ function AdminDnsRotasPage() {
                     </p>
                   )}
                   <div className="mt-2 flex flex-wrap gap-1">
+                    {primary ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setRouteSheet({ open: true, data: primary })}
+                        disabled={activeDomains.length === 0}
+                      >
+                        <Pencil className="h-3.5 w-3.5 mr-1" /> Editar rota / DNS
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setRouteSheet({ open: true, data: null, defaultServerId: s.id })}
+                        disabled={activeDomains.length === 0}
+                        title={activeDomains.length === 0 ? "Cadastre um domínio antes de adicionar rota." : undefined}
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar rota
+                      </Button>
+                    )}
                     {link && (
                       <>
                         <Button size="sm" variant="ghost" onClick={() => copyText(link)}>
@@ -501,6 +521,7 @@ function AdminDnsRotasPage() {
       <RouteSheet
         open={routeSheet.open}
         data={routeSheet.data ?? null}
+        defaultServerId={routeSheet.defaultServerId}
         domains={activeDomains}
         servers={servers}
         onClose={() => setRouteSheet({ open: false })}
@@ -650,12 +671,12 @@ function DomainSheet({
 }
 
 // =============================== Route Sheet ==============================
-
 function RouteSheet({
-  open, data, domains, servers, onClose, onSaved, onPrimaryConflict,
+  open, data, defaultServerId, domains, servers, onClose, onSaved, onPrimaryConflict,
 }: {
   open: boolean;
   data: DnsRoute | null;
+  defaultServerId?: string;
   domains: DnsDomain[];
   servers: ServerEntry[];
   onClose: () => void;
@@ -679,18 +700,18 @@ function RouteSheet({
     if (open) {
       setDomainId(data?.domain_id ?? domains[0]?.id ?? "");
       setSubdomain(data?.subdomain ?? "");
-      setServerId(data?.server_id ?? "");
+      setServerId(data?.server_id ?? defaultServerId ?? "");
       setRecordType(data?.record_type ?? "CNAME");
       setValue(data?.value ?? "");
       setEnvironment(data?.environment ?? "producao");
       setStatus(data?.status ?? "aguardando_dns");
-      setIsPrimary(data?.is_primary ?? false);
+      setIsPrimary(data?.is_primary ?? (defaultServerId ? true : false));
       setIsBackup(data?.is_backup ?? false);
       setActive(data?.active ?? true);
       setNotes(data?.notes ?? "");
       setReason("");
     }
-  }, [open, data, domains]);
+  }, [open, data, domains, defaultServerId]);
 
   const domain = domains.find((d) => d.id === domainId);
   const host = buildHost(subdomain, domain?.domain ?? "");
