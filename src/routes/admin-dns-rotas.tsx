@@ -521,6 +521,7 @@ function AdminDnsRotasPage() {
       <RouteSheet
         open={routeSheet.open}
         data={routeSheet.data ?? null}
+        defaultServerId={routeSheet.defaultServerId}
         domains={activeDomains}
         servers={servers}
         onClose={() => setRouteSheet({ open: false })}
