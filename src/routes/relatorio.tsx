@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
-  FlaskConical,
   RefreshCcw,
   CalendarRange,
   AlertTriangle,
@@ -32,11 +31,10 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { useAuth } from "@/lib/use-auth";
-import { flags } from "@/lib/flags";
 import { toast } from "sonner";
 import { getCurrentCompanyAdmin } from "@/lib/rpc-admin";
 
-const IS_STAGING = flags.appEnv !== "production";
+const IS_STAGING = false;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isUuid = (v: unknown): v is string =>
   typeof v === "string" && UUID_RE.test(v.trim());
@@ -497,20 +495,9 @@ function RelatorioPage() {
   return (
     <PageContainer>
       <SectionHeader
-        title="Relatório da simulação"
-        subtitle="Acompanhe o resultado da fila simulada antes de qualquer envio real."
+        title="Relatório da operação"
+        subtitle="Acompanhe o resultado da fila de cobrança e dos atendimentos planejados."
       />
-
-      {/* staging notice */}
-      {flags.stagingMode && (
-        <div className="mb-3 flex items-start gap-2 rounded-xl border border-info/30 bg-info-soft px-3 py-2 text-xs text-info">
-          <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <p>
-            <strong>Ambiente de testes:</strong> nenhum WhatsApp real, pagamento real ou IA real será
-            executado.
-          </p>
-        </div>
-      )}
 
       {/* filters */}
       <section className="mb-4 rounded-xl border border-border bg-card p-3 shadow-card sm:p-4">
