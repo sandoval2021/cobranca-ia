@@ -6,6 +6,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { loadInstanceRef } from "@/lib/whatsapp/evolution.server";
 import { handleInboundForAiReply } from "@/lib/whatsapp/ai-reply.server";
+import { logWhatsAppAutomation, payloadSummary } from "@/lib/whatsapp/automation-log.server";
 
 function safeEqual(a: string, b: string): boolean {
   const ba = Buffer.from(a);
@@ -26,6 +27,15 @@ function mapState(s: unknown): "connected" | "disconnected" | "awaiting_qr" | "b
 export const Route = createFileRoute("/api/public/webhooks/evolution/$instance")({
   server: {
     handlers: {
+      GET: async ({ params }) => {
+        const instanceId = params.instance;
+        if (!instanceId || !/^[0-9a-f-]{36}$/i.test(instanceId)) {
+          return new Response("bad instance", { status: 400 });
+        }
+        const ref = await loadInstanceRef(instanceId);
+        if (!ref) return new Response("not found", { status: 404 });
+        return Response.json({ ok: true, instance: ref.id, provider_instance: ref.provider_instance_id });
+      },
       POST: async ({ request, params }) => {
         const instanceId = params.instance;
         if (!instanceId || !/^[0-9a-f-]{36}$/i.test(instanceId)) {
@@ -51,6 +61,7 @@ export const Route = createFileRoute("/api/public/webhooks/evolution/$instance")
         const hasValidSignature = Boolean(normalized && safeEqual(normalized, expected));
         const hasValidSecretParam = Boolean(secretParam && safeEqual(secretParam, ref.vps.webhook_secret));
         if (!hasValidSignature && !hasValidSecretParam) {
+          console.error("[wa-webhook] invalid signature", { instanceId, hasSignature: Boolean(sig), hasSecretParam: Boolean(secretParam) });
           return new Response("invalid signature", { status: 401 });
         }
 
@@ -63,6 +74,17 @@ export const Route = createFileRoute("/api/public/webhooks/evolution/$instance")
 
         const event = String(payload?.event || payload?.type || "").toLowerCase();
         const now = new Date().toISOString();
+
+        console.info("[wa-webhook] hit", { instanceId, event, providerInstance: payload?.instance ?? null });
+        await logWhatsAppAutomation({
+          instance_id: ref.id,
+          company_id: ref.company_id,
+          event_type: "webhook_hit",
+          status: "ok",
+          provider_event: event || null,
+          provider_instance: payload?.instance ?? ref.provider_instance_id,
+          details: payloadSummary(payload),
+        });
 
         const patch: any = { last_activity_at: now };
 
@@ -96,9 +118,19 @@ export const Route = createFileRoute("/api/public/webhooks/evolution/$instance")
         // Mensagens recebidas → resposta automática por IA (se ativada).
         if (event.includes("messages.upsert") || event.includes("message")) {
           try {
-            await handleInboundForAiReply(ref, payload);
+            const result = await handleInboundForAiReply(ref, payload);
+            console.info("[wa-webhook] ai-reply result", result);
           } catch (err) {
             console.error("[wa-webhook] ai-reply error", err);
+            await logWhatsAppAutomation({
+              instance_id: ref.id,
+              company_id: ref.company_id,
+              event_type: "webhook_handler_error",
+              status: "error",
+              provider_event: event || null,
+              provider_instance: payload?.instance ?? ref.provider_instance_id,
+              error: String((err as any)?.message ?? err),
+            });
           }
         }
 

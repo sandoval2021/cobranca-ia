@@ -35,6 +35,7 @@ import {
   sendWhatsAppTestMessage,
   setWhatsAppAiReply,
   resetWhatsAppWebhook,
+  getWhatsAppAutomationDebug,
 } from "@/lib/whatsapp/whatsapp.functions";
 
 
@@ -101,16 +102,22 @@ function WhatsAppPage() {
   const sendTestFn = useServerFn(sendWhatsAppTestMessage);
   const setAiFn = useServerFn(setWhatsAppAiReply);
   const resetWebhookFn = useServerFn(resetWhatsAppWebhook);
+  const fetchDebugFn = useServerFn(getWhatsAppAutomationDebug);
   const [resettingWebhook, setResettingWebhook] = useState(false);
 
   const handleResetWebhook = async () => {
     if (!instance) return;
     setResettingWebhook(true);
     try {
-      await resetWebhookFn({ data: { instance_id: instance.id } });
-      toast.success("Webhook reconfigurado. Mande uma mensagem para testar.");
+      const result = await resetWebhookFn({ data: { instance_id: instance.id } });
+      await debugQuery.refetch();
+      toast.success(
+        result?.ok
+          ? "Conexão do WhatsApp atualizada e endpoint validado."
+          : "WhatsApp conectado, mas automação não está recebendo mensagens.",
+      );
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao reconfigurar webhook.");
+      toast.error(e?.message ?? "WhatsApp conectado, mas automação não está recebendo mensagens.");
     } finally {
       setResettingWebhook(false);
     }
@@ -142,6 +149,13 @@ function WhatsAppPage() {
 
   const instance = query.data?.instance ?? null;
   const queued = query.data?.queued ?? 0;
+  const debugQuery = useQuery({
+    queryKey: ["whatsapp-automation-debug", instance?.id],
+    queryFn: () => fetchDebugFn({ data: { instance_id: instance!.id } }),
+    enabled: !!instance?.id,
+    refetchInterval: 10000,
+  });
+  const automationDebug = debugQuery.data;
 
   useEffect(() => {
     if (instance) setBrokenConnection(false);
@@ -488,6 +502,13 @@ function WhatsAppPage() {
               </div>
             )}
 
+            {instance.status === "connected" && aiEnabled && automationDebug?.webhook && !automationDebug.webhook.ok && (
+              <div className="flex items-start gap-2 text-sm text-amber-700 rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+                <AlertTriangle className="w-4 h-4 mt-0.5" />
+                WhatsApp conectado, mas automação não está recebendo mensagens.
+              </div>
+            )}
+
             {instance.status === "blocked" && (
               <div className="flex items-start gap-2 text-sm text-rose-700">
                 <AlertTriangle className="w-4 h-4 mt-0.5" />
@@ -629,6 +650,36 @@ function WhatsAppPage() {
                 )}
                 Enviar mensagem de teste
               </Button>
+            </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <div className="font-medium">Debug temporário da automação</div>
+              <div className="grid gap-2 text-xs">
+                <div className="rounded-md bg-muted/40 p-3">
+                  <div className="font-medium">Webhook</div>
+                  <div className="text-muted-foreground">
+                    {automationDebug?.webhook?.ok ? "OK" : "Não confirmado"} · HTTP endpoint {automationDebug?.webhook?.endpointStatus ?? "—"}
+                  </div>
+                </div>
+                <div className="rounded-md bg-muted/40 p-3">
+                  <div className="font-medium">OpenAI</div>
+                  <div className="text-muted-foreground">{automationDebug?.openai?.status ?? "Verificando…"}</div>
+                </div>
+                <div className="rounded-md bg-muted/40 p-3">
+                  <div className="font-medium">Último evento</div>
+                  <div className="text-muted-foreground">
+                    {automationDebug?.logs?.[0]
+                      ? `${automationDebug.logs[0].event_type} · ${automationDebug.logs[0].status}`
+                      : "Nenhum evento recebido ainda"}
+                  </div>
+                </div>
+                <div className="rounded-md bg-muted/40 p-3">
+                  <div className="font-medium">Última resposta IA</div>
+                  <div className="text-muted-foreground break-words">
+                    {automationDebug?.lastInbound?.reply_text || automationDebug?.lastInbound?.reply_error || "Sem resposta registrada"}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="border-t pt-4">

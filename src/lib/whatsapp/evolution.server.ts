@@ -10,6 +10,7 @@ import type {
   WASendResult,
   WACreateResult,
   WAInstanceState,
+  WAWebhookResult,
   WhatsAppProvider,
 } from "./provider";
 
@@ -369,7 +370,7 @@ export const evolutionProvider: WhatsAppProvider = {
     }
   },
 
-  async setWebhook(ref, webhook_url) {
+  async setWebhook(ref, webhook_url): Promise<WAWebhookResult> {
     assertReal();
     const signedWebhookUrl = withWebhookSecret(webhook_url, ref.vps.webhook_secret);
     const events = [
@@ -393,6 +394,8 @@ export const evolutionProvider: WhatsAppProvider = {
       `/webhook/set/${encodeURIComponent(ref.provider_instance_id)}`,
       { method: "POST", body: JSON.stringify(v2Body) },
     );
+    let providerStatus = res.status;
+    let providerResponse = res.text;
     if (!res.ok) {
       // fallback: Evolution v1 (flat body)
       const legacy = {
@@ -407,10 +410,31 @@ export const evolutionProvider: WhatsAppProvider = {
         `/webhook/set/${encodeURIComponent(ref.provider_instance_id)}`,
         { method: "POST", body: JSON.stringify(legacy) },
       );
+      providerStatus = res2.status;
+      providerResponse = res2.text;
       if (!res2.ok) {
         throw new Error(`evolution.setWebhook falhou (${res.status}): ${res.text.slice(0, 300)}`);
       }
     }
+    let endpointStatus: number | null = null;
+    let endpointOk = false;
+    try {
+      const endpoint = await fetch(signedWebhookUrl, { method: "GET" });
+      endpointStatus = endpoint.status;
+      endpointOk = endpoint.ok;
+    } catch {
+      endpointStatus = 0;
+    }
+    return {
+      ok: endpointOk,
+      url: signedWebhookUrl,
+      events,
+      providerStatus,
+      providerResponse: providerResponse.slice(0, 500),
+      endpointStatus,
+      endpointOk,
+      error: endpointOk ? null : `Endpoint webhook retornou ${endpointStatus ?? 0}`,
+    };
   },
 
 
@@ -484,4 +508,37 @@ export async function pickAvailableVps(): Promise<{ id: string } | null> {
 export function getEvolutionWebhookUrl(instanceId: string): string {
   const base = process.env.PUBLIC_APP_URL || "";
   return `${base.replace(/\/+$/, "")}/api/public/webhooks/evolution/${instanceId}`;
+}
+
+export async function inspectEvolutionWebhook(ref: WAInstanceRef): Promise<WAWebhookResult> {
+  const events = ["QRCODE_UPDATED", "CONNECTION_UPDATE", "MESSAGES_UPSERT", "SEND_MESSAGE"];
+  const expectedUrl = withWebhookSecret(getEvolutionWebhookUrl(ref.id), ref.vps.webhook_secret);
+  const provider = await callEvolution(
+    ref.vps,
+    `/webhook/find/${encodeURIComponent(ref.provider_instance_id)}`,
+    { method: "GET" },
+  );
+  const savedUrl = provider.data?.url || provider.data?.webhook?.url || null;
+  const savedEvents = provider.data?.events || provider.data?.webhook?.events || [];
+  let endpointStatus: number | null = null;
+  let endpointOk = false;
+  try {
+    const endpoint = await fetch(expectedUrl, { method: "GET" });
+    endpointStatus = endpoint.status;
+    endpointOk = endpoint.ok;
+  } catch {
+    endpointStatus = 0;
+  }
+  const hasEvents = events.every((event) => Array.isArray(savedEvents) && savedEvents.includes(event));
+  const urlOk = typeof savedUrl === "string" && savedUrl.startsWith(getEvolutionWebhookUrl(ref.id));
+  return {
+    ok: provider.ok && endpointOk && hasEvents && urlOk,
+    url: savedUrl || expectedUrl,
+    events: Array.isArray(savedEvents) ? savedEvents : [],
+    providerStatus: provider.status,
+    providerResponse: provider.text.slice(0, 500),
+    endpointStatus,
+    endpointOk,
+    error: provider.ok && endpointOk && hasEvents && urlOk ? null : "Webhook não está confirmado ponta a ponta.",
+  };
 }

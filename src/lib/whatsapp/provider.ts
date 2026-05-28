@@ -51,6 +51,17 @@ export type WASendResult = {
   error?: string | null;
 };
 
+export type WAWebhookResult = {
+  ok: boolean;
+  url: string;
+  events: string[];
+  providerStatus: number;
+  providerResponse?: string | null;
+  endpointStatus?: number | null;
+  endpointOk?: boolean;
+  error?: string | null;
+};
+
 export interface WhatsAppProvider {
   createInstance(args: {
     vps: WAVpsNode;
@@ -75,7 +86,7 @@ export interface WhatsAppProvider {
     settings: { rejectCall?: boolean; msgCall?: string },
   ): Promise<void>;
 
-  setWebhook(ref: WAInstanceRef, webhook_url: string): Promise<void>;
+  setWebhook(ref: WAInstanceRef, webhook_url: string): Promise<WAWebhookResult>;
 
 
   markHealthy(vps: WAVpsNode): Promise<void>;
