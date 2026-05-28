@@ -861,6 +861,198 @@ function ForgotOtpForm({
   );
 }
 
+function ConfirmEmailForm({
+  ctx,
+  onBack,
+}: {
+  ctx: { email: string; password: string };
+  onBack: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const [requesting, setRequesting] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const requestFn = useServerFn(requestConfirmEmailOtp);
+  const verifyFn = useServerFn(verifyConfirmEmailOtp);
+  const requestedRef = useRef(false);
+
+  useEffect(() => {
+    if (requestedRef.current) return;
+    requestedRef.current = true;
+    (async () => {
+      try {
+        const r = await requestFn({ data: { email: ctx.email } });
+        setRequesting(false);
+        if (!r.ok) {
+          setError(r.error);
+          return;
+        }
+        if ("already_confirmed" in r && r.already_confirmed) {
+          // já confirmado: tenta login direto
+          if (!supabase) return;
+          const { error: signErr } = await supabase.auth.signInWithPassword({
+            email: ctx.email,
+            password: ctx.password,
+          });
+          if (signErr) {
+            setError(friendlyAuthError(signErr.message));
+            return;
+          }
+          toast.success("Bem-vindo!");
+          return;
+        }
+        setCooldown(60);
+        inputRef.current?.focus();
+      } catch {
+        setRequesting(false);
+        setError("Falha de conexão. Tente novamente.");
+      }
+    })();
+  }, [ctx.email, ctx.password, requestFn]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [cooldown]);
+
+  function onlyDigits(v: string) {
+    return v.replace(/\D/g, "").slice(0, OTP_LENGTH);
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!supabase) return setError("Conexão não configurada.");
+    if (code.length !== OTP_LENGTH) return setError(`Digite os ${OTP_LENGTH} dígitos do código.`);
+    setSubmitting(true);
+    try {
+      const r = await verifyFn({ data: { email: ctx.email, code } });
+      if (!r.ok) {
+        setSubmitting(false);
+        setError(r.error);
+        return;
+      }
+      const { error: signErr } = await supabase.auth.signInWithPassword({
+        email: ctx.email,
+        password: ctx.password,
+      });
+      if (signErr) {
+        setSubmitting(false);
+        setError(friendlyAuthError(signErr.message));
+        return;
+      }
+      toast.success("E-mail confirmado!");
+    } catch {
+      setSubmitting(false);
+      setError("Falha de conexão. Tente novamente.");
+    }
+  }
+
+  async function handleResend() {
+    if (cooldown > 0) return;
+    setError(null);
+    setResending(true);
+    try {
+      const r = await requestFn({ data: { email: ctx.email } });
+      setResending(false);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setCooldown(60);
+      toast.success("Novo código enviado.");
+    } catch {
+      setResending(false);
+      setError("Falha de conexão. Tente novamente.");
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+          <ShieldCheck className="h-6 w-6" />
+        </div>
+        <h2 className="text-base font-semibold">Confirme seu e-mail</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {requesting
+            ? "Enviando um código de 8 dígitos…"
+            : (<>Enviamos um código de {OTP_LENGTH} dígitos para <strong>{ctx.email}</strong>. Digite abaixo para liberar seu acesso.</>)}
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="confirm-otp">Código de {OTP_LENGTH} dígitos</Label>
+        <Input
+          id="confirm-otp"
+          ref={inputRef}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern={`\\d{${OTP_LENGTH}}`}
+          maxLength={OTP_LENGTH}
+          placeholder="••••••••"
+          value={code}
+          onChange={(e) => setCode(onlyDigits(e.target.value))}
+          required
+          disabled={requesting}
+          className="h-14 text-center text-2xl tracking-[0.5em] font-semibold"
+        />
+      </div>
+
+      {error && (
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>
+      )}
+
+      <Button
+        type="submit"
+        disabled={submitting || requesting || code.length !== OTP_LENGTH}
+        className="h-11 w-full"
+      >
+        {submitting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Confirmando…
+          </>
+        ) : (
+          <>
+            <ShieldCheck className="h-4 w-4" />
+            Confirmar e entrar
+          </>
+        )}
+      </Button>
+
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full"
+          onClick={handleResend}
+          disabled={resending || requesting || cooldown > 0}
+        >
+          {resending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Reenviando…
+            </>
+          ) : cooldown > 0 ? (
+            `Reenviar código (${cooldown}s)`
+          ) : (
+            "Reenviar código"
+          )}
+        </Button>
+        <Button type="button" variant="ghost" className="h-10 w-full text-sm" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para entrar
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function SessionLoading() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-primary-soft/40 via-background to-background px-4">
