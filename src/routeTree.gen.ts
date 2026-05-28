@@ -51,6 +51,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtendimentoIaTokenRouteImport } from './routes/atendimento-ia.$token'
 import { Route as AdminVpsRouteImport } from './routes/admin.vps'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
+import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
+import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicWebhooksMercadoPagoRouteImport } from './routes/api/public/webhooks/mercado-pago'
 import { Route as ApiPublicHooksWaDispatchRouteImport } from './routes/api/public/hooks/wa-dispatch'
 import { Route as ApiPublicWebhooksEvolutionInstanceRouteImport } from './routes/api/public/webhooks/evolution.$instance'
@@ -266,6 +268,16 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
+const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
+  id: '/lovable/email/auth/webhook',
+  path: '/lovable/email/auth/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
+  id: '/lovable/email/auth/preview',
+  path: '/lovable/email/auth/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksMercadoPagoRoute =
   ApiPublicWebhooksMercadoPagoRouteImport.update({
     id: '/api/public/webhooks/mercado-pago',
@@ -329,6 +341,8 @@ export interface FileRoutesByFullPath {
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
@@ -376,6 +390,8 @@ export interface FileRoutesByTo {
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
@@ -424,6 +440,8 @@ export interface FileRoutesById {
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
@@ -473,6 +491,8 @@ export interface FileRouteTypes {
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
     | '/api/public/webhooks/evolution/$instance'
   fileRoutesByTo: FileRoutesByTo
@@ -520,6 +540,8 @@ export interface FileRouteTypes {
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
     | '/api/public/webhooks/evolution/$instance'
   id:
@@ -567,6 +589,8 @@ export interface FileRouteTypes {
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
     | '/api/public/webhooks/evolution/$instance'
   fileRoutesById: FileRoutesById
@@ -615,6 +639,8 @@ export interface RootRouteChildren {
   AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicWebhooksMercadoPagoRoute: typeof ApiPublicWebhooksMercadoPagoRoute
+  LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
+  LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicWebhooksEvolutionInstanceRoute: typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
@@ -915,6 +941,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/auth/webhook': {
+      id: '/lovable/email/auth/webhook'
+      path: '/lovable/email/auth/webhook'
+      fullPath: '/lovable/email/auth/webhook'
+      preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/auth/preview': {
+      id: '/lovable/email/auth/preview'
+      path: '/lovable/email/auth/preview'
+      fullPath: '/lovable/email/auth/preview'
+      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/mercado-pago': {
       id: '/api/public/webhooks/mercado-pago'
       path: '/api/public/webhooks/mercado-pago'
@@ -983,6 +1023,8 @@ const rootRouteChildren: RootRouteChildren = {
   AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicWebhooksMercadoPagoRoute: ApiPublicWebhooksMercadoPagoRoute,
+  LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
+  LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicWebhooksEvolutionInstanceRoute:
     ApiPublicWebhooksEvolutionInstanceRoute,
