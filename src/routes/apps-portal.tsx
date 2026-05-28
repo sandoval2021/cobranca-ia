@@ -177,10 +177,10 @@ function AppsPortalPage() {
       <SectionHeader
         title="Apps de portal (MAC/Key)"
         subtitle="Bob, IBO, Smarters, VU e outros: cadastre painéis e modelos de URL para localizar dispositivos."
-        actions={
+        action={
           <Button onClick={openNew} disabled={!companyId}>
             <Plus className="h-4 w-4 mr-1" /> Novo app
-        action={
+          </Button>
         }
       />
 
