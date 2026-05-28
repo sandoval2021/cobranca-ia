@@ -340,6 +340,22 @@ export const evolutionProvider: WhatsAppProvider = {
     return { ok: true, provider_msg_id: id };
   },
 
+  async setSettings(ref, settings) {
+    assertReal();
+    const body: Record<string, unknown> = {};
+    if (typeof settings.rejectCall === "boolean") body.rejectCall = settings.rejectCall;
+    if (typeof settings.msgCall === "string") body.msgCall = settings.msgCall;
+    const res = await callEvolution(
+      ref.vps,
+      `/settings/set/${encodeURIComponent(ref.provider_instance_id)}`,
+      { method: "POST", body: JSON.stringify(body) },
+    );
+    if (!res.ok) {
+      throw new Error(`evolution.setSettings falhou (${res.status}): ${res.text.slice(0, 300)}`);
+    }
+  },
+
+
   async markHealthy(vps) {
     await supabaseAdmin
       .from("whatsapp_vps_nodes")

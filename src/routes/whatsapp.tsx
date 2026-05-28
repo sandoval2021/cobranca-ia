@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   KeyRound,
+  PhoneOff,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -19,6 +21,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   connectWhatsAppInstance,
@@ -26,6 +30,8 @@ import {
   disconnectWhatsAppInstance,
   getCompanyWhatsApp,
   ensureMyCompany,
+  setWhatsAppRejectCall,
+  sendWhatsAppTestMessage,
 } from "@/lib/whatsapp/whatsapp.functions";
 
 export const Route = createFileRoute("/whatsapp")({
@@ -70,12 +76,22 @@ function WhatsAppPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [busy, setBusy] = useState(false);
   const [brokenConnection, setBrokenConnection] = useState(false);
+  const [rejectCall, setRejectCall] = useState(false);
+  const [rejectMsg, setRejectMsg] = useState(
+    "Não posso atender chamadas neste número. Envie uma mensagem.",
+  );
+  const [savingReject, setSavingReject] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [testBody, setTestBody] = useState("Olá! Esta é uma mensagem de teste do CobraEasy.");
+  const [sendingTest, setSendingTest] = useState(false);
 
   const ensureCompany = useServerFn(ensureMyCompany);
   const fetchData = useServerFn(getCompanyWhatsApp);
   const fetchQr = useServerFn(getWhatsAppQr);
   const connectFn = useServerFn(connectWhatsAppInstance);
   const disconnectFn = useServerFn(disconnectWhatsAppInstance);
+  const setRejectFn = useServerFn(setWhatsAppRejectCall);
+  const sendTestFn = useServerFn(sendWhatsAppTestMessage);
 
   // Garante uma empresa real (UUID) no backend para o usuário logado.
   useEffect(() => {
@@ -186,6 +202,50 @@ function WhatsAppPage() {
       setBusy(false);
     }
   }
+
+  async function handleToggleRejectCall(next: boolean) {
+    if (!instance) return;
+    setSavingReject(true);
+    setRejectCall(next);
+    try {
+      await setRejectFn({
+        data: {
+          instance_id: instance.id,
+          reject_call: next,
+          msg_call: next ? rejectMsg : undefined,
+        },
+      });
+      toast.success(next ? "Chamadas serão bloqueadas." : "Chamadas liberadas.");
+    } catch (e: any) {
+      setRejectCall(!next);
+      toast.error(e?.message ?? "Falha ao atualizar configuração.");
+    } finally {
+      setSavingReject(false);
+    }
+  }
+
+  async function handleSendTest() {
+    if (!instance) return;
+    const to = digitsOnly(testPhone);
+    if (to.length < 10) {
+      toast.error("Informe o número com DDI e DDD (ex.: 5511999998888).");
+      return;
+    }
+    if (!testBody.trim()) {
+      toast.error("Escreva a mensagem de teste.");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      await sendTestFn({ data: { instance_id: instance.id, to_phone: to, body: testBody.trim() } });
+      toast.success("Mensagem de teste enviada!");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao enviar teste.");
+    } finally {
+      setSendingTest(false);
+    }
+  }
+
 
   return (
     <PageContainer>
@@ -382,26 +442,90 @@ function WhatsAppPage() {
             </div>
           </Card>
 
-          <Card className="p-4 space-y-3">
-            <div className="font-medium">Hoje</div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-md bg-muted/40 p-3">
-                <div className="text-2xl font-semibold">{instance.daily_sent_count ?? 0}</div>
-                <div className="text-xs text-muted-foreground">Enviadas</div>
+          <Card className="p-4 space-y-5">
+            <div>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-medium flex items-center gap-2">
+                    <PhoneOff className="w-4 h-4" /> Bloquear chamadas
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Rejeita ligações de voz e vídeo recebidas neste WhatsApp.
+                  </p>
+                </div>
+                <Switch
+                  checked={rejectCall}
+                  onCheckedChange={handleToggleRejectCall}
+                  disabled={savingReject || instance.status !== "connected"}
+                />
               </div>
-              <div className="rounded-md bg-muted/40 p-3">
-                <div className="text-2xl font-semibold">{instance.daily_limit ?? 300}</div>
-                <div className="text-xs text-muted-foreground">Limite diário</div>
+              {rejectCall && (
+                <div className="mt-3 space-y-2">
+                  <Label htmlFor="rejectMsg" className="text-xs">
+                    Resposta automática (opcional)
+                  </Label>
+                  <Textarea
+                    id="rejectMsg"
+                    rows={2}
+                    value={rejectMsg}
+                    onChange={(e) => setRejectMsg(e.target.value)}
+                    onBlur={() => rejectCall && handleToggleRejectCall(true)}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="border-t pt-4 space-y-2">
+              <div className="font-medium flex items-center gap-2">
+                <Send className="w-4 h-4" /> Testar envio
               </div>
-              <div className="rounded-md bg-muted/40 p-3">
-                <div className="text-2xl font-semibold">{queued}</div>
-                <div className="text-xs text-muted-foreground">Na fila</div>
+              <Label htmlFor="testPhone" className="text-xs">
+                Número (DDI + DDD + número)
+              </Label>
+              <Input
+                id="testPhone"
+                inputMode="tel"
+                placeholder="5511999998888"
+                value={testPhone}
+                onChange={(e) => setTestPhone(digitsOnly(e.target.value))}
+              />
+              <Label htmlFor="testBody" className="text-xs">
+                Mensagem
+              </Label>
+              <Textarea
+                id="testBody"
+                rows={3}
+                value={testBody}
+                onChange={(e) => setTestBody(e.target.value)}
+              />
+              <Button
+                size="sm"
+                onClick={handleSendTest}
+                disabled={sendingTest || instance.status !== "connected"}
+              >
+                {sendingTest ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                Enviar mensagem de teste
+              </Button>
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="rounded-md bg-muted/40 p-3">
+                  <div className="text-2xl font-semibold">{instance.daily_sent_count ?? 0}</div>
+                  <div className="text-xs text-muted-foreground">Enviadas hoje</div>
+                </div>
+                <div className="rounded-md bg-muted/40 p-3">
+                  <div className="text-2xl font-semibold">{queued}</div>
+                  <div className="text-xs text-muted-foreground">Na fila</div>
+                </div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Para evitar bloqueios, o sistema envia com pequenos intervalos e respeita o limite diário.
-            </p>
           </Card>
+
         </div>
       )}
     </PageContainer>
