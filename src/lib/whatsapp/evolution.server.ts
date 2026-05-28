@@ -527,14 +527,17 @@ export async function pickAvailableVps(): Promise<{ id: string } | null> {
 }
 
 function stablePreviewBaseFromEditorUrl(baseUrl?: string): string {
-  const match = (baseUrl || "").match(/([0-9a-f]{8}-[0-9a-f-]{27,})/i);
-  return match ? `https://project--${match[1]}-dev.lovable.app` : "";
+  const projectId = process.env.__LOVABLE_PROJECT_ID || (baseUrl || "").match(/([0-9a-f]{8}-[0-9a-f-]{27,})/i)?.[1];
+  return projectId ? `https://project--${projectId}-dev.lovable.app` : "";
 }
 
 export function getEvolutionWebhookUrl(instanceId: string, baseUrl?: string): string {
   const configuredBase = process.env.PUBLIC_APP_URL || "";
-  const safeRequestBase = baseUrl && !/lovableproject\.com|id-preview--/i.test(baseUrl) ? baseUrl : "";
-  const base = safeRequestBase || stablePreviewBaseFromEditorUrl(baseUrl) || configuredBase;
+  const unsafe = /lovableproject\.com|id-preview--|cobraeasy\.com\.br|cobranca-ia\.lovable\.app/i;
+  const safeConfiguredBase = configuredBase && !unsafe.test(configuredBase) ? configuredBase : "";
+  const safeRequestBase = baseUrl && !unsafe.test(baseUrl) ? baseUrl : "";
+  const base = safeConfiguredBase || stablePreviewBaseFromEditorUrl(baseUrl) || safeRequestBase;
+  if (!base) throw new Error("URL pública do webhook não disponível.");
   const url = new URL(`${base.replace(/\/+$/, "")}/api/public/webhooks/evolution`);
   url.searchParams.set("instance_id", instanceId);
   return url.toString();
