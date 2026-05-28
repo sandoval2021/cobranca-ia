@@ -142,25 +142,6 @@ function DiagnosticoPage() {
 
   return (
     <PageContainer>
-      {/* Header */}
-      <div
-        className={cn(
-          "mb-4 rounded-2xl border border-border p-5 text-primary-foreground shadow-pop md:p-6 bg-gradient-to-br",
-          overallTone,
-        )}
-      >
-        <p className="text-xs font-medium uppercase tracking-wide opacity-80">Diagnóstico</p>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight md:text-2xl">
-          Saúde do sistema local
-        </h1>
-        <p className="mt-1 text-sm opacity-90">
-          Verifique a saúde dos dados, segurança, rotas, financeiro e operação local.
-        </p>
-        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium">
-          <ShieldCheck className="h-3 w-3" />
-          Esta tela apenas analisa os dados locais. Nada será enviado ou alterado automaticamente.
-        </div>
-      </div>
 
       {/* Cards de resumo */}
       <div className="mb-4 grid grid-cols-2 gap-2.5 md:grid-cols-4">
