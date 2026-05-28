@@ -14,6 +14,7 @@ import { Route as TestesRouteImport } from './routes/testes'
 import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
 import { Route as SaasPlanosRouteImport } from './routes/saas-planos'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as RenovacoesPaineisRouteImport } from './routes/renovacoes-paineis'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
 import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
 import { Route as PreparacaoBackendRouteImport } from './routes/preparacao-backend'
@@ -84,6 +85,11 @@ const SaasPlanosRoute = SaasPlanosRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RenovacoesPaineisRoute = RenovacoesPaineisRouteImport.update({
+  id: '/renovacoes-paineis',
+  path: '/renovacoes-paineis',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RelatorioRoute = RelatorioRouteImport.update({
@@ -360,6 +366,7 @@ export interface FileRoutesByFullPath {
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/renovacoes-paineis': typeof RenovacoesPaineisRoute
   '/reset-password': typeof ResetPasswordRoute
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
@@ -413,6 +420,7 @@ export interface FileRoutesByTo {
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/renovacoes-paineis': typeof RenovacoesPaineisRoute
   '/reset-password': typeof ResetPasswordRoute
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
@@ -467,6 +475,7 @@ export interface FileRoutesById {
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
+  '/renovacoes-paineis': typeof RenovacoesPaineisRoute
   '/reset-password': typeof ResetPasswordRoute
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
@@ -522,6 +531,7 @@ export interface FileRouteTypes {
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
+    | '/renovacoes-paineis'
     | '/reset-password'
     | '/saas-planos'
     | '/seguranca-local'
@@ -575,6 +585,7 @@ export interface FileRouteTypes {
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
+    | '/renovacoes-paineis'
     | '/reset-password'
     | '/saas-planos'
     | '/seguranca-local'
@@ -628,6 +639,7 @@ export interface FileRouteTypes {
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
+    | '/renovacoes-paineis'
     | '/reset-password'
     | '/saas-planos'
     | '/seguranca-local'
@@ -682,6 +694,7 @@ export interface RootRouteChildren {
   PreparacaoBackendRoute: typeof PreparacaoBackendRoute
   RegrasDisparoRoute: typeof RegrasDisparoRoute
   RelatorioRoute: typeof RelatorioRoute
+  RenovacoesPaineisRoute: typeof RenovacoesPaineisRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SaasPlanosRoute: typeof SaasPlanosRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
@@ -732,6 +745,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/renovacoes-paineis': {
+      id: '/renovacoes-paineis'
+      path: '/renovacoes-paineis'
+      fullPath: '/renovacoes-paineis'
+      preLoaderRoute: typeof RenovacoesPaineisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/relatorio': {
@@ -1112,6 +1132,7 @@ const rootRouteChildren: RootRouteChildren = {
   PreparacaoBackendRoute: PreparacaoBackendRoute,
   RegrasDisparoRoute: RegrasDisparoRoute,
   RelatorioRoute: RelatorioRoute,
+  RenovacoesPaineisRoute: RenovacoesPaineisRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SaasPlanosRoute: SaasPlanosRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
