@@ -27,7 +27,7 @@ type View =
   | "forgot"
   | "forgot_otp";
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 8;
 
 
 
@@ -239,7 +239,7 @@ function SignupForm({
       email: trimmedEmail,
       password: senha,
       options: {
-        // Sem emailRedirectTo: queremos OTP de 6 dígitos, nunca link mágico.
+        // Sem emailRedirectTo: queremos OTP de 8 dígitos, nunca link mágico.
         data: {
           nome: nome.trim(),
           empresa: empresa.trim(),
@@ -352,7 +352,7 @@ function SignupForm({
 }
 
 /**
- * Tela de confirmação por código de 6 dígitos (cadastro).
+ * Tela de confirmação por código de 8 dígitos (cadastro).
  * Usa supabase.auth.verifyOtp({ type: "signup", email, token }).
  * Importante: o template "Confirm signup" no Supabase Auth precisa conter
  * {{ .Token }} para que o e-mail mostre o código, não só o link.
