@@ -107,7 +107,7 @@ export const upsertServer = createServerFn({ method: "POST" })
       if (panel_password !== undefined && panel_password !== null) {
         update.panel_password_enc = panel_password === "" ? null : encryptSecret(panel_password);
       }
-      const { error } = await supabaseAdmin.from("servers").update(update).eq("id", id);
+      const { error } = await supabaseAdmin.from("servers").update(update as any).eq("id", id);
       if (error) throw new Error(error.message);
       return { id };
     }
