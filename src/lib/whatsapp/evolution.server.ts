@@ -551,7 +551,7 @@ export async function inspectEvolutionWebhook(ref: WAInstanceRef): Promise<WAWeb
     providerStatus: provider.status,
     providerResponse: provider.text.slice(0, 500),
     endpointStatus: null,
-    endpointOk: null,
+    endpointOk: undefined,
     error: provider.ok && hasEvents && urlOk ? null : "Webhook não está cadastrado corretamente na Evolution.",
   };
 }
