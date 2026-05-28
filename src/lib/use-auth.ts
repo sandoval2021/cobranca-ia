@@ -42,24 +42,23 @@ export function useAuth() {
       setLoading(false);
     });
 
-    // Initial restore from storage + revalidate token against Auth server.
-    // If the stored JWT is stale (e.g. signing key rotated → unrecognized
-    // kid), force sign-out so the user re-authenticates with a fresh token.
-    supabase.auth.getSession().then(async ({ data }) => {
+    // 1) Render IMEDIATO a partir da sessão em storage — UI não bloqueia.
+    // 2) Em paralelo (fire-and-forget), revalida o JWT contra o servidor.
+    //    Só desloga se o token estiver realmente inválido. Isso evita o
+    //    flash "Carregando sua sessão..." em todo refresh/navegação.
+    supabase.auth.getSession().then(({ data }) => {
       if (!alive) return;
-      if (data.session) {
-        const { error } = await supabase!.auth.getUser();
-        if (error) {
-          if (isInvalidAuthToken(error.message)) await clearStaleSession();
-          else await supabase!.auth.signOut().catch(() => undefined);
-          if (!alive) return;
-          setSession(null);
-          setLoading(false);
-          return;
-        }
-      }
       setSession(data.session);
       setLoading(false);
+
+      if (!data.session) return;
+      // Revalidação em background — não bloqueia o render.
+      supabase!.auth.getUser().then(async ({ error }) => {
+        if (!alive || !error) return;
+        if (isInvalidAuthToken(error.message)) await clearStaleSession();
+        else await supabase!.auth.signOut().catch(() => undefined);
+        if (alive) setSession(null);
+      }).catch(() => undefined);
     }).catch(() => {
       if (alive) setLoading(false);
     });
