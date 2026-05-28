@@ -32,14 +32,29 @@ export function useAuth() {
       return;
     }
     let alive = true;
+    let settled = false;
+    const failSafe = window.setTimeout(() => {
+      if (!alive || settled) return;
+      settled = true;
+      setSession(null);
+      setLoading(false);
+      void clearStaleSession();
+    }, 12_000);
+
+    const finishLoading = (nextSession: Session | null) => {
+      if (!alive) return;
+      settled = true;
+      window.clearTimeout(failSafe);
+      setSession(nextSession);
+      setLoading(false);
+    };
 
     // INITIAL_SESSION vem do storage local e pode conter JWT antigo após rotação
     // de chaves. Não confiar nele antes de revalidar com getUser().
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       if (!alive) return;
       if (_e === "INITIAL_SESSION") return;
-      setSession(s);
-      setLoading(false);
+      finishLoading(s);
     });
 
     // 1) Render IMEDIATO a partir da sessão em storage — UI não bloqueia.
@@ -48,8 +63,7 @@ export function useAuth() {
     //    flash "Carregando sua sessão..." em todo refresh/navegação.
     supabase.auth.getSession().then(({ data }) => {
       if (!alive) return;
-      setSession(data.session);
-      setLoading(false);
+      finishLoading(data.session);
 
       if (!data.session) return;
       // Revalidação em background — não bloqueia o render.
@@ -60,7 +74,7 @@ export function useAuth() {
         if (alive) setSession(null);
       }).catch(() => undefined);
     }).catch(() => {
-      if (alive) setLoading(false);
+      if (alive) finishLoading(null);
     });
 
     const onRefresh = () => {
@@ -72,6 +86,7 @@ export function useAuth() {
 
     return () => {
       alive = false;
+      window.clearTimeout(failSafe);
       window.removeEventListener(AUTH_REFRESH_EVENT, onRefresh);
       sub.subscription.unsubscribe();
     };

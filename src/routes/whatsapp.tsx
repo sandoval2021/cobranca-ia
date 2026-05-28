@@ -178,6 +178,13 @@ function WhatsAppPage() {
     return v.replace(/\D/g, "");
   }
 
+  function normalizeBrazilWhatsApp(v: string): string | null {
+    const digits = digitsOnly(v).replace(/^0+/, "");
+    if (digits.startsWith("55") && digits.length >= 12 && digits.length <= 13) return digits;
+    if ((digits.length === 10 || digits.length === 11) && !digits.startsWith("55")) return `55${digits}`;
+    return null;
+  }
+
   async function handleConnect() {
     if (!companyId) {
       toast.error("Aguarde a empresa carregar.");
@@ -277,9 +284,9 @@ function WhatsAppPage() {
 
   async function handleSendTest() {
     if (!instance) return;
-    const to = digitsOnly(testPhone);
-    if (to.length < 10) {
-      toast.error("Informe o número com DDI e DDD (ex.: 5511999998888).");
+    const to = normalizeBrazilWhatsApp(testPhone);
+    if (!to) {
+      toast.error("Informe DDD + número. Ex.: 82999999999.");
       return;
     }
     if (!testBody.trim()) {
@@ -289,6 +296,7 @@ function WhatsAppPage() {
     setSendingTest(true);
     try {
       await sendTestFn({ data: { instance_id: instance.id, to_phone: to, body: testBody.trim() } });
+      setTestPhone(to);
       toast.success("Mensagem de teste enviada!");
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao enviar teste.");
@@ -620,15 +628,18 @@ function WhatsAppPage() {
                 <Send className="w-4 h-4" /> Testar envio
               </div>
               <Label htmlFor="testPhone" className="text-xs">
-                Número (DDI + DDD + número)
+                Número do cliente
               </Label>
               <Input
                 id="testPhone"
                 inputMode="tel"
-                placeholder="5511999998888"
+                placeholder="Ex.: 82999999999"
                 value={testPhone}
                 onChange={(e) => setTestPhone(digitsOnly(e.target.value))}
               />
+              <p className="text-xs text-muted-foreground">
+                Digite DDD + número; o sistema completa o 55 automaticamente.
+              </p>
               <Label htmlFor="testBody" className="text-xs">
                 Mensagem
               </Label>
