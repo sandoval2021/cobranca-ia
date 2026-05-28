@@ -267,3 +267,122 @@ export const listVpsNodes = createServerFn({ method: "GET" })
 
     return { nodes: withCounts, queueTotal: queueTotal ?? 0, errorsTotal: errorsTotal ?? 0 };
   });
+
+// -------- super admin: CRUD VPS --------
+async function assertSuperAdmin(supabase: any) {
+  const { data: isSuper } = await supabase.rpc("is_super_admin");
+  if (!isSuper) throw new Error("forbidden");
+}
+
+export const createVpsNode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        name: z.string().min(1).max(120),
+        base_url: z.string().url().max(500),
+        api_token: z.string().min(8).max(500),
+        webhook_secret: z.string().min(8).max(200),
+        max_instances: z.number().int().min(1).max(500).default(50),
+        is_active: z.boolean().default(true),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase);
+
+    const base_url = data.base_url.replace(/\/+$/, "");
+    const { data: row, error } = await supabaseAdmin
+      .from("whatsapp_vps_nodes")
+      .insert({
+        name: data.name,
+        base_url,
+        api_token_enc: data.api_token,
+        webhook_secret: data.webhook_secret,
+        max_instances: data.max_instances,
+        is_active: data.is_active,
+        health: "healthy",
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row!.id };
+  });
+
+export const updateVpsNode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        name: z.string().min(1).max(120).optional(),
+        base_url: z.string().url().max(500).optional(),
+        api_token: z.string().min(8).max(500).optional(),
+        webhook_secret: z.string().min(8).max(200).optional(),
+        max_instances: z.number().int().min(1).max(500).optional(),
+        is_active: z.boolean().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase);
+
+    const patch: {
+      updated_at: string;
+      name?: string;
+      base_url?: string;
+      api_token_enc?: string;
+      webhook_secret?: string;
+      max_instances?: number;
+      is_active?: boolean;
+    } = { updated_at: new Date().toISOString() };
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.base_url !== undefined) patch.base_url = data.base_url.replace(/\/+$/, "");
+    if (data.api_token !== undefined) patch.api_token_enc = data.api_token;
+    if (data.webhook_secret !== undefined) patch.webhook_secret = data.webhook_secret;
+    if (data.max_instances !== undefined) patch.max_instances = data.max_instances;
+    if (data.is_active !== undefined) patch.is_active = data.is_active;
+
+    const { error } = await supabaseAdmin
+      .from("whatsapp_vps_nodes")
+      .update(patch)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const probeVpsNode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase);
+    const { data: vps } = await supabaseAdmin
+      .from("whatsapp_vps_nodes")
+      .select("id, base_url, api_token_enc")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!vps) throw new Error("not_found");
+
+    try {
+      const res = await fetch(`${vps.base_url.replace(/\/+$/, "")}/instance/fetchInstances`, {
+        method: "GET",
+        headers: { apikey: vps.api_token_enc },
+      });
+      const ok = res.ok;
+      await supabaseAdmin
+        .from("whatsapp_vps_nodes")
+        .update({
+          health: ok ? "healthy" : "attention",
+          last_health_at: new Date().toISOString(),
+        })
+        .eq("id", vps.id);
+      return { ok, status: res.status };
+    } catch (e: any) {
+      await supabaseAdmin
+        .from("whatsapp_vps_nodes")
+        .update({ health: "attention", last_health_at: new Date().toISOString() })
+        .eq("id", vps.id);
+      return { ok: false, status: 0, error: String(e?.message ?? e) };
+    }
+  });
+
