@@ -358,6 +358,13 @@ export const setWhatsAppRejectCall = createServerFn({ method: "POST" })
       rejectCall: data.reject_call,
       msgCall: data.msg_call,
     });
+    await supabaseAdmin
+      .from("whatsapp_instances")
+      .update({
+        reject_call_enabled: data.reject_call,
+        reject_call_message: data.msg_call ?? null,
+      } as any)
+      .eq("id", ref.id);
     return { ok: true };
   });
 
@@ -488,7 +495,7 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
     const { data: inst } = await supabaseAdmin
       .from("whatsapp_instances")
       .select(
-        "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id, ai_reply_enabled, ai_system_prompt",
+        "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id, ai_reply_enabled, ai_system_prompt, reject_call_enabled, reject_call_message",
       )
       .eq("company_id", data.company_id)
       .maybeSingle();
@@ -509,7 +516,7 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
         const { data: refreshed } = await supabaseAdmin
           .from("whatsapp_instances")
           .select(
-            "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id, ai_reply_enabled, ai_system_prompt",
+            "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id, ai_reply_enabled, ai_system_prompt, reject_call_enabled, reject_call_message",
           )
           .eq("id", inst.id)
           .maybeSingle();

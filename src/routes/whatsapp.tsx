@@ -152,6 +152,12 @@ function WhatsAppPage() {
     if (anyInst && typeof anyInst.ai_system_prompt === "string") {
       setAiPrompt(anyInst.ai_system_prompt);
     }
+    if (anyInst && typeof anyInst.reject_call_enabled === "boolean") {
+      setRejectCall(anyInst.reject_call_enabled);
+    }
+    if (anyInst && typeof anyInst.reject_call_message === "string") {
+      setRejectMsg(anyInst.reject_call_message);
+    }
   }, [instance]);
 
   function digitsOnly(v: string) {

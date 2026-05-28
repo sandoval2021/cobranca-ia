@@ -531,6 +531,8 @@ export type Database = {
           provider_instance_id: string
           qr_code: string | null
           qr_expires_at: string | null
+          reject_call_enabled: boolean
+          reject_call_message: string | null
           status: Database["public"]["Enums"]["wa_instance_status"]
           updated_at: string
           vps_node_id: string
@@ -553,6 +555,8 @@ export type Database = {
           provider_instance_id: string
           qr_code?: string | null
           qr_expires_at?: string | null
+          reject_call_enabled?: boolean
+          reject_call_message?: string | null
           status?: Database["public"]["Enums"]["wa_instance_status"]
           updated_at?: string
           vps_node_id: string
@@ -575,6 +579,8 @@ export type Database = {
           provider_instance_id?: string
           qr_code?: string | null
           qr_expires_at?: string | null
+          reject_call_enabled?: boolean
+          reject_call_message?: string | null
           status?: Database["public"]["Enums"]["wa_instance_status"]
           updated_at?: string
           vps_node_id?: string
