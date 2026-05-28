@@ -1,8 +1,22 @@
 // Server-only: motor determinístico que monta o contexto da IA
-// (cliente, grupo de preço, planos, indicador, app) ANTES de chamar a OpenAI.
+// (cliente, grupo de preço, planos, indicador, app, memória) ANTES de chamar a OpenAI.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { detectApp, detectIntent, extractReferralHints, type Intent } from "./intent";
+import {
+  detectApp,
+  detectAppIssue,
+  detectIntent,
+  extractReferralHints,
+  classifyCustomer,
+  type Intent,
+  type CustomerClass,
+} from "./intent";
+
+export type ConvoMemory = {
+  last_messages: Array<{ role: "user" | "assistant"; text: string; at: string }>;
+  summary: string | null;
+  flags: Record<string, unknown>;
+};
 
 export type AiContext = {
   intent: Intent;
