@@ -50,6 +50,7 @@ type SignupContext = {
   nome: string;
   empresa: string;
   whatsapp: string;
+  password: string;
 };
 
 export function LoginPage() {
