@@ -73,6 +73,7 @@ const GROUPS: Group[] = [
       "/configuracoes-revenda",
       "/configuracoes",
       "/regras-disparo",
+      "/whatsapp",
     ],
   },
   {
