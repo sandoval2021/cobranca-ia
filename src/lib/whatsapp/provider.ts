@@ -39,6 +39,12 @@ export type WAQrResult = {
   status: WAStatus;
 };
 
+export type WAInstanceState = {
+  status: WAStatus;
+  phone_number?: string | null;
+  profile_name?: string | null;
+};
+
 export type WASendResult = {
   provider_msg_id?: string | null;
   ok: boolean;
@@ -60,6 +66,7 @@ export interface WhatsAppProvider {
   disconnect(ref: WAInstanceRef): Promise<WAStatus>;
   deleteInstance(ref: WAInstanceRef): Promise<void>;
   getStatus(ref: WAInstanceRef): Promise<WAStatus>;
+  getInstanceState(ref: WAInstanceRef): Promise<WAInstanceState>;
 
   sendText(ref: WAInstanceRef, to: string, body: string): Promise<WASendResult>;
 
