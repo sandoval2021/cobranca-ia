@@ -188,7 +188,17 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
 export const getWhatsAppQr = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ instance_id: z.string().uuid() }).parse(input),
+    z
+      .object({
+        instance_id: z.string().uuid(),
+        phone_number: z
+          .string()
+          .min(8)
+          .max(20)
+          .regex(/^[0-9]+$/)
+          .optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -196,12 +206,14 @@ export const getWhatsAppQr = createServerFn({ method: "POST" })
     if (!ref) throw new Error("not_found");
     await assertCompanyAccess(supabase, userId, ref.company_id);
 
-    const qr = await evolutionProvider.getQrCode(ref);
+    const qr = await evolutionProvider.getQrCode(ref, data.phone_number);
     await supabaseAdmin
       .from("whatsapp_instances")
       .update({
         qr_code: qr.qr_code,
         qr_expires_at: qr.qr_expires_at,
+        pairing_code: qr.pairing_code ?? null,
+        pairing_code_expires_at: qr.pairing_code_expires_at ?? null,
         status: qr.status,
       })
       .eq("id", ref.id);
