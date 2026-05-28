@@ -205,13 +205,13 @@ export const evolutionProvider: WhatsAppProvider = {
   async createInstance({ vps, instance_name, webhook_url, phone_number }) {
     assertReal();
 
-    const signedWebhookUrl = withWebhookSecret(webhook_url, vps.webhook_secret);
     const body: Record<string, unknown> = {
       instanceName: instance_name,
       qrcode: !phone_number,
       integration: "WHATSAPP-BAILEYS",
       webhook: {
-        url: signedWebhookUrl,
+        url: webhook_url,
+        headers: withWebhookSecretHeader(vps.webhook_secret),
         events: [
           "QRCODE_UPDATED",
           "CONNECTION_UPDATE",
@@ -396,7 +396,6 @@ export const evolutionProvider: WhatsAppProvider = {
 
   async setWebhook(ref, webhook_url): Promise<WAWebhookResult> {
     assertReal();
-    const signedWebhookUrl = withWebhookSecret(webhook_url, ref.vps.webhook_secret);
     const events = [
       "QRCODE_UPDATED",
       "CONNECTION_UPDATE",
@@ -407,7 +406,8 @@ export const evolutionProvider: WhatsAppProvider = {
     const v2Body = {
       webhook: {
         enabled: true,
-        url: signedWebhookUrl,
+        url: webhook_url,
+        headers: withWebhookSecretHeader(ref.vps.webhook_secret),
         webhookByEvents: false,
         webhookBase64: false,
         events,
@@ -424,7 +424,8 @@ export const evolutionProvider: WhatsAppProvider = {
       // fallback: Evolution v1 (flat body)
       const legacy = {
         enabled: true,
-        url: signedWebhookUrl,
+        url: webhook_url,
+        headers: withWebhookSecretHeader(ref.vps.webhook_secret),
         webhook_by_events: false,
         webhook_base64: false,
         events,
@@ -442,12 +443,12 @@ export const evolutionProvider: WhatsAppProvider = {
     }
     let endpointStatus: number | null = null;
     let endpointOk = false;
-    const probe = await probeWebhookEndpoint(signedWebhookUrl, ref.provider_instance_id);
+    const probe = await probeWebhookEndpoint(webhook_url, ref.provider_instance_id, ref.vps.webhook_secret);
     endpointStatus = probe.status;
     endpointOk = probe.ok;
     return {
       ok: endpointOk,
-      url: signedWebhookUrl,
+      url: webhook_url,
       events,
       providerStatus,
       providerResponse: providerResponse.slice(0, 500),
