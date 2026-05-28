@@ -725,7 +725,7 @@ function ForgotOtpForm({
             <KeyRound className="h-6 w-6" />
           </div>
           <h2 className="text-base font-semibold">Crie sua nova senha</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Mínimo de 6 caracteres.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Mínimo de 8 caracteres.</p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="np1">Nova senha</Label>
