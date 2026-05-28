@@ -102,16 +102,22 @@ function WhatsAppPage() {
   const sendTestFn = useServerFn(sendWhatsAppTestMessage);
   const setAiFn = useServerFn(setWhatsAppAiReply);
   const resetWebhookFn = useServerFn(resetWhatsAppWebhook);
+  const fetchDebugFn = useServerFn(getWhatsAppAutomationDebug);
   const [resettingWebhook, setResettingWebhook] = useState(false);
 
   const handleResetWebhook = async () => {
     if (!instance) return;
     setResettingWebhook(true);
     try {
-      await resetWebhookFn({ data: { instance_id: instance.id } });
-      toast.success("Webhook reconfigurado. Mande uma mensagem para testar.");
+      const result = await resetWebhookFn({ data: { instance_id: instance.id } });
+      await debugQuery.refetch();
+      toast.success(
+        result?.ok
+          ? "Conexão do WhatsApp atualizada e endpoint validado."
+          : "WhatsApp conectado, mas automação não está recebendo mensagens.",
+      );
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao reconfigurar webhook.");
+      toast.error(e?.message ?? "WhatsApp conectado, mas automação não está recebendo mensagens.");
     } finally {
       setResettingWebhook(false);
     }
@@ -143,6 +149,13 @@ function WhatsAppPage() {
 
   const instance = query.data?.instance ?? null;
   const queued = query.data?.queued ?? 0;
+  const debugQuery = useQuery({
+    queryKey: ["whatsapp-automation-debug", instance?.id],
+    queryFn: () => fetchDebugFn({ data: { instance_id: instance!.id } }),
+    enabled: !!instance?.id,
+    refetchInterval: 10000,
+  });
+  const automationDebug = debugQuery.data;
 
   useEffect(() => {
     if (instance) setBrokenConnection(false);
