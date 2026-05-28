@@ -140,7 +140,6 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SupabaseEnvBanner />
       <AuthGateApp />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
