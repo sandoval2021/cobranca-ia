@@ -3,6 +3,7 @@ import {
   LOCAL_AUTH_EVENT,
   getCurrentLocalUser,
   getCurrentRole,
+  setBridgedLocalUser,
   type LocalRole,
   type LocalUser,
 } from "@/lib/local-auth";
