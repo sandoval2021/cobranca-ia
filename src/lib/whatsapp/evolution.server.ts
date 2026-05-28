@@ -520,13 +520,19 @@ export async function pickAvailableVps(): Promise<{ id: string } | null> {
 
 export function getEvolutionWebhookUrl(instanceId: string, baseUrl?: string): string {
   const base = baseUrl || process.env.PUBLIC_APP_URL || "";
-  return `${base.replace(/\/+$/, "")}/api/public/webhooks/evolution/${instanceId}`;
+  const url = new URL(`${base.replace(/\/+$/, "")}/api/public/webhooks/evolution`);
+  url.searchParams.set("instance_id", instanceId);
+  return url.toString();
 }
 
 function webhookUrlMatchesInstance(value: string | null, instanceId: string): boolean {
   if (!value) return false;
   try {
-    return new URL(value).pathname === `/api/public/webhooks/evolution/${instanceId}`;
+    const url = new URL(value);
+    return (
+      url.pathname === `/api/public/webhooks/evolution/${instanceId}` ||
+      (url.pathname === "/api/public/webhooks/evolution" && url.searchParams.get("instance_id") === instanceId)
+    );
   } catch {
     return false;
   }
