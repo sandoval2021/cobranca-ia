@@ -2165,7 +2165,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
           )}
           {!canSave && (
             <p className="px-1 text-[10px] text-amber-700 dark:text-amber-300">
-              Preencha o vencimento{!planId ? " e o serviço/plano" : ""}{isPaid && (!macInput.trim() || !keyInput.trim()) ? ", MAC e Key" : ""} para habilitar o botão.
+              Selecione o serviço/plano{isPaid && (!macInput.trim() || !keyInput.trim()) ? ", MAC e Key" : ""} para habilitar o botão.
             </p>
           )}
           <div className="flex gap-1.5 pt-1">
