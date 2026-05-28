@@ -544,3 +544,56 @@ function MessageEditor({ service, message }: { service: ServiceItem; message: Se
     </div>
   );
 }
+
+function NewPlanForm({ onCreated, onCancel }: { onCreated: (id: string) => void; onCancel: () => void }) {
+  const [nome, setNome] = useState("");
+  const [valor, setValor] = useState("");
+  const [telas, setTelas] = useState("1");
+  const [meses, setMeses] = useState("1");
+
+  function submit() {
+    const n = nome.trim();
+    if (!n) { toast.error("Informe o nome do plano."); return; }
+    const num = Number((valor || "").replace(/\./g, "").replace(",", "."));
+    if (!isFinite(num) || num < 0) { toast.error("Valor inválido."); return; }
+    if (!ensureCanEditService().allowed) return;
+    const created = saveService({
+      nome: n,
+      preco_cents: Math.round(num * 100),
+      telas: Math.max(1, Math.round(Number(telas) || 1)),
+      meses: Math.max(1, Math.round(Number(meses) || 1)),
+    });
+    toast.success(`Plano "${created.nome}" criado`);
+    onCreated(created.id);
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-12 gap-2 items-end rounded-lg border border-border bg-card p-2.5">
+        <div className="col-span-12 sm:col-span-5">
+          <Label className="text-[11px]">Nome do plano *</Label>
+          <Input className="h-9" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Plano R$ 12" autoFocus />
+        </div>
+        <div className="col-span-4 sm:col-span-2">
+          <Label className="text-[11px]">Telas</Label>
+          <Input className="h-9" type="number" min={1} max={10} value={telas} onChange={(e) => setTelas(e.target.value)} />
+        </div>
+        <div className="col-span-4 sm:col-span-2">
+          <Label className="text-[11px]">Meses</Label>
+          <Input className="h-9" type="number" min={1} max={24} value={meses} onChange={(e) => setMeses(e.target.value)} />
+        </div>
+        <div className="col-span-4 sm:col-span-3">
+          <Label className="text-[11px]">Valor (R$) *</Label>
+          <Input className="h-9" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="12,00" />
+        </div>
+      </div>
+      <DialogFooter className="gap-2">
+        <Button variant="outline" size="sm" onClick={onCancel}>Cancelar</Button>
+        <Button size="sm" onClick={submit} className="gap-1.5">
+          <Save className="h-3.5 w-3.5" /> Salvar e continuar
+        </Button>
+      </DialogFooter>
+    </div>
+  );
+}
+
