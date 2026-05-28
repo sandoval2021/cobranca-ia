@@ -90,6 +90,7 @@ export const ownerBottomNav: NavItem[] = [
 
 // Itens que aparecem dentro do drawer "Mais" do bottom nav (apenas o que o Dono deve ver).
 export const ownerMoreNav: NavItem[] = [
+  { to: "/whatsapp", label: "WhatsApp", icon: Smartphone },
   { to: "/importar-clientes", label: "Importar clientes", icon: Upload },
   { to: "/campanhas-manuais", label: "Mensagens", icon: MessageCircle },
   { to: "/financeiro", label: "Financeiro", icon: Wallet },
@@ -101,6 +102,7 @@ export const ownerMoreNav: NavItem[] = [
   { to: "/backup", label: "Backup", icon: HardDrive },
   { to: "/ajuda", label: "Ajuda", icon: LifeBuoy },
 ];
+
 
 
 export const adminNav: NavItem[] = ownerNav;
