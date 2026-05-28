@@ -14,7 +14,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/use-auth";
 import { LoginPage, SessionLoading } from "@/components/auth/LoginPage";
-import { SupabaseEnvBanner } from "@/components/dev/SupabaseEnvBanner";
+
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
 const PUBLIC_ROUTES = new Set<string>(["/reset-password"]);
