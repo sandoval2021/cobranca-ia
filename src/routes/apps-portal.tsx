@@ -62,8 +62,12 @@ const empty: FormState = {
   sort_order: 0,
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function AppsPortalPage() {
-  const companyId = getActiveCompanyId();
+  const rawCompanyId = getActiveCompanyId();
+  const companyId = rawCompanyId && UUID_RE.test(rawCompanyId) ? rawCompanyId : null;
+
   const list = useServerFn(listPortalApps);
   const upsert = useServerFn(upsertPortalApp);
   const del = useServerFn(deletePortalApp);
