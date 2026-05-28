@@ -1794,6 +1794,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_customer_admin: {
+        Args: { p_customer_id: string }
+        Returns: undefined
+      }
       claim_super_admin_bootstrap: { Args: never; Returns: Json }
       cleanup_auth_ephemeral: { Args: never; Returns: undefined }
       create_customer_admin: {
@@ -1817,6 +1821,10 @@ export type Database = {
         Returns: number
       }
       ensure_user_default_company: { Args: never; Returns: string }
+      get_customer_details_admin: {
+        Args: { p_customer_id: string }
+        Returns: Json
+      }
       get_or_create_current_ai_cycle: {
         Args: { _company_id: string }
         Returns: {
@@ -1893,6 +1901,10 @@ export type Database = {
         }
         Returns: number
       }
+      reactivate_customer_admin: {
+        Args: { p_customer_id: string }
+        Returns: undefined
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -1900,6 +1912,27 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      renew_customer_admin: {
+        Args: {
+          p_amount_cents?: number
+          p_customer_id: string
+          p_due_date: string
+          p_notes?: string
+        }
+        Returns: Json
+      }
+      update_customer_admin: {
+        Args: {
+          p_amount_cents?: number
+          p_customer_id: string
+          p_due_day?: number
+          p_name?: string
+          p_notes?: string
+          p_status?: string
+          p_whatsapp_e164?: string
+        }
+        Returns: Json
       }
     }
     Enums: {
