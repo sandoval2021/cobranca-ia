@@ -352,7 +352,7 @@ function SignupForm({
 }
 
 /**
- * Tela de confirmação por código de 8 dígitos (cadastro).
+ * Tela de confirmação por código de 6 dígitos (cadastro).
  * Usa supabase.auth.verifyOtp({ type: "signup", email, token }).
  * Importante: o template "Confirm signup" no Supabase Auth precisa conter
  * {{ .Token }} para que o e-mail mostre o código, não só o link.
