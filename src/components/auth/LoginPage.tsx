@@ -110,19 +110,6 @@ export function LoginPage() {
             />
           )}
         </div>
-
-        <div className="mt-4 rounded-xl border border-border bg-card/60 p-3 text-[11px]">
-          <p className="mb-1 font-semibold text-muted-foreground">Conexão</p>
-          <p className="text-muted-foreground">
-            {hasUrl && supabaseAnonKeyPresent && isAnonKeyForExpectedProject
-              ? "Pronta."
-              : "Verifique configuração."}
-          </p>
-        </div>
-
-        <p className="mt-4 text-center text-[11px] text-muted-foreground">
-          Ambiente de testes — sem cobrança, WhatsApp ou IA reais.
-        </p>
       </div>
     </div>
   );
