@@ -203,6 +203,50 @@ function WhatsAppPage() {
     }
   }
 
+  async function handleToggleRejectCall(next: boolean) {
+    if (!instance) return;
+    setSavingReject(true);
+    setRejectCall(next);
+    try {
+      await setRejectFn({
+        data: {
+          instance_id: instance.id,
+          reject_call: next,
+          msg_call: next ? rejectMsg : undefined,
+        },
+      });
+      toast.success(next ? "Chamadas serão bloqueadas." : "Chamadas liberadas.");
+    } catch (e: any) {
+      setRejectCall(!next);
+      toast.error(e?.message ?? "Falha ao atualizar configuração.");
+    } finally {
+      setSavingReject(false);
+    }
+  }
+
+  async function handleSendTest() {
+    if (!instance) return;
+    const to = digitsOnly(testPhone);
+    if (to.length < 10) {
+      toast.error("Informe o número com DDI e DDD (ex.: 5511999998888).");
+      return;
+    }
+    if (!testBody.trim()) {
+      toast.error("Escreva a mensagem de teste.");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      await sendTestFn({ data: { instance_id: instance.id, to_phone: to, body: testBody.trim() } });
+      toast.success("Mensagem de teste enviada!");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao enviar teste.");
+    } finally {
+      setSendingTest(false);
+    }
+  }
+
+
   return (
     <PageContainer>
       <SectionHeader
