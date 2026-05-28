@@ -53,6 +53,8 @@ import { Route as AdminPlanosPagamentosRouteImport } from './routes/admin-planos
 import { Route as AdminDnsRotasRouteImport } from './routes/admin-dns-rotas'
 import { Route as AcessoRestritoRouteImport } from './routes/acesso-restrito'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PagamentosMercadoPagoRouteImport } from './routes/pagamentos.mercado-pago'
+import { Route as PagamentosHistoricoRouteImport } from './routes/pagamentos.historico'
 import { Route as AtendimentoIaTokenRouteImport } from './routes/atendimento-ia.$token'
 import { Route as AdminVpsRouteImport } from './routes/admin.vps'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -285,6 +287,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PagamentosMercadoPagoRoute = PagamentosMercadoPagoRouteImport.update({
+  id: '/pagamentos/mercado-pago',
+  path: '/pagamentos/mercado-pago',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagamentosHistoricoRoute = PagamentosHistoricoRouteImport.update({
+  id: '/pagamentos/historico',
+  path: '/pagamentos/historico',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AtendimentoIaTokenRoute = AtendimentoIaTokenRouteImport.update({
   id: '/atendimento-ia/$token',
   path: '/atendimento-ia/$token',
@@ -395,6 +407,8 @@ export interface FileRoutesByFullPath {
   '/whatsapp': typeof WhatsappRoute
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
+  '/pagamentos/historico': typeof PagamentosHistoricoRoute
+  '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -452,6 +466,8 @@ export interface FileRoutesByTo {
   '/whatsapp': typeof WhatsappRoute
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
+  '/pagamentos/historico': typeof PagamentosHistoricoRoute
+  '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -510,6 +526,8 @@ export interface FileRoutesById {
   '/whatsapp': typeof WhatsappRoute
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
+  '/pagamentos/historico': typeof PagamentosHistoricoRoute
+  '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -569,6 +587,8 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/admin/vps'
     | '/atendimento-ia/$token'
+    | '/pagamentos/historico'
+    | '/pagamentos/mercado-pago'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -626,6 +646,8 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/admin/vps'
     | '/atendimento-ia/$token'
+    | '/pagamentos/historico'
+    | '/pagamentos/mercado-pago'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -683,6 +705,8 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/admin/vps'
     | '/atendimento-ia/$token'
+    | '/pagamentos/historico'
+    | '/pagamentos/mercado-pago'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -741,6 +765,8 @@ export interface RootRouteChildren {
   WhatsappRoute: typeof WhatsappRoute
   AdminVpsRoute: typeof AdminVpsRoute
   AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
+  PagamentosHistoricoRoute: typeof PagamentosHistoricoRoute
+  PagamentosMercadoPagoRoute: typeof PagamentosMercadoPagoRoute
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicMpMarketplaceWebhookRoute: typeof ApiPublicMpMarketplaceWebhookRoute
   ApiPublicMpOauthCallbackRoute: typeof ApiPublicMpOauthCallbackRoute
@@ -1061,6 +1087,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pagamentos/mercado-pago': {
+      id: '/pagamentos/mercado-pago'
+      path: '/pagamentos/mercado-pago'
+      fullPath: '/pagamentos/mercado-pago'
+      preLoaderRoute: typeof PagamentosMercadoPagoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pagamentos/historico': {
+      id: '/pagamentos/historico'
+      path: '/pagamentos/historico'
+      fullPath: '/pagamentos/historico'
+      preLoaderRoute: typeof PagamentosHistoricoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/atendimento-ia/$token': {
       id: '/atendimento-ia/$token'
       path: '/atendimento-ia/$token'
@@ -1203,6 +1243,8 @@ const rootRouteChildren: RootRouteChildren = {
   WhatsappRoute: WhatsappRoute,
   AdminVpsRoute: AdminVpsRoute,
   AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
+  PagamentosHistoricoRoute: PagamentosHistoricoRoute,
+  PagamentosMercadoPagoRoute: PagamentosMercadoPagoRoute,
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicMpMarketplaceWebhookRoute: ApiPublicMpMarketplaceWebhookRoute,
   ApiPublicMpOauthCallbackRoute: ApiPublicMpOauthCallbackRoute,
@@ -1215,3 +1257,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
