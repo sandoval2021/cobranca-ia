@@ -398,7 +398,7 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
     if (!inst) return { instance: null, queued: 0 };
 
     let currentInst = inst;
-    if (inst.status !== "connected") {
+    if (inst.status !== "connected" || !inst.phone_number) {
       try {
         await syncInstanceStateFromEvolution(inst.id);
         const { data: refreshed } = await supabaseAdmin
