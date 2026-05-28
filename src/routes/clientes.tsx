@@ -2602,6 +2602,37 @@ function extractExtras(eventType: string, meta: Row): { label: string; value: st
 }
 
 // ---------- new customer sheet ----------
+// ---------- Cadastro de cliente com múltiplas telas ----------
+type ScreenDraft = {
+  uid: string;          // chave local React
+  name: string;
+  serverId: string;     // "__none__" ou id real
+  app: AppKey | "__none__";
+  username: string;
+  password: string;
+  mac: string;
+  appKey: string;
+  appDueDate: string;   // yyyy-mm-dd
+  planValue: string;    // valor mensal opcional da tela
+  showKey: boolean;
+};
+
+function makeScreenDraft(index: number): ScreenDraft {
+  return {
+    uid: `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}_${index}`,
+    name: `Tela ${index}`,
+    serverId: "__none__",
+    app: "__none__",
+    username: "",
+    password: "",
+    mac: "",
+    appKey: "",
+    appDueDate: "",
+    planValue: "",
+    showKey: false,
+  };
+}
+
 function NewCustomerSheet({
   open,
   onClose,
@@ -2617,30 +2648,30 @@ function NewCustomerSheet({
   const [whatsapp, setWhatsapp] = useState("");
   const [countryCode, setCountryCode] = useState<string>("BR");
   const [customDdi, setCustomDdi] = useState("");
-  const [serverId, setServerId] = useState<string>("__none__");
-  const [serverIdExtra, setServerIdExtra] = useState<string>("__none__");
-  const [app, setApp] = useState<AppKey | "__none__">("__none__");
   const [amount, setAmount] = useState("");
-  const [dueDate, setDueDate] = useState(""); // yyyy-mm-dd (data completa do cliente)
+  const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
-  // Campos de app pago — UI agora; persistência segura definitiva virá com backend.
-  const [mac, setMac] = useState("");
-  const [appKey, setAppKey] = useState("");
-  const [showKey, setShowKey] = useState(false);
-  const [appDueDate, setAppDueDate] = useState(""); // yyyy-mm-dd
+  const [screens, setScreens] = useState<ScreenDraft[]>([makeScreenDraft(1)]);
   const [busy, setBusy] = useState(false);
-
-  const paidApp = app !== "__none__" && APP_CATALOG[app]?.tier === "pago";
 
   useEffect(() => {
     if (open) {
       setName(""); setWhatsapp(""); setCountryCode("BR"); setCustomDdi("");
-      setServerId("__none__"); setServerIdExtra("__none__");
-      setApp("__none__"); setAmount(""); setDueDate(""); setNotes("");
-      setMac(""); setAppKey(""); setShowKey(false); setAppDueDate("");
+      setAmount(""); setDueDate(""); setNotes("");
+      setScreens([makeScreenDraft(1)]);
       setBusy(false);
     }
   }, [open]);
+
+  const updateScreen = (uid: string, patch: Partial<ScreenDraft>) => {
+    setScreens((prev) => prev.map((s) => (s.uid === uid ? { ...s, ...patch } : s)));
+  };
+  const removeScreen = (uid: string) => {
+    setScreens((prev) => (prev.length <= 1 ? prev : prev.filter((s) => s.uid !== uid)));
+  };
+  const addScreen = () => {
+    setScreens((prev) => [...prev, makeScreenDraft(prev.length + 1)]);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2654,17 +2685,24 @@ function NewCustomerSheet({
     if (amount.trim() && (amt == null || Number.isNaN(amt) || amt < 0)) {
       toast.error("Informe um valor válido."); return;
     }
-    // Converte data completa (yyyy-mm-dd) para dia do mês (1-31)
-    // Backend atual ainda só persiste p_due_day; data completa virá com backend futuro.
     let dd: number | null = null;
     if (dueDate.trim()) {
       const parsed = new Date(dueDate + "T00:00:00");
-      if (isNaN(+parsed)) {
-        toast.error("Informe uma data de vencimento válida.");
-        return;
-      }
+      if (isNaN(+parsed)) { toast.error("Informe uma data de vencimento válida."); return; }
       dd = parsed.getDate();
     }
+
+    // Valida telas preenchidas
+    const filledScreens = screens.filter(
+      (s) => s.app !== "__none__" || s.serverId !== "__none__" || s.mac.trim() || s.appKey.trim() || s.username.trim()
+    );
+    for (const s of filledScreens) {
+      if (!s.name.trim()) { toast.error("Cada tela precisa de um nome."); return; }
+      if (s.appDueDate.trim() && isNaN(+new Date(s.appDueDate + "T00:00:00"))) {
+        toast.error(`Vencimento inválido na ${s.name}.`); return;
+      }
+    }
+
     if (!supabase) { toast.error("Conexão indisponível."); return; }
     setBusy(true);
     const { accountId: companyId, error: companyErr } = await getActiveAccountId();
@@ -2675,7 +2713,6 @@ function NewCustomerSheet({
       return;
     }
 
-
     const payload = {
       p_company_id: companyId,
       p_name: name.trim() || "Cliente",
@@ -2684,26 +2721,11 @@ function NewCustomerSheet({
       p_due_day: dd,
       p_notes: notes.trim() || null,
     };
-    const safeCompanyMask = typeof companyId === "string" && companyId.length >= 8
-      ? `${companyId.slice(0, 4)}…${companyId.slice(-4)}`
-      : "***";
-    console.info("[customer-create] payload seguro", {
-      companyId: safeCompanyMask,
-      whatsapp_e164: payload.p_whatsapp_e164,
-      amount_cents: payload.p_amount_cents,
-      due_day: payload.p_due_day,
-      name_present: Boolean(name.trim()),
-    });
-    const { error } = await supabase.rpc("create_customer_admin", payload);
+    const { data: newCustomerId, error } = await supabase.rpc("create_customer_admin", payload);
     if (error) {
       setBusy(false);
       const e = error as { code?: string; message?: string; details?: string; hint?: string };
-      console.warn("[customer-create] error", {
-        code: e.code ?? null,
-        message: e.message ?? null,
-        details: e.details ?? null,
-        hint: e.hint ?? null,
-      });
+      console.warn("[customer-create] error", { code: e.code, message: e.message, details: e.details, hint: e.hint });
       const msg = (e.message ?? "").toLowerCase();
       const code = e.code ?? "";
       let friendly = "Não foi possível salvar o cliente. Verifique os dados e tente novamente.";
@@ -2722,14 +2744,48 @@ function NewCustomerSheet({
       return;
     }
 
-    const hadServiceSelection =
-      serverId !== "__none__" || serverIdExtra !== "__none__" || app !== "__none__";
+    // Persiste telas locais (mesma camada usada pelo AppScreensSection)
+    const customerId = typeof newCustomerId === "string" ? newCustomerId : null;
+    if (customerId && filledScreens.length > 0) {
+      const now = new Date().toISOString();
+      for (const s of filledScreens) {
+        const appKey: AppKey = s.app === "__none__" ? "outro" : s.app;
+        const meta = APP_CATALOG[appKey];
+        const serverEntry = s.serverId !== "__none__" ? getServerById(s.serverId) : null;
+        try {
+          upsertScreen({
+            id: newId(),
+            customer_id: customerId,
+            company_id: companyId,
+            name: s.name.trim() || "Tela",
+            app: appKey,
+            tier: meta.tier,
+            access_type: meta.access,
+            status: "ativa",
+            username: s.username.trim() || undefined,
+            password: s.password || undefined,
+            mac: s.mac.trim() || undefined,
+            app_key: s.appKey.trim() || undefined,
+            app_due_date: s.appDueDate || undefined,
+            plan_value: s.planValue.trim() || undefined,
+            server: serverEntry?.name,
+            primary_server_id: serverEntry?.id,
+            server_ids: serverEntry ? [serverEntry.id] : undefined,
+            created_at: now,
+            updated_at: now,
+          });
+        } catch (err) {
+          console.warn("[customer-create] falha ao salvar tela", err);
+        }
+      }
+    }
 
     setBusy(false);
-    toast.success("Cliente cadastrado com sucesso.");
-    if (hadServiceSelection) {
-      toast.message("Cliente cadastrado. Servidor e aplicativo poderão ser vinculados depois.");
-    }
+    toast.success(
+      filledScreens.length > 0
+        ? `Cliente cadastrado com ${filledScreens.length} tela${filledScreens.length > 1 ? "s" : ""}.`
+        : "Cliente cadastrado com sucesso."
+    );
     onCreated();
     onClose();
   };
@@ -2740,10 +2796,10 @@ function NewCustomerSheet({
         <SheetHeader className="border-b border-border px-4 py-3">
           <SheetTitle className="text-base">Novo cliente</SheetTitle>
           <SheetDescription className="text-xs">
-            Preencha os dados essenciais. Tudo pode ser editado depois.
+            Preencha os dados essenciais e adicione quantas telas precisar.
           </SheetDescription>
         </SheetHeader>
-        <form onSubmit={submit} className="flex-1 space-y-3 px-3 py-3">
+        <form onSubmit={submit} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
           {/* Dados do cliente */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
             <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Dados do cliente</h3>
@@ -2802,111 +2858,184 @@ function NewCustomerSheet({
             </div>
           </section>
 
-          {/* Serviço */}
+          {/* Telas */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
-            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Serviço</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Servidor</Label>
-                <Select value={serverId} onValueChange={setServerId}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Selecionar</SelectItem>
-                    {servers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Servidor adicional</Label>
-                <Select value={serverIdExtra} onValueChange={setServerIdExtra}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Opcional" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Nenhum</SelectItem>
-                    {servers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1 col-span-2">
-                <Label className="text-xs">Aplicativo</Label>
-                <Select value={app} onValueChange={(v) => setApp(v as AppKey | "__none__")}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar app" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Não informar</SelectItem>
-                    {APP_OPTIONS.map((k) => (
-                      <SelectItem key={k} value={k}>
-                        {APP_CATALOG[k].label}{APP_CATALOG[k].tier === "pago" ? " (pago)" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Telas ({screens.length})
+              </h3>
+              <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={addScreen}>
+                <Plus className="h-3.5 w-3.5" /> Adicionar tela
+              </Button>
             </div>
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Cada tela tem servidor, app e credenciais próprias. Deixe em branco se ainda não souber — pode preencher depois.
+            </p>
+
+            {screens.map((s, idx) => {
+              const meta = s.app !== "__none__" ? APP_CATALOG[s.app] : null;
+              const isPaid = meta?.tier === "pago";
+              const isUserPass = meta?.access === "user_pass";
+              return (
+                <div key={s.uid} className="space-y-2 rounded-md border border-border bg-background/60 p-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={s.name}
+                      onChange={(e) => updateScreen(s.uid, { name: e.target.value })}
+                      placeholder={`Tela ${idx + 1}`}
+                      maxLength={40}
+                      className="h-8 flex-1 text-sm font-medium"
+                    />
+                    {screens.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeScreen(s.uid)}
+                        aria-label="Remover tela"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Servidor</Label>
+                      <Select value={s.serverId} onValueChange={(v) => updateScreen(s.uid, { serverId: v })}>
+                        <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Sem servidor</SelectItem>
+                          {servers.map((sv) => <SelectItem key={sv.id} value={sv.id}>{sv.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Aplicativo</Label>
+                      <Select
+                        value={s.app}
+                        onValueChange={(v) => updateScreen(s.uid, { app: v as AppKey | "__none__" })}
+                      >
+                        <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar app" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Não informar</SelectItem>
+                          {APP_OPTIONS.map((k) => (
+                            <SelectItem key={k} value={k}>
+                              {APP_CATALOG[k].label}{APP_CATALOG[k].tier === "pago" ? " (pago)" : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {isUserPass && (
+                      <>
+                        <div className="space-y-1">
+                          <Label className="text-[11px]">Usuário do servidor</Label>
+                          <Input
+                            value={s.username}
+                            onChange={(e) => updateScreen(s.uid, { username: e.target.value })}
+                            maxLength={64}
+                            placeholder="usuário"
+                            autoComplete="off"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px]">Senha do servidor</Label>
+                          <div className="relative">
+                            <Input
+                              value={s.password}
+                              onChange={(e) => updateScreen(s.uid, { password: e.target.value })}
+                              type={s.showKey ? "text" : "password"}
+                              maxLength={64}
+                              placeholder="••••••"
+                              autoComplete="new-password"
+                              className="pr-9"
+                            />
+                            <button
+                              type="button"
+                              aria-label={s.showKey ? "Ocultar senha" : "Mostrar senha"}
+                              onClick={() => updateScreen(s.uid, { showKey: !s.showKey })}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted"
+                            >
+                              {s.showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {isPaid && (
+                      <>
+                        <div className="space-y-1">
+                          <Label className="text-[11px]">MAC</Label>
+                          <Input
+                            value={s.mac}
+                            onChange={(e) => updateScreen(s.uid, { mac: e.target.value })}
+                            placeholder="00:1A:79:00:00:00"
+                            maxLength={32}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px]">Key</Label>
+                          <div className="relative">
+                            <Input
+                              value={s.appKey}
+                              onChange={(e) => updateScreen(s.uid, { appKey: e.target.value })}
+                              type={s.showKey ? "text" : "password"}
+                              placeholder="••••••"
+                              maxLength={64}
+                              className="pr-9"
+                            />
+                            <button
+                              type="button"
+                              aria-label={s.showKey ? "Ocultar key" : "Mostrar key"}
+                              onClick={() => updateScreen(s.uid, { showKey: !s.showKey })}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted"
+                            >
+                              {s.showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Vencimento da tela</Label>
+                      <Input
+                        type="date"
+                        value={s.appDueDate}
+                        onChange={(e) => updateScreen(s.uid, { appDueDate: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Valor mensal</Label>
+                      <Input
+                        value={s.planValue}
+                        onChange={(e) => updateScreen(s.uid, { planValue: e.target.value })}
+                        placeholder="0,00"
+                        inputMode="decimal"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </section>
 
-          {/* Dados do app pago — visível somente para apps pagos */}
-          {paidApp && (
-            <section className="space-y-2 rounded-lg border border-amber-300/50 bg-amber-50/40 p-2.5 dark:border-amber-500/30 dark:bg-amber-500/5">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-                Dados do app pago
-              </h3>
-              <p className="text-[11px] leading-snug text-muted-foreground">
-                MAC e Key ainda dependem da proteção segura no servidor para serem salvos de forma definitiva.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1">
-                    <Label className="text-xs">MAC</Label>
-                    <HelpTip text="Endereço MAC do aparelho. Opcional. Persistência segura virá com o backend." />
-                  </div>
-                  <Input value={mac} onChange={(e) => setMac(e.target.value)} placeholder="00:1A:79:00:00:00" maxLength={32} />
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1">
-                    <Label className="text-xs">Key</Label>
-                    <HelpTip text="Chave do app pago. Opcional. Persistência segura virá com o backend." />
-                  </div>
-                  <div className="relative">
-                    <Input
-                      value={appKey}
-                      onChange={(e) => setAppKey(e.target.value)}
-                      type={showKey ? "text" : "password"}
-                      placeholder="••••••"
-                      maxLength={64}
-                      className="pr-9"
-                    />
-                    <button
-                      type="button"
-                      aria-label={showKey ? "Ocultar key" : "Mostrar key"}
-                      onClick={() => setShowKey((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted"
-                    >
-                      {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <div className="flex items-center gap-1">
-                    <Label className="text-xs">Vencimento do app</Label>
-                    <HelpTip text="Escolha quando o app pago do cliente vence. Será salvo quando a persistência do app estiver ativada no servidor." />
-                  </div>
-                  <Input type="date" value={appDueDate} onChange={(e) => setAppDueDate(e.target.value)} />
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Cobrança */}
+          {/* Cobrança consolidada */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
             <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Cobrança</h3>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label className="text-xs">Valor mensal</Label>
+                <Label className="text-xs">Valor mensal total</Label>
                 <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" inputMode="decimal" />
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-1">
                   <Label className="text-xs">Data de vencimento</Label>
-                  <HelpTip text="Escolha a data em que a mensalidade do cliente vence. Por enquanto o sistema usa o dia dessa data para cobrança mensal." />
+                  <HelpTip text="Escolha a data em que a mensalidade do cliente vence." />
                 </div>
                 <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
               </div>
@@ -2931,6 +3060,7 @@ function NewCustomerSheet({
     </Sheet>
   );
 }
+
 
 // ---------- Aplicativos do cliente (dialog rápido, com add/edit inline) ----------
 type DraftScreen = {
