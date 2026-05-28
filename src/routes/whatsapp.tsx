@@ -12,6 +12,7 @@ import {
   KeyRound,
   PhoneOff,
   Send,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -32,6 +33,7 @@ import {
   ensureMyCompany,
   setWhatsAppRejectCall,
   sendWhatsAppTestMessage,
+  setWhatsAppAiReply,
 } from "@/lib/whatsapp/whatsapp.functions";
 
 export const Route = createFileRoute("/whatsapp")({
@@ -84,6 +86,9 @@ function WhatsAppPage() {
   const [testPhone, setTestPhone] = useState("");
   const [testBody, setTestBody] = useState("Olá! Esta é uma mensagem de teste do CobraEasy.");
   const [sendingTest, setSendingTest] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [savingAi, setSavingAi] = useState(false);
 
   const ensureCompany = useServerFn(ensureMyCompany);
   const fetchData = useServerFn(getCompanyWhatsApp);
@@ -92,6 +97,7 @@ function WhatsAppPage() {
   const disconnectFn = useServerFn(disconnectWhatsAppInstance);
   const setRejectFn = useServerFn(setWhatsAppRejectCall);
   const sendTestFn = useServerFn(sendWhatsAppTestMessage);
+  const setAiFn = useServerFn(setWhatsAppAiReply);
 
   // Garante uma empresa real (UUID) no backend para o usuário logado.
   useEffect(() => {
@@ -121,6 +127,13 @@ function WhatsAppPage() {
 
   useEffect(() => {
     if (instance) setBrokenConnection(false);
+    const anyInst = instance as any;
+    if (anyInst && typeof anyInst.ai_reply_enabled === "boolean") {
+      setAiEnabled(anyInst.ai_reply_enabled);
+    }
+    if (anyInst && typeof anyInst.ai_system_prompt === "string") {
+      setAiPrompt(anyInst.ai_system_prompt);
+    }
   }, [instance]);
 
   function digitsOnly(v: string) {
@@ -245,6 +258,34 @@ function WhatsAppPage() {
       setSendingTest(false);
     }
   }
+
+  async function handleSaveAi(nextEnabled?: boolean) {
+    if (!instance) return;
+    const enabled = typeof nextEnabled === "boolean" ? nextEnabled : aiEnabled;
+    setSavingAi(true);
+    if (typeof nextEnabled === "boolean") setAiEnabled(nextEnabled);
+    try {
+      await setAiFn({
+        data: {
+          instance_id: instance.id,
+          enabled,
+          system_prompt: aiPrompt.trim() || null,
+        },
+      });
+      toast.success(
+        enabled
+          ? "Respostas automáticas por IA ativadas."
+          : "Respostas automáticas desativadas.",
+      );
+    } catch (e: any) {
+      if (typeof nextEnabled === "boolean") setAiEnabled(!nextEnabled);
+      toast.error(e?.message ?? "Falha ao salvar configuração de IA.");
+    } finally {
+      setSavingAi(false);
+    }
+  }
+
+
 
 
   return (
@@ -473,6 +514,46 @@ function WhatsAppPage() {
                   />
                 </div>
               )}
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-medium flex items-center gap-2">
+                    <Bot className="w-4 h-4" /> Responder automaticamente com IA
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Quando um cliente mandar mensagem, a IA gera e envia uma resposta
+                    usando os dados da empresa e do cadastro do cliente.
+                  </p>
+                </div>
+                <Switch
+                  checked={aiEnabled}
+                  onCheckedChange={(v) => handleSaveAi(v)}
+                  disabled={savingAi || instance.status !== "connected"}
+                />
+              </div>
+              <div className="mt-3 space-y-2">
+                <Label htmlFor="aiPrompt" className="text-xs">
+                  Instruções para a IA (opcional)
+                </Label>
+                <Textarea
+                  id="aiPrompt"
+                  rows={4}
+                  placeholder="Ex.: Você é o atendente da Loja X. Responda em português, seja breve e nunca prometa descontos."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleSaveAi()}
+                  disabled={savingAi}
+                >
+                  {savingAi && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Salvar instruções
+                </Button>
+              </div>
             </div>
 
             <div className="border-t pt-4 space-y-2">

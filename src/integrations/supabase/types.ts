@@ -462,8 +462,60 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_inbound_messages: {
+        Row: {
+          body: string | null
+          company_id: string
+          created_at: string
+          from_phone: string
+          id: string
+          instance_id: string
+          provider_msg_id: string
+          replied_at: string | null
+          reply_error: string | null
+          reply_status: string
+          reply_text: string | null
+        }
+        Insert: {
+          body?: string | null
+          company_id: string
+          created_at?: string
+          from_phone: string
+          id?: string
+          instance_id: string
+          provider_msg_id: string
+          replied_at?: string | null
+          reply_error?: string | null
+          reply_status?: string
+          reply_text?: string | null
+        }
+        Update: {
+          body?: string | null
+          company_id?: string
+          created_at?: string
+          from_phone?: string
+          id?: string
+          instance_id?: string
+          provider_msg_id?: string
+          replied_at?: string | null
+          reply_error?: string | null
+          reply_status?: string
+          reply_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_inbound_messages_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_instances: {
         Row: {
+          ai_reply_enabled: boolean
+          ai_system_prompt: string | null
           company_id: string
           created_at: string
           daily_limit: number
@@ -484,6 +536,8 @@ export type Database = {
           vps_node_id: string
         }
         Insert: {
+          ai_reply_enabled?: boolean
+          ai_system_prompt?: string | null
           company_id: string
           created_at?: string
           daily_limit?: number
@@ -504,6 +558,8 @@ export type Database = {
           vps_node_id: string
         }
         Update: {
+          ai_reply_enabled?: boolean
+          ai_system_prompt?: string | null
           company_id?: string
           created_at?: string
           daily_limit?: number

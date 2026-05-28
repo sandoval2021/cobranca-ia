@@ -387,7 +387,34 @@ export const sendWhatsAppTestMessage = createServerFn({ method: "POST" })
   });
 
 
-// -------- enqueue --------
+// -------- set AI auto-reply settings --------
+export const setWhatsAppAiReply = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        instance_id: z.string().uuid(),
+        enabled: z.boolean(),
+        system_prompt: z.string().max(2000).optional().nullable(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const ref = await loadInstanceRef(data.instance_id);
+    if (!ref) throw new Error("not_found");
+    await assertCompanyAccess(supabase, userId, ref.company_id);
+    await supabaseAdmin
+      .from("whatsapp_instances")
+      .update({
+        ai_reply_enabled: data.enabled,
+        ai_system_prompt: data.system_prompt ?? null,
+      } as any)
+      .eq("id", ref.id);
+    return { ok: true };
+  });
+
+
 export const enqueueWhatsAppMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -436,7 +463,7 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
     const { data: inst } = await supabaseAdmin
       .from("whatsapp_instances")
       .select(
-        "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id",
+        "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id, ai_reply_enabled, ai_system_prompt",
       )
       .eq("company_id", data.company_id)
       .maybeSingle();
@@ -457,7 +484,7 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
         const { data: refreshed } = await supabaseAdmin
           .from("whatsapp_instances")
           .select(
-            "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id",
+            "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at, provider_instance_id, ai_reply_enabled, ai_system_prompt",
           )
           .eq("id", inst.id)
           .maybeSingle();
