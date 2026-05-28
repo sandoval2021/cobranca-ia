@@ -92,5 +92,19 @@ export function friendlyAuthError(msg: string): string {
     return "Muitas tentativas. Aguarde um momento.";
   if (m.includes("network") || m.includes("fetch"))
     return "Falha de conexão. Tente novamente.";
+  if (
+    m.includes("weak") ||
+    m.includes("pwned") ||
+    m.includes("known to be") ||
+    m.includes("easy to guess") ||
+    m.includes("compromised")
+  )
+    return "Essa senha é muito comum ou já apareceu em vazamentos públicos. Escolha uma senha diferente, combinando letras, números e símbolos.";
+  if (m.includes("password should be at least"))
+    return "A senha precisa ter pelo menos 6 caracteres.";
+  if (m.includes("user already registered") || m.includes("already exists"))
+    return "Já existe uma conta com este e-mail. Faça login ou recupere sua senha.";
+  if (m.includes("invalid email") || m.includes("email address") && m.includes("invalid"))
+    return "E-mail inválido. Verifique e tente de novo.";
   return msg;
 }
