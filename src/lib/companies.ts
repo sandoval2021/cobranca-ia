@@ -537,6 +537,12 @@ export function ensureLocalAccount(
       status: "ativo",
     });
   }
+  // Define como empresa "atual" se ainda não houver — evita que telas que
+  // dependem de getCurrentCompanyId() (ex.: WhatsApp) fiquem em branco logo
+  // após o cadastro.
+  if (!getCurrentCompanyId()) {
+    setCurrentCompany(chosen.id);
+  }
   return chosen;
 }
 
