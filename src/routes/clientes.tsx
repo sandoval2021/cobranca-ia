@@ -2929,7 +2929,7 @@ function NewCustomerSheet({
                       </Select>
                     </div>
 
-                    {isUserPass && (
+                    {s.app !== "__none__" && (
                       <>
                         <div className="space-y-1">
                           <Label className="text-[11px]">Usuário do servidor</Label>
@@ -2965,6 +2965,7 @@ function NewCustomerSheet({
                         </div>
                       </>
                     )}
+
 
                     {isPaid && (
                       <>
