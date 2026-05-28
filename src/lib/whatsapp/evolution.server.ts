@@ -533,15 +533,9 @@ export async function inspectEvolutionWebhook(ref: WAInstanceRef): Promise<WAWeb
   );
   const savedUrl = provider.data?.url || provider.data?.webhook?.url || null;
   const savedEvents = provider.data?.events || provider.data?.webhook?.events || [];
-  let endpointStatus: number | null = null;
-  let endpointOk = false;
-  try {
-    const endpoint = await fetch(expectedUrl, { method: "GET" });
-    endpointStatus = endpoint.status;
-    endpointOk = endpoint.ok;
-  } catch {
-    endpointStatus = 0;
-  }
+  const probe = await probeWebhookEndpoint(expectedUrl, ref.provider_instance_id);
+  const endpointStatus = probe.status;
+  const endpointOk = probe.ok;
   const hasEvents = events.every((event) => Array.isArray(savedEvents) && savedEvents.includes(event));
   const urlOk = typeof savedUrl === "string" && savedUrl.startsWith(getEvolutionWebhookUrl(ref.id));
   return {
