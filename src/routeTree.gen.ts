@@ -58,6 +58,7 @@ import { Route as PagamentosMercadoPagoRouteImport } from './routes/pagamentos.m
 import { Route as PagamentosHistoricoRouteImport } from './routes/pagamentos.historico'
 import { Route as AtendimentoIaTokenRouteImport } from './routes/atendimento-ia.$token'
 import { Route as AdminVpsRouteImport } from './routes/admin.vps'
+import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -313,6 +314,11 @@ const AdminVpsRoute = AdminVpsRouteImport.update({
   path: '/admin/vps',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminMarketplaceRoute = AdminMarketplaceRouteImport.update({
+  id: '/admin/marketplace',
+  path: '/admin/marketplace',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -411,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/whatsapp': typeof WhatsappRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
@@ -471,6 +478,7 @@ export interface FileRoutesByTo {
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/whatsapp': typeof WhatsappRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
@@ -532,6 +540,7 @@ export interface FileRoutesById {
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/whatsapp': typeof WhatsappRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
@@ -594,6 +603,7 @@ export interface FileRouteTypes {
     | '/seguranca-local'
     | '/testes'
     | '/whatsapp'
+    | '/admin/marketplace'
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/pagamentos/historico'
@@ -654,6 +664,7 @@ export interface FileRouteTypes {
     | '/seguranca-local'
     | '/testes'
     | '/whatsapp'
+    | '/admin/marketplace'
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/pagamentos/historico'
@@ -714,6 +725,7 @@ export interface FileRouteTypes {
     | '/seguranca-local'
     | '/testes'
     | '/whatsapp'
+    | '/admin/marketplace'
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/pagamentos/historico'
@@ -775,6 +787,7 @@ export interface RootRouteChildren {
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
   WhatsappRoute: typeof WhatsappRoute
+  AdminMarketplaceRoute: typeof AdminMarketplaceRoute
   AdminVpsRoute: typeof AdminVpsRoute
   AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
   PagamentosHistoricoRoute: typeof PagamentosHistoricoRoute
@@ -1135,6 +1148,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVpsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/marketplace': {
+      id: '/admin/marketplace'
+      path: '/admin/marketplace'
+      fullPath: '/admin/marketplace'
+      preLoaderRoute: typeof AdminMarketplaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/queue/process': {
       id: '/lovable/email/queue/process'
       path: '/lovable/email/queue/process'
@@ -1261,6 +1281,7 @@ const rootRouteChildren: RootRouteChildren = {
   SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
   WhatsappRoute: WhatsappRoute,
+  AdminMarketplaceRoute: AdminMarketplaceRoute,
   AdminVpsRoute: AdminVpsRoute,
   AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
   PagamentosHistoricoRoute: PagamentosHistoricoRoute,
@@ -1278,3 +1299,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
