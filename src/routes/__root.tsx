@@ -140,6 +140,58 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // Auto-recuperação: se um server function falhar com "Invalid token"
+  // (sessão obsoleta após rotação de chaves JWT do Supabase), limpamos a
+  // sessão local e mandamos pra tela de login em vez de mostrar erro.
+  useEffect(() => {
+    function isInvalidTokenError(reason: unknown): boolean {
+      const msg =
+        (reason instanceof Error && reason.message) ||
+        (typeof reason === "string" ? reason : "") ||
+        (typeof reason === "object" && reason && "message" in reason
+          ? String((reason as { message?: unknown }).message ?? "")
+          : "");
+      return /Unauthorized:\s*Invalid token|invalid (JWT|token)|bad_jwt/i.test(msg);
+    }
+
+    let recovering = false;
+    async function recover() {
+      if (recovering) return;
+      recovering = true;
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // ignore
+      }
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {
+        // ignore
+      }
+      window.location.replace("/");
+    }
+
+    const onRejection = (e: PromiseRejectionEvent) => {
+      if (isInvalidTokenError(e.reason)) {
+        e.preventDefault();
+        void recover();
+      }
+    };
+    const onError = (e: ErrorEvent) => {
+      if (isInvalidTokenError(e.error ?? e.message)) {
+        e.preventDefault();
+        void recover();
+      }
+    };
+    window.addEventListener("unhandledrejection", onRejection);
+    window.addEventListener("error", onError);
+    return () => {
+      window.removeEventListener("unhandledrejection", onRejection);
+      window.removeEventListener("error", onError);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthGateApp />
