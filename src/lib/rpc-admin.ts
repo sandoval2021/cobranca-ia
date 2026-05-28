@@ -156,14 +156,14 @@ const ACCOUNT_CACHE_KEY = "cobranca_ia_active_account_id_v1";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** True se for UUID válido. Bloqueia IDs locais ("co_", "local_", "demo_", "tmp_"). */
+/** True se for UUID válido. Bloqueia IDs locais ("co_", "local_", "tmp_"). */
 export function isUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_RE.test(value.trim());
 }
 
 /**
  * Obtém o UUID real da conta ativa para RPCs Supabase.
- * NUNCA retorna ID local começando com "co_", "local_", "demo_", "tmp_".
+ * NUNCA retorna ID local começando com "co_", "local_", "tmp_".
  */
 export async function getActiveAccountId(): Promise<{
   accountId: string | null;
@@ -196,7 +196,7 @@ export async function getActiveAccountId(): Promise<{
     return { accountId: id, error: null as RpcErr | null };
   };
 
-  // 1) "Visualizando como" — só se UUID real (super admin)
+  // 1) Seleção manual de conta — só se UUID real
   try {
     const currentId = getCurrentCompanyId();
     if (currentId && isUuid(currentId)) {
