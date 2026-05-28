@@ -159,12 +159,37 @@ export async function handleInboundForAiReply(
       ],
       max_tokens: 280,
       temperature: 0.4,
+      timeout_ms: 25_000,
     });
     const reply = result.text?.trim();
     if (!reply) throw new Error("resposta vazia");
 
+    await logWhatsAppAutomation({
+      instance_id: inst.id,
+      company_id: inst.company_id,
+      event_type: "ai_reply_generated",
+      status: "ok",
+      provider_event: payload?.event ?? payload?.type ?? null,
+      provider_instance: ref.provider_instance_id,
+      from_phone: parts.fromPhone,
+      message_preview: reply,
+      details: { model: result.model, usage: result.usage },
+    });
+
     const send = await evolutionProvider.sendText(ref, parts.fromPhone, reply);
     if (!send.ok) throw new Error(send.error || "falha ao enviar");
+
+    await logWhatsAppAutomation({
+      instance_id: inst.id,
+      company_id: inst.company_id,
+      event_type: "whatsapp_reply_sent",
+      status: "ok",
+      provider_event: payload?.event ?? payload?.type ?? null,
+      provider_instance: ref.provider_instance_id,
+      from_phone: parts.fromPhone,
+      message_preview: reply,
+      details: { providerMsgId: send.provider_msg_id ?? null },
+    });
 
     await supabaseAdmin
       .from("whatsapp_inbound_messages")
@@ -185,6 +210,17 @@ export async function handleInboundForAiReply(
 
     return { handled: true };
   } catch (err: any) {
+    await logWhatsAppAutomation({
+      instance_id: inst.id,
+      company_id: inst.company_id,
+      event_type: "ai_pipeline_error",
+      status: "error",
+      provider_event: payload?.event ?? payload?.type ?? null,
+      provider_instance: ref.provider_instance_id,
+      from_phone: parts.fromPhone,
+      message_preview: parts.text,
+      error: String(err?.message ?? err),
+    });
     await supabaseAdmin
       .from("whatsapp_inbound_messages")
       .update({
