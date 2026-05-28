@@ -29,7 +29,7 @@ export async function logWhatsAppAutomation(entry: WhatsAppAutomationLogInput): 
       provider_instance: trim(entry.provider_instance, 160),
       from_phone: trim(entry.from_phone, 40),
       message_preview: trim(entry.message_preview, 240),
-      details: entry.details ?? {},
+      details: (entry.details ?? {}) as any,
       error: trim(entry.error, 500),
     });
     if (error) console.error("[wa-automation-log] insert failed", error.message);
