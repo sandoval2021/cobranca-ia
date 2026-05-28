@@ -1805,6 +1805,7 @@ function extractList(raw: Row, keys: string[]): Row[] {
 function InlineScreensManager({ customerId }: { customerId: string }) {
   const [screens, setScreens] = useState<AppScreen[]>(() => listScreens(customerId));
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState("");
   const [app, setApp] = useState<AppKey>("xciptv");
   const [serverId, setServerId] = useState<string>("");
@@ -1813,6 +1814,8 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
   const [macInput, setMacInput] = useState("");
   const [keyInput, setKeyInput] = useState("");
   const [appDueDate, setAppDueDate] = useState("");
+  const [usernameInput, setUsernameInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
 
   const [servicesVersion, setServicesVersion] = useState(0);
   const refresh = () => setScreens(listScreens(customerId));
@@ -1832,7 +1835,10 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
   const servers = listActiveServers();
   const services = useMemo(() => listActiveServices(), [servicesVersion]);
   const active = screens.filter((s) => s.status !== "arquivada");
-  const isPaid = APP_CATALOG[app]?.tier === "pago";
+  const meta = APP_CATALOG[app];
+  const isPaid = meta?.tier === "pago";
+  const accessKind = meta?.access ?? "nao_informado";
+  const showUserPass = accessKind === "user_pass" || accessKind === "mac_key" || isPaid;
 
   const resetForm = () => {
     setDueDate("");
@@ -1843,11 +1849,31 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
     setMacInput("");
     setKeyInput("");
     setAppDueDate("");
+    setUsernameInput("");
+    setPasswordInput("");
+    setEditingId(null);
   };
+
+  const startEdit = (s: AppScreen) => {
+    setEditingId(s.id);
+    setDueDate(s.due_date ?? "");
+    setApp(s.app);
+    setServerId(s.primary_server_id || s.server_ids?.[0] || "");
+    setName(s.name ?? "");
+    setPlanId(s.plan_id ?? "");
+    setMacInput(s.mac ?? "");
+    setKeyInput(s.app_key ?? "");
+    setAppDueDate(s.app_due_date ?? "");
+    setUsernameInput(s.username ?? "");
+    setPasswordInput(s.password ?? "");
+    setAdding(true);
+  };
+
+  const canSave = Boolean(dueDate) && Boolean(planId) && (!isPaid || (macInput.trim() && keyInput.trim()));
 
   const handleAdd = () => {
     if (!dueDate) {
-      toast.error("Informe a data de vencimento.");
+      toast.error("Informe a data de vencimento da tela.");
       return;
     }
     if (!planId) {
@@ -1860,15 +1886,16 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
     }
     const plan = services.find((s) => s.id === planId);
     const now = new Date().toISOString();
-    const screenName = name.trim() || `Tela ${active.length + 1}`;
-    const meta = APP_CATALOG[app];
+    const existing = editingId ? screens.find((s) => s.id === editingId) : null;
+    const screenName = name.trim() || existing?.name || `Tela ${active.length + 1}`;
+    const m = APP_CATALOG[app];
     upsertScreen({
-      id: newId(),
+      id: editingId || newId(),
       customer_id: customerId,
       name: screenName,
       app,
-      tier: meta?.tier,
-      access_type: meta?.access ?? "nao_informado",
+      tier: m?.tier,
+      access_type: m?.access ?? "nao_informado",
       due_date: dueDate,
       plan_id: plan?.id,
       plan_name: plan?.nome,
@@ -1876,13 +1903,15 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       mac: isPaid ? macInput.trim() : undefined,
       app_key: isPaid ? keyInput.trim() : undefined,
       app_due_date: isPaid && appDueDate ? appDueDate : undefined,
-      status: "ativa",
+      username: showUserPass ? (usernameInput.trim() || undefined) : undefined,
+      password: showUserPass ? (passwordInput || undefined) : undefined,
+      status: existing?.status ?? "ativa",
       server_ids: serverId ? [serverId] : [],
       primary_server_id: serverId || undefined,
-      created_at: now,
+      created_at: existing?.created_at ?? now,
       updated_at: now,
     });
-    toast.success("Tela adicionada.");
+    toast.success(editingId ? "Tela atualizada." : "Tela adicionada.");
     refresh();
     resetForm();
     setAdding(false);
@@ -1911,7 +1940,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
             size="sm"
             variant="outline"
             className="h-7 gap-1 px-2 text-[11px]"
-            onClick={() => setAdding(true)}
+            onClick={() => { resetForm(); setAdding(true); }}
           >
             <Plus className="h-3 w-3" /> Adicionar tela
           </Button>
@@ -1928,6 +1957,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
         <ul className="space-y-1">
           {active.map((s, i) => {
             const appLabel = APP_CATALOG[s.app]?.label ?? s.app;
+            const appBadge = APP_CATALOG[s.app]?.badgeClass ?? "bg-primary-soft text-primary";
             const srvName = (s.primary_server_id && getServerById(s.primary_server_id)?.name)
               || (s.server_ids?.[0] && getServerById(s.server_ids[0])?.name)
               || s.server
@@ -1944,7 +1974,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                   T{i + 1}
                 </span>
                 <span className="truncate font-medium text-foreground">{s.name}</span>
-                <span className="shrink-0 rounded-full bg-primary-soft px-1.5 text-[10px] font-medium text-primary">
+                <span className={cn("shrink-0 rounded-full px-1.5 text-[10px] font-medium", appBadge)}>
                   {appLabel}
                 </span>
                 <span className="shrink-0 text-muted-foreground">·</span>
@@ -1954,6 +1984,15 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                 </span>
                 <button
                   type="button"
+                  onClick={() => startEdit(s)}
+                  className="shrink-0 rounded-md p-1 text-primary hover:bg-primary/10"
+                  aria-label="Editar tela"
+                  title="Editar tela"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleRemove(s.id)}
                   className="shrink-0 rounded-md p-1 text-destructive hover:bg-destructive/10"
                   aria-label="Remover tela"
@@ -1961,12 +2000,15 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
-                {(s.plan_value || s.mac || s.app_key || s.app_due_date) && (
+                {(s.username || s.plan_value || s.mac || s.app_key || s.app_due_date) && (
                   <div className="basis-full flex flex-wrap gap-1 pt-1 text-[10px] text-muted-foreground">
                     {(s.plan_name || s.plan_value) && (
                       <span className="rounded bg-primary-soft px-1.5 py-0.5 text-primary">
                         {s.plan_name ?? "Plano"}{s.plan_value ? ` · R$ ${s.plan_value}` : ""}
                       </span>
+                    )}
+                    {s.username && (
+                      <span className="rounded bg-muted px-1.5 py-0.5 font-mono">User: {s.username}</span>
                     )}
                     {s.mac && (
                       <span className="rounded bg-muted px-1.5 py-0.5 font-mono">MAC: {s.mac}</span>
@@ -1990,12 +2032,13 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
       {adding && (
         <div className="space-y-1.5 rounded-md border border-border bg-card p-2">
           <div className="grid grid-cols-2 gap-1.5">
-            <Field label="Vencimento">
+            <Field label="Vencimento *">
               <Input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="h-8 text-xs"
+                required
               />
             </Field>
             <Field label="Nome (opcional)">
@@ -2034,7 +2077,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
             </Field>
           </div>
           <div className="grid grid-cols-1 gap-1.5">
-            <Field label="Serviço / Plano">
+            <Field label="Serviço / Plano *">
               {services.length === 0 ? (
                 <div className="rounded-md border border-dashed border-border bg-muted/30 px-2 py-1.5 text-[11px] text-muted-foreground">
                   Nenhum serviço cadastrado. Cadastre em <strong>Serviços</strong> para poder selecionar.
@@ -2055,13 +2098,43 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               )}
             </Field>
           </div>
+          {showUserPass && (
+            <div className="space-y-1.5 rounded-md border border-border bg-muted/30 p-1.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Credenciais do servidor (opcional)
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <Field label="Usuário do servidor">
+                  <Input
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    placeholder="usuario"
+                    maxLength={120}
+                    autoComplete="off"
+                    className="h-8 font-mono text-xs"
+                  />
+                </Field>
+                <Field label="Senha do servidor">
+                  <Input
+                    type="text"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    placeholder="senha"
+                    maxLength={200}
+                    autoComplete="off"
+                    className="h-8 font-mono text-xs"
+                  />
+                </Field>
+              </div>
+            </div>
+          )}
           {isPaid && (
             <div className="space-y-1.5 rounded-md border border-amber-300/40 bg-amber-50/60 p-1.5 dark:bg-amber-500/5">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                 App pago — informe MAC, Key e vencimento do app
               </div>
               <div className="grid grid-cols-2 gap-1.5">
-                <Field label="MAC">
+                <Field label="MAC *">
                   <Input
                     value={macInput}
                     onChange={(e) => setMacInput(e.target.value)}
@@ -2070,7 +2143,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                     className="h-8 font-mono text-xs"
                   />
                 </Field>
-                <Field label="Key">
+                <Field label="Key *">
                   <Input
                     value={keyInput}
                     onChange={(e) => setKeyInput(e.target.value)}
@@ -2090,6 +2163,11 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               </Field>
             </div>
           )}
+          {!canSave && (
+            <p className="px-1 text-[10px] text-amber-700 dark:text-amber-300">
+              Preencha o vencimento{!planId ? " e o serviço/plano" : ""}{isPaid && (!macInput.trim() || !keyInput.trim()) ? ", MAC e Key" : ""} para habilitar o botão.
+            </p>
+          )}
           <div className="flex gap-1.5 pt-1">
             <Button
               type="button"
@@ -2105,8 +2183,9 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               size="sm"
               className="h-7 flex-1 text-[11px]"
               onClick={handleAdd}
+              disabled={!canSave}
             >
-              Adicionar
+              {editingId ? "Salvar" : "Adicionar"}
             </Button>
           </div>
         </div>
@@ -2120,6 +2199,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
     </div>
   );
 }
+
 
 
 // ---------- edit form ----------
