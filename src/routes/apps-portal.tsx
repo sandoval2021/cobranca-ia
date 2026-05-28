@@ -180,7 +180,7 @@ function AppsPortalPage() {
         actions={
           <Button onClick={openNew} disabled={!companyId}>
             <Plus className="h-4 w-4 mr-1" /> Novo app
-          </Button>
+        action={
         }
       />
 
