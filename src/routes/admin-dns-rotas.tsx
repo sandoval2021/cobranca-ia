@@ -712,26 +712,6 @@ function RouteSheet({
       setReason("");
     }
   }, [open, data, domains, defaultServerId]);
-  const [active, setActive] = useState(true);
-  const [notes, setNotes] = useState("");
-  const [reason, setReason] = useState("");
-
-  useEffect(() => {
-    if (open) {
-      setDomainId(data?.domain_id ?? domains[0]?.id ?? "");
-      setSubdomain(data?.subdomain ?? "");
-      setServerId(data?.server_id ?? "");
-      setRecordType(data?.record_type ?? "CNAME");
-      setValue(data?.value ?? "");
-      setEnvironment(data?.environment ?? "producao");
-      setStatus(data?.status ?? "aguardando_dns");
-      setIsPrimary(data?.is_primary ?? false);
-      setIsBackup(data?.is_backup ?? false);
-      setActive(data?.active ?? true);
-      setNotes(data?.notes ?? "");
-      setReason("");
-    }
-  }, [open, data, domains]);
 
   const domain = domains.find((d) => d.id === domainId);
   const host = buildHost(subdomain, domain?.domain ?? "");
