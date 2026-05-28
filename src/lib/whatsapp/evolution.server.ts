@@ -38,6 +38,13 @@ function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
 }
 
+function withWebhookSecret(webhookUrl: string, secret: string): string {
+  if (!secret) return webhookUrl;
+  const url = new URL(webhookUrl);
+  url.searchParams.set("secret", secret);
+  return url.toString();
+}
+
 async function callEvolution(
   vps: WAVpsNode,
   path: string,
@@ -173,12 +180,13 @@ export const evolutionProvider: WhatsAppProvider = {
   async createInstance({ vps, instance_name, webhook_url, phone_number }) {
     assertReal();
 
+    const signedWebhookUrl = withWebhookSecret(webhook_url, vps.webhook_secret);
     const body: Record<string, unknown> = {
       instanceName: instance_name,
       qrcode: !phone_number,
       integration: "WHATSAPP-BAILEYS",
       webhook: {
-        url: webhook_url,
+        url: signedWebhookUrl,
         events: [
           "QRCODE_UPDATED",
           "CONNECTION_UPDATE",
