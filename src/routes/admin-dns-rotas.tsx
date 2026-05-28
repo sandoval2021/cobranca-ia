@@ -36,7 +36,7 @@ import {
   type DnsDomain, type DnsRoute, type DnsRouteHistory,
   type DnsProvider, type DomainStatus, type DnsRecordType, type DnsEnvironment, type DnsRouteStatus,
   listDomains, saveDomain, updateDomain, archiveDomain,
-  listDnsRoutes, saveDnsRoute, archiveDnsRoute, hasPrimaryConflict,
+  listDnsRoutes, saveDnsRoute, archiveDnsRoute, deleteDnsRoute, hasPrimaryConflict,
   listRouteHistory, computeRouteImpact,
   buildHost, buildServerPublicLink,
   exportDnsRoutes, parseDnsRoutesBackup, importDnsRoutes,
