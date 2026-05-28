@@ -147,15 +147,8 @@ export async function handleInboundForAiReply(
     .select("id")
     .single();
   if (insErr) {
-    // unique violation = já processada
     if ((insErr as any).code === "23505") return { handled: false, reason: "duplicate" };
-    return { handled: false, reason: `db:${insErr.message}` };
-  }
-  const inboundId = inserted!.id;
-  if (insErr) {
-    // unique violation = já processada
-    if ((insErr as any).code === "23505") return { handled: false, reason: "duplicate" };
-    return { handled: false, reason: `db:${insErr.message}` };
+    return { handled: false, reason: `db:${(insErr as any).message ?? "insert error"}` };
   }
   const inboundId = inserted!.id;
 
@@ -197,8 +190,9 @@ export async function handleInboundForAiReply(
       temperature: 0.4,
       timeout_ms: 25_000,
     });
-
+    const reply = result.text?.trim();
     if (!reply) throw new Error("resposta vazia");
+
 
     await logWhatsAppAutomation({
       instance_id: inst.id,
