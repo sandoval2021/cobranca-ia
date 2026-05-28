@@ -697,6 +697,72 @@ export type Database = {
           },
         ]
       }
+      whatsapp_conversation_state: {
+        Row: {
+          classification: string | null
+          company_id: string
+          created_at: string
+          flags: Json
+          from_phone: string
+          human_notified_at: string | null
+          human_reason: string | null
+          id: string
+          instance_id: string
+          last_messages: Json
+          last_response_at: string | null
+          last_response_hash: string | null
+          muted_until: string | null
+          needs_human: boolean
+          responses_hour_window: Json
+          summary: string | null
+          total_messages_in: number
+          total_messages_out: number
+          updated_at: string
+        }
+        Insert: {
+          classification?: string | null
+          company_id: string
+          created_at?: string
+          flags?: Json
+          from_phone: string
+          human_notified_at?: string | null
+          human_reason?: string | null
+          id?: string
+          instance_id: string
+          last_messages?: Json
+          last_response_at?: string | null
+          last_response_hash?: string | null
+          muted_until?: string | null
+          needs_human?: boolean
+          responses_hour_window?: Json
+          summary?: string | null
+          total_messages_in?: number
+          total_messages_out?: number
+          updated_at?: string
+        }
+        Update: {
+          classification?: string | null
+          company_id?: string
+          created_at?: string
+          flags?: Json
+          from_phone?: string
+          human_notified_at?: string | null
+          human_reason?: string | null
+          id?: string
+          instance_id?: string
+          last_messages?: Json
+          last_response_at?: string | null
+          last_response_hash?: string | null
+          muted_until?: string | null
+          needs_human?: boolean
+          responses_hour_window?: Json
+          summary?: string | null
+          total_messages_in?: number
+          total_messages_out?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       whatsapp_inbound_messages: {
         Row: {
           body: string | null
