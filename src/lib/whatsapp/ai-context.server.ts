@@ -1,11 +1,27 @@
 // Server-only: motor determinístico que monta o contexto da IA
-// (cliente, grupo de preço, planos, indicador, app) ANTES de chamar a OpenAI.
+// (cliente, grupo de preço, planos, indicador, app, memória) ANTES de chamar a OpenAI.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { detectApp, detectIntent, extractReferralHints, type Intent } from "./intent";
+import {
+  detectApp,
+  detectAppIssue,
+  detectIntent,
+  extractReferralHints,
+  classifyCustomer,
+  type Intent,
+  type CustomerClass,
+} from "./intent";
+
+export type ConvoMemory = {
+  last_messages: Array<{ role: "user" | "assistant"; text: string; at: string }>;
+  summary: string | null;
+  flags: Record<string, unknown>;
+};
 
 export type AiContext = {
+
   intent: Intent;
+  classification: CustomerClass;
   company: { id: string; name: string | null };
   customer: {
     id: string;
@@ -34,6 +50,7 @@ export type AiContext = {
   };
   app: {
     name: string | null;
+    issue: ReturnType<typeof detectAppIssue>;
     entry: {
       app_name: string;
       login_type: string;
@@ -45,6 +62,7 @@ export type AiContext = {
       escalate_when: string | null;
     } | null;
   };
+  memory: ConvoMemory;
   settings: {
     support_instructions: string | null;
     ask_referral_for_new: boolean;
@@ -63,9 +81,13 @@ export async function buildAiContext(params: {
   companyId: string;
   fromPhone: string;
   text: string;
+  memory?: ConvoMemory;
 }): Promise<AiContext> {
   const { companyId, fromPhone, text } = params;
+  const memory: ConvoMemory = params.memory ?? { last_messages: [], summary: null, flags: {} };
   const intent = detectIntent(text);
+
+
 
   // 1) Empresa
   const { data: company } = await supabaseAdmin
@@ -183,6 +205,7 @@ export async function buildAiContext(params: {
 
   // 7) App suporte
   const appName = detectApp(text);
+  const appIssue = detectAppIssue(text);
   let appEntry: AiContext["app"]["entry"] = null;
   if (appName) {
     const { data: kb } = await supabaseAdmin
@@ -195,8 +218,22 @@ export async function buildAiContext(params: {
     if (kb) appEntry = kb;
   }
 
+  // 8) Override needsHuman para sinais fortes (cancel, reclamação, pedido humano)
+  if (!needsHuman) {
+    if (intent === "cancel") { needsHuman = true; reason = "cancel_intent"; }
+    else if (intent === "complaint") { needsHuman = true; reason = "complaint"; }
+    else if (intent === "human_request") { needsHuman = true; reason = "human_requested"; }
+  }
+
+  const classification = classifyCustomer({
+    hasCustomer: !!customer,
+    intent,
+    needsHuman,
+  });
+
   return {
     intent,
+    classification,
     company: { id: companyId, name: company?.name ?? null },
     customer: customer
       ? {
@@ -209,12 +246,14 @@ export async function buildAiContext(params: {
       : null,
     priceGroup,
     referral: { mentioned: referralMentioned, indicator, hint },
-    app: { name: appName, entry: appEntry },
+    app: { name: appName, issue: appIssue, entry: appEntry },
+    memory,
     settings,
     needsHuman,
     reason,
   };
 }
+
 
 /**
  * Monta o system prompt enxuto + bloco de contexto JSON pequeno.
@@ -239,6 +278,7 @@ export function buildPromptFromContext(ctx: AiContext): { system: string; contex
   // Bloco de contexto compacto
   const compact: Record<string, unknown> = {
     intent: ctx.intent,
+    classificacao: ctx.classification,
     empresa: ctx.company.name,
     cliente: ctx.customer
       ? { nome: ctx.customer.name, notas: ctx.customer.notes }
@@ -246,6 +286,21 @@ export function buildPromptFromContext(ctx: AiContext): { system: string; contex
     needsHuman: ctx.needsHuman,
     motivo: ctx.reason,
   };
+
+  // Memória curta da conversa (resumo + últimas trocas) — só envia se existir
+  if (ctx.memory.summary || ctx.memory.last_messages.length) {
+    compact.memoria = {
+      resumo: ctx.memory.summary ?? null,
+      ultimas: ctx.memory.last_messages.slice(-8).map((m) => ({ de: m.role, txt: m.text })),
+      flags: ctx.memory.flags,
+    };
+    rules.push("- Use 'memoria' para NÃO repetir perguntas já feitas e manter o contexto da conversa.");
+  }
+
+  if (ctx.app.issue) {
+    compact.problema_app = ctx.app.issue;
+    rules.push("- Para problema de app, dê passo a passo curto e prático (3 a 6 passos).");
+  }
 
   if (ctx.priceGroup && (ctx.intent === "price" || ctx.intent === "renewal" || ctx.intent === "referral" || ctx.intent === "trial" || ctx.intent === "other" || ctx.intent === "greeting")) {
     compact.tabela_preco = {
