@@ -153,10 +153,18 @@ function WhatsAppPage() {
         subtitle="Conecte seu WhatsApp para enviar cobranças e mensagens automáticas."
       />
 
-      {!companyId && (
+      {!companyId && !hydrated && (
+        <Card className="p-4 mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" /> Carregando…
+        </Card>
+      )}
+
+      {!companyId && hydrated && (
         <Card className="p-4 mt-4">
           <p className="text-sm text-muted-foreground">
-            Selecione uma empresa ativa antes de conectar o WhatsApp.
+            {isSuperAdmin
+              ? "Nenhuma empresa cadastrada ainda. Crie uma empresa em Cadastros → Contas de donos para conectar um WhatsApp."
+              : "Sua conta ainda não está vinculada a uma empresa. Atualize a página em alguns segundos."}
           </p>
         </Card>
       )}
