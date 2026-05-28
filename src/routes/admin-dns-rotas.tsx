@@ -671,12 +671,12 @@ function DomainSheet({
 }
 
 // =============================== Route Sheet ==============================
-
 function RouteSheet({
-  open, data, domains, servers, onClose, onSaved, onPrimaryConflict,
+  open, data, defaultServerId, domains, servers, onClose, onSaved, onPrimaryConflict,
 }: {
   open: boolean;
   data: DnsRoute | null;
+  defaultServerId?: string;
   domains: DnsDomain[];
   servers: ServerEntry[];
   onClose: () => void;
@@ -692,6 +692,26 @@ function RouteSheet({
   const [status, setStatus] = useState<DnsRouteStatus>("aguardando_dns");
   const [isPrimary, setIsPrimary] = useState(false);
   const [isBackup, setIsBackup] = useState(false);
+  const [active, setActive] = useState(true);
+  const [notes, setNotes] = useState("");
+  const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setDomainId(data?.domain_id ?? domains[0]?.id ?? "");
+      setSubdomain(data?.subdomain ?? "");
+      setServerId(data?.server_id ?? defaultServerId ?? "");
+      setRecordType(data?.record_type ?? "CNAME");
+      setValue(data?.value ?? "");
+      setEnvironment(data?.environment ?? "producao");
+      setStatus(data?.status ?? "aguardando_dns");
+      setIsPrimary(data?.is_primary ?? (defaultServerId ? true : false));
+      setIsBackup(data?.is_backup ?? false);
+      setActive(data?.active ?? true);
+      setNotes(data?.notes ?? "");
+      setReason("");
+    }
+  }, [open, data, domains, defaultServerId]);
   const [active, setActive] = useState(true);
   const [notes, setNotes] = useState("");
   const [reason, setReason] = useState("");
