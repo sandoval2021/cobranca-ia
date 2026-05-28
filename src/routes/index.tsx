@@ -634,24 +634,12 @@ function Dashboard() {
 
   return (
     <PageContainer>
-      {/* Header */}
-      <div className="mb-5 rounded-2xl border border-border bg-gradient-to-br from-primary to-primary/80 p-5 text-primary-foreground shadow-pop md:p-6">
-        <p className="text-xs font-medium uppercase tracking-wide opacity-80">
-          Painel Geral
-        </p>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight md:text-2xl">
-          Resumo da operação
-        </h1>
-        <p className="mt-1 text-sm opacity-90">
-          Resumo da sua operação de cobrança, suporte, testes e financeiro.
-        </p>
-        {protectedMode && (
-          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/90 px-2.5 py-1 text-[11px] font-semibold text-white ml-2">
-            <ShieldCheck className="h-3 w-3" />
-            Modo protegido ativo
-          </div>
-        )}
-      </div>
+      {protectedMode && (
+        <div className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-amber-500/90 px-2.5 py-1 text-[11px] font-semibold text-white">
+          <ShieldCheck className="h-3 w-3" />
+          Modo protegido ativo
+        </div>
+      )}
 
       <OwnerRoleNotice />
       <PwaInstallPrompt />
