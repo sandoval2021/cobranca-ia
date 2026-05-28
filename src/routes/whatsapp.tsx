@@ -11,7 +11,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { getCurrentCompanyId } from "@/lib/companies";
+import { getCurrentCompanyId, listCompanies, setCurrentCompany, COMPANIES_EVENT } from "@/lib/companies";
+import { useLocalAuth } from "@/lib/use-local-auth";
+import { LOCAL_AUTH_EVENT } from "@/lib/local-auth";
 import {
   connectWhatsAppInstance,
   getWhatsAppQr,
