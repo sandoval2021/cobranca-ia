@@ -502,6 +502,13 @@ function WhatsAppPage() {
               </div>
             )}
 
+            {instance.status === "connected" && aiEnabled && automationDebug?.webhook && !automationDebug.webhook.ok && (
+              <div className="flex items-start gap-2 text-sm text-amber-700 rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+                <AlertTriangle className="w-4 h-4 mt-0.5" />
+                WhatsApp conectado, mas automação não está recebendo mensagens.
+              </div>
+            )}
+
             {instance.status === "blocked" && (
               <div className="flex items-start gap-2 text-sm text-rose-700">
                 <AlertTriangle className="w-4 h-4 mt-0.5" />
@@ -643,6 +650,36 @@ function WhatsAppPage() {
                 )}
                 Enviar mensagem de teste
               </Button>
+            </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <div className="font-medium">Debug temporário da automação</div>
+              <div className="grid gap-2 text-xs">
+                <div className="rounded-md bg-muted/40 p-3">
+                  <div className="font-medium">Webhook</div>
+                  <div className="text-muted-foreground">
+                    {automationDebug?.webhook?.ok ? "OK" : "Não confirmado"} · HTTP endpoint {automationDebug?.webhook?.endpointStatus ?? "—"}
+                  </div>
+                </div>
+                <div className="rounded-md bg-muted/40 p-3">
+                  <div className="font-medium">OpenAI</div>
+                  <div className="text-muted-foreground">{automationDebug?.openai?.status ?? "Verificando…"}</div>
+                </div>
+                <div className="rounded-md bg-muted/40 p-3">
+                  <div className="font-medium">Último evento</div>
+                  <div className="text-muted-foreground">
+                    {automationDebug?.logs?.[0]
+                      ? `${automationDebug.logs[0].event_type} · ${automationDebug.logs[0].status}`
+                      : "Nenhum evento recebido ainda"}
+                  </div>
+                </div>
+                <div className="rounded-md bg-muted/40 p-3">
+                  <div className="font-medium">Última resposta IA</div>
+                  <div className="text-muted-foreground break-words">
+                    {automationDebug?.lastInbound?.reply_text || automationDebug?.lastInbound?.reply_error || "Sem resposta registrada"}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="border-t pt-4">
