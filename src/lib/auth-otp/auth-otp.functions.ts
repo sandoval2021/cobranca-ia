@@ -302,7 +302,22 @@ export const resetPasswordWithToken = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       password: data.new_password,
     });
-    if (error) return { ok: false as const, error: "Falha ao atualizar senha." };
+    if (error) {
+      const raw = (error.message ?? "").toString();
+      const lower = raw.toLowerCase();
+      let friendly = raw || "Falha ao atualizar senha.";
+      if (lower.includes("same_password") || lower.includes("should be different")) {
+        friendly = "A nova senha deve ser diferente da senha atual.";
+      } else if (lower.includes("weak") || lower.includes("password") && lower.includes("short")) {
+        friendly = "Senha muito fraca. Use ao menos 8 caracteres com letras e números.";
+      } else if (lower.includes("rate") || lower.includes("too many")) {
+        friendly = "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+      } else if (lower.includes("network") || lower.includes("fetch")) {
+        friendly = "Falha de conexão. Verifique sua internet e tente novamente.";
+      }
+      console.error("[resetPasswordWithToken] updateUserById failed:", raw);
+      return { ok: false as const, error: `Falha ao atualizar senha: ${friendly}` };
+    }
     return { ok: true as const };
   });
 
