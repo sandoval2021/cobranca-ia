@@ -70,6 +70,11 @@ export interface WhatsAppProvider {
 
   sendText(ref: WAInstanceRef, to: string, body: string): Promise<WASendResult>;
 
+  setSettings(
+    ref: WAInstanceRef,
+    settings: { rejectCall?: boolean; msgCall?: string },
+  ): Promise<void>;
+
   markHealthy(vps: WAVpsNode): Promise<void>;
   markError(vps: WAVpsNode, reason: string): Promise<void>;
 }
