@@ -363,10 +363,10 @@ function SignupForm({
 
 /**
  * Tela de confirmação por código de 8 dígitos (cadastro).
- * Usa supabase.auth.verifyOtp({ type: "signup", email, token }).
- * Importante: o template "Confirm signup" no Supabase Auth precisa conter
- * {{ .Token }} para que o e-mail mostre o código, não só o link.
+ * Usa verifySignupOtp (server function própria + Resend).
+ * Após validar OTP, faz signInWithPassword no browser para criar a sessão.
  */
+
 function SignupOtpForm({
   ctx,
   onBack,
