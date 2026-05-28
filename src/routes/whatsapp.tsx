@@ -50,7 +50,9 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function WhatsAppPage() {
+  const { isSuperAdmin, user } = useLocalAuth();
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const [friendlyName, setFriendlyName] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -59,9 +61,33 @@ function WhatsAppPage() {
   const connectFn = useServerFn(connectWhatsAppInstance);
   const disconnectFn = useServerFn(disconnectWhatsAppInstance);
 
+  // Resolve company id reativamente para evitar bloqueio durante hidratação.
+  // Super admin nunca fica preso: auto-seleciona a primeira empresa se nenhuma
+  // estiver marcada como atual.
   useEffect(() => {
-    setCompanyId(getCurrentCompanyId());
-  }, []);
+    function resolve() {
+      let cid = getCurrentCompanyId();
+      if (!cid && isSuperAdmin) {
+        const all = listCompanies();
+        if (all.length > 0) {
+          cid = all[0]!.id;
+          setCurrentCompany(cid);
+        }
+      }
+      setCompanyId(cid);
+      setHydrated(true);
+    }
+    resolve();
+    window.addEventListener(LOCAL_AUTH_EVENT, resolve);
+    window.addEventListener(COMPANIES_EVENT, resolve);
+    window.addEventListener("storage", resolve);
+    return () => {
+      window.removeEventListener(LOCAL_AUTH_EVENT, resolve);
+      window.removeEventListener(COMPANIES_EVENT, resolve);
+      window.removeEventListener("storage", resolve);
+    };
+  }, [isSuperAdmin, user?.id]);
+
 
   const query = useQuery({
     queryKey: ["whatsapp", companyId],
