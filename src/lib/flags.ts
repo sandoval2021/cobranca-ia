@@ -1,8 +1,3 @@
-function readBool(v: string | undefined, fallback: boolean) {
-  if (v === undefined) return fallback;
-  return v === "true" || v === "1";
-}
-
 export const flags = {
   appEnv: "production",
   stagingMode: false,
