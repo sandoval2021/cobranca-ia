@@ -7,10 +7,12 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   evolutionProvider,
   isEvolutionNotFoundError,
+  inspectEvolutionWebhook,
   loadInstanceRef,
   pickAvailableVps,
   getEvolutionWebhookUrl,
 } from "./evolution.server";
+import { logWhatsAppAutomation } from "./automation-log.server";
 
 const LOCAL_INVALID_INSTANCE_PREFIXES = ["sim_", "pending_"] as const;
 
