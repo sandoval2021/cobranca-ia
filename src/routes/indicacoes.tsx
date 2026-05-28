@@ -45,11 +45,12 @@ type Filter = (typeof FILTERS)[number];
 function IndicacoesPage() {
   const [refs, setRefs] = useState<Referral[]>([]);
   const [rules, setRules] = useState<ReferralRules>(getReferralRules());
-  const [filter, setFilter] = useState<Filter>("Todos");
-  const [query, setQuery] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
   const [msgFor, setMsgFor] = useState<string | null>(null); // indicator key
   const [applyForId, setApplyForId] = useState<string | null>(null);
+  const { guard, dialog: securityDialog } = useSecurityGuard();
+
   const { guard, dialog: securityDialog } = useSecurityGuard();
 
 
