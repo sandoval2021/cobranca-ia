@@ -509,3 +509,36 @@ export function getEvolutionWebhookUrl(instanceId: string): string {
   const base = process.env.PUBLIC_APP_URL || "";
   return `${base.replace(/\/+$/, "")}/api/public/webhooks/evolution/${instanceId}`;
 }
+
+export async function inspectEvolutionWebhook(ref: WAInstanceRef): Promise<WAWebhookResult> {
+  const events = ["QRCODE_UPDATED", "CONNECTION_UPDATE", "MESSAGES_UPSERT", "SEND_MESSAGE"];
+  const expectedUrl = withWebhookSecret(getEvolutionWebhookUrl(ref.id), ref.vps.webhook_secret);
+  const provider = await callEvolution(
+    ref.vps,
+    `/webhook/find/${encodeURIComponent(ref.provider_instance_id)}`,
+    { method: "GET" },
+  );
+  const savedUrl = provider.data?.url || provider.data?.webhook?.url || null;
+  const savedEvents = provider.data?.events || provider.data?.webhook?.events || [];
+  let endpointStatus: number | null = null;
+  let endpointOk = false;
+  try {
+    const endpoint = await fetch(expectedUrl, { method: "GET" });
+    endpointStatus = endpoint.status;
+    endpointOk = endpoint.ok;
+  } catch {
+    endpointStatus = 0;
+  }
+  const hasEvents = events.every((event) => Array.isArray(savedEvents) && savedEvents.includes(event));
+  const urlOk = typeof savedUrl === "string" && savedUrl.startsWith(getEvolutionWebhookUrl(ref.id));
+  return {
+    ok: provider.ok && endpointOk && hasEvents && urlOk,
+    url: savedUrl || expectedUrl,
+    events: Array.isArray(savedEvents) ? savedEvents : [],
+    providerStatus: provider.status,
+    providerResponse: provider.text.slice(0, 500),
+    endpointStatus,
+    endpointOk,
+    error: provider.ok && endpointOk && hasEvents && urlOk ? null : "Webhook não está confirmado ponta a ponta.",
+  };
+}
