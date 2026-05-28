@@ -1,99 +1,176 @@
+## Escopo
+Base profissional para vender CobraEasy: planos SaaS com limite mensal de respostas IA, contador no painel, e estrutura de renovação assistida (sem API de painel IPTV) + apps MAC/Key.
 
-## O que vai ser construído
+Antes de aplicar SQL, segue arquitetura proposta para sua aprovação.
 
-IA do WhatsApp deixa de ter preço/planos no prompt fixo e passa a usar dados reais do banco. Dono configura tudo em `/ia-config`. Cliente novo é perguntado sobre indicação; se citar indicador e ele existir, herda o mesmo grupo de preço. Se não achar, encaminha humano. IA também sabe responder dúvidas técnicas dos apps (XCIPTV, IBO, Smarters etc.) com base configurável.
+---
 
-## Modelo de dados (migration única)
+## 1. Tabelas propostas
 
-Novas tabelas (todas com `company_id`, RLS por `has_company_access`):
+### A) Planos SaaS e assinaturas (CobraEasy → dono do painel)
 
-- **`price_groups`** — `name`, `description`, `is_default boolean`, `is_active`, `ai_notes text`, `priority int`. Restrição: um `is_default=true` por empresa.
-- **`price_group_plans`** — `price_group_id`, `name`, `screens int`, `duration_days int`, `price_cents int`, `allow_installments bool`, `notes`, `is_active`. Substitui preço fixo no prompt.
-- **`app_support_kb`** — `app_name` (XCIPTV, IBO, Smarters, Bob, IBO Revenda, Vu, Blink, Unitv, outros), `login_type` (`user_pass` | `mac_key`), `is_paid`, `stability_level`, `how_to_update`, `how_to_change_route`, `common_issues text`, `default_reply text`, `escalate_when text`, `is_active`.
-- **`ai_company_settings`** — uma linha por empresa: `support_instructions`, `ask_referral_for_new boolean default true`, `escalate_when_referrer_missing boolean default true`, `human_handoff_number text`.
+**`saas_plans`** (catálogo, gerenciado pelo super_admin)
+- `id`, `slug` (essencial|profissional|escala), `name`, `price_cents`, `ai_monthly_limit` (int), `is_active`, `sort_order`
 
-Alterações em `customers`:
-- `price_group_id uuid null` (FK lógica)
-- `referral_customer_id uuid null` (quem indicou)
-- `referral_raw text null` (texto bruto se indicador não foi resolvido)
+**`saas_extra_packs`** (pacotes adicionais de respostas)
+- `id`, `slug`, `name`, `ai_extra_responses`, `price_cents`, `is_active`
 
-Sem mexer em OTP, billing, Mercado Pago, VPS, DNS.
+**`company_subscriptions`** (assinatura ativa de cada empresa)
+- `id`, `company_id` (unique), `plan_id`, `status` (trial|active|past_due|canceled|paused_limit), `current_period_start`, `current_period_end`, `cancel_at_period_end`, `last_payment_at`
 
-## Motor determinístico antes da OpenAI
+**`company_ai_usage_cycle`** (contador mensal — fonte da verdade)
+- `id`, `company_id`, `cycle_start`, `cycle_end`, `base_limit`, `extra_limit`, `used_count`, `last_increment_at`
+- unique (company_id, cycle_start)
 
-Novo `src/lib/whatsapp/ai-context.server.ts`:
+**`company_extra_pack_purchases`** (pacotes comprados no ciclo atual)
+- `id`, `company_id`, `pack_id`, `cycle_start`, `extra_responses`, `purchased_at`
 
-1. Normaliza telefone (DDI 55, dígitos).
-2. Busca `customer` por telefone na empresa.
-3. Detecta intenção por regex/keywords: `price`, `trial`, `support`, `renewal`, `payment`, `referral`, `app_issue`, `other`.
-4. Resolve `price_group_id`:
-   - cliente existente → seu próprio grupo
-   - cliente novo + menciona indicação → tenta achar indicador por nome/telefone citado → herda grupo dele; se não achar → marca `needs_human=true`
-   - cliente novo sem menção → IA pergunta "veio por indicação?" (flag `ask_referral`)
-5. Carrega só os planos daquele grupo (não envia banco inteiro).
-6. Se intenção é `app_issue`, detecta app citado e injeta entrada de `app_support_kb`.
-7. Monta prompt enxuto (system curto + contexto JSON pequeno) → `gpt-4o-mini`.
+### B) Renovação assistida IPTV (servidores/painéis)
 
-Regras duras (no system prompt):
-- nunca inventar preço/plano/desconto
-- nunca confirmar pagamento/renovação
-- se faltar dado → pedir ou encaminhar humano
+Reaproveitar `servers` existente + adicionar colunas:
+- `panel_url`, `panel_username`, `panel_password_enc` (criptografada server-side), `panel_type` (sigma|xui|xtream|outros), `customer_search_url_template` (ex: `https://painel.com/users?search={username}`), `notes`
 
-Refactor `src/lib/whatsapp/ai-reply.server.ts` para usar esse contexto em vez do prompt atual.
+**`customer_iptv_credentials`** (1:N por cliente)
+- `id`, `company_id`, `customer_id`, `server_id`, `iptv_username`, `iptv_password_enc`, `mac`, `device_key`, `app_used`, `plan_days`, `expires_at`, `notes`
 
-## Painel `/ia-config` (mobile-first)
+### C) Apps portal (Bob/IBO/VU/Smarters etc.)
 
-Nova rota com 4 abas:
+**`portal_apps`** (cadastro por empresa)
+- `id`, `company_id`, `app_name`, `panel_url`, `panel_login`, `panel_password_enc`, `id_type` (mac|key|both), `mac_url_template`, `key_url_template`, `notes`, `is_active`
 
-1. **Grupos de preço** — listar/criar/editar `price_groups`, marcar padrão, adicionar planos dentro.
-2. **Apps suportados** — CRUD de `app_support_kb` com selects (tipo login, estabilidade).
-3. **Indicação** — toggles: perguntar indicação para cliente novo, encaminhar humano se indicador não achado, número humano.
-4. **Instruções gerais** — `support_instructions` (textarea), preview do que a IA vai usar.
+**`customer_portal_devices`** (cliente x app)
+- `id`, `company_id`, `customer_id`, `portal_app_id`, `mac`, `device_key`, `current_route`, `last_updated_at`
 
-Usa componentes existentes (`Card`, `Input`, `Switch`, `Select`, `Textarea`, `Dialog`). Sem mostrar UUIDs. Tooltips com `?` nos campos sensíveis.
+### D) Fila de renovação (base para Playwright futuro)
 
-Vincular cliente a grupo de preço: campo `Select` na tela de cliente já existente (`/clientes` edit) — adição pequena, não refaz tela.
+**`renewal_tasks`**
+- `id`, `company_id`, `customer_id`, `server_id`, `kind` (iptv|portal), `status` (pending|trying|renewed|failed|needs_human), `attempts`, `last_error`, `screenshot_url`, `created_at`, `completed_at`, `assigned_to`
 
-## Server functions novas
+### E) Logs de acesso a credenciais
 
-`src/lib/ia-config/ia-config.functions.ts`:
-- `listPriceGroups`, `upsertPriceGroup`, `deletePriceGroup`
-- `listPlans(groupId)`, `upsertPlan`, `deletePlan`
-- `listApps`, `upsertApp`, `deleteApp`
-- `getAiSettings`, `updateAiSettings`
+**`credential_access_log`**
+- `id`, `company_id`, `user_id`, `target_kind` (server|customer_iptv|portal_app|customer_portal), `target_id`, `action` (view|copy|reveal), `created_at`
 
-Todas com `requireSupabaseAuth` + validação Zod.
+---
 
-## Validação (cenários do brief)
+## 2. Fluxo de limite IA
 
-Após build, simulação server-to-server cobrindo:
-- "valor" sem contexto → grupo padrão
-- cliente R$12 pergunta valor → tabela R$12
-- "vim indicado pelo 82999..." com indicador existente → herda grupo
-- "vim indicado por João" sem achar → pede número; se ainda não achar → handoff
-- "meu IBO travou" → resposta do KB do IBO
-- "paguei" → pede comprovante, não confirma
+```
+mensagem chega → buildAiContext
+  ↓
+ensureAiQuota(company_id)
+  ├─ pega/cria ciclo corrente (saas_plans.ai_monthly_limit + soma extras)
+  ├─ used >= base+extra?
+  │   ├─ SIM → marca subscription.status=paused_limit
+  │   │        envia alerta para human_handoff_number (1x por ciclo)
+  │   │        responde "limite atingido, aguarde renovação" OU silencia
+  │   │        NÃO chama OpenAI
+  │   └─ NÃO → chama OpenAI normalmente
+  ↓
+após resposta enviada → incrementAiUsage()
+  ├─ UPDATE company_ai_usage_cycle SET used_count = used_count + 1
+  └─ já gravamos custo em ai_usage_log (existente)
+```
 
-## Arquivos
+Reset: ao renovar (`current_period_start` muda) → cria novo registro `company_ai_usage_cycle`, `used_count=0`, `extra_limit=0`. Saldo não acumula.
 
-Novos:
-- `db/migrations/20260528120000_price_groups_apps_referral.sql`
-- `src/lib/ia-config/ia-config.functions.ts`
-- `src/lib/whatsapp/ai-context.server.ts`
-- `src/lib/whatsapp/intent.ts`
-- `src/routes/ia-config.tsx` + subcomponentes em `src/components/ia-config/`
+---
 
-Alterados:
-- `src/lib/whatsapp/ai-reply.server.ts` (usa novo contexto)
-- `src/components/clientes/...` (campo grupo de preço — edição mínima)
-- `src/components/layout/AppSidebar.tsx` (link novo)
+## 3. Card no painel (rota `/meus-dados` ou novo widget no dashboard)
 
-Não tocar:
-- OTP/login, Resend, Mercado Pago, VPS, DNS, QR WhatsApp, `client.ts`, `types.ts`
+```
+┌──────────────────────────────────────────┐
+│ IA do mês · Plano Profissional           │
+│ ████████████░░░░░░  3.250 / 15.000 (22%) │
+│ Ciclo termina em 12 dias                 │
+│ ⚠ aviso aos 70% · alerta aos 90% · pausa 100% │
+│ [Comprar pacote extra] [Ver histórico]   │
+└──────────────────────────────────────────┘
+```
 
-## Entrega final
-- Build OK/NÃO
-- SQL aplicado: SIM (migration nova)
-- PR: NÃO / MERGE: NÃO
-- Cenários testados em simulação
-- Custo estimado por atendimento (gpt-4o-mini com prompt enxuto: ~$0.0003–0.0008 por resposta)
+Server fn `getAiQuotaStatus()` retorna `{ plan, used, base_limit, extra_limit, percent, days_left, status }`.
+
+---
+
+## 4. Renovação assistida — UI
+
+Pagamento confirmado (webhook MP já existe) → cria `renewal_tasks(status=pending)` → aparece em **/operacao-dia** como card:
+
+```
+Renovar João Silva · servidor SuperFlix
+┌─ Dados ──────────────────────────┐
+│ Usuário: joaosilva  [📋 copiar]  │
+│ Senha:   •••••••   [👁 revelar] [📋]│
+│ MAC:     00:1A:..  [📋]          │
+│ Plano:   30 dias                 │
+└──────────────────────────────────┘
+[🌐 Abrir painel] [✅ Marcar renovado] [👤 Precisa humano]
+```
+
+Cada clique em copiar/revelar → INSERT em `credential_access_log`.
+
+---
+
+## 5. Segurança
+
+- `panel_password_enc`, `iptv_password_enc` → criptografadas com `pgsodium` ou AES via server function (chave em env `CREDENTIALS_ENC_KEY`)
+- Revelação só via server fn (`requireSupabaseAuth` + `has_company_access`) + log
+- RLS por `company_id` em todas as novas tabelas
+- Service role só server-side (padrão do projeto)
+- Frontend mostra senha mascarada por default; botão "revelar" faz round-trip server
+
+---
+
+## 6. Telas a adicionar
+
+| Rota | Função |
+|------|--------|
+| `/saas-planos` (super_admin) | CRUD de `saas_plans` e `saas_extra_packs` |
+| `/minha-assinatura` (dono) | Plano atual, ciclo, card de uso IA, compra de extras |
+| `/operacao-dia` (existente) | Adiciona seção "Renovações pendentes" |
+| `/catalogo-servidores` (existente) | Adiciona campos de credencial de painel |
+| `/apps-portal` (novo) | CRUD de `portal_apps` |
+| Ficha do cliente (existente) | Aba "Credenciais IPTV" + "Dispositivos/MAC" |
+
+---
+
+## 7. Escopo desta entrega (FASE 1 — base)
+
+Para evitar SQL gigante de uma vez, proponho dividir em 3 migrações:
+
+**Migração 1 — Planos SaaS + contador IA + gate (CRÍTICO, alta prioridade)**
+- `saas_plans`, `saas_extra_packs`, `company_subscriptions`, `company_ai_usage_cycle`, `company_extra_pack_purchases`
+- Seed dos 3 planos (Essencial/Profissional/Escala)
+- Server fns: `getAiQuotaStatus`, `ensureAiQuota`, `incrementAiUsage`
+- Hook em `ai-reply.server.ts` (gate antes do OpenAI + incremento depois)
+- Card no painel + rota `/minha-assinatura` (read-only desta fase)
+- Rota `/saas-planos` para super_admin
+
+**Migração 2 — Credenciais IPTV + renovação assistida**
+- Colunas em `servers`, tabela `customer_iptv_credentials`, `renewal_tasks`, `credential_access_log`
+- UI de renovação assistida no `/operacao-dia`
+- Criptografia de senhas + server fns reveal/copy com log
+
+**Migração 3 — Apps portal MAC/Key**
+- `portal_apps`, `customer_portal_devices`
+- Rota `/apps-portal` + aba no cliente
+
+---
+
+## 8. Riscos
+
+- **Criptografia de senhas**: precisa de `CREDENTIALS_ENC_KEY` (secret novo). Se você esquecer, perde acesso às senhas salvas. Alternativa: pgsodium server-side keys.
+- **Gate de IA**: se ciclo não estiver criado, primeira mensagem pode bloquear. Mitigação: `ensureAiQuota` auto-cria ciclo na primeira chamada.
+- **Migração de empresas existentes**: todas vão ganhar plano "Essencial" trial 14 dias por default. Confirmar se OK.
+- **Playwright**: NÃO entra agora. Só estrutura de fila (`renewal_tasks`).
+
+---
+
+## 9. Perguntas antes de aplicar
+
+1. **Aprovar dividir em 3 migrações** (Fase 1 primeiro) ou aplicar tudo de uma vez?
+2. **Empresas existentes**: começam em "Essencial trial 14 dias" ou "Profissional liberado até você ajustar"?
+3. **Comportamento ao atingir 100%**: IA responde "limite atingido, fale com o suporte" OU silencia totalmente?
+4. **Criptografia de senhas de painel**: usar `pgsodium` (mais seguro, lock-in Supabase) ou AES com secret `CREDENTIALS_ENC_KEY` (portável)?
+
+Confirma esses 4 pontos e eu sigo direto para a **Migração 1** + código. SQL aplicado: NÃO ainda. Build: não tocado. PR/MERGE: NÃO.
