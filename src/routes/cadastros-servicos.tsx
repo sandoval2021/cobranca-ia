@@ -35,6 +35,8 @@ function CadastrosServicosPage() {
   const [items, setItems] = useState<ServiceItem[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isNew, setIsNew] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ServiceItem | null>(null);
 
   const reload = () => setItems(listServices());
@@ -48,18 +50,15 @@ function CadastrosServicosPage() {
 
   function openNew() {
     if (!ensureCanEditService().allowed) return;
-    const created = saveService({
-      nome: "Novo plano",
-      preco_cents: 0,
-      telas: 1,
-      meses: 1,
-    });
-    setEditingId(created.id);
+    // Não pré-cria mais. Abre o editor em modo "novo" e só persiste no primeiro Salvar.
+    setEditingId(null);
+    setIsNew(true);
     setOpen(true);
   }
 
   function openEdit(s: ServiceItem) {
     setEditingId(s.id);
+    setIsNew(false);
     setOpen(true);
   }
 
@@ -82,6 +81,21 @@ function CadastrosServicosPage() {
     if (n > 0) toast.success(`${n} planos criados`);
     else toast.info("Catálogo já possui planos. Apague-os primeiro para semear.");
     reload();
+  }
+
+  function handleDialogClose() {
+    setOpen(false);
+    setEditingId(null);
+    setIsNew(false);
+    reload();
+  }
+
+  function handleCreated(id: string) {
+    setEditingId(id);
+    setIsNew(false);
+    setHighlightId(id);
+    reload();
+    setTimeout(() => setHighlightId(null), 2500);
   }
 
   return (
@@ -110,7 +124,12 @@ function CadastrosServicosPage() {
           </Card>
         )}
         {items.map((s) => (
-          <Card key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+          <Card
+            key={s.id}
+            className={`flex flex-wrap items-center justify-between gap-3 p-3 transition-colors ${
+              highlightId === s.id ? "ring-2 ring-primary bg-primary-soft/40" : ""
+            }`}
+          >
             <div className="min-w-0">
               <p className="font-medium">{s.nome}</p>
               <p className="text-sm text-muted-foreground">
@@ -142,11 +161,9 @@ function CadastrosServicosPage() {
       <PlanEditorDialog
         open={open}
         serviceId={editingId}
-        onClose={() => {
-          setOpen(false);
-          setEditingId(null);
-          reload();
-        }}
+        isNew={isNew}
+        onCreated={handleCreated}
+        onClose={handleDialogClose}
       />
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
@@ -172,18 +189,32 @@ function CadastrosServicosPage() {
   );
 }
 
-// ============================================================================
-// Editor de plano (dialog com lista de mensagens + editor com prévia)
-// ============================================================================
 
+// ============================================================================
 function PlanEditorDialog({
-  open, serviceId, onClose,
-}: { open: boolean; serviceId: string | null; onClose: () => void }) {
+  open, serviceId, isNew, onCreated, onClose,
+}: {
+  open: boolean;
+  serviceId: string | null;
+  isNew: boolean;
+  onCreated: (id: string) => void;
+  onClose: () => void;
+}) {
   const [service, setService] = useState<ServiceItem | null>(null);
   const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || !serviceId) return;
+    if (!open) {
+      setService(null);
+      setSelectedMsgId(null);
+      return;
+    }
+    if (!serviceId) {
+      // Modo "novo" — sem service ainda; PlanInfoEditor cria no primeiro Salvar.
+      setService(null);
+      setSelectedMsgId(null);
+      return;
+    }
     const s = getServiceById(serviceId);
     setService(s);
     setSelectedMsgId(s?.messages[0]?.id ?? null);
@@ -194,6 +225,22 @@ function PlanEditorDialog({
     window.addEventListener(SERVICES_EVENT, h);
     return () => window.removeEventListener(SERVICES_EVENT, h);
   }, [open, serviceId]);
+
+  if (isNew && !service) {
+    return (
+      <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="space-y-0.5">
+            <DialogTitle className="text-base">Novo plano</DialogTitle>
+            <DialogDescription className="text-[11px]">
+              Preencha nome e valor e clique em <strong>Salvar</strong> para criar. Depois você poderá adicionar mensagens.
+            </DialogDescription>
+          </DialogHeader>
+          <NewPlanForm onCreated={onCreated} onCancel={onClose} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (!service) {
     return (
@@ -241,6 +288,7 @@ function PlanEditorDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
   );
 }
 
@@ -496,3 +544,56 @@ function MessageEditor({ service, message }: { service: ServiceItem; message: Se
     </div>
   );
 }
+
+function NewPlanForm({ onCreated, onCancel }: { onCreated: (id: string) => void; onCancel: () => void }) {
+  const [nome, setNome] = useState("");
+  const [valor, setValor] = useState("");
+  const [telas, setTelas] = useState("1");
+  const [meses, setMeses] = useState("1");
+
+  function submit() {
+    const n = nome.trim();
+    if (!n) { toast.error("Informe o nome do plano."); return; }
+    const num = Number((valor || "").replace(/\./g, "").replace(",", "."));
+    if (!isFinite(num) || num < 0) { toast.error("Valor inválido."); return; }
+    if (!ensureCanEditService().allowed) return;
+    const created = saveService({
+      nome: n,
+      preco_cents: Math.round(num * 100),
+      telas: Math.max(1, Math.round(Number(telas) || 1)),
+      meses: Math.max(1, Math.round(Number(meses) || 1)),
+    });
+    toast.success(`Plano "${created.nome}" criado`);
+    onCreated(created.id);
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-12 gap-2 items-end rounded-lg border border-border bg-card p-2.5">
+        <div className="col-span-12 sm:col-span-5">
+          <Label className="text-[11px]">Nome do plano *</Label>
+          <Input className="h-9" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Plano R$ 12" autoFocus />
+        </div>
+        <div className="col-span-4 sm:col-span-2">
+          <Label className="text-[11px]">Telas</Label>
+          <Input className="h-9" type="number" min={1} max={10} value={telas} onChange={(e) => setTelas(e.target.value)} />
+        </div>
+        <div className="col-span-4 sm:col-span-2">
+          <Label className="text-[11px]">Meses</Label>
+          <Input className="h-9" type="number" min={1} max={24} value={meses} onChange={(e) => setMeses(e.target.value)} />
+        </div>
+        <div className="col-span-4 sm:col-span-3">
+          <Label className="text-[11px]">Valor (R$) *</Label>
+          <Input className="h-9" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="12,00" />
+        </div>
+      </div>
+      <DialogFooter className="gap-2">
+        <Button variant="outline" size="sm" onClick={onCancel}>Cancelar</Button>
+        <Button size="sm" onClick={submit} className="gap-1.5">
+          <Save className="h-3.5 w-3.5" /> Salvar e continuar
+        </Button>
+      </DialogFooter>
+    </div>
+  );
+}
+
