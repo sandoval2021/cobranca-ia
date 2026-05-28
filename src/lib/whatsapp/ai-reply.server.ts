@@ -428,6 +428,8 @@ export async function handleInboundForAiReply(
         total_messages_in: (state.total_messages_in ?? 0) + 1,
         total_messages_out: (state.total_messages_out ?? 0) + 1,
         updated_at: nowIso,
+      })
+      .eq("id", state.id);
 
 
     if (willMuteForHuman && handoffNumber && !state.human_notified_at) {
