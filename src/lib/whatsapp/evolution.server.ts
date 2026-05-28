@@ -57,7 +57,10 @@ async function probeWebhookEndpoint(url: string, providerInstanceId: string): Pr
         data: { probe: true, at: new Date().toISOString() },
       }),
     });
-    return { status: endpoint.status, ok: endpoint.ok };
+    const text = (await endpoint.text().catch(() => "")).trim().toLowerCase();
+    const contentType = endpoint.headers.get("content-type") || "";
+    const isHandlerResponse = text === "ok" || contentType.includes("application/json");
+    return { status: endpoint.status, ok: endpoint.ok && isHandlerResponse };
   } catch {
     return { status: 0, ok: false };
   }
@@ -518,8 +521,15 @@ export async function pickAvailableVps(): Promise<{ id: string } | null> {
   return null;
 }
 
+function stablePreviewBaseFromEditorUrl(baseUrl?: string): string {
+  const match = (baseUrl || "").match(/([0-9a-f]{8}-[0-9a-f-]{27,})/i);
+  return match ? `https://project--${match[1]}-dev.lovable.app` : "";
+}
+
 export function getEvolutionWebhookUrl(instanceId: string, baseUrl?: string): string {
-  const base = baseUrl || process.env.PUBLIC_APP_URL || "";
+  const configuredBase = process.env.PUBLIC_APP_URL || "";
+  const safeRequestBase = baseUrl && !/lovableproject\.com|id-preview--/i.test(baseUrl) ? baseUrl : "";
+  const base = safeRequestBase || stablePreviewBaseFromEditorUrl(baseUrl) || configuredBase;
   const url = new URL(`${base.replace(/\/+$/, "")}/api/public/webhooks/evolution`);
   url.searchParams.set("instance_id", instanceId);
   return url.toString();
@@ -529,10 +539,7 @@ function webhookUrlMatchesInstance(value: string | null, instanceId: string): bo
   if (!value) return false;
   try {
     const url = new URL(value);
-    return (
-      url.pathname === `/api/public/webhooks/evolution/${instanceId}` ||
-      (url.pathname === "/api/public/webhooks/evolution" && url.searchParams.get("instance_id") === instanceId)
-    );
+    return url.pathname === "/api/public/webhooks/evolution" && url.searchParams.get("instance_id") === instanceId;
   } catch {
     return false;
   }

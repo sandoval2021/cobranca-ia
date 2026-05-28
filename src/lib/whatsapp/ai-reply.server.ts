@@ -26,6 +26,8 @@ function extractText(message: any): string | null {
   const candidates = [
     message?.conversation,
     message?.extendedTextMessage?.text,
+    message?.message?.conversation,
+    message?.message?.extendedTextMessage?.text,
     message?.imageMessage?.caption,
     message?.videoMessage?.caption,
     message?.documentMessage?.caption,
@@ -47,7 +49,11 @@ type InboundParts = {
 
 function parseInbound(payload: any): InboundParts | null {
   const data = payload?.data ?? payload;
-  const items = Array.isArray(data?.messages) ? data.messages : [data];
+  const items = Array.isArray(data?.messages)
+    ? data.messages
+    : Array.isArray(payload?.messages)
+      ? payload.messages
+      : [data];
   for (const item of items) {
     if (!item) continue;
     const key = item?.key ?? {};
@@ -56,9 +62,9 @@ function parseInbound(payload: any): InboundParts | null {
     const remoteJid: string = key?.remoteJid ?? "";
     if (remoteJid.endsWith("@broadcast")) continue;
     if (remoteJid.endsWith("@g.us")) continue; // ignora grupos
-    const phone = normalizePhone(remoteJid) ?? normalizePhone(item?.from);
-    const text = extractText(item?.message);
-    const id = key?.id ?? item?.id ?? item?.messageId;
+    const phone = normalizePhone(remoteJid) ?? normalizePhone(item?.from) ?? normalizePhone(item?.remoteJid);
+    const text = extractText(item?.message ?? item);
+    const id = key?.id ?? item?.id ?? item?.messageId ?? item?.key?.id;
     const rawTs = Number(item?.messageTimestamp ?? item?.timestamp ?? 0);
     const tsMs = rawTs > 10_000_000_000 ? rawTs : rawTs * 1000;
     const ageSeconds = tsMs > 0 ? Math.floor((Date.now() - tsMs) / 1000) : null;
@@ -174,11 +180,23 @@ export async function handleInboundForAiReply(
   if (customer?.name) contextLines.push(`Cliente identificado: ${customer.name}.`);
   else contextLines.push(`Cliente não identificado no cadastro (telefone ${parts.fromPhone}).`);
   if (customer?.notes) contextLines.push(`Notas internas: ${customer.notes}`);
+  const prompt = `${sys}\n\nContexto:\n${contextLines.join("\n")}`;
 
   try {
+    await logWhatsAppAutomation({
+      instance_id: inst.id,
+      company_id: inst.company_id,
+      event_type: "ai_prompt_prepared",
+      status: "ok",
+      provider_event: payload?.event ?? payload?.type ?? null,
+      provider_instance: ref.provider_instance_id,
+      from_phone: parts.fromPhone,
+      message_preview: parts.text,
+      details: { prompt },
+    });
     const result = await openaiChat({
       messages: [
-        { role: "system", content: `${sys}\n\nContexto:\n${contextLines.join("\n")}` },
+        { role: "system", content: prompt },
         { role: "user", content: parts.text },
       ],
       max_tokens: 280,
@@ -244,6 +262,7 @@ export async function handleInboundForAiReply(
       from_phone: parts.fromPhone,
       message_preview: parts.text,
       error: String(err?.message ?? err),
+      details: { stack: err?.stack ? String(err.stack).slice(0, 1200) : null },
     });
     await supabaseAdmin
       .from("whatsapp_inbound_messages")
