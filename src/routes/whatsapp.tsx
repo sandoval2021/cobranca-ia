@@ -11,7 +11,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { getCurrentCompanyId } from "@/lib/companies";
+import { getCurrentCompanyId, listCompanies, setCurrentCompany, COMPANIES_EVENT } from "@/lib/companies";
+import { useLocalAuth } from "@/lib/use-local-auth";
+import { LOCAL_AUTH_EVENT } from "@/lib/local-auth";
 import {
   connectWhatsAppInstance,
   getWhatsAppQr,
@@ -48,7 +50,9 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function WhatsAppPage() {
+  const { isSuperAdmin, user } = useLocalAuth();
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const [friendlyName, setFriendlyName] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -57,9 +61,33 @@ function WhatsAppPage() {
   const connectFn = useServerFn(connectWhatsAppInstance);
   const disconnectFn = useServerFn(disconnectWhatsAppInstance);
 
+  // Resolve company id reativamente para evitar bloqueio durante hidratação.
+  // Super admin nunca fica preso: auto-seleciona a primeira empresa se nenhuma
+  // estiver marcada como atual.
   useEffect(() => {
-    setCompanyId(getCurrentCompanyId());
-  }, []);
+    function resolve() {
+      let cid = getCurrentCompanyId();
+      if (!cid && isSuperAdmin) {
+        const all = listCompanies();
+        if (all.length > 0) {
+          cid = all[0]!.id;
+          setCurrentCompany(cid);
+        }
+      }
+      setCompanyId(cid);
+      setHydrated(true);
+    }
+    resolve();
+    window.addEventListener(LOCAL_AUTH_EVENT, resolve);
+    window.addEventListener(COMPANIES_EVENT, resolve);
+    window.addEventListener("storage", resolve);
+    return () => {
+      window.removeEventListener(LOCAL_AUTH_EVENT, resolve);
+      window.removeEventListener(COMPANIES_EVENT, resolve);
+      window.removeEventListener("storage", resolve);
+    };
+  }, [isSuperAdmin, user?.id]);
+
 
   const query = useQuery({
     queryKey: ["whatsapp", companyId],
@@ -125,10 +153,18 @@ function WhatsAppPage() {
         subtitle="Conecte seu WhatsApp para enviar cobranças e mensagens automáticas."
       />
 
-      {!companyId && (
+      {!companyId && !hydrated && (
+        <Card className="p-4 mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" /> Carregando…
+        </Card>
+      )}
+
+      {!companyId && hydrated && (
         <Card className="p-4 mt-4">
           <p className="text-sm text-muted-foreground">
-            Selecione uma empresa ativa antes de conectar o WhatsApp.
+            {isSuperAdmin
+              ? "Nenhuma empresa cadastrada ainda. Crie uma empresa em Cadastros → Contas de donos para conectar um WhatsApp."
+              : "Sua conta ainda não está vinculada a uma empresa. Atualize a página em alguns segundos."}
           </p>
         </Card>
       )}
