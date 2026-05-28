@@ -100,11 +100,18 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
     // Já existe instância para a empresa?
     const { data: existing } = await supabaseAdmin
       .from("whatsapp_instances")
-      .select("id, status")
+      .select("id, status, provider_instance_id")
       .eq("company_id", data.company_id)
       .maybeSingle();
 
-    if (existing) {
+    // Resíduo de modo simulado ou placeholder nunca criado na Evolution → recria.
+    if (
+      existing &&
+      (existing.provider_instance_id?.startsWith("sim_") ||
+        existing.provider_instance_id?.startsWith("pending_"))
+    ) {
+      await supabaseAdmin.from("whatsapp_instances").delete().eq("id", existing.id);
+    } else if (existing) {
       const ref = await loadInstanceRef(existing.id);
       if (!ref) throw new Error("instance_ref_missing");
       try {
