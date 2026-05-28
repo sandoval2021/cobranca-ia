@@ -392,18 +392,19 @@ export const listPaymentTransactions = createServerFn({ method: "GET" })
     const { data: rows, error } = await q;
     if (error) throw new Error(String(error.message));
     return rows ?? [];
-  });
-
-// ============================================================
-// TELA PÚBLICA DO CLIENTE (sem auth)
-// ============================================================
-export const getPublicPayment = createServerFn({ method: "GET" })
-  .inputValidator((input: { externalReference: string }) =>
-    z.object({ externalReference: z.string().min(8).max(120) }).parse(input),
-  )
   .handler(async ({ data }) => {
     const db = admin();
     const { data: tx } = await db
+      .from("payment_transactions")
+      .select(
+        "external_reference,description,amount_cents,processing_fee_cents,total_amount_cents,fee_mode,payment_method,status,qr_code,qr_code_base64,ticket_url,init_point,expires_at,paid_at",
+      )
+      .eq("external_reference", data.externalReference)
+      .maybeSingle();
+    if (!tx) return null;
+    return tx as PublicPaymentDTO;
+  });
+
       .from("payment_transactions")
       .select(
         "external_reference,description,amount_cents,processing_fee_cents,total_amount_cents,fee_mode,payment_method,status,qr_code,qr_code_base64,ticket_url,init_point,expires_at,paid_at",
