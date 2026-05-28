@@ -2,7 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Smartphone, RefreshCw, PowerOff, QrCode, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  RefreshCw,
+  PowerOff,
+  QrCode,
+  CheckCircle2,
+  AlertTriangle,
+  KeyRound,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
@@ -11,14 +19,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { getCurrentCompanyId, listCompanies, setCurrentCompany, COMPANIES_EVENT } from "@/lib/companies";
-import { useLocalAuth } from "@/lib/use-local-auth";
-import { LOCAL_AUTH_EVENT } from "@/lib/local-auth";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   connectWhatsAppInstance,
   getWhatsAppQr,
   disconnectWhatsAppInstance,
   getCompanyWhatsApp,
+  ensureMyCompany,
 } from "@/lib/whatsapp/whatsapp.functions";
 
 export const Route = createFileRoute("/whatsapp")({
@@ -30,7 +37,7 @@ export const Route = createFileRoute("/whatsapp")({
 
 const statusLabel: Record<string, { text: string; tone: "ok" | "warn" | "err" | "neutral" }> = {
   connected: { text: "Conectado", tone: "ok" },
-  awaiting_qr: { text: "Aguardando QR", tone: "warn" },
+  awaiting_qr: { text: "Aguardando conexão", tone: "warn" },
   disconnected: { text: "Desconectado", tone: "neutral" },
   error: { text: "Erro", tone: "err" },
   blocked: { text: "Bloqueado", tone: "err" },
@@ -49,45 +56,41 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge className={`border ${cls}`}>{s.text}</Badge>;
 }
 
+function formatPairing(code: string): string {
+  const clean = code.replace(/\s|-/g, "").toUpperCase();
+  if (clean.length === 8) return `${clean.slice(0, 4)}-${clean.slice(4)}`;
+  return clean;
+}
+
 function WhatsAppPage() {
-  const { isSuperAdmin, user } = useLocalAuth();
   const [companyId, setCompanyId] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(false);
+  const [bootError, setBootError] = useState<string | null>(null);
   const [friendlyName, setFriendlyName] = useState("");
+  const [mode, setMode] = useState<"qr" | "pairing">("qr");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const ensureCompany = useServerFn(ensureMyCompany);
   const fetchData = useServerFn(getCompanyWhatsApp);
   const fetchQr = useServerFn(getWhatsAppQr);
   const connectFn = useServerFn(connectWhatsAppInstance);
   const disconnectFn = useServerFn(disconnectWhatsAppInstance);
 
-  // Resolve company id reativamente para evitar bloqueio durante hidratação.
-  // Super admin nunca fica preso: auto-seleciona a primeira empresa se nenhuma
-  // estiver marcada como atual.
+  // Garante uma empresa real (UUID) no backend para o usuário logado.
   useEffect(() => {
-    function resolve() {
-      let cid = getCurrentCompanyId();
-      if (!cid && isSuperAdmin) {
-        const all = listCompanies();
-        if (all.length > 0) {
-          cid = all[0]!.id;
-          setCurrentCompany(cid);
-        }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await ensureCompany({ data: {} });
+        if (!cancelled) setCompanyId(r.company_id);
+      } catch (e: any) {
+        if (!cancelled) setBootError(e?.message ?? "Falha ao preparar empresa.");
       }
-      setCompanyId(cid);
-      setHydrated(true);
-    }
-    resolve();
-    window.addEventListener(LOCAL_AUTH_EVENT, resolve);
-    window.addEventListener(COMPANIES_EVENT, resolve);
-    window.addEventListener("storage", resolve);
+    })();
     return () => {
-      window.removeEventListener(LOCAL_AUTH_EVENT, resolve);
-      window.removeEventListener(COMPANIES_EVENT, resolve);
-      window.removeEventListener("storage", resolve);
+      cancelled = true;
     };
-  }, [isSuperAdmin, user?.id]);
-
+  }, [ensureCompany]);
 
   const query = useQuery({
     queryKey: ["whatsapp", companyId],
@@ -99,17 +102,35 @@ function WhatsAppPage() {
   const instance = query.data?.instance ?? null;
   const queued = query.data?.queued ?? 0;
 
+  function digitsOnly(v: string) {
+    return v.replace(/\D/g, "");
+  }
+
   async function handleConnect() {
     if (!companyId) {
-      toast.error("Selecione uma empresa primeiro.");
+      toast.error("Aguarde a empresa carregar.");
       return;
     }
     const name = friendlyName.trim() || "WhatsApp Principal";
+    let phone: string | undefined;
+    if (mode === "pairing") {
+      phone = digitsOnly(phoneNumber);
+      if (phone.length < 10) {
+        toast.error("Informe o número com DDI e DDD (ex.: 5511999998888).");
+        return;
+      }
+    }
     setBusy(true);
     try {
-      await connectFn({ data: { company_id: companyId, friendly_name: name } });
+      await connectFn({
+        data: { company_id: companyId, friendly_name: name, phone_number: phone },
+      });
       await query.refetch();
-      toast.success("Conexão iniciada. Escaneie o QR Code.");
+      toast.success(
+        phone
+          ? "Código de pareamento gerado. Digite no WhatsApp do celular."
+          : "Conexão iniciada. Escaneie o QR Code.",
+      );
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao conectar.");
     } finally {
@@ -117,11 +138,19 @@ function WhatsAppPage() {
     }
   }
 
-  async function handleReconnect() {
+  async function handleReconnect(usePairing?: boolean) {
     if (!instance) return;
+    let phone: string | undefined;
+    if (usePairing) {
+      phone = digitsOnly(phoneNumber || instance.phone_number || "");
+      if (phone.length < 10) {
+        toast.error("Informe o número com DDI e DDD para gerar um novo código.");
+        return;
+      }
+    }
     setBusy(true);
     try {
-      await fetchQr({ data: { instance_id: instance.id } });
+      await fetchQr({ data: { instance_id: instance.id, phone_number: phone } });
       await query.refetch();
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao reconectar.");
@@ -148,29 +177,24 @@ function WhatsAppPage() {
   return (
     <PageContainer>
       <SectionHeader
-        
         title="WhatsApp da empresa"
         subtitle="Conecte seu WhatsApp para enviar cobranças e mensagens automáticas."
       />
 
-      {!companyId && !hydrated && (
+      {!companyId && !bootError && (
         <Card className="p-4 mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" /> Carregando…
+          <Loader2 className="w-4 h-4 animate-spin" /> Preparando empresa…
         </Card>
       )}
 
-      {!companyId && hydrated && (
-        <Card className="p-4 mt-4">
-          <p className="text-sm text-muted-foreground">
-            {isSuperAdmin
-              ? "Nenhuma empresa cadastrada ainda. Crie uma empresa em Cadastros → Contas de donos para conectar um WhatsApp."
-              : "Sua conta ainda não está vinculada a uma empresa. Atualize a página em alguns segundos."}
-          </p>
+      {bootError && (
+        <Card className="p-4 mt-4 text-sm text-rose-700">
+          {bootError}
         </Card>
       )}
 
       {companyId && !instance && (
-        <Card className="p-4 mt-4 space-y-3">
+        <Card className="p-4 mt-4 space-y-4">
           <div>
             <Label htmlFor="fname">Nome da conexão</Label>
             <Input
@@ -183,9 +207,48 @@ function WhatsAppPage() {
               Identifica este WhatsApp dentro do sistema. Você pode mudar depois.
             </p>
           </div>
+
+          <Tabs value={mode} onValueChange={(v) => setMode(v as "qr" | "pairing")}>
+            <TabsList className="grid grid-cols-2 w-full sm:w-auto">
+              <TabsTrigger value="qr">
+                <QrCode className="w-4 h-4 mr-2" /> QR Code
+              </TabsTrigger>
+              <TabsTrigger value="pairing">
+                <KeyRound className="w-4 h-4 mr-2" /> Código
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="qr" className="mt-3 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Vamos gerar um QR Code para escanear no app do WhatsApp.
+              </p>
+            </TabsContent>
+
+            <TabsContent value="pairing" className="mt-3 space-y-2">
+              <Label htmlFor="phone">Número do WhatsApp (com DDI e DDD)</Label>
+              <Input
+                id="phone"
+                inputMode="tel"
+                placeholder="5511999998888"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(digitsOnly(e.target.value))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Geramos um código de 8 dígitos para digitar no celular em
+                <strong> Aparelhos conectados → Conectar com número de telefone</strong>.
+              </p>
+            </TabsContent>
+          </Tabs>
+
           <Button onClick={handleConnect} disabled={busy} className="w-full sm:w-auto">
-            {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <QrCode className="w-4 h-4 mr-2" />}
-            Conectar WhatsApp
+            {busy ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : mode === "qr" ? (
+              <QrCode className="w-4 h-4 mr-2" />
+            ) : (
+              <KeyRound className="w-4 h-4 mr-2" />
+            )}
+            {mode === "qr" ? "Gerar QR Code" : "Gerar código de pareamento"}
           </Button>
         </Card>
       )}
@@ -203,21 +266,72 @@ function WhatsAppPage() {
               <StatusBadge status={instance.status} />
             </div>
 
-            {instance.status === "awaiting_qr" && instance.qr_code && (
-              <div className="flex flex-col items-center gap-2 rounded-md border p-3 bg-muted/30">
-                <img
-                  src={
-                    instance.qr_code.startsWith("data:")
-                      ? instance.qr_code
-                      : `data:image/png;base64,${instance.qr_code}`
-                  }
-                  alt="QR Code"
-                  className="w-56 h-56"
-                />
-                <p className="text-xs text-muted-foreground text-center">
-                  Abra o WhatsApp no celular &gt; Aparelhos conectados &gt; Conectar aparelho.
-                </p>
-              </div>
+            {instance.status === "awaiting_qr" && (
+              <Tabs defaultValue={instance.pairing_code ? "pairing" : "qr"}>
+                <TabsList className="grid grid-cols-2 w-full">
+                  <TabsTrigger value="qr">
+                    <QrCode className="w-4 h-4 mr-2" /> QR Code
+                  </TabsTrigger>
+                  <TabsTrigger value="pairing">
+                    <KeyRound className="w-4 h-4 mr-2" /> Código
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="qr" className="mt-3">
+                  {instance.qr_code ? (
+                    <div className="flex flex-col items-center gap-2 rounded-md border p-3 bg-muted/30">
+                      <img
+                        src={
+                          instance.qr_code.startsWith("data:")
+                            ? instance.qr_code
+                            : `data:image/png;base64,${instance.qr_code}`
+                        }
+                        alt="QR Code"
+                        className="w-56 h-56"
+                      />
+                      <p className="text-xs text-muted-foreground text-center">
+                        WhatsApp &gt; Aparelhos conectados &gt; Conectar aparelho.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-md border p-4 text-sm text-muted-foreground text-center">
+                      QR ainda não disponível. Clique em <strong>Atualizar</strong>.
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="pairing" className="mt-3 space-y-3">
+                  {instance.pairing_code ? (
+                    <div className="rounded-md border p-4 bg-muted/30 text-center space-y-1">
+                      <div className="text-xs text-muted-foreground">Seu código</div>
+                      <div className="text-3xl font-mono font-semibold tracking-widest">
+                        {formatPairing(instance.pairing_code)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        WhatsApp &gt; Aparelhos conectados &gt; Conectar com número.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="phone2">Número (DDI + DDD + número)</Label>
+                      <Input
+                        id="phone2"
+                        inputMode="tel"
+                        placeholder="5511999998888"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(digitsOnly(e.target.value))}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => handleReconnect(true)}
+                        disabled={busy}
+                      >
+                        <KeyRound className="w-4 h-4 mr-2" /> Gerar código
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             )}
 
             {instance.status === "connected" && (
@@ -235,9 +349,9 @@ function WhatsAppPage() {
             )}
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={handleReconnect} disabled={busy}>
+              <Button variant="outline" size="sm" onClick={() => handleReconnect(false)} disabled={busy}>
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Atualizar / Reconectar
+                Atualizar QR
               </Button>
               <Button variant="outline" size="sm" onClick={handleDisconnect} disabled={busy}>
                 <PowerOff className="w-4 h-4 mr-2" />
