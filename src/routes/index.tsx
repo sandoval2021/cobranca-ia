@@ -70,46 +70,23 @@ export const Route = createFileRoute("/")({ component: Dashboard });
 // Owner / PWA helpers (mantidos)
 // ============================================================
 
-function OwnerRoleNotice() {
+// Chips compactos: status do plano (owner) + dica de instalar PWA.
+function HeaderChips() {
   const { isOwner, user } = useLocalAuth();
-  if (!isOwner) return null;
-  const company = getCompanyForUser(user?.email);
+  const company = isOwner ? getCompanyForUser(user?.email) : null;
   const plan = company ? getPlanById(company.plano_id) : null;
-  const status = company ? getCompanyStatus(company) : "sem_empresa";
+  const status = company ? getCompanyStatus(company) : null;
   const days = company ? daysUntilDue(company) : null;
-  if (!company) {
-    return (
-      <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-        Sua conta ainda não está vinculada a uma empresa. Peça ao admin para vincular seu e-mail.
-      </div>
-    );
-  }
-  return (
-    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs shadow-card">
-      <span className="font-semibold text-foreground">{company.nome}</span>
-      <span className="text-muted-foreground">·</span>
-      <span className="text-muted-foreground">Plano {plan?.nome ?? "—"}</span>
-      <span className="text-muted-foreground">·</span>
-      <span className="text-muted-foreground">{status}</span>
-      {days != null && days >= 0 && days <= 7 && (
-        <span className="ml-auto rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning">
-          Vence em {days} dia(s)
-        </span>
-      )}
-    </div>
-  );
-}
 
-function PwaInstallPrompt() {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === "undefined") return false;
+  const [pwaDismissed, setPwaDismissed] = useState(() => {
+    if (typeof window === "undefined") return true;
     try {
       return window.localStorage.getItem("cobranca_ia_pwa_dismissed") === "1";
     } catch {
       return false;
     }
   });
-  const [isStandalone, setIsStandalone] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(true);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const standalone =
@@ -118,39 +95,78 @@ function PwaInstallPrompt() {
       window.navigator.standalone === true;
     setIsStandalone(standalone);
   }, []);
-  if (isStandalone || dismissed) return null;
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const handleDismiss = () => {
-    setDismissed(true);
+  const dismissPwa = () => {
+    setPwaDismissed(true);
     try {
       window.localStorage.setItem("cobranca_ia_pwa_dismissed", "1");
     } catch {
       /* noop */
     }
   };
+
+  const showPlanChip = isOwner && company;
+  const isTrial = status === "teste";
+  let planChipTone = "bg-muted text-muted-foreground border-border";
+  let planLabel: string | null = null;
+  if (showPlanChip) {
+    const base = isTrial ? "Trial" : plan?.nome ?? "Plano";
+    if (days != null) {
+      if (days < 0) {
+        planChipTone = "bg-danger-soft text-danger border-danger/30";
+        planLabel = `${base} vencido`;
+      } else if (days <= 3) {
+        planChipTone = "bg-danger-soft text-danger border-danger/30";
+        planLabel = `${base} · ${days}d`;
+      } else if (days <= 7) {
+        planChipTone = "bg-warning-soft text-warning border-warning/30";
+        planLabel = `${base} · ${days}d`;
+      } else {
+        planChipTone = "bg-success-soft text-success border-success/30";
+        planLabel = `${base} · ${days}d`;
+      }
+    } else {
+      planLabel = base;
+    }
+  }
+
+  const showPwaChip = !isStandalone && !pwaDismissed;
+  if (!showPlanChip && !showPwaChip) return null;
+
   return (
-    <div className="mb-3 rounded-xl border border-primary/20 bg-primary-soft p-3 text-xs">
-      <div className="flex items-start gap-2">
-        <Download className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-foreground">Instalar no celular</p>
-          <p className="mt-0.5 text-muted-foreground">
-            {isIOS
-              ? "Toque em Compartilhar no Safari → Adicionar à Tela de Início."
-              : "Toque nos três pontos do Chrome → Adicionar à tela inicial."}
-          </p>
-        </div>
-        <button
-          onClick={handleDismiss}
-          className="shrink-0 rounded p-1 text-primary hover:bg-primary/10"
-          aria-label="Fechar"
+    <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      <span className="text-base font-bold tracking-tight text-foreground">
+        Início
+      </span>
+      {showPlanChip && planLabel && (
+        <Link
+          to="/minha-assinatura"
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+            planChipTone,
+          )}
+          title="Status do seu plano"
         >
-          ✕
-        </button>
-      </div>
+          <ShieldCheck className="h-3 w-3" />
+          {planLabel}
+        </Link>
+      )}
+      {showPwaChip && (
+        <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary">
+          <Download className="h-3 w-3" />
+          Instalar app
+          <button
+            onClick={dismissPwa}
+            className="ml-0.5 rounded-full px-1 text-primary/70 hover:text-primary"
+            aria-label="Fechar dica de instalação"
+          >
+            ✕
+          </button>
+        </span>
+      )}
     </div>
   );
 }
+
 
 // ============================================================
 // Data layer (mantido — só estende totalAtivos / totalClientes)
