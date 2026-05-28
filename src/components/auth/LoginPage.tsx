@@ -60,6 +60,7 @@ export function LoginPage() {
   const [view, setView] = useState<View>("login");
   const [signupCtx, setSignupCtx] = useState<SignupContext | null>(null);
   const [forgotEmail, setForgotEmail] = useState("");
+  const [confirmCtx, setConfirmCtx] = useState<{ email: string; password: string } | null>(null);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-surface to-primary-soft px-4 py-8 safe-top safe-bottom">
