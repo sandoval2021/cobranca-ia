@@ -87,20 +87,7 @@ export async function buildAiContext(params: {
   const memory: ConvoMemory = params.memory ?? { last_messages: [], summary: null, flags: {} };
   const intent = detectIntent(text);
 
-  reason: string | null;
-};
 
-function brl(cents: number): string {
-  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-export async function buildAiContext(params: {
-  companyId: string;
-  fromPhone: string;
-  text: string;
-}): Promise<AiContext> {
-  const { companyId, fromPhone, text } = params;
-  const intent = detectIntent(text);
 
   // 1) Empresa
   const { data: company } = await supabaseAdmin
