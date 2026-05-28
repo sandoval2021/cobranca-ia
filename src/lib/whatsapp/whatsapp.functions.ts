@@ -250,6 +250,11 @@ export const getWhatsAppQr = createServerFn({ method: "POST" })
     if (!ref) throw new Error("not_found");
     await assertCompanyAccess(supabase, userId, ref.company_id);
 
+    if (hasInvalidLocalProviderId(ref.provider_instance_id)) {
+      await supabaseAdmin.from("whatsapp_instances").delete().eq("id", ref.id);
+      throw new Error("Instância local inválida removida. Clique em Recriar conexão.");
+    }
+
     try {
       const qr = await evolutionProvider.getQrCode(ref, data.phone_number);
       await supabaseAdmin
@@ -264,10 +269,14 @@ export const getWhatsAppQr = createServerFn({ method: "POST" })
         .eq("id", ref.id);
       return qr;
     } catch (err: any) {
-      await supabaseAdmin
-        .from("whatsapp_instances")
-        .update({ qr_code: null, pairing_code: null, qr_expires_at: null, pairing_code_expires_at: null })
-        .eq("id", ref.id);
+      if (isEvolutionNotFoundError(err)) {
+        await supabaseAdmin.from("whatsapp_instances").delete().eq("id", ref.id);
+      } else {
+        await supabaseAdmin
+          .from("whatsapp_instances")
+          .update({ qr_code: null, pairing_code: null, qr_expires_at: null, pairing_code_expires_at: null, status: "error" })
+          .eq("id", ref.id);
+      }
       throw new Error(err?.message || "Falha ao obter QR Code da Evolution.");
     }
   });
@@ -284,12 +293,25 @@ export const disconnectWhatsAppInstance = createServerFn({ method: "POST" })
     if (!ref) throw new Error("not_found");
     await assertCompanyAccess(supabase, userId, ref.company_id);
 
-    const status = await evolutionProvider.disconnect(ref);
-    await supabaseAdmin
-      .from("whatsapp_instances")
-      .update({ status, qr_code: null, qr_expires_at: null })
-      .eq("id", ref.id);
-    return { status };
+    if (hasInvalidLocalProviderId(ref.provider_instance_id)) {
+      await supabaseAdmin.from("whatsapp_instances").delete().eq("id", ref.id);
+      return { status: "disconnected" as const };
+    }
+
+    try {
+      const status = await evolutionProvider.disconnect(ref);
+      await supabaseAdmin
+        .from("whatsapp_instances")
+        .update({ status, qr_code: null, qr_expires_at: null, pairing_code: null, pairing_code_expires_at: null })
+        .eq("id", ref.id);
+      return { status };
+    } catch (err) {
+      if (isEvolutionNotFoundError(err)) {
+        await supabaseAdmin.from("whatsapp_instances").delete().eq("id", ref.id);
+        return { status: "disconnected" as const };
+      }
+      throw err;
+    }
   });
 
 // -------- enqueue --------
