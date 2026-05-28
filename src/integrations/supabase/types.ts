@@ -284,6 +284,95 @@ export type Database = {
         }
         Relationships: []
       }
+      company_ai_usage_cycle: {
+        Row: {
+          base_limit: number
+          blocked_at: string | null
+          company_id: string
+          created_at: string
+          cycle_end: string
+          cycle_start: string
+          extra_limit: number
+          id: string
+          last_increment_at: string | null
+          updated_at: string
+          used_count: number
+          warned_70_at: string | null
+          warned_90_at: string | null
+        }
+        Insert: {
+          base_limit?: number
+          blocked_at?: string | null
+          company_id: string
+          created_at?: string
+          cycle_end: string
+          cycle_start: string
+          extra_limit?: number
+          id?: string
+          last_increment_at?: string | null
+          updated_at?: string
+          used_count?: number
+          warned_70_at?: string | null
+          warned_90_at?: string | null
+        }
+        Update: {
+          base_limit?: number
+          blocked_at?: string | null
+          company_id?: string
+          created_at?: string
+          cycle_end?: string
+          cycle_start?: string
+          extra_limit?: number
+          id?: string
+          last_increment_at?: string | null
+          updated_at?: string
+          used_count?: number
+          warned_70_at?: string | null
+          warned_90_at?: string | null
+        }
+        Relationships: []
+      }
+      company_extra_pack_purchases: {
+        Row: {
+          company_id: string
+          created_at: string
+          cycle_start: string
+          extra_responses: number
+          id: string
+          pack_id: string
+          price_cents: number
+          purchased_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          cycle_start: string
+          extra_responses?: number
+          id?: string
+          pack_id: string
+          price_cents?: number
+          purchased_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          cycle_start?: string
+          extra_responses?: number
+          id?: string
+          pack_id?: string
+          price_cents?: number
+          purchased_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_extra_pack_purchases_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "saas_extra_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_members: {
         Row: {
           company_id: string
@@ -312,6 +401,56 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          company_id: string
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          last_payment_at: string | null
+          paused_limit_notified_at: string | null
+          plan_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          company_id: string
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          last_payment_at?: string | null
+          paused_limit_notified_at?: string | null
+          plan_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          company_id?: string
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          last_payment_at?: string | null
+          paused_limit_notified_at?: string | null
+          plan_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -595,6 +734,81 @@ export type Database = {
           is_default?: boolean
           name?: string
           priority?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saas_extra_packs: {
+        Row: {
+          ai_extra_responses: number
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          ai_extra_responses?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents?: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          ai_extra_responses?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saas_plans: {
+        Row: {
+          ai_monthly_limit: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          ai_monthly_limit?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents?: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          ai_monthly_limit?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          slug?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -1042,6 +1256,30 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_or_create_current_ai_cycle: {
+        Args: { _company_id: string }
+        Returns: {
+          base_limit: number
+          blocked_at: string | null
+          company_id: string
+          created_at: string
+          cycle_end: string
+          cycle_start: string
+          extra_limit: number
+          id: string
+          last_increment_at: string | null
+          updated_at: string
+          used_count: number
+          warned_70_at: string | null
+          warned_90_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "company_ai_usage_cycle"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_company_access: { Args: { _company_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -1049,6 +1287,30 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_ai_usage: {
+        Args: { _company_id: string }
+        Returns: {
+          base_limit: number
+          blocked_at: string | null
+          company_id: string
+          created_at: string
+          cycle_end: string
+          cycle_start: string
+          extra_limit: number
+          id: string
+          last_increment_at: string | null
+          updated_at: string
+          used_count: number
+          warned_70_at: string | null
+          warned_90_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "company_ai_usage_cycle"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       is_super_admin: { Args: never; Returns: boolean }
       move_to_dlq: {

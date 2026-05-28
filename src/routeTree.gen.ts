@@ -12,12 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as TestesRouteImport } from './routes/testes'
 import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
+import { Route as SaasPlanosRouteImport } from './routes/saas-planos'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RelatorioRouteImport } from './routes/relatorio'
 import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
 import { Route as PreparacaoBackendRouteImport } from './routes/preparacao-backend'
 import { Route as PendenciasRouteImport } from './routes/pendencias'
 import { Route as OperacaoDiaRouteImport } from './routes/operacao-dia'
+import { Route as MinhaAssinaturaRouteImport } from './routes/minha-assinatura'
 import { Route as MigracaoEmpresaRouteImport } from './routes/migracao-empresa'
 import { Route as MeusDadosRouteImport } from './routes/meus-dados'
 import { Route as MensagensRouteImport } from './routes/mensagens'
@@ -74,6 +76,11 @@ const SegurancaLocalRoute = SegurancaLocalRouteImport.update({
   path: '/seguranca-local',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SaasPlanosRoute = SaasPlanosRouteImport.update({
+  id: '/saas-planos',
+  path: '/saas-planos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -102,6 +109,11 @@ const PendenciasRoute = PendenciasRouteImport.update({
 const OperacaoDiaRoute = OperacaoDiaRouteImport.update({
   id: '/operacao-dia',
   path: '/operacao-dia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MinhaAssinaturaRoute = MinhaAssinaturaRouteImport.update({
+  id: '/minha-assinatura',
+  path: '/minha-assinatura',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MigracaoEmpresaRoute = MigracaoEmpresaRouteImport.update({
@@ -342,12 +354,14 @@ export interface FileRoutesByFullPath {
   '/mensagens': typeof MensagensRoute
   '/meus-dados': typeof MeusDadosRoute
   '/migracao-empresa': typeof MigracaoEmpresaRoute
+  '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/whatsapp': typeof WhatsappRoute
@@ -393,12 +407,14 @@ export interface FileRoutesByTo {
   '/mensagens': typeof MensagensRoute
   '/meus-dados': typeof MeusDadosRoute
   '/migracao-empresa': typeof MigracaoEmpresaRoute
+  '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/whatsapp': typeof WhatsappRoute
@@ -445,12 +461,14 @@ export interface FileRoutesById {
   '/mensagens': typeof MensagensRoute
   '/meus-dados': typeof MeusDadosRoute
   '/migracao-empresa': typeof MigracaoEmpresaRoute
+  '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/whatsapp': typeof WhatsappRoute
@@ -498,12 +516,14 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/meus-dados'
     | '/migracao-empresa'
+    | '/minha-assinatura'
     | '/operacao-dia'
     | '/pendencias'
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
     | '/reset-password'
+    | '/saas-planos'
     | '/seguranca-local'
     | '/testes'
     | '/whatsapp'
@@ -549,12 +569,14 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/meus-dados'
     | '/migracao-empresa'
+    | '/minha-assinatura'
     | '/operacao-dia'
     | '/pendencias'
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
     | '/reset-password'
+    | '/saas-planos'
     | '/seguranca-local'
     | '/testes'
     | '/whatsapp'
@@ -600,12 +622,14 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/meus-dados'
     | '/migracao-empresa'
+    | '/minha-assinatura'
     | '/operacao-dia'
     | '/pendencias'
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
     | '/reset-password'
+    | '/saas-planos'
     | '/seguranca-local'
     | '/testes'
     | '/whatsapp'
@@ -652,12 +676,14 @@ export interface RootRouteChildren {
   MensagensRoute: typeof MensagensRoute
   MeusDadosRoute: typeof MeusDadosRoute
   MigracaoEmpresaRoute: typeof MigracaoEmpresaRoute
+  MinhaAssinaturaRoute: typeof MinhaAssinaturaRoute
   OperacaoDiaRoute: typeof OperacaoDiaRoute
   PendenciasRoute: typeof PendenciasRoute
   PreparacaoBackendRoute: typeof PreparacaoBackendRoute
   RegrasDisparoRoute: typeof RegrasDisparoRoute
   RelatorioRoute: typeof RelatorioRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SaasPlanosRoute: typeof SaasPlanosRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
   WhatsappRoute: typeof WhatsappRoute
@@ -692,6 +718,13 @@ declare module '@tanstack/react-router' {
       path: '/seguranca-local'
       fullPath: '/seguranca-local'
       preLoaderRoute: typeof SegurancaLocalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/saas-planos': {
+      id: '/saas-planos'
+      path: '/saas-planos'
+      fullPath: '/saas-planos'
+      preLoaderRoute: typeof SaasPlanosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -734,6 +767,13 @@ declare module '@tanstack/react-router' {
       path: '/operacao-dia'
       fullPath: '/operacao-dia'
       preLoaderRoute: typeof OperacaoDiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/minha-assinatura': {
+      id: '/minha-assinatura'
+      path: '/minha-assinatura'
+      fullPath: '/minha-assinatura'
+      preLoaderRoute: typeof MinhaAssinaturaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/migracao-empresa': {
@@ -1066,12 +1106,14 @@ const rootRouteChildren: RootRouteChildren = {
   MensagensRoute: MensagensRoute,
   MeusDadosRoute: MeusDadosRoute,
   MigracaoEmpresaRoute: MigracaoEmpresaRoute,
+  MinhaAssinaturaRoute: MinhaAssinaturaRoute,
   OperacaoDiaRoute: OperacaoDiaRoute,
   PendenciasRoute: PendenciasRoute,
   PreparacaoBackendRoute: PreparacaoBackendRoute,
   RegrasDisparoRoute: RegrasDisparoRoute,
   RelatorioRoute: RelatorioRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SaasPlanosRoute: SaasPlanosRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
   WhatsappRoute: WhatsappRoute,
@@ -1087,13 +1129,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

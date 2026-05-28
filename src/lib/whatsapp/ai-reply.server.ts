@@ -9,6 +9,7 @@ import { openaiChat } from "@/lib/openai.server";
 import { logWhatsAppAutomation } from "./automation-log.server";
 import { buildAiContext, buildPromptFromContext, type ConvoMemory } from "./ai-context.server";
 import { isLowSignal } from "./intent";
+import { ensureAiQuota, incrementAiUsage, markPausedByLimit } from "@/lib/billing-saas/quota.server";
 import type { WAInstanceRef } from "./provider";
 
 const COOLDOWN_MS = 8_000;
@@ -305,6 +306,33 @@ export async function handleInboundForAiReply(
     content: m.text,
   }));
 
+  // ===== Gate de quota de IA (plano SaaS do dono) =====
+  const quota = await ensureAiQuota(inst.company_id);
+  if (!quota.allowed) {
+    await markPausedByLimit(inst.company_id, quota.cycle?.id);
+    await logWhatsAppAutomation({
+      instance_id: inst.id, company_id: inst.company_id,
+      event_type: "ai_reply_blocked_quota", status: "skipped",
+      from_phone: parts.fromPhone, message_preview: parts.text,
+      details: { reason: quota.reason, used: quota.used, total: quota.total },
+    });
+    // Notifica dono 1x por ciclo
+    if (handoffNumber && !quota.cycle?.blocked_at) {
+      await notifyHuman(
+        ref,
+        handoffNumber,
+        parts.fromPhone,
+        "limite_ia_atingido",
+        `Sua cota mensal de respostas IA acabou (${quota.used}/${quota.total}). Compre um pacote extra ou troque de plano para reativar.`,
+      );
+    }
+    await supabaseAdmin
+      .from("whatsapp_inbound_messages")
+      .update({ reply_status: "skipped", reply_error: "quota_exceeded" })
+      .eq("id", inboundId);
+    return { handled: false, reason: "quota_exceeded" };
+  }
+
   try {
     await logWhatsAppAutomation({
       instance_id: inst.id, company_id: inst.company_id,
@@ -392,6 +420,10 @@ export async function handleInboundForAiReply(
         daily_sent_count: ((inst as any).daily_sent_count ?? 0) + 1,
       })
       .eq("id", inst.id);
+
+    // Incrementa contador de quota IA do mês (fonte da verdade do plano SaaS)
+    await incrementAiUsage(inst.company_id);
+
 
     // Atualiza memória curta + flags + limites
     const nowIso = new Date().toISOString();

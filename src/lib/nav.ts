@@ -48,6 +48,8 @@ export const ownerNav: NavItem[] = [
   { to: "/configuracao-inicial", label: "Configuração Inicial", icon: Wand2, hint: "Configure os passos essenciais antes de usar o sistema" },
   { to: "/empresas", label: "Contas de donos", icon: Building2, hint: "Gestão SaaS de contas (super admin)", superAdminOnly: true },
   { to: "/meus-dados", label: "Meus dados", icon: UserCog, hint: "Dados da sua conta — editáveis a qualquer momento" },
+  { to: "/minha-assinatura", label: "Minha assinatura", icon: Wallet, hint: "Plano CobraEasy, uso de IA e pacotes extras" },
+  { to: "/saas-planos", label: "Planos SaaS", icon: Sparkles, hint: "Catálogo de planos vendidos (super admin)", superAdminOnly: true },
   { to: "/clientes", label: "Clientes", icon: Users, hint: "Sua base de clientes" },
   { to: "/cadastros-servicos", label: "Cadastros · Serviços", icon: Tv, hint: "Cadastre seus planos/valores (ex.: 1 tela R$ 12)" },
   { to: "/gestao-servicos", label: "Gestão Serviços", icon: Tv, hint: "Renove, edite e acompanhe cada serviço" },
