@@ -29,9 +29,7 @@ import {
   Tv,
   UserCog,
   Send,
-
-
-
+  Smartphone,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -73,6 +71,7 @@ export const ownerNav: NavItem[] = [
   { to: "/seguranca-local", label: "Segurança", icon: ShieldCheck, hint: "PIN e modo protegido (apenas neste navegador)", superAdminOnly: true },
   { to: "/admin-dns-rotas", label: "DNS e Rotas", icon: Network, hint: "Super Admin: domínios, subdomínios e rotas dos servidores", superAdminOnly: true },
   { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente", superAdminOnly: true },
+  { to: "/whatsapp", label: "WhatsApp", icon: Smartphone, hint: "Conecte sua instância do WhatsApp" },
   { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Saúde dos dados, segurança, rotas, financeiro e operação local", superAdminOnly: true },
   { to: "/preparacao-backend", label: "Preparação Backend", icon: Database, hint: "Mapeie dados locais e prepare a futura migração segura para banco de dados", superAdminOnly: true },
   { to: "/migracao-empresa", label: "Migração Empresa", icon: Database, hint: "Vincule dados locais antigos a uma empresa", superAdminOnly: true },
