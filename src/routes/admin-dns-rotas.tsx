@@ -75,7 +75,7 @@ function AdminDnsRotasPage() {
 
   // dialogs / sheets
   const [domainSheet, setDomainSheet] = useState<{ open: boolean; data?: DnsDomain | null }>({ open: false });
-  const [routeSheet, setRouteSheet] = useState<{ open: boolean; data?: DnsRoute | null }>({ open: false });
+  const [routeSheet, setRouteSheet] = useState<{ open: boolean; data?: DnsRoute | null; defaultServerId?: string }>({ open: false });
   const [primaryConflict, setPrimaryConflict] = useState<{
     open: boolean;
     pendingSave?: () => void;
