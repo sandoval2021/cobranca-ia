@@ -16,10 +16,9 @@ export type ConvoMemory = {
   last_messages: Array<{ role: "user" | "assistant"; text: string; at: string }>;
   summary: string | null;
   flags: Record<string, unknown>;
-};
-
 export type AiContext = {
   intent: Intent;
+  classification: CustomerClass;
   company: { id: string; name: string | null };
   customer: {
     id: string;
@@ -48,6 +47,7 @@ export type AiContext = {
   };
   app: {
     name: string | null;
+    issue: ReturnType<typeof detectAppIssue>;
     entry: {
       app_name: string;
       login_type: string;
@@ -59,6 +59,7 @@ export type AiContext = {
       escalate_when: string | null;
     } | null;
   };
+  memory: ConvoMemory;
   settings: {
     support_instructions: string | null;
     ask_referral_for_new: boolean;
@@ -66,6 +67,23 @@ export type AiContext = {
     human_handoff_number: string | null;
   };
   needsHuman: boolean;
+  reason: string | null;
+};
+
+function brl(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+export async function buildAiContext(params: {
+  companyId: string;
+  fromPhone: string;
+  text: string;
+  memory?: ConvoMemory;
+}): Promise<AiContext> {
+  const { companyId, fromPhone, text } = params;
+  const memory: ConvoMemory = params.memory ?? { last_messages: [], summary: null, flags: {} };
+  const intent = detectIntent(text);
+
   reason: string | null;
 };
 
