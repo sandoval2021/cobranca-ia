@@ -380,6 +380,8 @@ function SignupOtpForm({
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const verifyFn = useServerFn(verifySignupOtp);
+  const resendFn = useServerFn(resendOtp);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -402,50 +404,60 @@ function SignupOtpForm({
     if (code.length !== OTP_LENGTH) return setError(`Digite os ${OTP_LENGTH} dígitos do código.`);
 
     setSubmitting(true);
-    const { data, error: err } = await supabase.auth.verifyOtp({
-      type: "signup",
-      email: ctx.email,
-      token: code,
-    });
-    if (err || !data.session) {
-      setSubmitting(false);
-      setError(
-        err
-          ? friendlyAuthError(err.message) ||
-              "Código inválido ou expirado. Confira e tente novamente."
-          : "Código inválido ou expirado. Confira e tente novamente.",
-      );
-      return;
-    }
-
     try {
-      await syncDefaultCompanyForUser({
-        email: ctx.email,
-        nome: ctx.nome,
-        whatsapp: ctx.whatsapp,
+      const r = await verifyFn({
+        data: { email: ctx.email, code, password: ctx.password },
       });
+      if (!r.ok) {
+        setSubmitting(false);
+        setError(r.error);
+        return;
+      }
+      // Cria sessão no browser com a senha original
+      const { error: signErr } = await supabase.auth.signInWithPassword({
+        email: ctx.email,
+        password: ctx.password,
+      });
+      if (signErr) {
+        setSubmitting(false);
+        setError(friendlyAuthError(signErr.message));
+        return;
+      }
+      try {
+        await syncDefaultCompanyForUser({
+          email: ctx.email,
+          nome: ctx.nome,
+          whatsapp: ctx.whatsapp,
+        });
+      } catch {
+        /* silencioso */
+      }
+      toast.success("Cadastro confirmado!");
     } catch {
-      /* silencioso */
+      setSubmitting(false);
+      setError("Falha de conexão. Tente novamente.");
     }
-    toast.success("Cadastro confirmado!");
   }
 
   async function handleResend() {
-    if (!supabase || cooldown > 0) return;
+    if (cooldown > 0) return;
     setError(null);
     setResending(true);
-    const { error: err } = await supabase.auth.resend({
-      type: "signup",
-      email: ctx.email,
-    });
-    setResending(false);
-    if (err) {
-      setError(friendlyAuthError(err.message));
-      return;
+    try {
+      const r = await resendFn({ data: { email: ctx.email, purpose: "signup" } });
+      setResending(false);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setCooldown(60);
+      toast.success("Novo código enviado.");
+    } catch {
+      setResending(false);
+      setError("Falha de conexão. Tente novamente.");
     }
-    setCooldown(45);
-    toast.success("Novo código enviado.");
   }
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
