@@ -471,6 +471,8 @@ export type Database = {
           friendly_name: string
           id: string
           last_activity_at: string | null
+          pairing_code: string | null
+          pairing_code_expires_at: string | null
           per_minute_limit: number
           phone_number: string | null
           provider: string
@@ -489,6 +491,8 @@ export type Database = {
           friendly_name: string
           id?: string
           last_activity_at?: string | null
+          pairing_code?: string | null
+          pairing_code_expires_at?: string | null
           per_minute_limit?: number
           phone_number?: string | null
           provider?: string
@@ -507,6 +511,8 @@ export type Database = {
           friendly_name?: string
           id?: string
           last_activity_at?: string | null
+          pairing_code?: string | null
+          pairing_code_expires_at?: string | null
           per_minute_limit?: number
           phone_number?: string | null
           provider?: string
