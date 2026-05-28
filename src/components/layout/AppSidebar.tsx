@@ -268,11 +268,6 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
       </nav>
 
       <div className="space-y-2 border-t border-border p-3">
-        {user && (
-          <div className="rounded-lg bg-surface-muted p-2">
-            <LocalUserBadge />
-          </div>
-        )}
         <div className="rounded-lg bg-surface-muted p-2">
           <AuthStatus />
         </div>

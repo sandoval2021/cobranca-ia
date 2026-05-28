@@ -664,6 +664,7 @@ export type Database = {
     Functions: {
       claim_super_admin_bootstrap: { Args: never; Returns: Json }
       cleanup_auth_ephemeral: { Args: never; Returns: undefined }
+      current_user_is_super_admin: { Args: never; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
