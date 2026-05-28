@@ -106,8 +106,32 @@ export async function handleInboundForAiReply(
     .eq("id", ref.id)
     .maybeSingle();
   if (!inst) return { handled: false, reason: "instance_missing" };
-  if (!inst.ai_reply_enabled) return { handled: false, reason: "ai_disabled" };
-  if (inst.status !== "connected") return { handled: false, reason: "not_connected" };
+  if (!inst.ai_reply_enabled) {
+    await logWhatsAppAutomation({
+      instance_id: ref.id,
+      company_id: ref.company_id,
+      event_type: "ai_reply_skipped",
+      status: "skipped",
+      provider_instance: ref.provider_instance_id,
+      from_phone: parts.fromPhone,
+      message_preview: parts.text,
+      details: { reason: "ai_disabled" },
+    });
+    return { handled: false, reason: "ai_disabled" };
+  }
+  if (inst.status !== "connected") {
+    await logWhatsAppAutomation({
+      instance_id: ref.id,
+      company_id: ref.company_id,
+      event_type: "ai_reply_skipped",
+      status: "skipped",
+      provider_instance: ref.provider_instance_id,
+      from_phone: parts.fromPhone,
+      message_preview: parts.text,
+      details: { reason: "not_connected", status: inst.status },
+    });
+    return { handled: false, reason: "not_connected" };
+  }
 
   // Insere com dedup. Se já existe, ignora (webhook duplicado).
   const { data: inserted, error: insErr } = await supabaseAdmin
