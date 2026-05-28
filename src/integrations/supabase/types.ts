@@ -536,6 +536,48 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_portal_devices: {
+        Row: {
+          company_id: string
+          created_at: string
+          current_route: string | null
+          customer_id: string
+          device_key: string | null
+          id: string
+          last_updated_at: string | null
+          mac: string | null
+          notes: string | null
+          portal_app_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          current_route?: string | null
+          customer_id: string
+          device_key?: string | null
+          id?: string
+          last_updated_at?: string | null
+          mac?: string | null
+          notes?: string | null
+          portal_app_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          current_route?: string | null
+          customer_id?: string
+          device_key?: string | null
+          id?: string
+          last_updated_at?: string | null
+          mac?: string | null
+          notes?: string | null
+          portal_app_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_support_tokens: {
         Row: {
           company_id: string
@@ -724,6 +766,60 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      portal_apps: {
+        Row: {
+          app_name: string
+          color: string
+          company_id: string
+          created_at: string
+          id: string
+          id_type: string
+          is_active: boolean
+          key_url_template: string | null
+          mac_url_template: string | null
+          notes: string | null
+          panel_login: string | null
+          panel_password_enc: string | null
+          panel_url: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          app_name: string
+          color?: string
+          company_id: string
+          created_at?: string
+          id?: string
+          id_type?: string
+          is_active?: boolean
+          key_url_template?: string | null
+          mac_url_template?: string | null
+          notes?: string | null
+          panel_login?: string | null
+          panel_password_enc?: string | null
+          panel_url?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          app_name?: string
+          color?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          id_type?: string
+          is_active?: boolean
+          key_url_template?: string | null
+          mac_url_template?: string | null
+          notes?: string | null
+          panel_login?: string | null
+          panel_password_enc?: string | null
+          panel_url?: string | null
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
