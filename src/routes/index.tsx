@@ -551,63 +551,7 @@ function Dashboard() {
   // Projeção simples = receita + (custos do mês → indica volume restante)
   const projecaoMes = counters.receitaMes + counters.custosMes;
 
-  // Próximo passo recomendado
-  const totalComVencimento =
-    counters.clientesHoje + counters.clientesVencidos + counters.proximos7;
-  const nextStep = (() => {
-    if (totalComVencimento === 0 && counters.testesAndamento === 0) {
-      return {
-        title: "Cadastre ou importe seus clientes",
-        desc: "Comece adicionando o primeiro cliente ou importando uma lista.",
-        cta: "Importar clientes",
-        to: "/importar-clientes",
-        tone: "primary" as Tone,
-      };
-    }
-    if (counters.clientesVencidos > 0) {
-      return {
-        title: "Revise cobranças em atraso",
-        desc: `${counters.clientesVencidos} cliente(s) com lista vencida.`,
-        cta: "Abrir Hoje",
-        to: "/operacao-dia",
-        tone: "danger" as Tone,
-      };
-    }
-    if (counters.clientesHoje > 0) {
-      return {
-        title: "Clientes vencendo hoje",
-        desc: `${counters.clientesHoje} cliente(s) vencem hoje — envie a mensagem.`,
-        cta: "Abrir Hoje",
-        to: "/operacao-dia",
-        tone: "warning" as Tone,
-      };
-    }
-    if (counters.testesAcompanharHoje > 0) {
-      return {
-        title: "Acompanhe seus testes",
-        desc: `${counters.testesAcompanharHoje} teste(s) precisam de retorno.`,
-        cta: "Abrir Testes",
-        to: "/testes",
-        tone: "warning" as Tone,
-      };
-    }
-    return {
-      title: "Tudo em dia 🎉",
-      desc: "Sem ações urgentes no momento. Continue acompanhando seus clientes.",
-      cta: "Abrir Clientes",
-      to: "/clientes",
-      tone: "success" as Tone,
-    };
-  })();
 
-  const stepToneBg: Record<Tone, string> = {
-    primary: "border-primary/20 bg-primary-soft",
-    success: "border-success/30 bg-success-soft",
-    danger: "border-danger/30 bg-danger-soft",
-    warning: "border-warning/40 bg-warning-soft",
-    info: "border-info/30 bg-info-soft",
-    neutral: "border-border bg-muted",
-  };
 
   const aiCompanyId = (() => {
     const cid = getActiveCompanyId();
