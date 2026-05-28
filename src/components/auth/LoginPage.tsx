@@ -545,24 +545,24 @@ function ForgotForm({
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const reqRecovery = useServerFn(requestRecoveryOtp);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!supabase) {
-      setError("Conexão não configurada.");
-      return;
-    }
     setError(null);
     setSubmitting(true);
-    // Sem redirectTo: queremos OTP de recuperação, não link.
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
-    setSubmitting(false);
-    if (err) {
-      setError(friendlyAuthError(err.message));
-      return;
+    const normalized = email.trim().toLowerCase();
+    try {
+      await reqRecovery({ data: { email: normalized } });
+      setSubmitting(false);
+      // Resposta sempre genérica — independentemente de existir conta
+      onSent(normalized);
+    } catch {
+      setSubmitting(false);
+      setError("Falha de conexão. Tente novamente.");
     }
-    onSent(email.trim().toLowerCase());
   }
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
