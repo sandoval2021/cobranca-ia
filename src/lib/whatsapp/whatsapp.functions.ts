@@ -6,16 +6,30 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   evolutionProvider,
+  isEvolutionNotFoundError,
   loadInstanceRef,
   pickAvailableVps,
   getEvolutionWebhookUrl,
 } from "./evolution.server";
+
+const LOCAL_INVALID_INSTANCE_PREFIXES = ["sim_", "pending_"] as const;
+
+function hasInvalidLocalProviderId(providerInstanceId?: string | null): boolean {
+  return LOCAL_INVALID_INSTANCE_PREFIXES.some((prefix) => providerInstanceId?.startsWith(prefix));
+}
+
+function buildEvolutionInstanceName(companyId: string, instanceId: string): string {
+  return `cobraeasy_${companyId.replace(/-/g, "").slice(0, 12)}_${instanceId.replace(/-/g, "").slice(0, 12)}`;
+}
 
 async function assertCompanyAccess(
   supabase: any,
   userId: string,
   companyId: string,
 ): Promise<void> {
+  const { data: isSuper } = await supabase.rpc("is_super_admin");
+  if (isSuper) return;
+
   // owner ou membro da empresa
   const { data: owner } = await supabase
     .from("companies")
@@ -104,12 +118,8 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id)
       .maybeSingle();
 
-    // Resíduo de modo simulado ou placeholder nunca criado na Evolution → recria.
-    if (
-      existing &&
-      (existing.provider_instance_id?.startsWith("sim_") ||
-        existing.provider_instance_id?.startsWith("pending_"))
-    ) {
+    // Resíduo local inválido nunca criado na Evolution → remove e recria real.
+    if (existing && hasInvalidLocalProviderId(existing.provider_instance_id)) {
       await supabaseAdmin.from("whatsapp_instances").delete().eq("id", existing.id);
     } else if (existing) {
       const ref = await loadInstanceRef(existing.id);
@@ -133,11 +143,14 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
           pairing_code: qr.pairing_code ?? null,
         };
       } catch (err: any) {
-        // Limpa eventuais valores fake/expirados deixados em modo simulado.
-        await supabaseAdmin
-          .from("whatsapp_instances")
-          .update({ qr_code: null, pairing_code: null, qr_expires_at: null, pairing_code_expires_at: null })
-          .eq("id", existing.id);
+        if (isEvolutionNotFoundError(err)) {
+          await supabaseAdmin.from("whatsapp_instances").delete().eq("id", existing.id);
+        } else {
+          await supabaseAdmin
+            .from("whatsapp_instances")
+            .update({ qr_code: null, pairing_code: null, qr_expires_at: null, pairing_code_expires_at: null, status: "error" })
+            .eq("id", existing.id);
+        }
         throw new Error(err?.message || "Falha ao obter QR Code da Evolution.");
       }
     }
@@ -149,27 +162,15 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
       );
     }
 
-    // Cria placeholder para obter ID e montar webhook URL
-    const { data: created, error: ce } = await supabaseAdmin
-      .from("whatsapp_instances")
-      .insert({
-        company_id: data.company_id,
-        vps_node_id: vps.id,
-        friendly_name: data.friendly_name,
-        provider: "evolution",
-        provider_instance_id: `pending_${Date.now()}`,
-        status: "awaiting_qr",
-      })
-      .select("id")
-      .single();
-    if (ce || !created) throw new Error(ce?.message || "create_failed");
-
     const { data: vpsRow } = await supabaseAdmin
       .from("whatsapp_vps_nodes")
       .select("id, base_url, api_token_enc, webhook_secret")
       .eq("id", vps.id)
       .single();
     if (!vpsRow) throw new Error("vps_missing");
+
+    const localInstanceId = crypto.randomUUID();
+    const evolutionInstanceName = buildEvolutionInstanceName(data.company_id, localInstanceId);
 
     try {
       const res = await evolutionProvider.createInstance({
@@ -179,32 +180,49 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
           api_token: vpsRow.api_token_enc,
           webhook_secret: vpsRow.webhook_secret,
         },
+        instance_name: evolutionInstanceName,
         friendly_name: data.friendly_name,
-        webhook_url: getEvolutionWebhookUrl(created.id),
+        webhook_url: getEvolutionWebhookUrl(localInstanceId),
         phone_number: data.phone_number,
       });
 
-      await supabaseAdmin
+      const { error: ce } = await supabaseAdmin
         .from("whatsapp_instances")
-        .update({
+        .insert({
+          id: localInstanceId,
+          company_id: data.company_id,
+          vps_node_id: vps.id,
+          friendly_name: data.friendly_name,
+          provider: "evolution",
           provider_instance_id: res.provider_instance_id,
           qr_code: res.qr_code,
           qr_expires_at: res.qr_expires_at,
           pairing_code: res.pairing_code ?? null,
           pairing_code_expires_at: res.pairing_code_expires_at ?? null,
           status: res.status,
-        })
-        .eq("id", created.id);
+        });
+      if (ce) {
+        await evolutionProvider.deleteInstance({
+          id: localInstanceId,
+          company_id: data.company_id,
+          provider_instance_id: res.provider_instance_id,
+          vps: {
+            id: vpsRow.id,
+            base_url: vpsRow.base_url,
+            api_token: vpsRow.api_token_enc,
+            webhook_secret: vpsRow.webhook_secret,
+          },
+        });
+        throw new Error(ce.message);
+      }
 
       return {
-        instance_id: created.id,
+        instance_id: localInstanceId,
         status: res.status,
         qr_code: res.qr_code,
         pairing_code: res.pairing_code ?? null,
       };
     } catch (err: any) {
-      // Remove placeholder para não bloquear nova tentativa.
-      await supabaseAdmin.from("whatsapp_instances").delete().eq("id", created.id);
       throw new Error(err?.message || "Falha ao criar instância na Evolution.");
     }
   });
@@ -232,6 +250,11 @@ export const getWhatsAppQr = createServerFn({ method: "POST" })
     if (!ref) throw new Error("not_found");
     await assertCompanyAccess(supabase, userId, ref.company_id);
 
+    if (hasInvalidLocalProviderId(ref.provider_instance_id)) {
+      await supabaseAdmin.from("whatsapp_instances").delete().eq("id", ref.id);
+      throw new Error("Instância local inválida removida. Clique em Recriar conexão.");
+    }
+
     try {
       const qr = await evolutionProvider.getQrCode(ref, data.phone_number);
       await supabaseAdmin
@@ -246,10 +269,14 @@ export const getWhatsAppQr = createServerFn({ method: "POST" })
         .eq("id", ref.id);
       return qr;
     } catch (err: any) {
-      await supabaseAdmin
-        .from("whatsapp_instances")
-        .update({ qr_code: null, pairing_code: null, qr_expires_at: null, pairing_code_expires_at: null })
-        .eq("id", ref.id);
+      if (isEvolutionNotFoundError(err)) {
+        await supabaseAdmin.from("whatsapp_instances").delete().eq("id", ref.id);
+      } else {
+        await supabaseAdmin
+          .from("whatsapp_instances")
+          .update({ qr_code: null, pairing_code: null, qr_expires_at: null, pairing_code_expires_at: null, status: "error" })
+          .eq("id", ref.id);
+      }
       throw new Error(err?.message || "Falha ao obter QR Code da Evolution.");
     }
   });
@@ -266,12 +293,25 @@ export const disconnectWhatsAppInstance = createServerFn({ method: "POST" })
     if (!ref) throw new Error("not_found");
     await assertCompanyAccess(supabase, userId, ref.company_id);
 
-    const status = await evolutionProvider.disconnect(ref);
-    await supabaseAdmin
-      .from("whatsapp_instances")
-      .update({ status, qr_code: null, qr_expires_at: null })
-      .eq("id", ref.id);
-    return { status };
+    if (hasInvalidLocalProviderId(ref.provider_instance_id)) {
+      await supabaseAdmin.from("whatsapp_instances").delete().eq("id", ref.id);
+      return { status: "disconnected" as const };
+    }
+
+    try {
+      const status = await evolutionProvider.disconnect(ref);
+      await supabaseAdmin
+        .from("whatsapp_instances")
+        .update({ status, qr_code: null, qr_expires_at: null, pairing_code: null, pairing_code_expires_at: null })
+        .eq("id", ref.id);
+      return { status };
+    } catch (err) {
+      if (isEvolutionNotFoundError(err)) {
+        await supabaseAdmin.from("whatsapp_instances").delete().eq("id", ref.id);
+        return { status: "disconnected" as const };
+      }
+      throw err;
+    }
   });
 
 // -------- enqueue --------
@@ -328,12 +368,8 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id)
       .maybeSingle();
 
-    // Limpa resíduos do modo simulado/placeholder para a UI voltar ao estado inicial.
-    if (
-      inst &&
-      (inst.provider_instance_id?.startsWith("sim_") ||
-        inst.provider_instance_id?.startsWith("pending_"))
-    ) {
+    // Limpa resíduos locais inválidos para a UI voltar ao estado inicial.
+    if (inst && hasInvalidLocalProviderId(inst.provider_instance_id)) {
       await supabaseAdmin.from("whatsapp_instances").delete().eq("id", inst.id);
       return { instance: null, queued: 0 };
     }
