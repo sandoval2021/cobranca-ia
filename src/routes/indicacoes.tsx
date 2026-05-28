@@ -169,6 +169,9 @@ function IndicacoesPage() {
         subtitle="Acompanhe clientes que indicaram pessoas e controle bonificações."
         action={
           <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setNewOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" /> Nova indicação
+            </Button>
             <Button variant="outline" onClick={() => setRulesOpen(true)} className="gap-2">
               <Settings2 className="h-4 w-4" /> Regras de bonificação
             </Button>
@@ -183,6 +186,7 @@ function IndicacoesPage() {
               </Button>
             </label>
           </div>
+
         }
       />
 
