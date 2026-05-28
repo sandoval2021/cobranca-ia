@@ -37,7 +37,7 @@ function MinhaAssinatura() {
 
   return (
     <PageContainer>
-      <SectionHeader title="Minha assinatura" description="Plano CobraEasy, consumo de IA e pacotes extras." />
+      <SectionHeader title="Minha assinatura" subtitle="Plano CobraEasy, consumo de IA e pacotes extras." />
 
       {companyId ? (
         <div className="mb-4">

@@ -94,7 +94,7 @@ function SaasPlanos() {
     <PageContainer>
       <SectionHeader
         title="Planos SaaS (CobraEasy)"
-        description="Catálogo de planos vendidos para os donos de painéis IPTV."
+        subtitle="Catálogo de planos vendidos para os donos de painéis IPTV."
       />
       <div className="mb-3 flex justify-end">
         <Button size="sm" onClick={openNew}><Plus className="mr-1 h-4 w-4" /> Novo plano</Button>
