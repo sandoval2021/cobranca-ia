@@ -12,6 +12,7 @@ import {
   KeyRound,
   PhoneOff,
   Send,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -32,6 +33,7 @@ import {
   ensureMyCompany,
   setWhatsAppRejectCall,
   sendWhatsAppTestMessage,
+  setWhatsAppAiReply,
 } from "@/lib/whatsapp/whatsapp.functions";
 
 export const Route = createFileRoute("/whatsapp")({
@@ -84,6 +86,9 @@ function WhatsAppPage() {
   const [testPhone, setTestPhone] = useState("");
   const [testBody, setTestBody] = useState("Olá! Esta é uma mensagem de teste do CobraEasy.");
   const [sendingTest, setSendingTest] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [savingAi, setSavingAi] = useState(false);
 
   const ensureCompany = useServerFn(ensureMyCompany);
   const fetchData = useServerFn(getCompanyWhatsApp);
@@ -92,6 +97,7 @@ function WhatsAppPage() {
   const disconnectFn = useServerFn(disconnectWhatsAppInstance);
   const setRejectFn = useServerFn(setWhatsAppRejectCall);
   const sendTestFn = useServerFn(sendWhatsAppTestMessage);
+  const setAiFn = useServerFn(setWhatsAppAiReply);
 
   // Garante uma empresa real (UUID) no backend para o usuário logado.
   useEffect(() => {
