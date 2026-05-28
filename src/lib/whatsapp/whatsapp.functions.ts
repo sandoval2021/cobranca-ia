@@ -411,8 +411,33 @@ export const setWhatsAppAiReply = createServerFn({ method: "POST" })
         ai_system_prompt: data.system_prompt ?? null,
       } as any)
       .eq("id", ref.id);
+
+    // Garante que o webhook está configurado para receber MESSAGES_UPSERT.
+    if (data.enabled) {
+      try {
+        await evolutionProvider.setWebhook(ref, getEvolutionWebhookUrl(ref.id));
+      } catch (err) {
+        console.error("[setWhatsAppAiReply] setWebhook falhou", err);
+      }
+    }
     return { ok: true };
   });
+
+// -------- reconfigurar webhook (botão manual) --------
+export const resetWhatsAppWebhook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ instance_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const ref = await loadInstanceRef(data.instance_id);
+    if (!ref) throw new Error("not_found");
+    await assertCompanyAccess(supabase, userId, ref.company_id);
+    await evolutionProvider.setWebhook(ref, getEvolutionWebhookUrl(ref.id));
+    return { ok: true };
+  });
+
 
 
 export const enqueueWhatsAppMessage = createServerFn({ method: "POST" })
