@@ -2,19 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  Plus, Trash2, Pencil, Sparkles, Save, MessageCircle, Check,
-  Users, Clock, Eye, X,
+  Plus, Trash2, Pencil, Sparkles, Save, MessageCircle, Check, ChevronRight,
 } from "lucide-react";
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
-import { HelpTip } from "@/components/ui-premium/HelpTip";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -37,6 +34,35 @@ export const Route = createFileRoute("/cadastros-servicos")({
   component: CadastrosServicosPage,
 });
 
+// Prazos fixos disponíveis para cada plano
+const TIMING_SLOTS: number[] = [-3, 0, 3, 15, 30, 60, 90, 120, 180, 250, 365];
+
+type Tone = "antes" | "no_dia" | "depois";
+
+function toneOf(days: number): Tone {
+  if (days === 0) return "no_dia";
+  return days < 0 ? "antes" : "depois";
+}
+function toneDotClass(t: Tone) {
+  if (t === "antes") return "bg-success";
+  if (t === "no_dia") return "bg-warning";
+  return "bg-destructive";
+}
+function slotLabel(days: number): string {
+  if (days === 0) return "No dia do vencimento";
+  const abs = Math.abs(days);
+  const p = abs === 1 ? "" : "s";
+  return days < 0 ? `${abs} dia${p} antes` : `${abs} dia${p} depois`;
+}
+function slotSubtitle(days: number): string {
+  if (days === 0) return "Essa mensagem será enviada no dia do vencimento.";
+  const abs = Math.abs(days);
+  const p = abs === 1 ? "" : "s";
+  return days < 0
+    ? `Essa mensagem será enviada ${abs} dia${p} antes do vencimento.`
+    : `Essa mensagem será enviada ${abs} dia${p} depois do vencimento.`;
+}
+
 // ============================================================================
 // PAGE
 // ============================================================================
@@ -48,9 +74,7 @@ function CadastrosServicosPage() {
     open: false, service: null,
   });
   const [pendingDelete, setPendingDelete] = useState<ServiceItem | null>(null);
-
-  // Message composer state (one "message" can be saved into many plans)
-  const [editingMsg, setEditingMsg] = useState<{ planId: string; messageId: string } | null>(null);
+  const [editor, setEditor] = useState<{ planId: string; offsetDays: number } | null>(null);
 
   const reload = () => setItems(listServices());
 
@@ -61,12 +85,18 @@ function CadastrosServicosPage() {
     return () => window.removeEventListener(SERVICES_EVENT, h);
   }, []);
 
+  // Auto-seleciona o primeiro plano se nenhum estiver selecionado
   useEffect(() => {
-    // garante seleção válida
-    if (selectedPlanId && !items.find((p) => p.id === selectedPlanId)) {
-      setSelectedPlanId(null);
+    if (items.length > 0 && (!selectedPlanId || !items.find((p) => p.id === selectedPlanId))) {
+      setSelectedPlanId(items[0].id);
     }
+    if (items.length === 0 && selectedPlanId) setSelectedPlanId(null);
   }, [items, selectedPlanId]);
+
+  const selectedPlan = useMemo(
+    () => items.find((p) => p.id === selectedPlanId) ?? null,
+    [items, selectedPlanId],
+  );
 
   function openNewPlan() {
     if (!ensureCanEditService().allowed) return;
@@ -89,16 +119,12 @@ function CadastrosServicosPage() {
     reload();
   }
 
-  // Listagem unificada de mensagens (agrupadas por offset+template, mostrando quais planos cobrem)
-  const groupedMessages = useMemo(() => groupMessages(items), [items]);
-
   return (
     <PageContainer>
       {/* =================== BLOCO 1 — PLANOS =================== */}
       <SectionHeader
-        title="Planos de cobrança"
-        subtitle="Cadastre os planos que você vende para seus clientes."
-        hint="Cada plano tem nome, valor, quantidade de telas e duração. Você pode criar quantos planos quiser."
+        title="Escolha o plano"
+        subtitle="Cada plano tem suas próprias mensagens. Toque em um plano para configurar."
         action={
           <div className="flex flex-wrap gap-2">
             {items.length === 0 && (
@@ -115,7 +141,7 @@ function CadastrosServicosPage() {
 
       {items.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted-foreground">
-          Nenhum plano cadastrado ainda. Clique em <strong>Novo plano</strong> para começar.
+          Nenhum plano cadastrado ainda. Toque em <strong>Novo plano</strong> para começar.
         </Card>
       ) : (
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
@@ -125,7 +151,7 @@ function CadastrosServicosPage() {
               <button
                 key={s.id}
                 type="button"
-                onClick={() => setSelectedPlanId(active ? null : s.id)}
+                onClick={() => setSelectedPlanId(s.id)}
                 className={cn(
                   "group relative flex flex-col gap-1 rounded-2xl border-2 bg-card p-3 text-left shadow-sm transition-all",
                   "hover:border-primary/60 hover:shadow-md",
@@ -173,54 +199,51 @@ function CadastrosServicosPage() {
         </div>
       )}
 
-      {/* =================== BLOCO 2 — MENSAGENS AUTOMÁTICAS =================== */}
-      <div className="mt-8">
-        <SectionHeader
-          title="Mensagens automáticas"
-          subtitle="Configure quando e para quais planos cada mensagem será enviada."
-          hint="As mensagens são enviadas automaticamente pelo WhatsApp nos dias configurados em relação ao vencimento."
-        />
-
-        {items.length === 0 ? (
-          <Card className="p-6 text-center text-sm text-muted-foreground">
-            Cadastre pelo menos um plano para configurar mensagens.
-          </Card>
-        ) : (
-          <MessageComposer
-            plans={items}
-            defaultPlanIds={selectedPlanId ? [selectedPlanId] : []}
-            editing={editingMsg}
-            onClearEditing={() => setEditingMsg(null)}
-            onSaved={reload}
+      {/* =================== BLOCO 2 — MENSAGENS DO PLANO =================== */}
+      {selectedPlan && (
+        <div className="mt-8">
+          <SectionHeader
+            title={`Mensagens do ${selectedPlan.nome}`}
+            subtitle="Toque em um prazo para escrever ou alterar o texto que será enviado."
           />
-        )}
 
-        {/* Mensagens já configuradas */}
-        {groupedMessages.length > 0 && (
-          <div className="mt-5">
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Mensagens configuradas
-            </h3>
-            <div className="space-y-2">
-              {groupedMessages.map((g) => (
-                <ConfiguredMessageRow
-                  key={g.key}
-                  group={g}
-                  onEdit={(planId, messageId) => {
-                    setEditingMsg({ planId, messageId });
-                    document.getElementById("msg-composer")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                  onDelete={(planId, messageId) => {
-                    removeServiceMessage(planId, messageId);
-                    toast.success("Mensagem removida");
-                    reload();
-                  }}
-                />
-              ))}
-            </div>
+          <div className="space-y-2">
+            {TIMING_SLOTS.map((days) => {
+              const msg = selectedPlan.messages.find((m) => m.offset_days === days);
+              const configured = !!(msg && msg.template.trim());
+              const tone = toneOf(days);
+              return (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl border-2 bg-card p-3 text-left shadow-sm transition-all",
+                    "hover:border-primary/60 hover:shadow-md active:scale-[0.99]",
+                    "border-border",
+                  )}
+                >
+                  <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", toneDotClass(tone))} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold leading-tight">{slotLabel(days)}</p>
+                    <p className={cn(
+                      "mt-0.5 truncate text-xs",
+                      configured ? "text-muted-foreground" : "text-destructive/80 font-medium",
+                    )}>
+                      {configured ? msg!.template : "Não configurado"}
+                    </p>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px]">
+                    <Pencil className="h-3 w-3" />
+                    <span className="hidden sm:inline">Editar texto</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+                </button>
+              );
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ====== Dialogs ====== */}
       <PlanFormDialog
@@ -228,6 +251,14 @@ function CadastrosServicosPage() {
         service={planDialog.service}
         onClose={() => setPlanDialog({ open: false, service: null })}
         onSaved={() => { setPlanDialog({ open: false, service: null }); reload(); }}
+      />
+
+      <MessageEditorDialog
+        open={!!editor}
+        plan={editor ? items.find((p) => p.id === editor.planId) ?? null : null}
+        offsetDays={editor?.offsetDays ?? 0}
+        onClose={() => setEditor(null)}
+        onSaved={() => { setEditor(null); reload(); }}
       />
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
@@ -254,19 +285,8 @@ function CadastrosServicosPage() {
 }
 
 // ============================================================================
-// MESSAGE COMPOSER (passo 1, 2, 3, 4)
+// EDITOR DE MENSAGEM (modal — 1 plano + 1 prazo por vez)
 // ============================================================================
-
-const TIMING_CHIPS: Array<{ days: number; label: string; tone: "antes" | "no_dia" | "depois" }> = [
-  { days: -7, label: "7 dias antes", tone: "antes" },
-  { days: -3, label: "3 dias antes", tone: "antes" },
-  { days: -1, label: "1 dia antes", tone: "antes" },
-  { days: 0, label: "No vencimento", tone: "no_dia" },
-  { days: 1, label: "1 dia depois", tone: "depois" },
-  { days: 3, label: "3 dias depois", tone: "depois" },
-  { days: 7, label: "7 dias depois", tone: "depois" },
-  { days: 15, label: "15 dias depois", tone: "depois" },
-];
 
 const VARIABLES = [
   { key: "nome", label: "{nome}" },
@@ -277,47 +297,24 @@ const VARIABLES = [
   { key: "link_pagamento", label: "{link_pagamento}" },
 ];
 
-function MessageComposer({
-  plans, defaultPlanIds, editing, onClearEditing, onSaved,
+function MessageEditorDialog({
+  open, plan, offsetDays, onClose, onSaved,
 }: {
-  plans: ServiceItem[];
-  defaultPlanIds: string[];
-  editing: { planId: string; messageId: string } | null;
-  onClearEditing: () => void;
+  open: boolean;
+  plan: ServiceItem | null;
+  offsetDays: number;
+  onClose: () => void;
   onSaved: () => void;
 }) {
-  const [selectedPlans, setSelectedPlans] = useState<string[]>(defaultPlanIds);
-  const [offsetDays, setOffsetDays] = useState<number>(-3);
-  const [template, setTemplate] = useState<string>(DEFAULT_COBRANCA);
+  const [template, setTemplate] = useState<string>("");
   const textRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // ao mudar a seleção do card de plano, sincroniza
+  const existing: ServiceMessage | undefined = plan?.messages.find((m) => m.offset_days === offsetDays);
+
   useEffect(() => {
-    if (!editing) setSelectedPlans(defaultPlanIds);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultPlanIds.join(",")]);
-
-  // Modo edição: carrega a mensagem existente
-  useEffect(() => {
-    if (!editing) return;
-    const plan = plans.find((p) => p.id === editing.planId);
-    const msg = plan?.messages.find((m) => m.id === editing.messageId);
-    if (msg) {
-      setSelectedPlans([editing.planId]);
-      setOffsetDays(msg.offset_days);
-      setTemplate(msg.template || DEFAULT_COBRANCA);
-    }
-  }, [editing, plans]);
-
-  const isEditing = !!editing;
-
-  function togglePlan(id: string) {
-    setSelectedPlans((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  }
-  function selectAll() { setSelectedPlans(plans.map((p) => p.id)); }
-  function clearSel() { setSelectedPlans([]); }
+    if (!open) return;
+    setTemplate(existing?.template ?? DEFAULT_COBRANCA);
+  }, [open, existing?.id, existing?.template]);
 
   function insertVar(v: string) {
     const ta = textRef.current;
@@ -334,200 +331,121 @@ function MessageComposer({
     });
   }
 
-  function reset() {
-    setSelectedPlans(defaultPlanIds);
-    setOffsetDays(-3);
-    setTemplate(DEFAULT_COBRANCA);
-    onClearEditing();
-  }
-
   function save() {
+    if (!plan) return;
     if (!ensureCanEditService().allowed) return;
-    if (selectedPlans.length === 0) { toast.error("Selecione pelo menos um plano."); return; }
     if (!template.trim()) { toast.error("Escreva o texto da mensagem."); return; }
 
-    if (isEditing && editing) {
-      // editar uma mensagem específica de um plano
-      updateServiceMessage(editing.planId, editing.messageId, {
+    if (existing) {
+      updateServiceMessage(plan.id, existing.id, {
         template,
         offset_days: offsetDays,
         label: "",
       });
-      // se o usuário marcou outros planos, cria a mesma mensagem neles também
-      const extras = selectedPlans.filter((id) => id !== editing.planId);
-      extras.forEach((pid) => {
-        addServiceMessage(pid, { kind: offsetDays === 0 ? "cobranca" : "acompanhamento", offset_days: offsetDays, template });
-      });
-      toast.success("Mensagem salva");
     } else {
-      // criar em cada plano selecionado
-      selectedPlans.forEach((pid) => {
-        addServiceMessage(pid, { kind: offsetDays === 0 ? "cobranca" : "acompanhamento", offset_days: offsetDays, template });
+      addServiceMessage(plan.id, {
+        kind: offsetDays === 0 ? "cobranca" : "acompanhamento",
+        offset_days: offsetDays,
+        template,
       });
-      toast.success(
-        selectedPlans.length === 1
-          ? "Mensagem adicionada"
-          : `Mensagem adicionada em ${selectedPlans.length} planos`,
-      );
     }
+    toast.success("Mensagem salva");
     onSaved();
-    reset();
   }
 
-  // Preview
-  const previewPlan = plans.find((p) => selectedPlans.includes(p.id)) ?? plans[0];
-  const preview = useMemo(() => renderTemplate(template, {
-    nome: "João",
-    plano: previewPlan?.nome ?? "—",
-    valor: previewPlan ? formatBRL(previewPlan.preco_cents) : "—",
-    telas: previewPlan?.telas ?? 1,
-    meses: previewPlan?.meses ?? 1,
-    vencimento: "15/12/2026",
-  }).replace(/\{pix\}/g, "00020126...PIX").replace(/\{link_pagamento\}/g, "https://pag.to/exemplo"),
-  [template, previewPlan]);
+  function clearMessage() {
+    if (!plan || !existing) return;
+    removeServiceMessage(plan.id, existing.id);
+    toast.success("Mensagem removida");
+    onSaved();
+  }
 
-  const timingDescription = describeTiming(offsetDays);
+  const preview = useMemo(() => {
+    if (!plan) return "";
+    return renderTemplate(template, {
+      nome: "João",
+      plano: plan.nome,
+      valor: formatBRL(plan.preco_cents),
+      telas: plan.telas,
+      meses: plan.meses,
+      vencimento: "15/12/2026",
+    })
+      .replace(/\{pix\}/g, "00020126...PIX")
+      .replace(/\{link_pagamento\}/g, "https://pag.to/exemplo");
+  }, [template, plan]);
 
   return (
-    <Card id="msg-composer" className="overflow-hidden border-2 border-primary/30 shadow-md">
-      {isEditing && (
-        <div className="flex items-center justify-between gap-2 border-b border-primary/30 bg-primary-soft px-3 py-1.5 text-xs">
-          <span className="font-medium text-primary">Editando mensagem existente</span>
-          <button onClick={reset} className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground">
-            <X className="h-3 w-3" /> Cancelar edição
-          </button>
-        </div>
-      )}
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="mx-3 max-w-[640px] sm:mx-6">
+        <DialogHeader>
+          <DialogTitle className="pr-6 text-base sm:text-lg">
+            Editar mensagem — {plan?.nome ?? ""}
+          </DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
+            {slotSubtitle(offsetDays)}
+          </DialogDescription>
+        </DialogHeader>
 
-      <div className="space-y-5 p-4">
-        {/* PASSO 1 — Quem recebe */}
-        <Step number={1} icon={Users} title="Quem vai receber" hint="Escolha um ou vários planos. A mesma mensagem será aplicada a cada plano selecionado.">
-          <div className="mb-1.5 flex flex-wrap gap-1.5">
-            <button type="button" onClick={selectAll} className="text-[11px] text-primary hover:underline">
-              Selecionar todos
-            </button>
-            <span className="text-[11px] text-muted-foreground">·</span>
-            <button type="button" onClick={clearSel} className="text-[11px] text-muted-foreground hover:underline">
-              Limpar
-            </button>
+        <div className="space-y-3">
+          {/* Texto */}
+          <div>
+            <Label className="text-xs font-semibold">Texto da mensagem</Label>
+            <Textarea
+              ref={textRef}
+              rows={6}
+              value={template}
+              onChange={(e) => setTemplate(e.target.value)}
+              className="mt-1 text-sm"
+              placeholder="Olá {nome}, tudo bem? Passando para lembrar do seu plano {plano}..."
+            />
           </div>
-          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-            {plans.map((p) => {
-              const checked = selectedPlans.includes(p.id);
-              return (
-                <label
-                  key={p.id}
-                  className={cn(
-                    "flex cursor-pointer items-center gap-2 rounded-lg border-2 px-2.5 py-2 transition-colors",
-                    checked
-                      ? "border-primary bg-primary-soft"
-                      : "border-border bg-background hover:border-primary/40",
-                  )}
-                >
-                  <Checkbox checked={checked} onCheckedChange={() => togglePlan(p.id)} />
-                  <span className="flex-1 truncate text-sm font-medium">{p.nome}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{formatBRL(p.preco_cents)}</span>
-                </label>
-              );
-            })}
-          </div>
-        </Step>
 
-        {/* PASSO 2 — Quando enviar */}
-        <Step number={2} icon={Clock} title="Quando enviar" hint="Em quantos dias em relação ao vencimento esta mensagem deve sair.">
-          <div className="flex flex-wrap gap-1.5">
-            {TIMING_CHIPS.map((c) => {
-              const active = offsetDays === c.days;
-              return (
+          {/* Variáveis */}
+          <div>
+            <Label className="text-xs font-semibold">Informações automáticas</Label>
+            <p className="text-[11px] text-muted-foreground">Toque para inserir no texto.</p>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {VARIABLES.map((v) => (
                 <button
-                  key={c.days}
+                  key={v.key}
                   type="button"
-                  onClick={() => setOffsetDays(c.days)}
-                  className={cn(
-                    "rounded-full border-2 px-3 py-1 text-xs font-medium transition-all",
-                    active
-                      ? toneActiveClass(c.tone)
-                      : "border-border bg-background text-foreground hover:border-foreground/30",
-                  )}
+                  onClick={() => insertVar(v.key)}
+                  className="rounded-md border border-border bg-muted px-2 py-1 font-mono text-[11px] text-foreground hover:bg-primary hover:text-primary-foreground"
                 >
-                  <span className={cn("mr-1 inline-block h-1.5 w-1.5 rounded-full", toneDotClass(c.tone))} />
-                  {c.label}
+                  {v.label}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">{timingDescription}</p>
-        </Step>
 
-        {/* PASSO 3 — Mensagem */}
-        <Step number={3} icon={MessageCircle} title="Mensagem" hint="Use as variáveis abaixo para personalizar com nome do cliente, valor, vencimento, etc.">
-          <div className="mb-1.5 flex flex-wrap gap-1">
-            {VARIABLES.map((v) => (
-              <button
-                key={v.key}
-                type="button"
-                onClick={() => insertVar(v.key)}
-                className="rounded-md border border-border bg-muted px-2 py-0.5 font-mono text-[11px] text-foreground hover:bg-primary hover:text-primary-foreground"
-              >
-                {v.label}
-              </button>
-            ))}
+          {/* Preview */}
+          <div>
+            <Label className="text-xs font-semibold">Como vai chegar no WhatsApp</Label>
+            <div className="mt-1">
+              <WhatsAppBubble text={preview} />
+            </div>
           </div>
-          <Textarea
-            ref={textRef}
-            rows={5}
-            value={template}
-            onChange={(e) => setTemplate(e.target.value)}
-            className="text-sm"
-            placeholder="Olá {nome}, tudo bem? Passando para lembrar do seu plano {plano}..."
-          />
-        </Step>
-
-        {/* PASSO 4 — Preview */}
-        <Step number={4} icon={Eye} title="Pré-visualização" hint="Veja como a mensagem vai chegar no WhatsApp do cliente.">
-          <WhatsAppBubble text={preview} />
-        </Step>
-
-        {/* Salvar */}
-        <div className="flex flex-col-reverse gap-2 border-t border-border pt-3 sm:flex-row sm:justify-end">
-          {isEditing && (
-            <Button variant="ghost" size="sm" onClick={reset}>Cancelar</Button>
-          )}
-          <Button size="sm" onClick={save} className="gap-1.5">
-            <Save className="h-4 w-4" />
-            {isEditing ? "Salvar alterações" : `Salvar mensagem${selectedPlans.length > 1 ? ` (${selectedPlans.length} planos)` : ""}`}
-          </Button>
         </div>
-      </div>
-    </Card>
-  );
-}
 
-// ============================================================================
-// HELPERS UI
-// ============================================================================
-
-function Step({
-  number, icon: Icon, title, hint, children,
-}: {
-  number: number;
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="mb-2 flex items-center gap-2">
-        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-          {number}
-        </span>
-        <Icon className="h-4 w-4 text-primary" />
-        <h4 className="text-sm font-semibold">{title}</h4>
-        {hint && <HelpTip text={hint} />}
-      </div>
-      {children}
-    </div>
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+          <div>
+            {existing && (
+              <Button variant="ghost" size="sm" onClick={clearMessage} className="text-destructive hover:text-destructive">
+                <Trash2 className="mr-1 h-4 w-4" /> Remover
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button variant="outline" size="sm" onClick={onClose} className="w-full sm:w-auto">
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={save} className="w-full gap-1.5 sm:w-auto">
+              <Save className="h-4 w-4" /> Salvar texto
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -539,113 +457,11 @@ function WhatsAppBubble({ text }: { text: string }) {
     >
       <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-white px-3 py-2 shadow-sm">
         <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-neutral-900">
-          {text}
+          {text || "—"}
         </p>
         <p className="mt-1 text-right text-[10px] text-neutral-500">12:34 ✓✓</p>
       </div>
     </div>
-  );
-}
-
-function toneActiveClass(tone: "antes" | "no_dia" | "depois") {
-  if (tone === "antes") return "border-success bg-success text-success-foreground";
-  if (tone === "no_dia") return "border-warning bg-warning text-warning-foreground";
-  return "border-destructive bg-destructive text-destructive-foreground";
-}
-function toneDotClass(tone: "antes" | "no_dia" | "depois") {
-  if (tone === "antes") return "bg-success";
-  if (tone === "no_dia") return "bg-warning";
-  return "bg-destructive";
-}
-function describeTiming(days: number): string {
-  if (days === 0) return "Esta mensagem será enviada no dia do vencimento.";
-  const abs = Math.abs(days);
-  const p = abs === 1 ? "" : "s";
-  return days < 0
-    ? `Esta mensagem será enviada ${abs} dia${p} ANTES do vencimento.`
-    : `Esta mensagem será enviada ${abs} dia${p} DEPOIS do vencimento.`;
-}
-
-// ============================================================================
-// MENSAGENS CONFIGURADAS — agrupamento
-// ============================================================================
-
-type MessageGroup = {
-  key: string;
-  offset_days: number;
-  template: string;
-  entries: Array<{ planId: string; planName: string; messageId: string }>;
-};
-
-function groupMessages(plans: ServiceItem[]): MessageGroup[] {
-  const map = new Map<string, MessageGroup>();
-  for (const p of plans) {
-    for (const m of p.messages) {
-      const key = `${m.offset_days}|${m.template}`;
-      let g = map.get(key);
-      if (!g) {
-        g = { key, offset_days: m.offset_days, template: m.template, entries: [] };
-        map.set(key, g);
-      }
-      g.entries.push({ planId: p.id, planName: p.nome, messageId: m.id });
-    }
-  }
-  return Array.from(map.values()).sort((a, b) => a.offset_days - b.offset_days);
-}
-
-function ConfiguredMessageRow({
-  group, onEdit, onDelete,
-}: {
-  group: MessageGroup;
-  onEdit: (planId: string, messageId: string) => void;
-  onDelete: (planId: string, messageId: string) => void;
-}) {
-  const tone: "antes" | "no_dia" | "depois" =
-    group.offset_days === 0 ? "no_dia" : group.offset_days < 0 ? "antes" : "depois";
-  const dotColor = tone === "antes" ? "bg-success" : tone === "no_dia" ? "bg-warning" : "bg-destructive";
-  const label =
-    group.offset_days === 0 ? "No vencimento"
-    : group.offset_days < 0 ? `${Math.abs(group.offset_days)} dia${Math.abs(group.offset_days) === 1 ? "" : "s"} antes`
-    : `${group.offset_days} dia${group.offset_days === 1 ? "" : "s"} depois`;
-
-  return (
-    <Card className="p-3">
-      <div className="flex items-start gap-2">
-        <span className={cn("mt-1 h-2 w-2 shrink-0 rounded-full", dotColor)} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-sm font-semibold">{label}</span>
-            <span className="text-[11px] text-muted-foreground">
-              · {group.entries.length} plano{group.entries.length === 1 ? "" : "s"}
-            </span>
-          </div>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {group.entries.map((e) => (
-              <span key={e.messageId} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                {e.planName}
-                <button
-                  onClick={() => onDelete(e.planId, e.messageId)}
-                  className="text-destructive hover:text-destructive/80"
-                  aria-label={`Remover de ${e.planName}`}
-                >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </span>
-            ))}
-          </div>
-          <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
-            {group.template}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => onEdit(group.entries[0].planId, group.entries[0].messageId)}
-          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] hover:bg-muted"
-        >
-          <Pencil className="h-3 w-3" /> Editar
-        </button>
-      </div>
-    </Card>
   );
 }
 
@@ -707,7 +523,7 @@ function PlanFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="mx-3 max-w-[1100px] border-2 border-primary/40 shadow-xl sm:mx-6">
+      <DialogContent className="mx-3 max-w-[640px] sm:mx-6">
         <DialogHeader>
           <DialogTitle>{service ? "Editar plano" : "Novo plano"}</DialogTitle>
           <DialogDescription>
