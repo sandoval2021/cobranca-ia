@@ -626,34 +626,9 @@ function Dashboard() {
           <ShieldCheck className="h-3 w-3" />
           Modo protegido ativo
         </div>
-      )}
+      <HeaderChips />
 
-      <OwnerRoleNotice />
-      <PwaInstallPrompt />
 
-      {/* Próximo passo */}
-      <div
-        className={cn(
-          "mb-5 flex flex-col gap-3 rounded-2xl border p-4 shadow-card sm:flex-row sm:items-center sm:justify-between",
-          stepToneBg[nextStep.tone],
-        )}
-      >
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Próximo passo
-          </p>
-          <p className="mt-0.5 text-base font-bold leading-tight text-foreground">
-            {nextStep.title}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{nextStep.desc}</p>
-        </div>
-        <Link to={nextStep.to} className="shrink-0">
-          <Button size="sm" className="w-full sm:w-auto">
-            {nextStep.cta}
-            <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-          </Button>
-        </Link>
-      </div>
 
       {/* SEÇÃO 1 — Resumo rápido */}
       <section className="mb-6">
