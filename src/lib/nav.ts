@@ -31,6 +31,7 @@ import {
   Send,
   Smartphone,
   Bot,
+  RefreshCcw,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -54,6 +55,7 @@ export const ownerNav: NavItem[] = [
   { to: "/cadastros-servicos", label: "Cadastros · Serviços", icon: Tv, hint: "Cadastre seus planos/valores (ex.: 1 tela R$ 12)" },
   { to: "/gestao-servicos", label: "Gestão Serviços", icon: Tv, hint: "Renove, edite e acompanhe cada serviço" },
   { to: "/operacao-dia", label: "Operação do dia", icon: CalendarClock, hint: "Quem precisa de atenção hoje" },
+  { to: "/renovacoes-paineis", label: "Renovações e painéis", icon: RefreshCcw, hint: "Fila de renovações IPTV e credenciais dos painéis" },
   { to: "/campanhas-manuais", label: "Campanhas manuais", icon: Megaphone, hint: "Monte listas e copie mensagens" },
   { to: "/pendencias", label: "Pendências", icon: AlertCircle, hint: "Tudo que precisa de atenção" },
   { to: "/importar-clientes", label: "Importar clientes", icon: Upload, hint: "Importar clientes a partir de PDF/Excel" },
