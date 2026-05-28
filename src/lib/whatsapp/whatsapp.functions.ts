@@ -477,7 +477,15 @@ export const getWhatsAppAutomationDebug = createServerFn({ method: "POST" })
     try {
       webhook = await inspectEvolutionWebhook(ref);
     } catch (err: any) {
-      webhook = { ok: false, error: String(err?.message ?? err), events: [], providerStatus: 0 };
+      webhook = {
+        ok: false,
+        url: getEvolutionWebhookUrl(ref.id),
+        events: [],
+        providerStatus: 0,
+        endpointStatus: null,
+        endpointOk: false,
+        error: String(err?.message ?? err),
+      };
     }
 
     const { data: lastLogs } = await supabaseAdmin
