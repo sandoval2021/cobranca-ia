@@ -23,6 +23,7 @@ import { Route as MeusDadosRouteImport } from './routes/meus-dados'
 import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as IndicacoesRouteImport } from './routes/indicacoes'
 import { Route as ImportarClientesRouteImport } from './routes/importar-clientes'
+import { Route as IaConfigRouteImport } from './routes/ia-config'
 import { Route as IaRouteImport } from './routes/ia'
 import { Route as GestaoServicosRouteImport } from './routes/gestao-servicos'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
@@ -126,6 +127,11 @@ const IndicacoesRoute = IndicacoesRouteImport.update({
 const ImportarClientesRoute = ImportarClientesRouteImport.update({
   id: '/importar-clientes',
   path: '/importar-clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IaConfigRoute = IaConfigRouteImport.update({
+  id: '/ia-config',
+  path: '/ia-config',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IaRoute = IaRouteImport.update({
@@ -330,6 +336,7 @@ export interface FileRoutesByFullPath {
   '/financeiro': typeof FinanceiroRoute
   '/gestao-servicos': typeof GestaoServicosRoute
   '/ia': typeof IaRoute
+  '/ia-config': typeof IaConfigRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
@@ -380,6 +387,7 @@ export interface FileRoutesByTo {
   '/financeiro': typeof FinanceiroRoute
   '/gestao-servicos': typeof GestaoServicosRoute
   '/ia': typeof IaRoute
+  '/ia-config': typeof IaConfigRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
@@ -431,6 +439,7 @@ export interface FileRoutesById {
   '/financeiro': typeof FinanceiroRoute
   '/gestao-servicos': typeof GestaoServicosRoute
   '/ia': typeof IaRoute
+  '/ia-config': typeof IaConfigRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
   '/mensagens': typeof MensagensRoute
@@ -483,6 +492,7 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/gestao-servicos'
     | '/ia'
+    | '/ia-config'
     | '/importar-clientes'
     | '/indicacoes'
     | '/mensagens'
@@ -533,6 +543,7 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/gestao-servicos'
     | '/ia'
+    | '/ia-config'
     | '/importar-clientes'
     | '/indicacoes'
     | '/mensagens'
@@ -583,6 +594,7 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/gestao-servicos'
     | '/ia'
+    | '/ia-config'
     | '/importar-clientes'
     | '/indicacoes'
     | '/mensagens'
@@ -634,6 +646,7 @@ export interface RootRouteChildren {
   FinanceiroRoute: typeof FinanceiroRoute
   GestaoServicosRoute: typeof GestaoServicosRoute
   IaRoute: typeof IaRoute
+  IaConfigRoute: typeof IaConfigRoute
   ImportarClientesRoute: typeof ImportarClientesRoute
   IndicacoesRoute: typeof IndicacoesRoute
   MensagensRoute: typeof MensagensRoute
@@ -756,6 +769,13 @@ declare module '@tanstack/react-router' {
       path: '/importar-clientes'
       fullPath: '/importar-clientes'
       preLoaderRoute: typeof ImportarClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ia-config': {
+      id: '/ia-config'
+      path: '/ia-config'
+      fullPath: '/ia-config'
+      preLoaderRoute: typeof IaConfigRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ia': {
@@ -1040,6 +1060,7 @@ const rootRouteChildren: RootRouteChildren = {
   FinanceiroRoute: FinanceiroRoute,
   GestaoServicosRoute: GestaoServicosRoute,
   IaRoute: IaRoute,
+  IaConfigRoute: IaConfigRoute,
   ImportarClientesRoute: ImportarClientesRoute,
   IndicacoesRoute: IndicacoesRoute,
   MensagensRoute: MensagensRoute,
