@@ -54,6 +54,7 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicWebhooksMercadoPagoRouteImport } from './routes/api/public/webhooks/mercado-pago'
+import { Route as ApiPublicWebhooksEvolutionRouteImport } from './routes/api/public/webhooks/evolution'
 import { Route as ApiPublicHooksWaDispatchRouteImport } from './routes/api/public/hooks/wa-dispatch'
 import { Route as ApiPublicWebhooksEvolutionInstanceRouteImport } from './routes/api/public/webhooks/evolution.$instance'
 
@@ -284,6 +285,12 @@ const ApiPublicWebhooksMercadoPagoRoute =
     path: '/api/public/webhooks/mercado-pago',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicWebhooksEvolutionRoute =
+  ApiPublicWebhooksEvolutionRouteImport.update({
+    id: '/api/public/webhooks/evolution',
+    path: '/api/public/webhooks/evolution',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksWaDispatchRoute =
   ApiPublicHooksWaDispatchRouteImport.update({
     id: '/api/public/hooks/wa-dispatch',
@@ -292,9 +299,9 @@ const ApiPublicHooksWaDispatchRoute =
   } as any)
 const ApiPublicWebhooksEvolutionInstanceRoute =
   ApiPublicWebhooksEvolutionInstanceRouteImport.update({
-    id: '/api/public/webhooks/evolution/$instance',
-    path: '/api/public/webhooks/evolution/$instance',
-    getParentRoute: () => rootRouteImport,
+    id: '/$instance',
+    path: '/$instance',
+    getParentRoute: () => ApiPublicWebhooksEvolutionRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -340,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
+  '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRouteWithChildren
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -389,6 +397,7 @@ export interface FileRoutesByTo {
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
+  '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRouteWithChildren
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -439,6 +448,7 @@ export interface FileRoutesById {
   '/admin/vps': typeof AdminVpsRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
+  '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRouteWithChildren
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -490,6 +500,7 @@ export interface FileRouteTypes {
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
+    | '/api/public/webhooks/evolution'
     | '/api/public/webhooks/mercado-pago'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -539,6 +550,7 @@ export interface FileRouteTypes {
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
+    | '/api/public/webhooks/evolution'
     | '/api/public/webhooks/mercado-pago'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -588,6 +600,7 @@ export interface FileRouteTypes {
     | '/admin/vps'
     | '/atendimento-ia/$token'
     | '/api/public/hooks/wa-dispatch'
+    | '/api/public/webhooks/evolution'
     | '/api/public/webhooks/mercado-pago'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -638,11 +651,11 @@ export interface RootRouteChildren {
   AdminVpsRoute: typeof AdminVpsRoute
   AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
+  ApiPublicWebhooksEvolutionRoute: typeof ApiPublicWebhooksEvolutionRouteWithChildren
   ApiPublicWebhooksMercadoPagoRoute: typeof ApiPublicWebhooksMercadoPagoRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
-  ApiPublicWebhooksEvolutionInstanceRoute: typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -962,6 +975,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksMercadoPagoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/evolution': {
+      id: '/api/public/webhooks/evolution'
+      path: '/api/public/webhooks/evolution'
+      fullPath: '/api/public/webhooks/evolution'
+      preLoaderRoute: typeof ApiPublicWebhooksEvolutionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/wa-dispatch': {
       id: '/api/public/hooks/wa-dispatch'
       path: '/api/public/hooks/wa-dispatch'
@@ -971,13 +991,28 @@ declare module '@tanstack/react-router' {
     }
     '/api/public/webhooks/evolution/$instance': {
       id: '/api/public/webhooks/evolution/$instance'
-      path: '/api/public/webhooks/evolution/$instance'
+      path: '/$instance'
       fullPath: '/api/public/webhooks/evolution/$instance'
       preLoaderRoute: typeof ApiPublicWebhooksEvolutionInstanceRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ApiPublicWebhooksEvolutionRoute
     }
   }
 }
+
+interface ApiPublicWebhooksEvolutionRouteChildren {
+  ApiPublicWebhooksEvolutionInstanceRoute: typeof ApiPublicWebhooksEvolutionInstanceRoute
+}
+
+const ApiPublicWebhooksEvolutionRouteChildren: ApiPublicWebhooksEvolutionRouteChildren =
+  {
+    ApiPublicWebhooksEvolutionInstanceRoute:
+      ApiPublicWebhooksEvolutionInstanceRoute,
+  }
+
+const ApiPublicWebhooksEvolutionRouteWithChildren =
+  ApiPublicWebhooksEvolutionRoute._addFileChildren(
+    ApiPublicWebhooksEvolutionRouteChildren,
+  )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -1022,12 +1057,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminVpsRoute: AdminVpsRoute,
   AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
+  ApiPublicWebhooksEvolutionRoute: ApiPublicWebhooksEvolutionRouteWithChildren,
   ApiPublicWebhooksMercadoPagoRoute: ApiPublicWebhooksMercadoPagoRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
-  ApiPublicWebhooksEvolutionInstanceRoute:
-    ApiPublicWebhooksEvolutionInstanceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
