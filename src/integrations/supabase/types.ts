@@ -249,6 +249,201 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_instances: {
+        Row: {
+          company_id: string
+          created_at: string
+          daily_limit: number
+          daily_sent_count: number
+          friendly_name: string
+          id: string
+          last_activity_at: string | null
+          per_minute_limit: number
+          phone_number: string | null
+          provider: string
+          provider_instance_id: string
+          qr_code: string | null
+          qr_expires_at: string | null
+          status: Database["public"]["Enums"]["wa_instance_status"]
+          updated_at: string
+          vps_node_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          daily_limit?: number
+          daily_sent_count?: number
+          friendly_name: string
+          id?: string
+          last_activity_at?: string | null
+          per_minute_limit?: number
+          phone_number?: string | null
+          provider?: string
+          provider_instance_id: string
+          qr_code?: string | null
+          qr_expires_at?: string | null
+          status?: Database["public"]["Enums"]["wa_instance_status"]
+          updated_at?: string
+          vps_node_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          daily_limit?: number
+          daily_sent_count?: number
+          friendly_name?: string
+          id?: string
+          last_activity_at?: string | null
+          per_minute_limit?: number
+          phone_number?: string | null
+          provider?: string
+          provider_instance_id?: string
+          qr_code?: string | null
+          qr_expires_at?: string | null
+          status?: Database["public"]["Enums"]["wa_instance_status"]
+          updated_at?: string
+          vps_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_instances_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_instances_vps_node_id_fkey"
+            columns: ["vps_node_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_vps_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_message_queue: {
+        Row: {
+          attempts: number
+          body: string
+          company_id: string
+          created_at: string
+          id: string
+          instance_id: string
+          last_error: string | null
+          max_attempts: number
+          next_attempt_at: string
+          provider_msg_id: string | null
+          scheduled_for: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["wa_message_status"]
+          to_phone: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          company_id: string
+          created_at?: string
+          id?: string
+          instance_id: string
+          last_error?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          provider_msg_id?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["wa_message_status"]
+          to_phone: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          instance_id?: string
+          last_error?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          provider_msg_id?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["wa_message_status"]
+          to_phone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_message_queue_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_message_queue_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_vps_nodes: {
+        Row: {
+          api_token_enc: string
+          base_url: string
+          cpu_pct: number | null
+          created_at: string
+          disk_pct: number | null
+          health: Database["public"]["Enums"]["wa_vps_health"]
+          id: string
+          is_active: boolean
+          last_health_at: string | null
+          max_instances: number
+          name: string
+          ram_pct: number | null
+          updated_at: string
+          uptime_seconds: number | null
+          webhook_secret: string
+        }
+        Insert: {
+          api_token_enc: string
+          base_url: string
+          cpu_pct?: number | null
+          created_at?: string
+          disk_pct?: number | null
+          health?: Database["public"]["Enums"]["wa_vps_health"]
+          id?: string
+          is_active?: boolean
+          last_health_at?: string | null
+          max_instances?: number
+          name: string
+          ram_pct?: number | null
+          updated_at?: string
+          uptime_seconds?: number | null
+          webhook_secret: string
+        }
+        Update: {
+          api_token_enc?: string
+          base_url?: string
+          cpu_pct?: number | null
+          created_at?: string
+          disk_pct?: number | null
+          health?: Database["public"]["Enums"]["wa_vps_health"]
+          id?: string
+          is_active?: boolean
+          last_health_at?: string | null
+          max_instances?: number
+          name?: string
+          ram_pct?: number | null
+          updated_at?: string
+          uptime_seconds?: number | null
+          webhook_secret?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -268,6 +463,24 @@ export type Database = {
       ai_usage_status: "success" | "error"
       ai_usage_type: "owner" | "customer"
       app_role: "super_admin" | "owner" | "member"
+      wa_instance_status:
+        | "connected"
+        | "disconnected"
+        | "awaiting_qr"
+        | "error"
+        | "blocked"
+      wa_message_status:
+        | "queued"
+        | "sending"
+        | "sent"
+        | "delivered"
+        | "read"
+        | "failed"
+      wa_vps_health:
+        | "healthy"
+        | "attention"
+        | "upgrade_recommended"
+        | "upgrade_urgent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -398,6 +611,27 @@ export const Constants = {
       ai_usage_status: ["success", "error"],
       ai_usage_type: ["owner", "customer"],
       app_role: ["super_admin", "owner", "member"],
+      wa_instance_status: [
+        "connected",
+        "disconnected",
+        "awaiting_qr",
+        "error",
+        "blocked",
+      ],
+      wa_message_status: [
+        "queued",
+        "sending",
+        "sent",
+        "delivered",
+        "read",
+        "failed",
+      ],
+      wa_vps_health: [
+        "healthy",
+        "attention",
+        "upgrade_recommended",
+        "upgrade_urgent",
+      ],
     },
   },
 } as const
