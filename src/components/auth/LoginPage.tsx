@@ -29,7 +29,7 @@ type View =
 
 const OTP_LENGTH = 8;
 
-const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
+
 
 function isValidWhatsapp(v: string): boolean {
   const digits = v.replace(/\D/g, "");
