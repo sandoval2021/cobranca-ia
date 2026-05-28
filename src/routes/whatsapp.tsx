@@ -35,6 +35,7 @@ import {
   sendWhatsAppTestMessage,
   setWhatsAppAiReply,
   resetWhatsAppWebhook,
+  getWhatsAppAutomationDebug,
 } from "@/lib/whatsapp/whatsapp.functions";
 
 
