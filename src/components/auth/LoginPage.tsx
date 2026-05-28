@@ -27,6 +27,8 @@ import {
   verifyRecoveryOtp,
   resetPasswordWithToken,
   resendOtp,
+  requestConfirmEmailOtp,
+  verifyConfirmEmailOtp,
 } from "@/lib/auth-otp/auth-otp.functions";
 
 type View =
@@ -34,7 +36,8 @@ type View =
   | "signup"
   | "signup_otp"
   | "forgot"
-  | "forgot_otp";
+  | "forgot_otp"
+  | "confirm_email";
 
 const OTP_LENGTH = 8;
 
