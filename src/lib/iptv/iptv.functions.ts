@@ -228,7 +228,7 @@ export const upsertCustomerCredential = createServerFn({ method: "POST" })
       }
       const { error } = await supabaseAdmin
         .from("customer_iptv_credentials")
-        .update(update)
+        .update(update as any)
         .eq("id", id);
       if (error) throw new Error(error.message);
       return { id };
