@@ -342,9 +342,15 @@ export const evolutionProvider: WhatsAppProvider = {
 
   async setSettings(ref, settings) {
     assertReal();
-    const body: Record<string, unknown> = {};
-    if (typeof settings.rejectCall === "boolean") body.rejectCall = settings.rejectCall;
-    if (typeof settings.msgCall === "string") body.msgCall = settings.msgCall;
+    const body: Record<string, unknown> = {
+      rejectCall: typeof settings.rejectCall === "boolean" ? settings.rejectCall : false,
+      msgCall: typeof settings.msgCall === "string" ? settings.msgCall : "",
+      groupsIgnore: true,
+      alwaysOnline: false,
+      readMessages: false,
+      readStatus: false,
+      syncFullHistory: false,
+    };
     const res = await callEvolution(
       ref.vps,
       `/settings/set/${encodeURIComponent(ref.provider_instance_id)}`,
@@ -354,6 +360,7 @@ export const evolutionProvider: WhatsAppProvider = {
       throw new Error(`evolution.setSettings falhou (${res.status}): ${res.text.slice(0, 300)}`);
     }
   },
+
 
 
   async markHealthy(vps) {
