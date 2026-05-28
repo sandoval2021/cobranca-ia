@@ -631,9 +631,11 @@ export type Database = {
       }
       customers: {
         Row: {
+          amount_cents: number
           company_id: string
           created_at: string
           document: string | null
+          due_day: number | null
           email: string | null
           id: string
           name: string
@@ -645,9 +647,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          amount_cents?: number
           company_id: string
           created_at?: string
           document?: string | null
+          due_day?: number | null
           email?: string | null
           id?: string
           name: string
@@ -659,9 +663,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          amount_cents?: number
           company_id?: string
           created_at?: string
           document?: string | null
+          due_day?: number | null
           email?: string | null
           id?: string
           name?: string
@@ -1784,6 +1790,17 @@ export type Database = {
     Functions: {
       claim_super_admin_bootstrap: { Args: never; Returns: Json }
       cleanup_auth_ephemeral: { Args: never; Returns: undefined }
+      create_customer_admin: {
+        Args: {
+          p_amount_cents?: number
+          p_company_id: string
+          p_due_day?: number
+          p_name: string
+          p_notes?: string
+          p_whatsapp_e164: string
+        }
+        Returns: string
+      }
       current_user_is_super_admin: { Args: never; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -1793,6 +1810,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      ensure_user_default_company: { Args: never; Returns: string }
       get_or_create_current_ai_cycle: {
         Args: { _company_id: string }
         Returns: {
