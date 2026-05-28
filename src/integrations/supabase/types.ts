@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_log: {
+        Row: {
+          company_id: string
+          completion_tokens: number
+          created_at: string
+          customer_id: string | null
+          error_reason: string | null
+          estimated_cost_usd: number
+          id: string
+          model: string
+          prompt_tokens: number
+          status: Database["public"]["Enums"]["ai_usage_status"]
+          total_tokens: number
+          usage_type: Database["public"]["Enums"]["ai_usage_type"]
+          user_id: string | null
+        }
+        Insert: {
+          company_id: string
+          completion_tokens?: number
+          created_at?: string
+          customer_id?: string | null
+          error_reason?: string | null
+          estimated_cost_usd?: number
+          id?: string
+          model: string
+          prompt_tokens?: number
+          status: Database["public"]["Enums"]["ai_usage_status"]
+          total_tokens?: number
+          usage_type: Database["public"]["Enums"]["ai_usage_type"]
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          completion_tokens?: number
+          created_at?: string
+          customer_id?: string | null
+          error_reason?: string | null
+          estimated_cost_usd?: number
+          id?: string
+          model?: string
+          prompt_tokens?: number
+          status?: Database["public"]["Enums"]["ai_usage_status"]
+          total_tokens?: number
+          usage_type?: Database["public"]["Enums"]["ai_usage_type"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
@@ -66,6 +129,57 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_support_tokens: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          customer_id: string | null
+          expires_at: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          customer_id?: string | null
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          customer_id?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_support_tokens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_support_tokens_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
@@ -151,6 +265,8 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      ai_usage_status: "success" | "error"
+      ai_usage_type: "owner" | "customer"
       app_role: "super_admin" | "owner" | "member"
     }
     CompositeTypes: {
@@ -279,6 +395,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_usage_status: ["success", "error"],
+      ai_usage_type: ["owner", "customer"],
       app_role: ["super_admin", "owner", "member"],
     },
   },
