@@ -1,3 +1,4 @@
+import { flags } from "@/lib/flags";
 import { useEffect, useMemo, useState } from "react";
 import {
   MessageSquare,
