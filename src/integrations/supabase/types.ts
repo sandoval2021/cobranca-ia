@@ -449,6 +449,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_super_admin_bootstrap: { Args: never; Returns: Json }
       has_company_access: { Args: { _company_id: string }; Returns: boolean }
       has_role: {
         Args: {

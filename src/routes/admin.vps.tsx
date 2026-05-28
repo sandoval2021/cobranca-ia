@@ -12,6 +12,8 @@ import {
   Plus,
   Pencil,
   Wifi,
+  ShieldCheck,
+  RefreshCw,
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
@@ -29,6 +31,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   listVpsNodes,
   createVpsNode,
@@ -249,14 +252,60 @@ function AdminVpsPage() {
   }
 
   if (q.error) {
+    const msg = String((q.error as Error)?.message ?? q.error);
+    const isForbidden = /forbidden/i.test(msg);
+    const isAuth = /Unauthorized|Invalid token|No authorization/i.test(msg);
+
+    async function claimSuperAdmin() {
+      try {
+        const { error } = await supabase.rpc("claim_super_admin_bootstrap");
+        if (error) {
+          if (/already_exists/i.test(error.message)) {
+            toast.error("Já existe um Super Admin. Peça acesso a ele.");
+          } else if (/not_authenticated/i.test(error.message)) {
+            toast.error("Faça login antes.");
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
+        toast.success("Você agora é Super Admin. Recarregando…");
+        setTimeout(() => window.location.reload(), 600);
+      } catch (e: any) {
+        toast.error(e?.message ?? "Falha no bootstrap");
+      }
+    }
+
     return (
       <PageContainer>
         <SectionHeader title="VPS Evolution" subtitle="Status da infraestrutura" />
-        <Card className="p-4 mt-4">
-          <div className="flex items-center gap-2 text-sm text-rose-700">
-            <AlertCircle className="w-4 h-4" />
-            Acesso restrito a Super Admin.
+        <Card className="p-4 mt-4 space-y-3">
+          <div className="flex items-start gap-2 text-sm text-rose-700">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              {isForbidden
+                ? "Sua conta autenticada não tem papel de Super Admin no banco."
+                : isAuth
+                  ? "Sessão expirada. Faça login novamente."
+                  : "Não foi possível carregar a lista de VPS."}
+              <div className="text-xs text-muted-foreground mt-1 break-words">{msg}</div>
+            </div>
           </div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => q.refetch()}>
+              <RefreshCw className="w-3.5 h-3.5 mr-1" /> Tentar novamente
+            </Button>
+            {isForbidden && (
+              <Button size="sm" onClick={claimSuperAdmin}>
+                <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Tornar-me Super Admin (bootstrap inicial)
+              </Button>
+            )}
+          </div>
+          {isForbidden && (
+            <p className="text-xs text-muted-foreground">
+              O botão acima só funciona se ainda <strong>não existir</strong> nenhum Super Admin no sistema. Após o primeiro uso, ele recusa qualquer nova tentativa.
+            </p>
+          )}
         </Card>
       </PageContainer>
     );
