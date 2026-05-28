@@ -16,9 +16,6 @@ import { Label } from "@/components/ui/label";
 import {
   supabase,
   supabaseConfigured,
-  supabaseAnonKeyPresent,
-  supabaseAnonKeyRef,
-  isAnonKeyForExpectedProject,
 } from "@/integrations/supabase/compat";
 import { friendlyAuthError } from "@/lib/use-auth";
 import { syncDefaultCompanyForUser } from "@/lib/rpc-admin";
