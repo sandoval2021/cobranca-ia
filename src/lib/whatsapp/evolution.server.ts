@@ -10,6 +10,7 @@ import type {
   WASendResult,
   WACreateResult,
   WAInstanceState,
+  WAWebhookResult,
   WhatsAppProvider,
 } from "./provider";
 
