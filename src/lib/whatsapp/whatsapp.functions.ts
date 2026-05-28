@@ -1,6 +1,7 @@
 // Server functions WhatsApp — multi-tenant, owner/admin only.
 
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -22,6 +23,10 @@ function hasInvalidLocalProviderId(providerInstanceId?: string | null): boolean 
 
 function buildEvolutionInstanceName(companyId: string, instanceId: string): string {
   return `cobraeasy_${companyId.replace(/-/g, "").slice(0, 12)}_${instanceId.replace(/-/g, "").slice(0, 12)}`;
+}
+
+function currentPublicOrigin(): string | undefined {
+  return getRequestHeader("origin") || undefined;
 }
 
 async function syncInstanceStateFromEvolution(instanceId: string): Promise<void> {
