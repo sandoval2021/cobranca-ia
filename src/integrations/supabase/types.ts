@@ -462,6 +462,59 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_automation_logs: {
+        Row: {
+          company_id: string
+          created_at: string
+          details: Json
+          error: string | null
+          event_type: string
+          from_phone: string | null
+          id: string
+          instance_id: string | null
+          message_preview: string | null
+          provider_event: string | null
+          provider_instance: string | null
+          status: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          details?: Json
+          error?: string | null
+          event_type: string
+          from_phone?: string | null
+          id?: string
+          instance_id?: string | null
+          message_preview?: string | null
+          provider_event?: string | null
+          provider_instance?: string | null
+          status: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          details?: Json
+          error?: string | null
+          event_type?: string
+          from_phone?: string | null
+          id?: string
+          instance_id?: string | null
+          message_preview?: string | null
+          provider_event?: string | null
+          provider_instance?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_automation_logs_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_inbound_messages: {
         Row: {
           body: string | null
