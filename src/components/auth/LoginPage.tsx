@@ -232,45 +232,45 @@ function SignupForm({
   const [senha2, setSenha2] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const reqSignup = useServerFn(requestSignupOtp);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!supabase) return setError("Conexão não configurada.");
     if (!nome.trim()) return setError("Informe seu nome.");
     if (!empresa.trim()) return setError("Informe o nome da empresa.");
     if (!isValidWhatsapp(whatsapp)) return setError("Informe um WhatsApp válido.");
-    if (senha.length < 6) return setError("Senha mínima de 6 caracteres.");
+    if (senha.length < 8) return setError("Senha mínima de 8 caracteres.");
     if (senha !== senha2) return setError("As senhas não conferem.");
 
     setSubmitting(true);
     const trimmedEmail = email.trim().toLowerCase();
-    const { error: err } = await supabase.auth.signUp({
-      email: trimmedEmail,
-      password: senha,
-      options: {
-        // Sem emailRedirectTo: queremos OTP de 8 dígitos, nunca link mágico.
+    try {
+      const r = await reqSignup({
         data: {
+          email: trimmedEmail,
+          password: senha,
           nome: nome.trim(),
           empresa: empresa.trim(),
           whatsapp: whatsapp.trim(),
         },
-      },
-    });
-    if (err) {
+      });
       setSubmitting(false);
-      setError(friendlyAuthError(err.message));
-      return;
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      onSent({
+        email: trimmedEmail,
+        nome: nome.trim(),
+        empresa: empresa.trim(),
+        whatsapp: whatsapp.trim(),
+        password: senha,
+      });
+    } catch (e) {
+      setSubmitting(false);
+      setError("Falha de conexão. Tente novamente.");
     }
-
-    // Sempre ir para a etapa OTP — nunca mostrar tela legada de "Confira seu e-mail".
-    setSubmitting(false);
-    onSent({
-      email: trimmedEmail,
-      nome: nome.trim(),
-      empresa: empresa.trim(),
-      whatsapp: whatsapp.trim(),
-    });
   }
 
   return (
