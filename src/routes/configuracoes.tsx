@@ -36,7 +36,7 @@ import { flags } from "@/lib/flags";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { useAuth } from "@/lib/use-auth";
 import {
-  getCurrentCompanyAdmin,
+  getActiveAccountId,
   listChargesForSelectAdmin,
 } from "@/lib/rpc-admin";
 import type { LucideIcon } from "lucide-react";
@@ -256,7 +256,7 @@ function CollectionRulesBlock() {
     }
     let alive = true;
     (async () => {
-      const { companyId: id, error } = await getCurrentCompanyAdmin();
+      const { accountId: id, error } = await getActiveAccountId();
       if (!alive) return;
       if (error) {
         setLoadErr(friendlyErr(error.message ?? ""));
