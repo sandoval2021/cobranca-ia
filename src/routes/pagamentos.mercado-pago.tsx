@@ -185,4 +185,3 @@ function MercadoPagoPage() {
     </PageContainer>
   );
 }
-}
