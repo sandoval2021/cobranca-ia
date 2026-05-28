@@ -12,6 +12,8 @@ import {
   Plus,
   Pencil,
   Wifi,
+  ShieldCheck,
+  RefreshCw,
 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
@@ -29,6 +31,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   listVpsNodes,
   createVpsNode,
