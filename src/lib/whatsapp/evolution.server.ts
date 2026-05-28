@@ -55,32 +55,40 @@ function mapEvolutionStatus(s: unknown): WAStatus {
 }
 
 export const evolutionProvider: WhatsAppProvider = {
-  async createInstance({ vps, friendly_name, webhook_url }) {
+  async createInstance({ vps, friendly_name, webhook_url, phone_number }) {
     if (!REAL) {
+      const now = Date.now();
       return {
-        provider_instance_id: `sim_${Date.now()}`,
-        qr_code: null,
-        qr_expires_at: null,
+        provider_instance_id: `sim_${now}`,
+        qr_code: phone_number ? null : `sim-qr-${now}`,
+        qr_expires_at: phone_number ? null : new Date(now + 45_000).toISOString(),
+        pairing_code: phone_number ? "ABCD-1234" : null,
+        pairing_code_expires_at: phone_number
+          ? new Date(now + 60_000).toISOString()
+          : null,
         status: "awaiting_qr",
       } satisfies WACreateResult;
     }
 
+    const body: Record<string, unknown> = {
+      instanceName: friendly_name,
+      qrcode: !phone_number,
+      integration: "WHATSAPP-BAILEYS",
+      webhook: {
+        url: webhook_url,
+        events: [
+          "QRCODE_UPDATED",
+          "CONNECTION_UPDATE",
+          "MESSAGES_UPSERT",
+          "SEND_MESSAGE",
+        ],
+      },
+    };
+    if (phone_number) body.number = phone_number;
+
     const res = await callEvolution(vps, "/instance/create", {
       method: "POST",
-      body: JSON.stringify({
-        instanceName: friendly_name,
-        qrcode: true,
-        integration: "WHATSAPP-BAILEYS",
-        webhook: {
-          url: webhook_url,
-          events: [
-            "QRCODE_UPDATED",
-            "CONNECTION_UPDATE",
-            "MESSAGES_UPSERT",
-            "SEND_MESSAGE",
-          ],
-        },
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
@@ -92,37 +100,53 @@ export const evolutionProvider: WhatsAppProvider = {
       res.data?.instance?.instanceId ||
       friendly_name;
     const qr = res.data?.qrcode?.base64 || res.data?.qrcode?.code || null;
+    const pairing =
+      res.data?.qrcode?.pairingCode ||
+      res.data?.pairingCode ||
+      res.data?.instance?.pairingCode ||
+      null;
 
     return {
       provider_instance_id: providerId,
       qr_code: qr,
       qr_expires_at: qr ? new Date(Date.now() + 45_000).toISOString() : null,
-      status: qr ? "awaiting_qr" : "disconnected",
+      pairing_code: pairing,
+      pairing_code_expires_at: pairing ? new Date(Date.now() + 60_000).toISOString() : null,
+      status: qr || pairing ? "awaiting_qr" : "disconnected",
     };
   },
 
-  async getQrCode(ref): Promise<WAQrResult> {
+  async getQrCode(ref, phone_number): Promise<WAQrResult> {
     if (!REAL) {
+      const now = Date.now();
       return {
-        qr_code: null,
-        qr_expires_at: null,
+        qr_code: phone_number ? null : `sim-qr-${now}`,
+        qr_expires_at: phone_number ? null : new Date(now + 45_000).toISOString(),
+        pairing_code: phone_number ? "ABCD-1234" : null,
+        pairing_code_expires_at: phone_number
+          ? new Date(now + 60_000).toISOString()
+          : null,
         status: "awaiting_qr",
       };
     }
-    const res = await callEvolution(
-      ref.vps,
-      `/instance/connect/${encodeURIComponent(ref.provider_instance_id)}`,
-      { method: "GET" },
-    );
+    const path = `/instance/connect/${encodeURIComponent(ref.provider_instance_id)}${
+      phone_number ? `?number=${encodeURIComponent(phone_number)}` : ""
+    }`;
+    const res = await callEvolution(ref.vps, path, { method: "GET" });
     if (!res.ok) throw new Error(`evolution.getQrCode failed: ${res.status}`);
     const qr = res.data?.base64 || res.data?.qrcode?.base64 || res.data?.code || null;
+    const pairing =
+      res.data?.pairingCode || res.data?.qrcode?.pairingCode || null;
     const status = mapEvolutionStatus(res.data?.instance?.state || res.data?.state);
     return {
       qr_code: qr,
       qr_expires_at: qr ? new Date(Date.now() + 45_000).toISOString() : null,
+      pairing_code: pairing,
+      pairing_code_expires_at: pairing ? new Date(Date.now() + 60_000).toISOString() : null,
       status,
     };
   },
+
 
   async connect(ref) {
     if (!REAL) return "awaiting_qr";

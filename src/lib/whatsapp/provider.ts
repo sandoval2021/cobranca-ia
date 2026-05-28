@@ -26,12 +26,16 @@ export type WACreateResult = {
   provider_instance_id: string;
   qr_code?: string | null;
   qr_expires_at?: string | null;
+  pairing_code?: string | null;
+  pairing_code_expires_at?: string | null;
   status: WAStatus;
 };
 
 export type WAQrResult = {
   qr_code: string | null;
   qr_expires_at: string | null;
+  pairing_code?: string | null;
+  pairing_code_expires_at?: string | null;
   status: WAStatus;
 };
 
@@ -46,9 +50,10 @@ export interface WhatsAppProvider {
     vps: WAVpsNode;
     friendly_name: string;
     webhook_url: string;
+    phone_number?: string;
   }): Promise<WACreateResult>;
 
-  getQrCode(ref: WAInstanceRef): Promise<WAQrResult>;
+  getQrCode(ref: WAInstanceRef, phone_number?: string): Promise<WAQrResult>;
 
   connect(ref: WAInstanceRef): Promise<WAStatus>;
   disconnect(ref: WAInstanceRef): Promise<WAStatus>;

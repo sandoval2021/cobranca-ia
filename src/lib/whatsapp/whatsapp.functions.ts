@@ -35,6 +35,45 @@ async function assertCompanyAccess(
   if (!["owner", "admin"].includes(String(member.role))) throw new Error("forbidden");
 }
 
+// -------- ensure my company (UUID real do backend) --------
+// Garante uma empresa no banco para o usuário logado e devolve o UUID.
+// Necessário porque o frontend mantém empresas locais com ids "local_..."
+// que não passam na validação UUID das outras server fns.
+export const ensureMyCompany = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+
+    // 1) Já é dono de uma empresa?
+    const { data: owned } = await supabaseAdmin
+      .from("companies")
+      .select("id, name")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (owned) return { company_id: owned.id, name: owned.name };
+
+    // 2) É membro de alguma empresa? Usa a primeira.
+    const { data: mem } = await supabaseAdmin
+      .from("company_members")
+      .select("company_id, companies(id, name)")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+    const memCompany = (mem as any)?.companies;
+    if (memCompany?.id) return { company_id: memCompany.id, name: memCompany.name };
+
+    // 3) Cria uma empresa básica.
+    const { data: created, error } = await supabaseAdmin
+      .from("companies")
+      .insert({ name: "Minha empresa", owner_id: userId })
+      .select("id, name")
+      .single();
+    if (error || !created) throw new Error(error?.message || "create_company_failed");
+    return { company_id: created.id, name: created.name };
+  });
+
 // -------- connect / create --------
 export const connectWhatsAppInstance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -43,6 +82,14 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
       .object({
         company_id: z.string().uuid(),
         friendly_name: z.string().min(1).max(120),
+        // Quando informado, conecta via "código de pareamento" (8 dígitos)
+        // em vez de QR. Telefone E.164 só com dígitos (ex.: 5511999998888).
+        phone_number: z
+          .string()
+          .min(8)
+          .max(20)
+          .regex(/^[0-9]+$/)
+          .optional(),
       })
       .parse(input),
   )
@@ -60,16 +107,23 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
     if (existing) {
       const ref = await loadInstanceRef(existing.id);
       if (!ref) throw new Error("instance_ref_missing");
-      const qr = await evolutionProvider.getQrCode(ref);
+      const qr = await evolutionProvider.getQrCode(ref, data.phone_number);
       await supabaseAdmin
         .from("whatsapp_instances")
         .update({
           status: qr.status,
           qr_code: qr.qr_code,
           qr_expires_at: qr.qr_expires_at,
+          pairing_code: qr.pairing_code ?? null,
+          pairing_code_expires_at: qr.pairing_code_expires_at ?? null,
         })
         .eq("id", existing.id);
-      return { instance_id: existing.id, status: qr.status, qr_code: qr.qr_code };
+      return {
+        instance_id: existing.id,
+        status: qr.status,
+        qr_code: qr.qr_code,
+        pairing_code: qr.pairing_code ?? null,
+      };
     }
 
     const vps = await pickAvailableVps();
@@ -106,6 +160,7 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
       },
       friendly_name: data.friendly_name,
       webhook_url: getEvolutionWebhookUrl(created.id),
+      phone_number: data.phone_number,
     });
 
     await supabaseAdmin
@@ -114,18 +169,36 @@ export const connectWhatsAppInstance = createServerFn({ method: "POST" })
         provider_instance_id: res.provider_instance_id,
         qr_code: res.qr_code,
         qr_expires_at: res.qr_expires_at,
+        pairing_code: res.pairing_code ?? null,
+        pairing_code_expires_at: res.pairing_code_expires_at ?? null,
         status: res.status,
       })
       .eq("id", created.id);
 
-    return { instance_id: created.id, status: res.status, qr_code: res.qr_code };
+    return {
+      instance_id: created.id,
+      status: res.status,
+      qr_code: res.qr_code,
+      pairing_code: res.pairing_code ?? null,
+    };
   });
+
 
 // -------- getQr --------
 export const getWhatsAppQr = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ instance_id: z.string().uuid() }).parse(input),
+    z
+      .object({
+        instance_id: z.string().uuid(),
+        phone_number: z
+          .string()
+          .min(8)
+          .max(20)
+          .regex(/^[0-9]+$/)
+          .optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -133,12 +206,14 @@ export const getWhatsAppQr = createServerFn({ method: "POST" })
     if (!ref) throw new Error("not_found");
     await assertCompanyAccess(supabase, userId, ref.company_id);
 
-    const qr = await evolutionProvider.getQrCode(ref);
+    const qr = await evolutionProvider.getQrCode(ref, data.phone_number);
     await supabaseAdmin
       .from("whatsapp_instances")
       .update({
         qr_code: qr.qr_code,
         qr_expires_at: qr.qr_expires_at,
+        pairing_code: qr.pairing_code ?? null,
+        pairing_code_expires_at: qr.pairing_code_expires_at ?? null,
         status: qr.status,
       })
       .eq("id", ref.id);
@@ -214,7 +289,7 @@ export const getCompanyWhatsApp = createServerFn({ method: "POST" })
     const { data: inst } = await supabaseAdmin
       .from("whatsapp_instances")
       .select(
-        "id, friendly_name, status, phone_number, qr_code, qr_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at",
+        "id, friendly_name, status, phone_number, qr_code, qr_expires_at, pairing_code, pairing_code_expires_at, daily_limit, daily_sent_count, per_minute_limit, last_activity_at",
       )
       .eq("company_id", data.company_id)
       .maybeSingle();
