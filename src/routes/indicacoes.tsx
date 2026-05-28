@@ -24,11 +24,13 @@ import { cn } from "@/lib/utils";
 import {
   listReferrals, updateReferral, summarizeByIndicador, getReferralRules,
   saveReferralRules, exportReferrals, importReferrals, REFERRAL_STATUSES,
-  bonusDescription, renderReferralMessage,
+  bonusDescription, renderReferralMessage, saveReferral,
   type Referral, type ReferralRules, type BonusType,
 } from "@/lib/referrals";
+import { getActiveAccountId, listCustomersForSelectAdmin } from "@/lib/rpc-admin";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+
 
 
 export const Route = createFileRoute("/indicacoes")({
@@ -46,9 +48,11 @@ function IndicacoesPage() {
   const [filter, setFilter] = useState<Filter>("Todos");
   const [query, setQuery] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
   const [msgFor, setMsgFor] = useState<string | null>(null); // indicator key
   const [applyForId, setApplyForId] = useState<string | null>(null);
   const { guard, dialog: securityDialog } = useSecurityGuard();
+
 
 
   const reload = () => {
@@ -165,6 +169,9 @@ function IndicacoesPage() {
         subtitle="Acompanhe clientes que indicaram pessoas e controle bonificações."
         action={
           <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setNewOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" /> Nova indicação
+            </Button>
             <Button variant="outline" onClick={() => setRulesOpen(true)} className="gap-2">
               <Settings2 className="h-4 w-4" /> Regras de bonificação
             </Button>
@@ -179,6 +186,7 @@ function IndicacoesPage() {
               </Button>
             </label>
           </div>
+
         }
       />
 
@@ -362,8 +370,16 @@ function IndicacoesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <NewReferralDialog
+        open={newOpen}
+        onClose={() => setNewOpen(false)}
+        onCreated={() => { setNewOpen(false); reload(); toast.success("Indicação registrada"); }}
+      />
+
       {securityDialog}
     </PageContainer>
+
 
   );
 }
@@ -431,3 +447,151 @@ function IndicatorMessageDialog({
     </Dialog>
   );
 }
+
+type CustomerOption = { id: string; name: string; phone: string };
+
+function NewReferralDialog({
+  open, onClose, onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [indicador, setIndicador] = useState<CustomerOption | null>(null);
+  const [indicadorQuery, setIndicadorQuery] = useState("");
+  const [indicadoNome, setIndicadoNome] = useState("");
+  const [indicadoWhats, setIndicadoWhats] = useState("");
+  const [obs, setObs] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      setIndicador(null); setIndicadorQuery(""); setIndicadoNome(""); setIndicadoWhats(""); setObs("");
+      return;
+    }
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      const { accountId } = await getActiveAccountId();
+      if (!alive) return;
+      setCompanyId(accountId ?? null);
+      if (!accountId) { setLoading(false); return; }
+      const res = await listCustomersForSelectAdmin({ p_company_id: accountId, p_limit: 200 });
+      if (!alive) return;
+      const raw = (res.data as unknown) ?? [];
+      const arr = Array.isArray(raw) ? raw : [];
+      setCustomers(arr.map((r: Record<string, unknown>) => ({
+        id: String(r.id ?? ""),
+        name: String(r.name ?? r.nome ?? ""),
+        phone: String(r.phone ?? r.whatsapp ?? ""),
+      })).filter((c) => c.id && c.name));
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [open]);
+
+  const filteredCustomers = useMemo(() => {
+    const q = indicadorQuery.trim().toLowerCase();
+    if (!q) return customers.slice(0, 12);
+    return customers.filter((c) =>
+      c.name.toLowerCase().includes(q) || c.phone.toLowerCase().includes(q),
+    ).slice(0, 20);
+  }, [customers, indicadorQuery]);
+
+  function submit() {
+    if (!indicador) return toast.error("Selecione o cliente que indicou.");
+    if (!indicadoNome.trim()) return toast.error("Informe o nome do indicado.");
+    saveReferral({
+      company_id: companyId,
+      indicador_cliente_id: indicador.id,
+      indicador_nome: indicador.name,
+      indicador_whatsapp: indicador.phone,
+      indicado_nome: indicadoNome.trim(),
+      indicado_whatsapp: indicadoWhats.trim(),
+      observacao: obs.trim() || undefined,
+      status: "Em teste",
+    });
+    onCreated();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Nova indicação</DialogTitle>
+          <DialogDescription>Busque o cliente que indicou por nome ou WhatsApp.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs">Quem indicou (cliente) *</Label>
+            {indicador ? (
+              <div className="flex items-center justify-between rounded-md border border-input bg-card p-2 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{indicador.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{indicador.phone || "—"}</p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => setIndicador(null)}>Trocar</Button>
+              </div>
+            ) : (
+              <>
+                <Input
+                  placeholder="Buscar por nome ou WhatsApp…"
+                  value={indicadorQuery}
+                  onChange={(e) => setIndicadorQuery(e.target.value)}
+                  autoFocus
+                />
+                <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-border">
+                  {loading ? (
+                    <p className="p-3 text-xs text-muted-foreground">Carregando clientes…</p>
+                  ) : filteredCustomers.length === 0 ? (
+                    <p className="p-3 text-xs text-muted-foreground">
+                      {customers.length === 0 ? "Nenhum cliente cadastrado." : "Nenhum resultado."}
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {filteredCustomers.map((c) => (
+                        <li key={c.id}>
+                          <button
+                            type="button"
+                            onClick={() => { setIndicador(c); setIndicadorQuery(""); }}
+                            className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted"
+                          >
+                            <span className="truncate">{c.name}</span>
+                            <span className="ml-2 truncate text-xs text-muted-foreground">{c.phone}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div>
+              <Label className="text-xs">Nome do indicado *</Label>
+              <Input value={indicadoNome} onChange={(e) => setIndicadoNome(e.target.value)} placeholder="Nome completo" />
+            </div>
+            <div>
+              <Label className="text-xs">WhatsApp do indicado</Label>
+              <Input value={indicadoWhats} onChange={(e) => setIndicadoWhats(e.target.value)} placeholder="(00) 00000-0000" />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs">Observação</Label>
+            <Textarea rows={2} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Opcional" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button onClick={submit} disabled={!indicador || !indicadoNome.trim()}>Salvar indicação</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
