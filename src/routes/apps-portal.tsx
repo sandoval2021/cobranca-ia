@@ -62,7 +62,10 @@ const empty: FormState = {
   sort_order: 0,
 };
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Mesma validação do z.string().uuid() do servidor: exige dígito de versão (1-8)
+// e de variante (8/9/a/b). Sem isso, IDs locais legados (ex.: `co_xxx`) ou UUIDs
+// "soltos" passariam no client e quebrariam no Zod do servidor.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function AppsPortalPage() {
   const rawCompanyId = getActiveCompanyId();
