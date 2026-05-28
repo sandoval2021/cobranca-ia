@@ -27,7 +27,7 @@ type View =
   | "forgot"
   | "forgot_otp";
 
-const OTP_LENGTH = 8;
+const OTP_LENGTH = 6;
 
 
 
