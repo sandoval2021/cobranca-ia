@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,14 @@ import {
 } from "@/integrations/supabase/compat";
 import { friendlyAuthError } from "@/lib/use-auth";
 import { syncDefaultCompanyForUser } from "@/lib/rpc-admin";
+import {
+  requestSignupOtp,
+  verifySignupOtp,
+  requestRecoveryOtp,
+  verifyRecoveryOtp,
+  resetPasswordWithToken,
+  resendOtp,
+} from "@/lib/auth-otp/auth-otp.functions";
 
 type View =
   | "login"
