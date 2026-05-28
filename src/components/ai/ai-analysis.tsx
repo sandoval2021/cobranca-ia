@@ -348,15 +348,17 @@ export function AnalyzeWithAIDialog({
           </div>
 
           {/* Aviso */}
-          <div className="flex items-start gap-2 rounded-lg border border-info/30 bg-info-soft p-3 text-xs text-info">
-            <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <p>
-              <strong>Ambiente de testes:</strong> esta análise é simulada e não usa IA real.{" "}
-              <span className="opacity-80">
-                Nenhuma mensagem real será enviada e nenhum pagamento será processado.
-              </span>
-            </p>
-          </div>
+          {flags.stagingMode && (
+            <div className="flex items-start gap-2 rounded-lg border border-info/30 bg-info-soft p-3 text-xs text-info">
+              <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <p>
+                <strong>Ambiente de testes:</strong> esta análise é simulada e não usa IA real.{" "}
+                <span className="opacity-80">
+                  Nenhuma mensagem real será enviada e nenhum pagamento será processado.
+                </span>
+              </p>
+            </div>
+          )}
 
           {/* Objetivo */}
           <div>

@@ -579,13 +579,15 @@ function FilaSimuladaPage() {
       />
 
       {/* staging notice */}
-      <div className="mb-3 flex items-start gap-2 rounded-xl border border-info/30 bg-info-soft px-3 py-2 text-xs text-info">
-        <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        <p>
-          <strong>Ambiente de testes:</strong> nada será enviado pelo WhatsApp,
-          nenhuma IA real será chamada e nenhum pagamento será criado.
-        </p>
-      </div>
+      {flags.stagingMode && (
+        <div className="mb-3 flex items-start gap-2 rounded-xl border border-info/30 bg-info-soft px-3 py-2 text-xs text-info">
+          <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <p>
+            <strong>Ambiente de testes:</strong> nada será enviado pelo WhatsApp,
+            nenhuma IA real será chamada e nenhum pagamento será criado.
+          </p>
+        </div>
+      )}
 
       {/* controls */}
       <section className="mb-4 rounded-xl border border-border bg-card p-3 shadow-card sm:p-4">

@@ -16,9 +16,6 @@ import { Label } from "@/components/ui/label";
 import {
   supabase,
   supabaseConfigured,
-  supabaseAnonKeyPresent,
-  supabaseAnonKeyRef,
-  isAnonKeyForExpectedProject,
 } from "@/integrations/supabase/compat";
 import { friendlyAuthError } from "@/lib/use-auth";
 import { syncDefaultCompanyForUser } from "@/lib/rpc-admin";
@@ -32,7 +29,7 @@ type View =
 
 const OTP_LENGTH = 8;
 
-const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
+
 
 function isValidWhatsapp(v: string): boolean {
   const digits = v.replace(/\D/g, "");
@@ -71,11 +68,7 @@ export function LoginPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
           {!supabaseConfigured && (
             <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-              {!supabaseAnonKeyPresent
-                ? "Conexão não configurada. Tente novamente em instantes."
-                : !isAnonKeyForExpectedProject
-                  ? `Conexão apontando para projeto errado (${supabaseAnonKeyRef ?? "?"}).`
-                  : "Conexão não configurada."}
+              Conexão indisponível. Tente novamente em instantes.
             </div>
           )}
 
@@ -117,19 +110,6 @@ export function LoginPage() {
             />
           )}
         </div>
-
-        <div className="mt-4 rounded-xl border border-border bg-card/60 p-3 text-[11px]">
-          <p className="mb-1 font-semibold text-muted-foreground">Conexão</p>
-          <p className="text-muted-foreground">
-            {hasUrl && supabaseAnonKeyPresent && isAnonKeyForExpectedProject
-              ? "Pronta."
-              : "Verifique configuração."}
-          </p>
-        </div>
-
-        <p className="mt-4 text-center text-[11px] text-muted-foreground">
-          Ambiente de testes — sem cobrança, WhatsApp ou IA reais.
-        </p>
       </div>
     </div>
   );

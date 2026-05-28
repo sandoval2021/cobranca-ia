@@ -1,3 +1,4 @@
+import { flags } from "@/lib/flags";
 import { useEffect, useMemo, useState } from "react";
 import {
   MessageSquare,
@@ -141,9 +142,11 @@ export function SimulatedMessagesPanel({
         <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <MessageSquare className="h-3.5 w-3.5" /> {title}
         </h3>
-        <span className="inline-flex items-center gap-1 rounded-full bg-info-soft px-2 py-0.5 text-[10px] font-medium text-info">
-          <FlaskConical className="h-3 w-3" /> Ambiente de testes
-        </span>
+        {flags.stagingMode && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-info-soft px-2 py-0.5 text-[10px] font-medium text-info">
+            <FlaskConical className="h-3 w-3" /> Ambiente de testes
+          </span>
+        )}
       </div>
 
       {state.status === "loading" && (
@@ -427,16 +430,18 @@ export function GenerateMessageDialog({
           </div>
 
           {/* Aviso staging */}
-          <div className="flex items-start gap-2 rounded-lg border border-info/30 bg-info-soft p-3 text-xs text-info">
-            <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <p>
-              <strong>Ambiente de testes:</strong> esta mensagem não será enviada pelo
-              WhatsApp.{" "}
-              <span className="opacity-80">
-                Use para validar o texto antes de habilitar envio real.
-              </span>
-            </p>
-          </div>
+          {flags.stagingMode && (
+            <div className="flex items-start gap-2 rounded-lg border border-info/30 bg-info-soft p-3 text-xs text-info">
+              <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <p>
+                <strong>Ambiente de testes:</strong> esta mensagem não será enviada pelo
+                WhatsApp.{" "}
+                <span className="opacity-80">
+                  Use para validar o texto antes de habilitar envio real.
+                </span>
+              </p>
+            </div>
+          )}
 
           {/* Tom */}
           <div>

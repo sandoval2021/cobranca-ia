@@ -660,6 +660,7 @@ function SectionCard({
 }
 
 function StagingNotice() {
+  if (!flags.stagingMode) return null;
   return (
     <div className="mb-4 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
       <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
