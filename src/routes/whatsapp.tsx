@@ -516,6 +516,46 @@ function WhatsAppPage() {
               )}
             </div>
 
+            <div className="border-t pt-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-medium flex items-center gap-2">
+                    <Bot className="w-4 h-4" /> Responder automaticamente com IA
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Quando um cliente mandar mensagem, a IA gera e envia uma resposta
+                    usando os dados da empresa e do cadastro do cliente.
+                  </p>
+                </div>
+                <Switch
+                  checked={aiEnabled}
+                  onCheckedChange={(v) => handleSaveAi(v)}
+                  disabled={savingAi || instance.status !== "connected"}
+                />
+              </div>
+              <div className="mt-3 space-y-2">
+                <Label htmlFor="aiPrompt" className="text-xs">
+                  Instruções para a IA (opcional)
+                </Label>
+                <Textarea
+                  id="aiPrompt"
+                  rows={4}
+                  placeholder="Ex.: Você é o atendente da Loja X. Responda em português, seja breve e nunca prometa descontos."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleSaveAi()}
+                  disabled={savingAi}
+                >
+                  {savingAi && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Salvar instruções
+                </Button>
+              </div>
+            </div>
+
             <div className="border-t pt-4 space-y-2">
               <div className="font-medium flex items-center gap-2">
                 <Send className="w-4 h-4" /> Testar envio
