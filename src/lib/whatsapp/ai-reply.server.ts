@@ -52,13 +52,19 @@ function parseInbound(payload: any): InboundParts | null {
     if (!item) continue;
     const key = item?.key ?? {};
     if (key?.fromMe) continue;
+    if (item?.status || item?.broadcast || key?.remoteJid === "status@broadcast") continue;
     const remoteJid: string = key?.remoteJid ?? "";
+    if (remoteJid.endsWith("@broadcast")) continue;
     if (remoteJid.endsWith("@g.us")) continue; // ignora grupos
     const phone = normalizePhone(remoteJid) ?? normalizePhone(item?.from);
     const text = extractText(item?.message);
     const id = key?.id ?? item?.id ?? item?.messageId;
+    const rawTs = Number(item?.messageTimestamp ?? item?.timestamp ?? 0);
+    const tsMs = rawTs > 10_000_000_000 ? rawTs : rawTs * 1000;
+    const ageSeconds = tsMs > 0 ? Math.floor((Date.now() - tsMs) / 1000) : null;
+    if (ageSeconds !== null && ageSeconds > 300) continue;
     if (!phone || !text || !id) continue;
-    return { providerMsgId: String(id), fromPhone: phone, text };
+    return { providerMsgId: String(id), fromPhone: phone, text, ageSeconds };
   }
   return null;
 }
