@@ -139,12 +139,43 @@ function MinhaContaPage() {
     }
   }
 
+  if (isSuperAdmin) {
+    return (
+      <PageContainer>
+        <SectionHeader
+          title="Minha conta"
+          subtitle="Conta administrativa do sistema (Super Admin)."
+        />
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
+          <p className="font-semibold text-primary">
+            <ShieldCheck className="mr-1 inline h-4 w-4" /> Conta de Super Admin
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            Super Admin não possui plano nem vencimento — gerencia todas as bases.
+            Para ver/editar planos das contas, abra <strong>Contas de donos</strong>.
+          </p>
+          <dl className="mt-3 grid gap-2 text-sm">
+            <Row label="Nome" value={user?.nome ?? "—"} />
+            <Row label="E-mail" value={user?.email ?? "—"} />
+            <Row label="WhatsApp" value={user?.whatsapp || "—"} />
+          </dl>
+          <div className="mt-3">
+            <Button variant="outline" onClick={handleLogout} className="h-10">
+              <LogOut className="h-4 w-4" /> Sair
+            </Button>
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer>
       <SectionHeader
         title="Minha conta"
         subtitle="Veja os dados da sua empresa, o plano atual e ajustes da conta."
       />
+
 
       <div className="space-y-3">
         {/* 1) Dados da empresa/base */}
