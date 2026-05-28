@@ -68,7 +68,7 @@ function AdminMarketplacePage() {
   if (error === "forbidden") {
     return (
       <PageContainer>
-        <SectionHeader title="Marketplace" description="Acesso restrito ao super admin." />
+        <SectionHeader title="Marketplace" subtitle="Acesso restrito ao super admin." />
       </PageContainer>
     );
   }
@@ -77,7 +77,7 @@ function AdminMarketplacePage() {
     <PageContainer>
       <SectionHeader
         title="Marketplace · Mercado Pago"
-        description="Visão consolidada de todas as empresas conectadas."
+        subtitle="Visão consolidada de todas as empresas conectadas."
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
