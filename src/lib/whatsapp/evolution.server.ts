@@ -353,6 +353,8 @@ export const evolutionProvider: WhatsAppProvider = {
     if (!res.ok) {
       throw new Error(`evolution.setSettings falhou (${res.status}): ${res.text.slice(0, 300)}`);
     }
+  },
+
 
   async markHealthy(vps) {
     await supabaseAdmin
