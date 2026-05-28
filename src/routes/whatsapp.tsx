@@ -127,6 +127,13 @@ function WhatsAppPage() {
 
   useEffect(() => {
     if (instance) setBrokenConnection(false);
+    const anyInst = instance as any;
+    if (anyInst && typeof anyInst.ai_reply_enabled === "boolean") {
+      setAiEnabled(anyInst.ai_reply_enabled);
+    }
+    if (anyInst && typeof anyInst.ai_system_prompt === "string") {
+      setAiPrompt(anyInst.ai_system_prompt);
+    }
   }, [instance]);
 
   function digitsOnly(v: string) {
