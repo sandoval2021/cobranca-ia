@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
-import { BrandLogo } from "@/components/brand/BrandLogo";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
