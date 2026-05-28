@@ -379,7 +379,7 @@ export const updateRenewalTaskStatus = createServerFn({ method: "POST" })
     }
     const { error } = await context.supabase
       .from("renewal_tasks")
-      .update(update)
+      .update(update as any)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
