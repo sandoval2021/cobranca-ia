@@ -75,6 +75,9 @@ export interface WhatsAppProvider {
     settings: { rejectCall?: boolean; msgCall?: string },
   ): Promise<void>;
 
+  setWebhook(ref: WAInstanceRef, webhook_url: string): Promise<void>;
+
+
   markHealthy(vps: WAVpsNode): Promise<void>;
   markError(vps: WAVpsNode, reason: string): Promise<void>;
 }
