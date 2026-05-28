@@ -278,6 +278,7 @@ export function buildPromptFromContext(ctx: AiContext): { system: string; contex
   // Bloco de contexto compacto
   const compact: Record<string, unknown> = {
     intent: ctx.intent,
+    classificacao: ctx.classification,
     empresa: ctx.company.name,
     cliente: ctx.customer
       ? { nome: ctx.customer.name, notas: ctx.customer.notes }
@@ -285,6 +286,21 @@ export function buildPromptFromContext(ctx: AiContext): { system: string; contex
     needsHuman: ctx.needsHuman,
     motivo: ctx.reason,
   };
+
+  // Memória curta da conversa (resumo + últimas trocas) — só envia se existir
+  if (ctx.memory.summary || ctx.memory.last_messages.length) {
+    compact.memoria = {
+      resumo: ctx.memory.summary ?? null,
+      ultimas: ctx.memory.last_messages.slice(-8).map((m) => ({ de: m.role, txt: m.text })),
+      flags: ctx.memory.flags,
+    };
+    rules.push("- Use 'memoria' para NÃO repetir perguntas já feitas e manter o contexto da conversa.");
+  }
+
+  if (ctx.app.issue) {
+    compact.problema_app = ctx.app.issue;
+    rules.push("- Para problema de app, dê passo a passo curto e prático (3 a 6 passos).");
+  }
 
   if (ctx.priceGroup && (ctx.intent === "price" || ctx.intent === "renewal" || ctx.intent === "referral" || ctx.intent === "trial" || ctx.intent === "other" || ctx.intent === "greeting")) {
     compact.tabela_preco = {
