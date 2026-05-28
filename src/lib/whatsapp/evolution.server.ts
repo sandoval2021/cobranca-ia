@@ -136,9 +136,13 @@ function extractProfileName(d: any): string | null {
 function parseInstanceState(d: any): WAInstanceState {
   const status = mapEvolutionStatus(
     d?.instance?.state ||
+      d?.instance?.connectionStatus?.state ||
+      d?.instance?.connectionStatus?.status ||
       d?.instance?.connectionStatus ||
       d?.instance?.status ||
       d?.state ||
+      d?.connectionStatus?.state ||
+      d?.connectionStatus?.status ||
       d?.connectionStatus ||
       d?.status,
   );
