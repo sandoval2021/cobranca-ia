@@ -49,6 +49,8 @@ import { Route as AcessoRestritoRouteImport } from './routes/acesso-restrito'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtendimentoIaTokenRouteImport } from './routes/atendimento-ia.$token'
 import { Route as ApiPublicWebhooksMercadoPagoRouteImport } from './routes/api/public/webhooks/mercado-pago'
+import { Route as ApiPublicHooksWaDispatchRouteImport } from './routes/api/public/hooks/wa-dispatch'
+import { Route as ApiPublicWebhooksEvolutionInstanceRouteImport } from './routes/api/public/webhooks/evolution.$instance'
 
 const TestesRoute = TestesRouteImport.update({
   id: '/testes',
@@ -251,6 +253,18 @@ const ApiPublicWebhooksMercadoPagoRoute =
     path: '/api/public/webhooks/mercado-pago',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksWaDispatchRoute =
+  ApiPublicHooksWaDispatchRouteImport.update({
+    id: '/api/public/hooks/wa-dispatch',
+    path: '/api/public/hooks/wa-dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicWebhooksEvolutionInstanceRoute =
+  ApiPublicWebhooksEvolutionInstanceRouteImport.update({
+    id: '/api/public/webhooks/evolution/$instance',
+    path: '/api/public/webhooks/evolution/$instance',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -292,7 +306,9 @@ export interface FileRoutesByFullPath {
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
+  '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -334,7 +350,9 @@ export interface FileRoutesByTo {
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
+  '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -377,7 +395,9 @@ export interface FileRoutesById {
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
   '/atendimento-ia/$token': typeof AtendimentoIaTokenRoute
+  '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
+  '/api/public/webhooks/evolution/$instance': typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -421,7 +441,9 @@ export interface FileRouteTypes {
     | '/seguranca-local'
     | '/testes'
     | '/atendimento-ia/$token'
+    | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/api/public/webhooks/evolution/$instance'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -463,7 +485,9 @@ export interface FileRouteTypes {
     | '/seguranca-local'
     | '/testes'
     | '/atendimento-ia/$token'
+    | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/api/public/webhooks/evolution/$instance'
   id:
     | '__root__'
     | '/'
@@ -505,7 +529,9 @@ export interface FileRouteTypes {
     | '/seguranca-local'
     | '/testes'
     | '/atendimento-ia/$token'
+    | '/api/public/hooks/wa-dispatch'
     | '/api/public/webhooks/mercado-pago'
+    | '/api/public/webhooks/evolution/$instance'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -548,7 +574,9 @@ export interface RootRouteChildren {
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
   AtendimentoIaTokenRoute: typeof AtendimentoIaTokenRoute
+  ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicWebhooksMercadoPagoRoute: typeof ApiPublicWebhooksMercadoPagoRoute
+  ApiPublicWebhooksEvolutionInstanceRoute: typeof ApiPublicWebhooksEvolutionInstanceRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -833,6 +861,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksMercadoPagoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/wa-dispatch': {
+      id: '/api/public/hooks/wa-dispatch'
+      path: '/api/public/hooks/wa-dispatch'
+      fullPath: '/api/public/hooks/wa-dispatch'
+      preLoaderRoute: typeof ApiPublicHooksWaDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/webhooks/evolution/$instance': {
+      id: '/api/public/webhooks/evolution/$instance'
+      path: '/api/public/webhooks/evolution/$instance'
+      fullPath: '/api/public/webhooks/evolution/$instance'
+      preLoaderRoute: typeof ApiPublicWebhooksEvolutionInstanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -876,7 +918,10 @@ const rootRouteChildren: RootRouteChildren = {
   SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
   AtendimentoIaTokenRoute: AtendimentoIaTokenRoute,
+  ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicWebhooksMercadoPagoRoute: ApiPublicWebhooksMercadoPagoRoute,
+  ApiPublicWebhooksEvolutionInstanceRoute:
+    ApiPublicWebhooksEvolutionInstanceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

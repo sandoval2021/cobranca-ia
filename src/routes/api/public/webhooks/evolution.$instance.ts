@@ -59,7 +59,7 @@ export const Route = createFileRoute("/api/public/webhooks/evolution/$instance")
         const event = String(payload?.event || payload?.type || "").toLowerCase();
         const now = new Date().toISOString();
 
-        const patch: Record<string, unknown> = { last_activity_at: now };
+        const patch: any = { last_activity_at: now };
 
         if (event.includes("connection") || event === "connection_update") {
           const state = payload?.data?.state || payload?.state;
