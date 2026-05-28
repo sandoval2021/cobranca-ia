@@ -76,12 +76,22 @@ function WhatsAppPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [busy, setBusy] = useState(false);
   const [brokenConnection, setBrokenConnection] = useState(false);
+  const [rejectCall, setRejectCall] = useState(false);
+  const [rejectMsg, setRejectMsg] = useState(
+    "Não posso atender chamadas neste número. Envie uma mensagem.",
+  );
+  const [savingReject, setSavingReject] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [testBody, setTestBody] = useState("Olá! Esta é uma mensagem de teste do CobraEasy.");
+  const [sendingTest, setSendingTest] = useState(false);
 
   const ensureCompany = useServerFn(ensureMyCompany);
   const fetchData = useServerFn(getCompanyWhatsApp);
   const fetchQr = useServerFn(getWhatsAppQr);
   const connectFn = useServerFn(connectWhatsAppInstance);
   const disconnectFn = useServerFn(disconnectWhatsAppInstance);
+  const setRejectFn = useServerFn(setWhatsAppRejectCall);
+  const sendTestFn = useServerFn(sendWhatsAppTestMessage);
 
   // Garante uma empresa real (UUID) no backend para o usuário logado.
   useEffect(() => {
