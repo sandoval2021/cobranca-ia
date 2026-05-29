@@ -790,7 +790,7 @@ function RouteSheet({
         toast.success(`Rota principal substituída: ${replacedPrimary.host}.`);
       }
       toast.success(data ? "Rota atualizada." : `Rota ${route.host} cadastrada.`);
-      onSaved();
+      onSaved(route, replacedPrimary);
     };
 
     if (isPrimary && serverId) {
