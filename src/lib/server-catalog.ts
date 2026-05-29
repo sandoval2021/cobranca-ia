@@ -1,12 +1,22 @@
-// Catálogo local de servidores/painéis (preview-only, localStorage).
-// Nenhuma chamada externa. Não faz login automático em painel.
+// Catálogo de servidores — banco é a fonte da verdade (tabela public.servers).
+// localStorage é apenas cache local para resposta instantânea no boot e
+// trabalho offline. Toda mutação tenta gravar no banco; o cache é
+// hidratado pelo hook `useServersSync` em src/lib/servers/useServersSync.ts.
+
+import { toast } from "sonner";
+import {
+  upsertServerDb,
+  setServerActiveDb,
+  deleteServerDb,
+  bulkUpsertServersDb,
+} from "@/lib/servers/servers.functions";
 
 export type ServerStatus = "ativo" | "inativo";
 
 export type ServerEntry = {
   id: string;
   name: string;
-  color: string; // hex ou token
+  color: string;
   panel_url?: string;
   panel_username?: string;
   panel_password?: string;
@@ -18,6 +28,7 @@ export type ServerEntry = {
 
 const STORAGE_KEY_LEGACY = "cobranca_ia_server_catalog_v1";
 export const SERVER_CATALOG_EVENT = "cobranca_ia_server_catalog:changed";
+export const SERVER_CATALOG_SYNC_EVENT = "cobranca_ia_server_catalog:sync";
 
 const DEFAULT_COLORS = [
   "#6366f1",
@@ -28,29 +39,56 @@ const DEFAULT_COLORS = [
   "#64748b",
 ];
 
-// IMPORTANTE: não pré-criar servidores. Cada dono cadastra os seus.
-// Mantemos a lista de cores apenas para sugerir no formulário.
 export const SUGGESTED_SERVER_COLORS = DEFAULT_COLORS;
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+type SyncState = {
+  loaded: boolean; // já recebeu primeira resposta do banco neste boot?
+  lastError: string | null;
+};
+const syncState: SyncState = { loaded: false, lastError: null };
 
 function nowIso() {
   return new Date().toISOString();
 }
 
-export function newServerId(): string {
-  return `srv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+function genUuid(): string {
+  if (
+    typeof globalThis.crypto !== "undefined" &&
+    typeof globalThis.crypto.randomUUID === "function"
+  ) {
+    return globalThis.crypto.randomUUID();
+  }
+  // Fallback (não deveria ocorrer em navegadores modernos).
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
+    (Number(c) ^ (Math.random() * 16) & (15 >> (Number(c) / 4))).toString(16),
+  );
 }
 
-// Chave por empresa: cada dono tem seu próprio catálogo, sem vazamento.
-function activeStorageKey(): string {
-  if (typeof window === "undefined") return STORAGE_KEY_LEGACY;
+export function newServerId(): string {
+  return genUuid();
+}
+
+function activeCompanyId(): string | null {
+  if (typeof window === "undefined") return null;
   try {
     const cid = window.localStorage.getItem("cobranca_ia_active_company_id");
-    if (cid && cid !== "null" && cid !== "undefined") {
-      return `cobranca_ia_server_catalog_v2__${cid}`;
-    }
+    if (!cid || cid === "null" || cid === "undefined") return null;
+    return cid;
   } catch {
-    /* noop */
+    return null;
   }
+}
+
+function isValidCompanyUuid(id: string | null): id is string {
+  return !!id && UUID_RE.test(id);
+}
+
+function activeStorageKey(): string {
+  const cid = activeCompanyId();
+  if (cid) return `cobranca_ia_server_catalog_v2__${cid}`;
   return STORAGE_KEY_LEGACY;
 }
 
@@ -88,15 +126,11 @@ function isValid(s: unknown): s is ServerEntry {
   );
 }
 
-// Sem defaults — começa vazio. Cada dono cadastra os seus servidores.
-function buildDefaults(): ServerEntry[] {
-  return [];
-}
+// ---------- Leitura (síncrona, lê do cache local) ----------
 
 export function listServers(): ServerEntry[] {
   const cur = readRaw();
   if (cur) return cur;
-  // Não grava nada por padrão: lista vazia até o dono cadastrar.
   return [];
 }
 
@@ -109,39 +143,194 @@ export function getServerById(id?: string | null): ServerEntry | null {
   return listServers().find((s) => s.id === id) ?? null;
 }
 
+// ---------- Mutações: cache local + persistência no banco ----------
+
+function persistInBackground(
+  fn: () => Promise<unknown>,
+  failureMessage: string,
+) {
+  void (async () => {
+    try {
+      await fn();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "erro";
+      console.error("[server-catalog]", failureMessage, err);
+      toast.error(`${failureMessage}. ${msg}`);
+      markSyncError(msg);
+    }
+  })();
+}
+
 export function saveServer(s: ServerEntry): void {
+  const cid = activeCompanyId();
   const list = listServers();
   const idx = list.findIndex((x) => x.id === s.id);
   const t = nowIso();
-  const next = { ...s, updated_at: t, created_at: s.created_at || t };
+  // Garantir UUID válido — IDs legados (srv_xxx) não funcionam no banco.
+  const id = UUID_RE.test(s.id) ? s.id : newServerId();
+  const next: ServerEntry = { ...s, id, updated_at: t, created_at: s.created_at || t };
   if (idx >= 0) list[idx] = next;
   else list.push(next);
   writeRaw(list);
+
+  if (isValidCompanyUuid(cid)) {
+    persistInBackground(
+      () =>
+        upsertServerDb({
+          data: {
+            id: UUID_RE.test(s.id) ? id : undefined, // novo no banco se ID era local
+            companyId: cid,
+            name: next.name,
+            color: next.color,
+            panel_url: next.panel_url ?? null,
+            panel_username: next.panel_username ?? null,
+            panel_password: next.panel_password ?? null,
+            notes: next.notes ?? null,
+            is_active: next.status === "ativo",
+            sort_order: 0,
+          },
+        }),
+      "Não foi possível salvar o servidor no servidor",
+    );
+  }
 }
 
 export function archiveServer(id: string): void {
+  const cid = activeCompanyId();
   const list = listServers().map((s) =>
     s.id === id ? { ...s, status: "inativo" as const, updated_at: nowIso() } : s,
   );
   writeRaw(list);
+
+  if (isValidCompanyUuid(cid) && UUID_RE.test(id)) {
+    persistInBackground(
+      () => setServerActiveDb({ data: { id, companyId: cid, is_active: false } }),
+      "Não foi possível inativar o servidor",
+    );
+  }
 }
 
 export function reactivateServer(id: string): void {
+  const cid = activeCompanyId();
   const list = listServers().map((s) =>
     s.id === id ? { ...s, status: "ativo" as const, updated_at: nowIso() } : s,
   );
   writeRaw(list);
+
+  if (isValidCompanyUuid(cid) && UUID_RE.test(id)) {
+    persistInBackground(
+      () => setServerActiveDb({ data: { id, companyId: cid, is_active: true } }),
+      "Não foi possível reativar o servidor",
+    );
+  }
 }
 
 export function deleteServer(id: string): void {
+  const cid = activeCompanyId();
   const list = listServers().filter((s) => s.id !== id);
   writeRaw(list);
+
+  if (isValidCompanyUuid(cid) && UUID_RE.test(id)) {
+    persistInBackground(
+      () => deleteServerDb({ data: { id, companyId: cid } }),
+      "Não foi possível excluir o servidor",
+    );
+  }
 }
 
 export function restoreDefaultServers(): void {
-  // Função desativada: não há mais defaults globais.
-  // Cada dono cadastra os próprios servidores.
+  // Desativado: não há defaults globais. Cada empresa cadastra os seus.
 }
+
+// ---------- Sincronização com o banco ----------
+
+/**
+ * Hidrata o cache local com a lista vinda do banco.
+ * Se o banco estiver vazio mas o cache tiver dados, NÃO sobrescreve —
+ * apenas marca o estado como "carregado" para que a UI possa oferecer
+ * migração dos dados locais. O usuário decide enviar via UI.
+ */
+export function hydrateFromDb(companyId: string, rows: ServerEntry[]): void {
+  if (typeof window === "undefined") return;
+  if (!isValidCompanyUuid(companyId)) return;
+  const key = `cobranca_ia_server_catalog_v2__${companyId}`;
+  const local = (() => {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return [] as ServerEntry[];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? (parsed.filter(isValid) as ServerEntry[]) : [];
+    } catch {
+      return [] as ServerEntry[];
+    }
+  })();
+
+  if (rows.length === 0 && local.length > 0) {
+    // Banco vazio + cache com dados → preserva cache, sinaliza pendência.
+    syncState.loaded = true;
+    syncState.lastError = null;
+    window.dispatchEvent(
+      new CustomEvent(SERVER_CATALOG_SYNC_EVENT, {
+        detail: { loaded: true, pendingLocal: local.length, error: null },
+      }),
+    );
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(rows));
+  } catch {
+    /* noop */
+  }
+  syncState.loaded = true;
+  syncState.lastError = null;
+  window.dispatchEvent(new CustomEvent(SERVER_CATALOG_EVENT));
+  window.dispatchEvent(
+    new CustomEvent(SERVER_CATALOG_SYNC_EVENT, {
+      detail: { loaded: true, pendingLocal: 0, error: null },
+    }),
+  );
+}
+
+export function markSyncError(message: string): void {
+  syncState.lastError = message;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(SERVER_CATALOG_SYNC_EVENT, {
+        detail: { loaded: syncState.loaded, error: message },
+      }),
+    );
+  }
+}
+
+export function getSyncState(): SyncState {
+  return { ...syncState };
+}
+
+/**
+ * Envia os servidores que estão apenas no cache local para o banco.
+ * Usado quando a primeira sync mostra banco vazio + dados locais.
+ */
+export async function uploadLocalServersToDb(): Promise<{ inserted: number; updated: number }> {
+  const cid = activeCompanyId();
+  if (!isValidCompanyUuid(cid)) throw new Error("Empresa inválida");
+  const local = listServers();
+  if (local.length === 0) return { inserted: 0, updated: 0 };
+  const payload = local.map((s) => ({
+    id: UUID_RE.test(s.id) ? s.id : undefined,
+    name: s.name,
+    color: s.color,
+    panel_url: s.panel_url ?? null,
+    panel_username: s.panel_username ?? null,
+    panel_password: s.panel_password ?? null,
+    notes: s.notes ?? null,
+    is_active: s.status === "ativo",
+    sort_order: 0,
+  }));
+  return bulkUpsertServersDb({ data: { companyId: cid, servers: payload } });
+}
+
+// ---------- Export / import / helpers ----------
 
 export type ServerBackupFile = {
   type: "cobranca-ia/server-catalog";
@@ -184,14 +373,22 @@ export function importServers(
   servers: ServerEntry[],
   mode: "merge" | "replace",
 ): void {
+  const cid = activeCompanyId();
   if (mode === "replace") {
     writeRaw(servers);
-    return;
+  } else {
+    const cur = listServers();
+    const byId = new Map(cur.map((s) => [s.id, s]));
+    for (const s of servers) byId.set(s.id, s);
+    writeRaw(Array.from(byId.values()));
   }
-  const cur = listServers();
-  const byId = new Map(cur.map((s) => [s.id, s]));
-  for (const s of servers) byId.set(s.id, s);
-  writeRaw(Array.from(byId.values()));
+  // Após import, replica para o banco também.
+  if (isValidCompanyUuid(cid)) {
+    persistInBackground(
+      () => uploadLocalServersToDb(),
+      "Falha ao enviar servidores importados para o banco",
+    );
+  }
 }
 
 // Helpers para badge
@@ -233,7 +430,6 @@ export function formatServerAsText(
 
 export type ServerLite = { id: string; name: string };
 
-/** IDs únicos de servidores presentes nas telas (ativas/arquivadas inclusive). */
 export function serverIdsFromScreens(
   screens: { server_ids?: string[] }[],
 ): string[] {
@@ -242,7 +438,6 @@ export function serverIdsFromScreens(
   return Array.from(set);
 }
 
-/** Lista resumida (nome+id) dos servidores referenciados pelas telas. */
 export function serversFromScreens(
   screens: { server_ids?: string[] }[],
 ): ServerLite[] {
@@ -253,7 +448,6 @@ export function serversFromScreens(
     .map((s) => ({ id: s.id, name: s.name }));
 }
 
-/** True se as telas têm pelo menos um vínculo com o servidor `id`. */
 export function screensHaveServer(
   screens: { server_ids?: string[] }[],
   id: string,
@@ -274,11 +468,6 @@ export type ServerTemplateVars = {
   senha_lista: string;
 };
 
-/**
- * Variáveis de servidor para uma tela específica.
- * Usa o `primary_server_id` (ou o primeiro de `server_ids`) como contexto.
- * Senhas voltam mascaradas por padrão — só revele com confirmação do usuário.
- */
 export function buildServerVarsForScreen(
   screen: {
     server_ids?: string[];
