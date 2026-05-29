@@ -293,7 +293,7 @@ export const logServiceDispatchDb = createServerFn({ method: "POST" })
     const { data: inserted, error } = await supabaseAdmin
       .from("service_message_dispatch_log")
       .upsert(rows as any, {
-        onConflict: "customer_id,service_plan_message_id,cycle_key",
+        onConflict: "company_id,customer_id,service_plan_message_id,cycle_key",
         ignoreDuplicates: true,
       })
       .select("id");

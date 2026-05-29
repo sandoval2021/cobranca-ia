@@ -2655,6 +2655,18 @@ export type Database = {
         Returns: undefined
       }
       claim_super_admin_bootstrap: { Args: never; Returns: Json }
+      claim_whatsapp_queue_batch: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          body: string
+          company_id: string
+          id: string
+          instance_id: string
+          max_attempts: number
+          to_phone: string
+        }[]
+      }
       cleanup_auth_ephemeral: { Args: never; Returns: undefined }
       create_customer_admin: {
         Args: {

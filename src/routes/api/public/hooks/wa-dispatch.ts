@@ -15,16 +15,21 @@ function isNight(d = new Date()): boolean {
   return h >= NIGHT_START_H || h < NIGHT_END_H;
 }
 
+function timingSafeEq(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 function checkAuth(request: Request): boolean {
-  const key =
-    request.headers.get("apikey") ||
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
-    "";
-  const expected =
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    "";
-  return Boolean(key && expected && key === expected);
+  const provided = request.headers.get("x-cobraeasy-cron-secret") || "";
+  const expected = process.env.CRON_HOOK_SECRET || "";
+  if (!expected) {
+    console.error("[wa-dispatch] CRON_HOOK_SECRET not configured");
+    return false;
+  }
+  return Boolean(provided) && timingSafeEq(provided, expected);
 }
 
 export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
@@ -38,33 +43,31 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
           return Response.json({ ok: true, skipped: "night_window" });
         }
 
-        const now = new Date().toISOString();
-        // Busca lote pronto (FOR UPDATE SKIP LOCKED via RPC futura; por ora claim atômico)
-        const { data: candidates, error } = await supabaseAdmin
-          .from("whatsapp_message_queue")
-          .select("id, instance_id, company_id, to_phone, body, attempts, max_attempts")
-          .eq("status", "queued")
-          .lte("next_attempt_at", now)
-          .order("next_attempt_at", { ascending: true })
-          .limit(50);
+        // Claim atômico via RPC com FOR UPDATE SKIP LOCKED.
+        const { data: candidates, error } = await supabaseAdmin.rpc(
+          "claim_whatsapp_queue_batch" as any,
+          { p_limit: 50 },
+        );
 
-        if (error) return new Response(error.message, { status: 500 });
+        if (error) {
+          console.error("[wa-dispatch] claim failed", error.message);
+          return new Response(error.message, { status: 500 });
+        }
         if (!candidates?.length) return Response.json({ ok: true, processed: 0 });
 
         let processed = 0;
         let failed = 0;
         const perInstanceSent: Record<string, number> = {};
 
-        for (const c of candidates) {
-          // Claim atômico: muda queued -> sending somente se ainda for queued
-          const { data: claimed } = await supabaseAdmin
-            .from("whatsapp_message_queue")
-            .update({ status: "sending", updated_at: new Date().toISOString() })
-            .eq("id", c.id)
-            .eq("status", "queued")
-            .select("id")
-            .maybeSingle();
-          if (!claimed) continue;
+        for (const c of candidates as Array<{
+          id: string;
+          instance_id: string;
+          company_id: string;
+          to_phone: string;
+          body: string;
+          attempts: number;
+          max_attempts: number;
+        }>) {
 
           // Carrega instância + limites
           const { data: inst } = await supabaseAdmin
@@ -95,13 +98,27 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
               .eq("id", c.id);
             continue;
           }
+          // Rate-limit por instância: in-run + janela de 60s no banco.
+          const perMinuteCap = inst.per_minute_limit ?? 10;
           const sentThisRun = perInstanceSent[inst.id] ?? 0;
-          if (sentThisRun >= (inst.per_minute_limit ?? 15)) {
+          let overLimit = sentThisRun >= perMinuteCap;
+          if (!overLimit) {
+            const since = new Date(Date.now() - 60_000).toISOString();
+            const { count: recentCount } = await supabaseAdmin
+              .from("whatsapp_message_queue")
+              .select("id", { count: "exact", head: true })
+              .eq("instance_id", inst.id)
+              .eq("status", "sent")
+              .gte("sent_at", since);
+            if ((recentCount ?? 0) >= perMinuteCap) overLimit = true;
+          }
+          if (overLimit) {
             await supabaseAdmin
               .from("whatsapp_message_queue")
               .update({
                 status: "queued",
                 next_attempt_at: new Date(Date.now() + 60_000).toISOString(),
+                last_error: "rate_limited",
               })
               .eq("id", c.id);
             continue;
