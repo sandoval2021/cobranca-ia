@@ -102,6 +102,9 @@ export function AppShell() {
           <AppSidebar onNavigate={() => setOpenSheet(false)} />
         </div>
 
+        {/* Sheet do sidebar mantida só para uso futuro/desktop avançado.
+            No mobile o header NÃO mostra mais o botão de 3 risquinhos —
+            todas as funções extras vivem na aba "Mais" da barra inferior. */}
         <Sheet open={openSheet} onOpenChange={setOpenSheet}>
           <SheetContent side="left" className="w-[var(--sidebar-width)] p-0">
             <AppSidebar onNavigate={() => setOpenSheet(false)} />
@@ -109,7 +112,7 @@ export function AppShell() {
         </Sheet>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <AppHeader title={title} onMenu={() => setOpenSheet(true)} />
+          <AppHeader title={title} />
           <main className="min-w-0 flex-1">
             {roleResolved && isOwner && <AccountStatusBanner company={company} />}
             {denial ? <RestrictedView reason={denial} /> : <Outlet />}
