@@ -17,6 +17,10 @@ import {
   formatChargeReply,
   type SimplePlan,
 } from "@/lib/payments/whatsapp-charge.server";
+import {
+  detectCredentialsRequest,
+  buildCredentialsReply,
+} from "./credentials-reply.server";
 
 const COOLDOWN_MS = 8_000;
 const HOURLY_LIMIT = 20;
