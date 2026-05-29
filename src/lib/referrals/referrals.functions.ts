@@ -184,9 +184,14 @@ export const bulkUpsertReferralsDb = createServerFn({ method: "POST" })
         updated++;
       } else {
         const { error } = await supabaseAdmin.from("customer_referrals").insert(base);
-        if (error) throw new Error(error.message);
-        inserted++;
+        if (error) {
+          // 23505: já existe pela chave de negócio — ignora silenciosamente (idempotente).
+          if ((error as any).code !== "23505") throw new Error(error.message);
+        } else {
+          inserted++;
+        }
       }
+
     }
     return { inserted, updated };
   });
