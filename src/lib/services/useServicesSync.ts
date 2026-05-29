@@ -7,6 +7,8 @@ import { getActiveCompanyId } from "@/lib/company-scope";
 import {
   hydrateServicesFromDb,
   markServicesSyncError,
+  getServicesSyncState,
+  uploadLocalServicesToDb,
 } from "@/lib/services-catalog";
 import {
   hydrateCustomerPlansFromDb,
@@ -40,6 +42,25 @@ export function useServicesSync() {
         if (cancelled) return;
         hydrateServicesFromDb(companyId, plans as ServicePlanDto[]);
         hydrateCustomerPlansFromDb(companyId, links as CustomerPlanLinkDto[]);
+
+        // Auto-upload: se o banco está vazio mas existem planos locais
+        // pendentes desta empresa, envia para a nuvem automaticamente
+        // (evita que planos "sumam" entre dispositivos / após limpar cache).
+        const state = getServicesSyncState();
+        if (state.pendingLocal > 0) {
+          try {
+            await uploadLocalServicesToDb();
+            // Re-sincroniza para confirmar
+            const refreshed = await listPlans({ data: { companyId } });
+            if (!cancelled) hydrateServicesFromDb(companyId, refreshed as ServicePlanDto[]);
+          } catch (err) {
+            if (!cancelled) {
+              markServicesSyncError(
+                err instanceof Error ? err.message : "Falha ao enviar planos para a nuvem",
+              );
+            }
+          }
+        }
       } catch (err) {
         if (cancelled) return;
         markServicesSyncError(
