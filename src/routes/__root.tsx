@@ -33,6 +33,8 @@ import { useRevendaSettingsSync } from "@/hooks/useRevendaSettingsSync";
 import { useCustomerExtrasSync } from "@/hooks/useCustomerExtrasSync";
 import { useTrialLeadsSync } from "@/hooks/useTrialLeadsSync";
 import { useFinanceSync } from "@/hooks/useFinanceSync";
+import { useFinanceSettingsSync } from "@/hooks/useFinanceSettingsSync";
+import { useDnsRoutesSync } from "@/hooks/useDnsRoutesSync";
 
 
 
