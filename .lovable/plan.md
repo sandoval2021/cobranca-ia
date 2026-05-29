@@ -1,37 +1,57 @@
-## Já feito nesta mensagem
-- "Configuração Inicial" e "Backup Geral" marcados como `superAdminOnly` no `src/lib/nav.ts` (somem do menu do Dono).
-- Toggles "Aceita áudio" e "Oferecer teste automaticamente" removidos da aba Regras em `src/routes/treinar-ia.tsx`.
-- Bloco "URL do webhook" removido de `src/routes/pagamentos.mercado-pago.tsx`.
+# Persistência definitiva dos servidores no banco
 
-## A fazer (4 frentes maiores)
+## Causa raiz
 
-### 1. Trial = 7 dias e bloqueio pós-trial
-- Migration: alterar `public.company_subscriptions.current_period_end` default de `now() + 30 days` → `now() + 7 days`. Atualizar `get_or_create_current_ai_cycle` para usar 7 dias quando cria trial. Atualizar `company_subscriptions` existentes em status `trial` para `current_period_end = current_period_start + 7 days`.
-- Frontend: criar `TrialGuard` em `src/components/auth/TrialGuard.tsx` que usa `getAiQuotaStatus` e, se `subscription.status='trial'` e `days_left <= 0` (ou status `past_due`/`canceled`), redireciona qualquer rota que não seja `/minha-assinatura`, `/login`, `/auth`, `/reset-password`, `/pagar/*` para `/minha-assinatura` com banner "Seu período de teste acabou. Escolha um plano para continuar."
-- Plugar o guard no `__root.tsx` ou no `AppShell` (após autenticação).
+O arquivo `src/lib/server-catalog.ts` é a fonte oficial de servidores hoje, e ele lê/grava **apenas em `localStorage`** (chave `cobranca_ia_server_catalog_v2__<companyId>`). Por isso:
 
-### 2. Botão "Assinar" em cada plano (Mercado Pago)
-- Criar `createSaasCheckout` server fn em `src/lib/billing-saas/billing-saas.functions.ts`: recebe `{ companyId, planId }`, cria uma `preference` no Mercado Pago usando `MERCADO_PAGO_PLATFORM_ACCESS_TOKEN` (token da plataforma, não do dono). Grava em uma nova tabela `saas_checkout_sessions` (company_id, plan_id, preference_id, status, created_at) para reconciliar via webhook.
-- Webhook: estender `src/routes/api/public/mp/marketplace-webhook.ts` (ou criar `saas-webhook.ts`) para, ao receber `payment.approved`, atualizar `company_subscriptions` para `status='active'`, `current_period_start=now()`, `current_period_end=now()+30 days`.
-- UI: em `src/routes/minha-assinatura.tsx`, cada card de plano ganha botão **"Assinar"** que chama a server fn e redireciona para `init_point` do MP. Adicionar feedback de "abrindo checkout…".
+- Cada dispositivo tem sua própria lista (desktop ≠ PWA celular).
+- O aviso "Salvo apenas neste navegador" aparece porque é literalmente verdade.
+- A tabela `public.servers` **já existe** no banco (com `company_id`, RLS por `has_company_access`, delete só para owner/super admin), mas o app nunca grava nem lê dela.
 
-### 3. Catálogo de servidores por empresa (sem vazar do admin)
-- Investigar `src/lib/server-catalog.ts` para ver se está em localStorage ou banco.
-- Se localStorage global: passar a chave por `company_id` (`server_catalog_v1__<companyId>`) e migrar leitura/escrita.
-- Se já está no banco: revisar a query — provavelmente está sem `eq('company_id', activeCompanyId)`. Corrigir e garantir RLS por empresa.
+Nenhuma mudança de schema é necessária. SQL aplicado: **NÃO**.
 
-### 4. Filtrar artigos de Ajuda
-- Em `src/lib/help-center.ts`, adicionar campo opcional `audience?: 'super_admin' | 'owner' | 'all'` em `HELP_ARTICLES` (default `'all'`). Marcar como `super_admin` os artigos que falam de: diagnóstico, marketplace admin, super admin, configurações de sistema, regras de disparo automático, base da IA global, etc.
-- Em `src/routes/ajuda.tsx`, filtrar `HELP_ARTICLES` por `isSuperAdmin || a.audience !== 'super_admin'` antes de exibir.
+## Estratégia
 
-## Decisões já tomadas pelo usuário
-- Bootstrap super admin: já existe DB → não precisa mais permitir bootstrap. A conta `lendariomcz@gmail.com` não tem role `super_admin` no banco (só `sandovaloliveira284@gmail.com` tem). O badge "Admin interno" provavelmente é só badge de trial — vai sumir com o item 1 (trial 7 dias).
-- Pós-trial: bloquear tudo, liberar só `/minha-assinatura`.
-- Pagamento: botão "Assinar" via MP da plataforma.
-- Servidores: por empresa.
+Trocar `server-catalog.ts` de "fonte" para "cache + adapter assíncrono" sobre a tabela `servers`, sem reescrever as 17 telas consumidoras de uma vez. Mantemos a mesma API síncrona (`listServers()`, `getServerById()`, `saveServer()`, etc.) que hoje todo mundo usa, e por baixo:
 
-## Fora de escopo desta entrega
-- Simplificar visualmente a tela de campanhas/renovações (item "muito bagunçado") — fica para próxima rodada para não inflar este PR.
-- Limpar visualmente outras telas com excesso de chips.
+1. Um hook de boot (`useServersSync`) chama um server function que faz `SELECT * FROM servers WHERE company_id = ...`, hidrata o cache local e dispara o evento `SERVER_CATALOG_EVENT` já existente.
+2. `saveServer / archiveServer / reactivateServer / deleteServer` viram **fire-and-forget para o banco** (server fn) e, no sucesso, refazem o sync. Em caso de erro de rede, mostram toast e revertem.
+3. Cache local serve apenas como leitura instantânea / offline — nunca como verdade.
+4. **Nunca** sobrescrever cache com lista vazia até a primeira resposta do servidor confirmar (flag `loaded`).
 
-Build: rodado pelo harness após cada etapa. Sem PR. Sem merge.
+## Arquivos
+
+**Novo:**
+- `src/lib/servers/servers.functions.ts` — `listServersDb`, `upsertServerDb`, `setServerActiveDb`, `deleteServerDb` (createServerFn + `requireSupabaseAuth`, validação Zod, `company_id` recebido e checado por RLS).
+- `src/lib/servers/useServersSync.ts` — hook que dispara sync no mount, em foco e em troca de empresa.
+
+**Editado:**
+- `src/lib/server-catalog.ts` — mantém a API atual, mas:
+  - `writeRaw` agora também enfileira persistência no banco;
+  - adiciona `hydrateFromDb(rows)` (chamada pelo hook);
+  - adiciona flag `__loaded` para impedir que componentes salvem antes do primeiro sync;
+  - remove qualquer fallback que crie defaults.
+- `src/routes/__root.tsx` — monta `useServersSync()` dentro de `AppShell` (só quando autenticado).
+- `src/routes/catalogo-servidores.tsx` — troca o aviso amarelo "Salvo apenas neste navegador" por "Salvo na sua conta. Disponível em qualquer dispositivo." e exibe estado de loading/erro de sync.
+
+**Migração de dados locais:**
+- Na primeira hidratação, se o banco voltar vazio **mas** existir lista no `localStorage`, exibir banner "Encontramos N servidores salvos neste navegador. Enviar para sua conta?" com botão que faz upsert em lote no banco. Nunca apagar o `localStorage` sem confirmação.
+
+## Não-escopo (não muda nesta tarefa)
+
+- Clientes, apps pagos, rotas DNS, planos, credenciais: o usuário pediu para informar — vou listar no entregável final quais ainda dependem de `localStorage` (vejo de bate-pronto: `dns-routes.ts`, `app-screens.ts`, `services-catalog.ts`, `customer-extras.ts`, `manual-renewals.ts`, `financeiro-local.ts`, `setup-wizard.ts`, etc.). Cada um precisa de tarefa própria — `customers`, `dns_routes`, `portal_apps` já existem no banco; outros (`services`, `app-screens` por cliente) talvez ainda não.
+
+## Validação
+
+1. Cadastrar servidor no desktop → confirmar `SELECT * FROM servers` no banco.
+2. Abrir PWA no celular logado na mesma conta → servidor aparece.
+3. Editar no celular → recarregar desktop → alteração reflete.
+4. Inativar / excluir → confirma no banco.
+5. Fechar e reabrir PWA → lista mantida.
+6. Build OK.
+
+## Riscos
+
+- 17 arquivos consomem `listServers()` de forma síncrona. Manter a assinatura síncrona evita refactor em cascata; o trade-off é que na **primeira renderização** após login a lista pode aparecer vazia por ~200 ms até o sync responder. Mitigação: o cache local da sessão anterior já preenche imediatamente, e o sync só substitui depois.
+
+Confirma este caminho? Se sim, executo as edições e o sync — sem PR, sem merge, sem nova migration.

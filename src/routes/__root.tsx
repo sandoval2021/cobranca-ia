@@ -19,6 +19,7 @@ import { TrialGuard } from "@/components/auth/TrialGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { initPwaUpdater } from "@/lib/pwa-updater";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
+import { useServersSync } from "@/lib/servers/useServersSync";
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
@@ -43,10 +44,7 @@ function AuthGateApp() {
   if (PUBLIC_ROUTES.has(pathname)) return <Outlet />;
   if (loading) return <SessionLoading />;
   if (!user) {
-    // /whatsapp tem rota autenticada, mas visitante deve ver a página pública.
     if (pathname === "/whatsapp") return <PublicWhatsappPage />;
-    // Visitante não logado em "/" vê landing pública. Qualquer outra rota
-    // protegida → manda para /login (sem usar ?login=1).
     if (pathname === "/") return <LandingPage />;
     if (typeof window !== "undefined") {
       window.location.replace("/login");
@@ -55,9 +53,15 @@ function AuthGateApp() {
   }
   return (
     <TrialGuard>
-      <AppShell />
+      <AuthedApp />
     </TrialGuard>
   );
+}
+
+function AuthedApp() {
+  // Sincroniza catálogo de servidores com o banco em todo dispositivo logado.
+  useServersSync();
+  return <AppShell />;
 }
 
 

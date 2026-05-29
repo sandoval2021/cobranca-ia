@@ -25,7 +25,7 @@ import {
   ServerEntry, listServers, saveServer, archiveServer, reactivateServer,
   deleteServer, restoreDefaultServers, exportServers, parseServerBackup,
   importServers, newServerId, serverBadgeStyle, maskSecret, formatServerAsText,
-  SERVER_CATALOG_EVENT,
+  SERVER_CATALOG_EVENT, SERVER_CATALOG_SYNC_EVENT, uploadLocalServersToDb,
 } from "@/lib/server-catalog";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
@@ -64,6 +64,8 @@ function CatalogoServidoresPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [importPreview, setImportPreview] = useState<ServerEntry[] | null>(null);
+  const [pendingLocal, setPendingLocal] = useState(0);
+  const [uploading, setUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const { guard, dialog: securityDialog } = useSecurityGuard();
 
@@ -72,9 +74,32 @@ function CatalogoServidoresPage() {
   useEffect(() => {
     refresh();
     const bump = () => refresh();
+    const onSync = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { pendingLocal?: number } | undefined;
+      if (detail && typeof detail.pendingLocal === "number") {
+        setPendingLocal(detail.pendingLocal);
+      }
+    };
     window.addEventListener(SERVER_CATALOG_EVENT, bump);
-    return () => window.removeEventListener(SERVER_CATALOG_EVENT, bump);
+    window.addEventListener(SERVER_CATALOG_SYNC_EVENT, onSync);
+    return () => {
+      window.removeEventListener(SERVER_CATALOG_EVENT, bump);
+      window.removeEventListener(SERVER_CATALOG_SYNC_EVENT, onSync);
+    };
   }, []);
+
+  const handleUploadLocal = async () => {
+    setUploading(true);
+    try {
+      const res = await uploadLocalServersToDb();
+      toast.success(`Enviados ${res.inserted + res.updated} servidor(es) para sua conta.`);
+      setPendingLocal(0);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao enviar");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const sorted = useMemo(() => {
     return [...servers].sort((a, b) => {
@@ -142,12 +167,35 @@ function CatalogoServidoresPage() {
       <PlanLimitNotice moduleKey="servidores" />
 
 
-      <div className="mb-3 rounded-md border border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">
+      <div className="mb-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-[11px] text-emerald-700 dark:text-emerald-300">
         <div className="flex items-start gap-2">
-          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>Salvo apenas neste navegador. Nenhum painel será acessado automaticamente.</span>
+          <Server className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>Salvo na sua conta. Disponível em qualquer dispositivo.</span>
         </div>
       </div>
+
+      {pendingLocal > 0 && (
+        <div className="mb-3 rounded-md border border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium">
+                Encontramos {pendingLocal} servidor(es) salvos apenas neste navegador.
+              </p>
+              <p>Envie para sua conta para acessar de qualquer dispositivo.</p>
+              <Button
+                size="sm"
+                className="mt-2 gap-1.5"
+                onClick={handleUploadLocal}
+                disabled={uploading}
+              >
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                Enviar para minha conta
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-3 flex flex-wrap gap-2">
         <Button size="sm" onClick={openNew} className="gap-1.5">
