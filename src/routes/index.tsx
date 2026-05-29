@@ -660,10 +660,11 @@ function Dashboard() {
       <section className="mb-6">
         <SectionTitle title="O que você quer fazer?" />
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <QuickAction to="/cobrancas?action=create" label="Novo cliente" icon={UserPlus} tone="primary" />
-          <QuickAction to="/cobrancas?action=charge" label="Cobrar" icon={Receipt} tone="success" />
-          <QuickAction to="/cobrancas?action=renew" label="Renovar" icon={RefreshCcw} tone="info" />
-          <QuickAction to="/cobrancas?action=message" label="Enviar mensagem" icon={MessageCircle} tone="warning" />
+          <QuickAction to="/clientes?action=create" label="Novo cliente" icon={UserPlus} tone="primary" bold />
+          <QuickAction to="/cobrancas?action=charge" label="Cobrar" icon={Receipt} tone="success" bold />
+          <QuickAction to="/cobrancas?action=renew" label="Renovar" icon={RefreshCcw} tone="warning" bold />
+          <QuickAction to="/cobrancas?action=message" label="Enviar mensagem" icon={MessageCircle} tone="info" bold />
+
         </div>
       </section>
 
