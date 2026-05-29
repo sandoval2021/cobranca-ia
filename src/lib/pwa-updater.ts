@@ -98,8 +98,6 @@ export function initPwaUpdater() {
     return;
   }
 
-  currentAssetSignature = captureCurrentAssetSignature();
-
   void registerServiceWorker();
 
   // NÃO usamos mais polling de HTML para detectar nova versão — em SSR
