@@ -100,15 +100,40 @@ function AdminDnsRotasPage() {
     setHistory(listRouteHistory());
     setServers(listServers());
     try {
-      const raw = localStorage.getItem(CHECKLIST_KEY);
-      setChecklist(raw ? JSON.parse(raw) : {});
-    } catch { setChecklist({}); }
-  };
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   useEffect(() => {
+    (async () => {
+      let cid = (await getCurrentCompanyAdmin()).companyId;
+      if (!cid) cid = (await ensureUserDefaultCompany()).companyId;
+      if (!cid) return;
+      setCompanyId(cid);
+      try { await hydrateDnsFromDb(cid); } catch (e) { console.error("dns hydrate", e); }
+      refresh();
+    })();
     refresh();
     window.addEventListener(DNS_ROUTES_EVENT, refresh);
     window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(DNS_ROUTES_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  // Dual-write helpers used by sheets/handlers below
+  const persistDomain = async (d: DnsDomain) => {
+    if (!companyId) { toast.error("Empresa não identificada."); return; }
+    try { await pushDomainToDb(companyId, d); }
+    catch (e: any) { toast.error("Falha ao salvar domínio no banco: " + (e?.message ?? e)); }
+  };
+  const persistRoute = async (r: DnsRoute) => {
+    if (!companyId) { toast.error("Empresa não identificada."); return; }
+    try { await pushRouteToDb(companyId, r); }
+    catch (e: any) { toast.error("Falha ao salvar rota no banco: " + (e?.message ?? e)); }
+  };
+  const removeDomainDb = async (id: string) => { if (companyId) await removeDomainFromDb(companyId, id).catch(() => {}); };
+  const removeRouteDb  = async (id: string) => { if (companyId) await removeRouteFromDb(companyId, id).catch(() => {}); };
+
     return () => {
       window.removeEventListener(DNS_ROUTES_EVENT, refresh);
       window.removeEventListener("storage", refresh);
