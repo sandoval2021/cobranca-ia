@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Pencil, Sparkles, Save, MessageCircle, Check, ChevronRight,
+  CloudUpload, Loader2,
 } from "lucide-react";
 
 import { PageContainer } from "@/components/layout/PageContainer";
