@@ -2,11 +2,13 @@
 // - Hidrata no mount, foco, troca de empresa e a cada 5 min.
 // - Realtime via useRealtimeTable.
 // - Auto-upload silencioso quando há legado local antes da hidratação.
+// - Escrita espelhada imediata (mirror) via eventos locais, fire-and-forget.
 import { useCallback, useEffect, useRef } from "react";
 import { getCurrentCompanyId } from "@/lib/companies";
 import { useRealtimeTable } from "@/hooks/useRealtimeTable";
 
 const FIVE_MIN = 5 * 60 * 1000;
+const MIRROR_DEBOUNCE_MS = 250;
 
 export function useDbFirstSync(opts: {
   /** Nome da tabela para realtime (ex.: "auto_templates"). */
@@ -15,8 +17,16 @@ export function useDbFirstSync(opts: {
   hydrate: (companyId: string) => Promise<void>;
   /** Envia legado local silenciosamente. Chamado UMA vez por sessão+empresa. */
   uploadLegacy?: (companyId: string) => Promise<void>;
+  /**
+   * Espelha imediatamente cache local → banco quando algum dos eventos dispara.
+   * Fire-and-forget; falha silenciosa preserva o cache local e o sync periódico
+   * tenta novamente.
+   */
+  mirror?: (companyId: string) => Promise<void>;
+  /** Eventos locais que disparam o mirror (ex.: ["trial-leads:changed"]). */
+  mirrorEvents?: string[];
 }) {
-  const { table, hydrate, uploadLegacy } = opts;
+  const { table, hydrate, uploadLegacy, mirror, mirrorEvents } = opts;
   const lastCompanyRef = useRef<string | null>(null);
   const uploadedRef = useRef<Set<string>>(new Set());
 
@@ -51,6 +61,32 @@ export function useDbFirstSync(opts: {
       window.clearInterval(id);
     };
   }, [run]);
+
+  // mirror imediato (debounced) → reflete em outros dispositivos via realtime
+  useEffect(() => {
+    if (!mirror || !mirrorEvents || mirrorEvents.length === 0) return;
+    let timer: number | null = null;
+    let cancelled = false;
+    let mirroring = false;
+    const fire = () => {
+      if (timer !== null) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        if (cancelled || mirroring) return;
+        const companyId = getCurrentCompanyId();
+        if (!companyId) return;
+        mirroring = true;
+        Promise.resolve(mirror(companyId))
+          .catch(() => { /* mantém cache local; sync periódico retenta */ })
+          .finally(() => { mirroring = false; });
+      }, MIRROR_DEBOUNCE_MS);
+    };
+    for (const ev of mirrorEvents) window.addEventListener(ev, fire);
+    return () => {
+      cancelled = true;
+      if (timer !== null) window.clearTimeout(timer);
+      for (const ev of mirrorEvents) window.removeEventListener(ev, fire);
+    };
+  }, [mirror, mirrorEvents]);
 
   // realtime → re-hidrata
   const companyId = getCurrentCompanyId();

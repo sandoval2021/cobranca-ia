@@ -137,9 +137,8 @@ export function useFinanceSync() {
     } catch { /* noop */ }
   }, []);
 
-  const uploadLegacy = useCallback(async (companyId: string) => {
+  const uploadAll = useCallback(async (companyId: string) => {
     if (!isBrowser()) return;
-    if (localStorage.getItem(UPLOADED_FLAG + ":" + companyId) === "1") return;
     const entries = readArr<FinanceEntry>(ENTRIES_KEY);
     const goals = readArr<FinanceGoal>(GOALS_KEY);
     let mutated = false;
@@ -165,8 +164,20 @@ export function useFinanceSync() {
       try { await bulkUpsertFinanceGoalsDb({ data: { companyId, items: remappedG.map(goalLocalToDb) } }); }
       catch { /* noop */ }
     }
-    localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
   }, []);
 
-  useDbFirstSync({ table: "finance_entries", hydrate, uploadLegacy });
+  const uploadLegacy = useCallback(async (companyId: string) => {
+    if (!isBrowser()) return;
+    if (localStorage.getItem(UPLOADED_FLAG + ":" + companyId) === "1") return;
+    await uploadAll(companyId);
+    localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
+  }, [uploadAll]);
+
+  useDbFirstSync({
+    table: "finance_entries",
+    hydrate,
+    uploadLegacy,
+    mirror: uploadAll,
+    mirrorEvents: [FINANCE_EVENT],
+  });
 }

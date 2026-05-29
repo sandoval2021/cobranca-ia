@@ -100,10 +100,9 @@ export function AppScreensSection({
   const [renewInitialScreenId, setRenewInitialScreenId] = useState<string | null>(null);
   const { guard, dialog: securityDialog } = useSecurityGuard();
 
-  const [alertDismissed, setAlertDismissed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(ALERT_DISMISS_KEY) === "1";
-  });
+  // Estado do antigo banner local — mantido como noop para preservar imports.
+  const [, setAlertDismissed] = useState<boolean>(false);
+  void setAlertDismissed;
   const [backupOpen, setBackupOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(BACKUP_OPEN_KEY) === "1";
@@ -111,10 +110,6 @@ export function AppScreensSection({
   const persistBackupOpen = (v: boolean) => {
     setBackupOpen(v);
     try { window.localStorage.setItem(BACKUP_OPEN_KEY, v ? "1" : "0"); } catch { /* noop */ }
-  };
-  const dismissAlert = () => {
-    setAlertDismissed(true);
-    try { window.localStorage.setItem(ALERT_DISMISS_KEY, "1"); } catch { /* noop */ }
   };
 
   const refresh = () => setScreens(listScreens(customerId));
@@ -310,42 +305,14 @@ export function AppScreensSection({
 
   return (
     <div className="space-y-3">
-      {pendingLocal > 0 && !cloudBannerDismissed && (
-        <div className="rounded-xl border border-primary/40 bg-primary/5 p-3">
-          <div className="flex items-start gap-2">
-            <CloudUpload className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold text-foreground">
-                Encontramos telas salvas apenas neste aparelho.
-              </div>
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                Envie esses dados para sua conta para acessar em qualquer celular, computador ou PWA.
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleUploadLocal}
-                  disabled={uploadingLocal}
-                  className="h-9"
-                >
-                  {uploadingLocal ? (
-                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Enviando…</>
-                  ) : (
-                    <><CloudUpload className="mr-1.5 h-3.5 w-3.5" /> Enviar para minha conta</>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={dismissCloudBanner}
-                  disabled={uploadingLocal}
-                  className="h-9"
-                >
-                  Agora não
-                </Button>
-              </div>
-            </div>
-          </div>
+      {/* Banner removido: app-screens faz auto-upload silencioso. */}
+      {false && pendingLocal > 0 && !cloudBannerDismissed && (
+        <div className="hidden">
+          <CloudUpload />
+          <Button onClick={handleUploadLocal} disabled={uploadingLocal}>
+            {uploadingLocal ? <Loader2 /> : null}
+          </Button>
+          <Button onClick={dismissCloudBanner} />
         </div>
       )}
       <PlanLimitNotice moduleKey="telas" compact />
@@ -373,32 +340,7 @@ export function AppScreensSection({
         </div>
       </div>
 
-      {/* Aviso de persistência local */}
-      {!alertDismissed ? (
-        <div className="rounded-md border border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <div className="min-w-0 flex-1">
-              Salvo apenas neste navegador por enquanto. Faça backup se for cadastrar dados reais.
-            </div>
-            <button
-              type="button"
-              onClick={dismissAlert}
-              className="shrink-0 rounded border border-warning/40 px-2 py-0.5 text-[10px] font-medium hover:bg-warning/10"
-            >
-              Entendi
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAlertDismissed(false)}
-          className="flex w-full items-center gap-1.5 rounded-md border border-warning/30 bg-warning-soft/20 px-2 py-1 text-left text-[10px] text-warning hover:bg-warning-soft/40"
-        >
-          <AlertCircle className="h-3 w-3" /> Salvo só neste navegador. Tocar para ver detalhes.
-        </button>
-      )}
+      {/* Aviso de "apenas neste navegador" removido — agora há sync DB-first. */}
 
       {/* Bloco backup */}
       <div className="rounded-xl border border-border bg-card">

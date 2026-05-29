@@ -81,19 +81,27 @@ export function useAutoTemplatesSync() {
     writeLocal(rows.map(dtoToLocal));
   }, []);
 
-  const uploadLegacy = useCallback(async (companyId: string) => {
+  const uploadAll = useCallback(async (companyId: string) => {
     if (typeof window === "undefined") return;
-    if (localStorage.getItem(UPLOADED_FLAG + ":" + companyId) === "1") return;
     const local = readLocal();
-    if (local.length === 0) {
-      localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
-      return;
-    }
+    if (local.length === 0) return;
     await bulkUpsertAutoTemplatesDb({
       data: { companyId, items: local.map(localToDb) },
     });
-    localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
   }, []);
 
-  useDbFirstSync({ table: "auto_templates", hydrate, uploadLegacy });
+  const uploadLegacy = useCallback(async (companyId: string) => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(UPLOADED_FLAG + ":" + companyId) === "1") return;
+    await uploadAll(companyId);
+    localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
+  }, [uploadAll]);
+
+  useDbFirstSync({
+    table: "auto_templates",
+    hydrate,
+    uploadLegacy,
+    mirror: uploadAll,
+    mirrorEvents: [EVENT],
+  });
 }
