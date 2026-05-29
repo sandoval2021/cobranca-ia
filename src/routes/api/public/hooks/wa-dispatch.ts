@@ -43,10 +43,22 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
           return Response.json({ ok: true, skipped: "night_window" });
         }
 
-        // Claim atômico via RPC com FOR UPDATE SKIP LOCKED.
+        // Recupera jobs travados em 'sending' (worker anterior crashou/timeout).
+        // Best-effort: nunca falha o run.
+        try {
+          await supabaseAdmin.rpc("requeue_stuck_whatsapp_messages" as any, {
+            p_stale_minutes: 10,
+          });
+        } catch (e) {
+          console.warn("[wa-dispatch] requeue_stuck failed", (e as any)?.message);
+        }
+
+        const workerId = `wa-dispatch:${Math.random().toString(36).slice(2, 10)}`;
+
+        // Claim atômico via RPC com FOR UPDATE SKIP LOCKED + locked_at/locked_by.
         const { data: candidates, error } = await supabaseAdmin.rpc(
           "claim_whatsapp_queue_batch" as any,
-          { p_limit: 50 },
+          { p_limit: 50, p_worker: workerId },
         );
 
         if (error) {
