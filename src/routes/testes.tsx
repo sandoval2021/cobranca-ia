@@ -320,52 +320,14 @@ function TestesPage() {
       <SectionHeader
         title="Testes"
         subtitle="Acompanhe pessoas que pediram teste e ainda não viraram clientes."
-
-
         action={
-          <div className="grid grid-cols-3 gap-1.5">
-            <Button size="sm" onClick={() => { setEditing(null); setOpenNew(true); }} className="gap-1 px-2 text-xs">
-              <Plus className="h-3.5 w-3.5" /> Novo
-            </Button>
-            <Button size="sm" variant="outline" onClick={handleExport} className="gap-1 px-2 text-xs">
-              <Download className="h-3.5 w-3.5" /> Exportar
-            </Button>
-            <label className="inline-flex w-full">
-              <input
-                type="file"
-                accept="application/json"
-                hidden
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleImport(f);
-                  e.target.value = "";
-                }}
-              />
-              <Button size="sm" variant="outline" asChild className="w-full gap-1 px-2 text-xs cursor-pointer">
-                <span><Upload className="h-3.5 w-3.5" /> Importar</span>
-              </Button>
-            </label>
-          </div>
+          <Button size="sm" onClick={() => { setEditing(null); setOpenNew(true); }} className="gap-1 px-3 text-xs">
+            <Plus className="h-3.5 w-3.5" /> Novo teste
+          </Button>
         }
       />
 
-      <TrialAutomationPanel />
-
-      <div className="mb-3 text-[11px] text-muted-foreground">
-        Mensagens usando dados de Minha Revenda.{" "}
-        <Link to="/configuracoes-revenda" className="underline">Editar Minha Revenda</Link>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7 mb-4">
-        <StatTile label="Novos" value={stats.novos} />
-        <StatTile label="Em teste" value={stats.emTeste} />
-        <StatTile label="Aguardando" value={stats.aguardando} />
-        <StatTile label="Vencendo hoje" value={stats.vencendoHoje} />
-        <StatTile label="Fecharam" value={stats.fecharam} />
-        <StatTile label="Não fecharam" value={stats.naoFecharam} />
-        <StatTile label="Indicados" value={stats.indicados} />
-      </div>
-
+      {/* Busca + filtros (em cima, junto da lista) */}
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
