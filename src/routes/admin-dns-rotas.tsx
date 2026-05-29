@@ -45,7 +45,10 @@ import { listServers, type ServerEntry } from "@/lib/server-catalog";
 import {
   hydrateDnsFromDb, pushDomainToDb, pushRouteToDb,
   removeDomainFromDb, removeRouteFromDb,
+  pushLocalDnsToDb, discardLocalDnsCache,
+  type HydrateResult,
 } from "@/lib/dns-routes-db";
+
 import { getCurrentCompanyAdmin, ensureUserDefaultCompany } from "@/lib/rpc-admin";
 
 export const Route = createFileRoute("/admin-dns-rotas")({
