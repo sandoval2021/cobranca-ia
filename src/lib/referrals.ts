@@ -302,7 +302,6 @@ export function bonusDescription(rules: ReferralRules) {
 }
 
 // ------------------- DB sync helpers (Phase 2E) -------------------
-import { getActiveCompanyId } from "@/lib/company-scope";
 import {
   bulkUpsertReferralsDb,
   type ReferralDto,
