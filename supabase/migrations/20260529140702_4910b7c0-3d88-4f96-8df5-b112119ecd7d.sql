@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public._probe_cron_hook(text) TO authenticated, service_role;
