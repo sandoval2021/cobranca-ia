@@ -41,7 +41,8 @@ export const VARIABLES_APP = [
 ] as const;
 
 export const VARIABLES_TESTE = [
-  "{nome}", "{dias_restantes}", "{empresa}",
+  "{nome}", "{servico}", "{valor}", "{dias_restantes}",
+  "{vencimento_teste}", "{empresa}",
 ] as const;
 
 // ---------------- DEFAULTS ----------------
