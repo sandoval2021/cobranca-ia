@@ -45,6 +45,9 @@ export function useDbFirstSync(opts: {
   // a hidratação acionem mirror imediato
   const hydratingRef = useRef(false);
   const suppressUntilRef = useRef(0);
+  // ref estável para mirror (não rebuilda run() a cada render)
+  const mirrorRef = useRef(mirror);
+  mirrorRef.current = mirror;
 
   const run = useCallback(async () => {
     const companyId = getCurrentCompanyId();
@@ -58,6 +61,22 @@ export function useDbFirstSync(opts: {
           await uploadLegacy(companyId);
         } catch (err) {
           if (import.meta.env.DEV) console.warn(`[db-first:${table}] uploadLegacy falhou`, err);
+          // falhou (provavelmente offline) — destrava retry no próximo run
+          uploadedRef.current.delete(companyId);
+        }
+      }
+      // Em re-runs (focus/online/timer/realtime), faz flush do cache local
+      // ANTES de hidratar. Garante que edição feita offline (ou enquanto o
+      // mirror imediato foi suprimido por falha de rede) suba pro banco antes
+      // que o hydrate substitua o cache. Primeiro run da empresa cai no
+      // uploadLegacy acima; aqui cobrimos os runs subsequentes.
+      if (mirrorRef.current && hydratedCompanyRef.current === companyId) {
+        try {
+          await mirrorRef.current(companyId);
+        } catch (err) {
+          if (import.meta.env.DEV) console.warn(`[db-first:${table}] pre-hydrate mirror falhou`, err);
+          // ainda sem rede confiável: aborta hydrate para preservar cache local
+          return;
         }
       }
       try {
