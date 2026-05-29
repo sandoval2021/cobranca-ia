@@ -20,6 +20,7 @@ import { Route as RenovacoesPaineisRouteImport } from './routes/renovacoes-paine
 import { Route as RelatorioRouteImport } from './routes/relatorio'
 import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
 import { Route as PreparacaoBackendRouteImport } from './routes/preparacao-backend'
+import { Route as PlanosRouteImport } from './routes/planos'
 import { Route as PendenciasRouteImport } from './routes/pendencias'
 import { Route as OperacaoDiaRouteImport } from './routes/operacao-dia'
 import { Route as MinhaAssinaturaRouteImport } from './routes/minha-assinatura'
@@ -30,20 +31,25 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndicacoesRouteImport } from './routes/indicacoes'
 import { Route as ImportarClientesRouteImport } from './routes/importar-clientes'
 import { Route as IaConfigRouteImport } from './routes/ia-config'
+import { Route as IaAtendenteRouteImport } from './routes/ia-atendente'
 import { Route as IaRouteImport } from './routes/ia'
 import { Route as GestaoServicosRouteImport } from './routes/gestao-servicos'
+import { Route as FuncionalidadesRouteImport } from './routes/funcionalidades'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaSimuladaRouteImport } from './routes/fila-simulada'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as EmpresasRouteImport } from './routes/empresas'
 import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
 import { Route as ConfiguracoesRevendaRouteImport } from './routes/configuracoes-revenda'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ConfiguracaoInicialRouteImport } from './routes/configuracao-inicial'
 import { Route as CobrancasRouteImport } from './routes/cobrancas'
+import { Route as CobrancaAutomaticaRouteImport } from './routes/cobranca-automatica'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CatalogoServidoresRouteImport } from './routes/catalogo-servidores'
 import { Route as CampanhasManuaisRouteImport } from './routes/campanhas-manuais'
 import { Route as CadastrosServicosRouteImport } from './routes/cadastros-servicos'
+import { Route as BlogRouteImport } from './routes/blog'
 import { Route as BaseConhecimentoRouteImport } from './routes/base-conhecimento'
 import { Route as BackupGeralRouteImport } from './routes/backup-geral'
 import { Route as BackupRouteImport } from './routes/backup'
@@ -127,6 +133,11 @@ const PreparacaoBackendRoute = PreparacaoBackendRouteImport.update({
   path: '/preparacao-backend',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlanosRoute = PlanosRouteImport.update({
+  id: '/planos',
+  path: '/planos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PendenciasRoute = PendenciasRouteImport.update({
   id: '/pendencias',
   path: '/pendencias',
@@ -177,6 +188,11 @@ const IaConfigRoute = IaConfigRouteImport.update({
   path: '/ia-config',
   getParentRoute: () => rootRouteImport,
 } as any)
+const IaAtendenteRoute = IaAtendenteRouteImport.update({
+  id: '/ia-atendente',
+  path: '/ia-atendente',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IaRoute = IaRouteImport.update({
   id: '/ia',
   path: '/ia',
@@ -187,6 +203,11 @@ const GestaoServicosRoute = GestaoServicosRouteImport.update({
   path: '/gestao-servicos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FuncionalidadesRoute = FuncionalidadesRouteImport.update({
+  id: '/funcionalidades',
+  path: '/funcionalidades',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FinanceiroRoute = FinanceiroRouteImport.update({
   id: '/financeiro',
   path: '/financeiro',
@@ -195,6 +216,11 @@ const FinanceiroRoute = FinanceiroRouteImport.update({
 const FilaSimuladaRoute = FilaSimuladaRouteImport.update({
   id: '/fila-simulada',
   path: '/fila-simulada',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmpresasRoute = EmpresasRouteImport.update({
@@ -227,6 +253,11 @@ const CobrancasRoute = CobrancasRouteImport.update({
   path: '/cobrancas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CobrancaAutomaticaRoute = CobrancaAutomaticaRouteImport.update({
+  id: '/cobranca-automatica',
+  path: '/cobranca-automatica',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientesRoute = ClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
@@ -245,6 +276,11 @@ const CampanhasManuaisRoute = CampanhasManuaisRouteImport.update({
 const CadastrosServicosRoute = CadastrosServicosRouteImport.update({
   id: '/cadastros-servicos',
   path: '/cadastros-servicos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BaseConhecimentoRoute = BaseConhecimentoRouteImport.update({
@@ -403,20 +439,25 @@ export interface FileRoutesByFullPath {
   '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
+  '/blog': typeof BlogRoute
   '/cadastros-servicos': typeof CadastrosServicosRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
+  '/cobranca-automatica': typeof CobrancaAutomaticaRoute
   '/cobrancas': typeof CobrancasRoute
   '/configuracao-inicial': typeof ConfiguracaoInicialRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/configuracoes-revenda': typeof ConfiguracoesRevendaRoute
   '/diagnostico': typeof DiagnosticoRoute
   '/empresas': typeof EmpresasRoute
+  '/faq': typeof FaqRoute
   '/fila-simulada': typeof FilaSimuladaRoute
   '/financeiro': typeof FinanceiroRoute
+  '/funcionalidades': typeof FuncionalidadesRoute
   '/gestao-servicos': typeof GestaoServicosRoute
   '/ia': typeof IaRoute
+  '/ia-atendente': typeof IaAtendenteRoute
   '/ia-config': typeof IaConfigRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
@@ -427,6 +468,7 @@ export interface FileRoutesByFullPath {
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
+  '/planos': typeof PlanosRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
@@ -467,20 +509,25 @@ export interface FileRoutesByTo {
   '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
+  '/blog': typeof BlogRoute
   '/cadastros-servicos': typeof CadastrosServicosRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
+  '/cobranca-automatica': typeof CobrancaAutomaticaRoute
   '/cobrancas': typeof CobrancasRoute
   '/configuracao-inicial': typeof ConfiguracaoInicialRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/configuracoes-revenda': typeof ConfiguracoesRevendaRoute
   '/diagnostico': typeof DiagnosticoRoute
   '/empresas': typeof EmpresasRoute
+  '/faq': typeof FaqRoute
   '/fila-simulada': typeof FilaSimuladaRoute
   '/financeiro': typeof FinanceiroRoute
+  '/funcionalidades': typeof FuncionalidadesRoute
   '/gestao-servicos': typeof GestaoServicosRoute
   '/ia': typeof IaRoute
+  '/ia-atendente': typeof IaAtendenteRoute
   '/ia-config': typeof IaConfigRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
@@ -491,6 +538,7 @@ export interface FileRoutesByTo {
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
+  '/planos': typeof PlanosRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
@@ -532,20 +580,25 @@ export interface FileRoutesById {
   '/backup': typeof BackupRoute
   '/backup-geral': typeof BackupGeralRoute
   '/base-conhecimento': typeof BaseConhecimentoRoute
+  '/blog': typeof BlogRoute
   '/cadastros-servicos': typeof CadastrosServicosRoute
   '/campanhas-manuais': typeof CampanhasManuaisRoute
   '/catalogo-servidores': typeof CatalogoServidoresRoute
   '/clientes': typeof ClientesRoute
+  '/cobranca-automatica': typeof CobrancaAutomaticaRoute
   '/cobrancas': typeof CobrancasRoute
   '/configuracao-inicial': typeof ConfiguracaoInicialRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/configuracoes-revenda': typeof ConfiguracoesRevendaRoute
   '/diagnostico': typeof DiagnosticoRoute
   '/empresas': typeof EmpresasRoute
+  '/faq': typeof FaqRoute
   '/fila-simulada': typeof FilaSimuladaRoute
   '/financeiro': typeof FinanceiroRoute
+  '/funcionalidades': typeof FuncionalidadesRoute
   '/gestao-servicos': typeof GestaoServicosRoute
   '/ia': typeof IaRoute
+  '/ia-atendente': typeof IaAtendenteRoute
   '/ia-config': typeof IaConfigRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
@@ -556,6 +609,7 @@ export interface FileRoutesById {
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
   '/pendencias': typeof PendenciasRoute
+  '/planos': typeof PlanosRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
   '/regras-disparo': typeof RegrasDisparoRoute
   '/relatorio': typeof RelatorioRoute
@@ -598,20 +652,25 @@ export interface FileRouteTypes {
     | '/backup'
     | '/backup-geral'
     | '/base-conhecimento'
+    | '/blog'
     | '/cadastros-servicos'
     | '/campanhas-manuais'
     | '/catalogo-servidores'
     | '/clientes'
+    | '/cobranca-automatica'
     | '/cobrancas'
     | '/configuracao-inicial'
     | '/configuracoes'
     | '/configuracoes-revenda'
     | '/diagnostico'
     | '/empresas'
+    | '/faq'
     | '/fila-simulada'
     | '/financeiro'
+    | '/funcionalidades'
     | '/gestao-servicos'
     | '/ia'
+    | '/ia-atendente'
     | '/ia-config'
     | '/importar-clientes'
     | '/indicacoes'
@@ -622,6 +681,7 @@ export interface FileRouteTypes {
     | '/minha-assinatura'
     | '/operacao-dia'
     | '/pendencias'
+    | '/planos'
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
@@ -662,20 +722,25 @@ export interface FileRouteTypes {
     | '/backup'
     | '/backup-geral'
     | '/base-conhecimento'
+    | '/blog'
     | '/cadastros-servicos'
     | '/campanhas-manuais'
     | '/catalogo-servidores'
     | '/clientes'
+    | '/cobranca-automatica'
     | '/cobrancas'
     | '/configuracao-inicial'
     | '/configuracoes'
     | '/configuracoes-revenda'
     | '/diagnostico'
     | '/empresas'
+    | '/faq'
     | '/fila-simulada'
     | '/financeiro'
+    | '/funcionalidades'
     | '/gestao-servicos'
     | '/ia'
+    | '/ia-atendente'
     | '/ia-config'
     | '/importar-clientes'
     | '/indicacoes'
@@ -686,6 +751,7 @@ export interface FileRouteTypes {
     | '/minha-assinatura'
     | '/operacao-dia'
     | '/pendencias'
+    | '/planos'
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
@@ -726,20 +792,25 @@ export interface FileRouteTypes {
     | '/backup'
     | '/backup-geral'
     | '/base-conhecimento'
+    | '/blog'
     | '/cadastros-servicos'
     | '/campanhas-manuais'
     | '/catalogo-servidores'
     | '/clientes'
+    | '/cobranca-automatica'
     | '/cobrancas'
     | '/configuracao-inicial'
     | '/configuracoes'
     | '/configuracoes-revenda'
     | '/diagnostico'
     | '/empresas'
+    | '/faq'
     | '/fila-simulada'
     | '/financeiro'
+    | '/funcionalidades'
     | '/gestao-servicos'
     | '/ia'
+    | '/ia-atendente'
     | '/ia-config'
     | '/importar-clientes'
     | '/indicacoes'
@@ -750,6 +821,7 @@ export interface FileRouteTypes {
     | '/minha-assinatura'
     | '/operacao-dia'
     | '/pendencias'
+    | '/planos'
     | '/preparacao-backend'
     | '/regras-disparo'
     | '/relatorio'
@@ -791,20 +863,25 @@ export interface RootRouteChildren {
   BackupRoute: typeof BackupRoute
   BackupGeralRoute: typeof BackupGeralRoute
   BaseConhecimentoRoute: typeof BaseConhecimentoRoute
+  BlogRoute: typeof BlogRoute
   CadastrosServicosRoute: typeof CadastrosServicosRoute
   CampanhasManuaisRoute: typeof CampanhasManuaisRoute
   CatalogoServidoresRoute: typeof CatalogoServidoresRoute
   ClientesRoute: typeof ClientesRoute
+  CobrancaAutomaticaRoute: typeof CobrancaAutomaticaRoute
   CobrancasRoute: typeof CobrancasRoute
   ConfiguracaoInicialRoute: typeof ConfiguracaoInicialRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   ConfiguracoesRevendaRoute: typeof ConfiguracoesRevendaRoute
   DiagnosticoRoute: typeof DiagnosticoRoute
   EmpresasRoute: typeof EmpresasRoute
+  FaqRoute: typeof FaqRoute
   FilaSimuladaRoute: typeof FilaSimuladaRoute
   FinanceiroRoute: typeof FinanceiroRoute
+  FuncionalidadesRoute: typeof FuncionalidadesRoute
   GestaoServicosRoute: typeof GestaoServicosRoute
   IaRoute: typeof IaRoute
+  IaAtendenteRoute: typeof IaAtendenteRoute
   IaConfigRoute: typeof IaConfigRoute
   ImportarClientesRoute: typeof ImportarClientesRoute
   IndicacoesRoute: typeof IndicacoesRoute
@@ -815,6 +892,7 @@ export interface RootRouteChildren {
   MinhaAssinaturaRoute: typeof MinhaAssinaturaRoute
   OperacaoDiaRoute: typeof OperacaoDiaRoute
   PendenciasRoute: typeof PendenciasRoute
+  PlanosRoute: typeof PlanosRoute
   PreparacaoBackendRoute: typeof PreparacaoBackendRoute
   RegrasDisparoRoute: typeof RegrasDisparoRoute
   RelatorioRoute: typeof RelatorioRoute
@@ -921,6 +999,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PreparacaoBackendRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/planos': {
+      id: '/planos'
+      path: '/planos'
+      fullPath: '/planos'
+      preLoaderRoute: typeof PlanosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pendencias': {
       id: '/pendencias'
       path: '/pendencias'
@@ -991,6 +1076,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IaConfigRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ia-atendente': {
+      id: '/ia-atendente'
+      path: '/ia-atendente'
+      fullPath: '/ia-atendente'
+      preLoaderRoute: typeof IaAtendenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ia': {
       id: '/ia'
       path: '/ia'
@@ -1005,6 +1097,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GestaoServicosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/funcionalidades': {
+      id: '/funcionalidades'
+      path: '/funcionalidades'
+      fullPath: '/funcionalidades'
+      preLoaderRoute: typeof FuncionalidadesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/financeiro': {
       id: '/financeiro'
       path: '/financeiro'
@@ -1017,6 +1116,13 @@ declare module '@tanstack/react-router' {
       path: '/fila-simulada'
       fullPath: '/fila-simulada'
       preLoaderRoute: typeof FilaSimuladaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/empresas': {
@@ -1061,6 +1167,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CobrancasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cobranca-automatica': {
+      id: '/cobranca-automatica'
+      path: '/cobranca-automatica'
+      fullPath: '/cobranca-automatica'
+      preLoaderRoute: typeof CobrancaAutomaticaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clientes': {
       id: '/clientes'
       path: '/clientes'
@@ -1087,6 +1200,13 @@ declare module '@tanstack/react-router' {
       path: '/cadastros-servicos'
       fullPath: '/cadastros-servicos'
       preLoaderRoute: typeof CadastrosServicosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/base-conhecimento': {
@@ -1309,20 +1429,25 @@ const rootRouteChildren: RootRouteChildren = {
   BackupRoute: BackupRoute,
   BackupGeralRoute: BackupGeralRoute,
   BaseConhecimentoRoute: BaseConhecimentoRoute,
+  BlogRoute: BlogRoute,
   CadastrosServicosRoute: CadastrosServicosRoute,
   CampanhasManuaisRoute: CampanhasManuaisRoute,
   CatalogoServidoresRoute: CatalogoServidoresRoute,
   ClientesRoute: ClientesRoute,
+  CobrancaAutomaticaRoute: CobrancaAutomaticaRoute,
   CobrancasRoute: CobrancasRoute,
   ConfiguracaoInicialRoute: ConfiguracaoInicialRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
   ConfiguracoesRevendaRoute: ConfiguracoesRevendaRoute,
   DiagnosticoRoute: DiagnosticoRoute,
   EmpresasRoute: EmpresasRoute,
+  FaqRoute: FaqRoute,
   FilaSimuladaRoute: FilaSimuladaRoute,
   FinanceiroRoute: FinanceiroRoute,
+  FuncionalidadesRoute: FuncionalidadesRoute,
   GestaoServicosRoute: GestaoServicosRoute,
   IaRoute: IaRoute,
+  IaAtendenteRoute: IaAtendenteRoute,
   IaConfigRoute: IaConfigRoute,
   ImportarClientesRoute: ImportarClientesRoute,
   IndicacoesRoute: IndicacoesRoute,
@@ -1333,6 +1458,7 @@ const rootRouteChildren: RootRouteChildren = {
   MinhaAssinaturaRoute: MinhaAssinaturaRoute,
   OperacaoDiaRoute: OperacaoDiaRoute,
   PendenciasRoute: PendenciasRoute,
+  PlanosRoute: PlanosRoute,
   PreparacaoBackendRoute: PreparacaoBackendRoute,
   RegrasDisparoRoute: RegrasDisparoRoute,
   RelatorioRoute: RelatorioRoute,
@@ -1362,13 +1488,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
