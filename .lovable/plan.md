@@ -1,88 +1,65 @@
-# Fase 3 — Eliminar dados presos em aparelho
+## O que já existe no projeto
 
-## Escopo
+- **Templates automáticos da categoria "Teste"** (já cadastrados, com mensagem editável):
+  - Após 1h, 6h, 12h, 24h, 2 dias, 3 dias, 5 dias, 7 dias
+  - Cada template tem: ativo/desativado, corpo da mensagem, janela de horário permitido (sendStart / sendEnd)
+  - Página de edição: `/templates-automaticos`
+- **Regras de disparo** com horário global: `/regras-disparo`
+- **Fila de disparo automático**: `src/lib/auto-dispatch.ts` (já existe, hoje usada para cobrança)
 
-### Bloco A — Novas tabelas (migration única)
+## O que falta (e é o que você está pedindo)
 
-7 tabelas novas no `public`, todas com:
-- `id uuid pk`, `company_id uuid not null`, `created_at`, `updated_at` + trigger `touch_updated_at`
-- `GRANT SELECT/INSERT/UPDATE/DELETE` em `authenticated` + `GRANT ALL` em `service_role`
-- RLS `using/with check (has_company_access(company_id))`
-- `ALTER PUBLICATION supabase_realtime ADD TABLE …` para realtime
-- `REPLICA IDENTITY FULL` para eventos `UPDATE`/`DELETE` virem com row completa
+1. Tirar o card estático "Modo manual: nenhuma mensagem será enviada automaticamente"
+2. Substituir por um painel real de **automação dos testes** na tela `/testes`
+3. Plugar o motor de auto-dispatch para também processar leads de teste
 
-Tabelas:
-1. `trial_leads` — espelha `TrialLead` (nome, whatsapp, origem, status, datas, app, servidor, usuário, senha, valor_cents, horas_teste, interesse, notas)
-2. `trial_followups` — `lead_id` (fk → trial_leads on delete cascade), `company_id`, tipo, data_planejada, status, atualizado_em
-3. `finance_entries` — campos atuais de `FinanceEntry`
-4. `finance_goals` — campos atuais de `FinanceGoal`
-5. `customer_extras` — `(company_id, customer_id)` unique, email, birthday, due_date
-6. `auto_templates` — `(company_id, template_id)` unique, channels, body, ativo, time_window
-7. `revenda_settings` — `company_id` unique, jsonb com config inteira
+## Mudanças propostas
 
-### Bloco B — Camada de acesso (server functions)
+### 1. UI nova na tela `/testes` (substitui o card "Modo manual")
 
-Para cada tabela, em `src/lib/<modulo>/<modulo>.functions.ts`:
-- `list…Db({ companyId })` — SELECT escopado
-- `upsert…Db({ companyId, item })` — INSERT … ON CONFLICT DO UPDATE
-- `bulkUpsert…Db({ companyId, items })` — usado pela auto-migração
-- `delete…Db({ companyId, id })` — DELETE escopado
+Card "Automação dos testes" mostrando:
 
-Todas com `.middleware([requireSupabaseAuth])`, validação Zod, leitura via `supabaseAdmin` + verificação `has_company_access` no SQL (RLS é backstop).
+- **Status global**: chave liga/desliga "Enviar mensagens automaticamente"
+- **Lista compacta** dos 8 templates de teste, cada linha com:
+  - Nome (ex.: "Após 1 hora")
+  - Switch ativo/inativo
+  - Hora permitida (ex.: "08:00 → 20:00") — editável inline
+  - Botão "Editar mensagem" → abre dialog com o corpo do template e variáveis ({nome}, {empresa}, {dias_restantes})
+- Link "Ver todos / configuração avançada" → `/templates-automaticos`
 
-### Bloco C — Hook genérico de sync (DB-first silencioso)
+Tudo já usa o storage existente de `auto-templates`. Sem tabela nova, sem migration.
 
-Refatorar o padrão atual (que ainda mostra "salvo neste aparelho") em `src/lib/sync/useDbFirstSync.ts`:
-- No mount: chama `list…Db`, hidrata cache local com payload do DB (substituindo, não mesclando — DB é fonte da verdade).
-- Detecta legado local com `company_id == oldId || company_id == null` ou registros locais não presentes no DB → faz `bulkUpsertDb` automaticamente e silenciosamente, sem banner, sem botão.
-- Após upload, marca como sincronizado e remove do cache "pending".
-- Nunca apaga cache se DB retornar vazio na primeira tentativa (failsafe offline).
-- Expõe apenas `{ loaded, error }` — sem `pendingLocal` na UI.
+### 2. Motor de disparo (`src/lib/auto-dispatch.ts`)
 
-### Bloco D — Realtime wrapper
+Hoje varre clientes para cobrança. Vou estender para também varrer `trial_leads`:
 
-`src/hooks/useRealtimeTable.ts`:
-```ts
-useRealtimeTable({
-  table: 'trial_leads',
-  companyId,
-  onChange: () => queryClient.invalidateQueries(['trial_leads', companyId]),
-})
-```
-- Cria channel único por (table, companyId), filtra `postgres_changes` por `company_id=eq.${companyId}`.
-- Unsubscribe no cleanup.
-- Reusa channel se montado em N componentes simultâneos (cache global por chave).
+- Para cada lead com `status = em_teste`, calcular horas desde o início
+- Casar com os templates "teste" ativos cuja `offsetHours` bate
+- Respeitar a janela de horário (sendStart / sendEnd)
+- Marcar enviado na fila local (`SENT_KEY`) para não duplicar
+- Lead com `status = fechou` ou `cancelado` é ignorado
 
-Aplicar em: customers, service_plans, screens, servers, trial_leads, finance_entries, customer_extras, auto_templates, revenda_settings.
+### 3. Aviso simples se WhatsApp não estiver conectado
 
-### Bloco E — Refatorar módulos
+Se não houver instância WhatsApp ativa, o card mostra: "Conecte o WhatsApp para ativar os envios automáticos" + botão para `/whatsapp`. Sem isso, switch fica desabilitado.
 
-Para cada um dos 7 módulos, substituir leitura local pela query DB + hook acima:
-- `src/lib/trial-leads.ts` — listTrialLeads/save/delete viram thin wrappers que escrevem DB e atualizam cache.
-- `src/lib/financeiro-local.ts` — idem para entries/goals.
-- `src/lib/customer-extras.ts` — idem.
-- `src/lib/auto-templates.ts` — idem.
-- `src/lib/revenda-settings.ts` — idem.
+## Fora do escopo (não vou mexer)
 
-### Bloco F — Remover banners + botões legados
+- Lógica de envio real do WhatsApp (uazapi/Evolution) — já existe e continua igual
+- Regras financeiras / cobrança
+- Banco de dados — nada de SQL
+- Templates de outras categorias (cobrança / renovação / app)
+- package.json / nenhum pacote novo
 
-Buscar e remover toda UI que mostra "Encontramos planos salvos apenas neste aparelho", "Enviar para minha conta", e equivalentes nos módulos acima. A auto-migração do Bloco C torna isso obsoleto.
+## Detalhes técnicos
 
-## Risco e tamanho
+- Arquivos alterados:
+  - `src/routes/testes.tsx` — troca o card warning por `<TrialAutomationPanel />`
+  - `src/components/testes/TrialAutomationPanel.tsx` — **novo** componente
+  - `src/lib/auto-dispatch.ts` — adiciona varredura de `trial_leads`
+- Sem migração, sem secrets novos, sem dependência nova.
+- Reuso de: `useAutoTemplatesSync`, `useTrialLeadsSync`, `previewTemplate`, dialog/switch existentes.
 
-- **Migration**: 7 tabelas + RLS + publication + replica identity = ~250 linhas SQL.
-- **Server functions**: ~7 × 80 linhas = ~560 linhas.
-- **Hooks**: useDbFirstSync + useRealtimeTable = ~250 linhas.
-- **Refatoração dos módulos**: ~7 × 100 linhas modificadas.
-- **Remoção banners**: varia.
-- **Total estimado**: ~30 arquivos novos/alterados, ~2.000 linhas.
+## Confirma para eu seguir?
 
-## Confirmações necessárias antes de executar
-
-1. **OK aplicar a migration completa** (7 tabelas + RLS + realtime + publication)? Não é destrutiva — só CREATE TABLE.
-2. **Auto-migração de leads/financeiro existentes**: se o usuário tem leads locais com `company_id` válido (UUID), faço upload silencioso na primeira carga. OK?
-3. **`customer_extras`**: hoje a chave é `customer_id` global (sem company_id). Posso resolver `company_id` via JOIN com `customers` durante a migração? OK que extras de clientes deletados sejam descartados?
-4. **`revenda_settings`**: hoje é singleton por instalação (sem company_id). Vou tratar como **por empresa** (cada empresa tem suas próprias configs de revenda). Confirma?
-5. **Modo de execução**: prefere que eu (a) entregue tudo em um turno gigante, ou (b) divida em 3 PRs lógicos — primeiro migration+server-functions, depois hook+realtime, depois remoção dos banners — validando entre cada um?
-
-Responde 1-5 que eu sigo direto.
+Se preferir menor escopo, posso fazer só o item 1 + 2 agora (UI + persistência da config), deixando o motor de envio (item 2 do "Motor") para uma próxima etapa. Me diz qual caminho.
