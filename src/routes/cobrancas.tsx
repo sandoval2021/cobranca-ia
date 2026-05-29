@@ -1244,6 +1244,7 @@ function CreateChargeDialog({
   const [status, setStatus] = useState("pendente");
   const [ref, setRef] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sendProof, setSendProof] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -1252,8 +1253,11 @@ function CreateChargeDialog({
       setDue("");
       setStatus("pendente");
       setRef("");
+      setSendProof(false);
     }
   }, [open]);
+
+  const selectedCustomer = customers.find((c) => c.id === customerId);
 
   const submit = async () => {
     if (!supabase) return;
@@ -1292,23 +1296,50 @@ function CreateChargeDialog({
       return;
     }
     toast.success("Cobrança criada com sucesso.");
+
+    // Comprovante opcional: abre WhatsApp com mensagem pronta + data de validade
+    if (sendProof && selectedCustomer?.whatsapp) {
+      const phone = onlyDigits(selectedCustomer.whatsapp);
+      const valor = fmtBRL(cents);
+      const vencimento = new Date(due).toLocaleDateString("pt-BR");
+      const msg =
+        `Olá ${selectedCustomer.name}! Sua renovação foi registrada com sucesso. ` +
+        `Valor: ${valor}. Validade até ${vencimento}. Obrigado!`;
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+      window.open(url, "_blank", "noopener");
+    } else if (sendProof && !selectedCustomer?.whatsapp) {
+      toast.warning("Cliente sem WhatsApp cadastrado — comprovante não enviado.");
+    }
+
     onCreated();
     onClose();
   };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Nova cobrança</DialogTitle>
-          <DialogDescription>Cliente é selecionado por lista. Sem UUID manual.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto border-2 border-primary/20 p-0">
+        <div className="rounded-t-lg bg-gradient-to-r from-primary to-primary/70 px-5 py-4 text-primary-foreground">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary-foreground">
+              <UserPlus className="h-5 w-5" />
+              Cadastrar cobrança
+            </DialogTitle>
+            <DialogDescription className="text-primary-foreground/85">
+              Selecione o cliente e configure os dados da cobrança.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="space-y-3 px-5 pt-4">
           <div>
             <Label className="mb-1 flex items-center gap-1.5 text-xs">
-              Cliente <HelpTip text="Busque pelo nome ou WhatsApp." />
+              Cliente <HelpTip text="Busque pelo nome ou número de telefone." />
             </Label>
             <CustomerCombobox customers={customers} value={customerId} onChange={setCustomerId} />
+            {selectedCustomer?.whatsapp && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                WhatsApp: {prettyPhone(selectedCustomer.whatsapp)}
+              </p>
+            )}
           </div>
           <div>
             <Label className="mb-1 flex items-center gap-1.5 text-xs">
@@ -1341,8 +1372,23 @@ function CreateChargeDialog({
             <Label className="mb-1 text-xs">Referência externa (opcional)</Label>
             <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="ID externo, número etc." />
           </div>
+
+          {/* Checkbox: enviar comprovante de renovação */}
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 transition-colors hover:bg-emerald-500/10">
+            <Checkbox
+              checked={sendProof}
+              onCheckedChange={(v) => setSendProof(v === true)}
+              className="mt-0.5 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+            />
+            <div className="flex-1 text-xs leading-snug">
+              <p className="font-medium text-foreground">Enviar comprovante de renovação</p>
+              <p className="text-muted-foreground">
+                Abre o WhatsApp com a mensagem pronta contendo o valor e a data de validade.
+              </p>
+            </div>
+          </label>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-5 pb-5 pt-2">
           <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
           <Button onClick={submit} disabled={busy} className="gap-1.5">
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -1350,6 +1396,7 @@ function CreateChargeDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
     </Dialog>
   );
 }
