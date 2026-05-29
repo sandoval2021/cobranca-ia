@@ -136,8 +136,8 @@ function CatalogoServidoresPage() {
     <PageContainer>
       <div className="mb-1"><ProtectedModeBadge /></div>
       <SectionHeader
-        title="Servidores"
-        subtitle="Configure os servidores e painéis usados nas telas dos clientes."
+        title="Meus servidores"
+        subtitle="Cadastre os servidores que você usa para vincular aos clientes."
       />
       <PlanLimitNotice moduleKey="servidores" />
 

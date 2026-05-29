@@ -25,8 +25,11 @@ import {
   canCompanyUseModule,
   getCompanyForUser,
   getCurrentCompany,
+  getCompanySupportId,
   COMPANIES_EVENT,
 } from "@/lib/companies";
+import { Copy } from "lucide-react";
+import { toast } from "sonner";
 
 type Props = {
   variant?: "owner" | "admin";
@@ -202,15 +205,43 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
 
   return (
     <aside className="flex h-full w-[var(--sidebar-width)] flex-col border-r border-border bg-surface">
-      <div className="flex h-[var(--header-height)] items-center gap-2 border-b border-border px-4">
-        <BrandLogo variant="mark" className="h-9 w-9" />
-        <div className="min-w-0">
+      <div className="flex min-h-[var(--header-height)] items-start gap-2 border-b border-border px-4 py-3">
+        <BrandLogo variant="mark" className="h-9 w-9 shrink-0" />
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold tracking-tight">
-            {role === "super_admin" ? "Painel Admin" : "CobraEasy"}
+            {role === "super_admin" ? "Painel Admin" : (company?.nome ?? "CobraEasy")}
           </p>
           <p className="truncate text-xs text-muted-foreground">
             {user ? roleLabel(role) : "Sem sessão local"}
           </p>
+          {isOwner && company && (
+            <div className="mt-1 flex items-center gap-1">
+              <span
+                className="text-[11px] text-muted-foreground"
+                title="Informe este ID ao suporte para localizarmos sua conta mais rápido."
+              >
+                ID suporte:{" "}
+                <span className="font-mono font-medium text-foreground">
+                  {getCompanySupportId(company)}
+                </span>
+              </span>
+              <button
+                type="button"
+                aria-label="Copiar ID de suporte"
+                title="Copiar ID de suporte"
+                onClick={() => {
+                  const id = getCompanySupportId(company);
+                  navigator.clipboard?.writeText(id).then(
+                    () => toast.success(`ID ${id} copiado`),
+                    () => toast.error("Falha ao copiar"),
+                  );
+                }}
+                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

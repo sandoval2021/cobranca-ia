@@ -42,6 +42,7 @@ import {
   exportCompanies,
   getCompanyMembers,
   getCompanyStatus,
+  getCompanySupportId,
   getCurrentCompanyId,
   getPlanById,
   importCompanies,
@@ -134,6 +135,7 @@ function EmpresasContent() {
     if (filter !== "todas") list = list.filter((c) => (getCompanyStatus(c) as CompanyStatus) === filter);
     if (query.trim()) {
       const q = query.trim().toLowerCase();
+      const qDigits = q.replace(/\D/g, "");
       list = list.filter(
         (c) =>
           c.nome.toLowerCase().includes(q) ||
@@ -141,7 +143,8 @@ function EmpresasContent() {
           c.dono_email.toLowerCase().includes(q) ||
           c.dono_whatsapp.toLowerCase().includes(q) ||
           c.slug.toLowerCase().includes(q) ||
-          (getPlanById(c.plano_id)?.nome.toLowerCase() ?? "").includes(q),
+          (getPlanById(c.plano_id)?.nome.toLowerCase() ?? "").includes(q) ||
+          (qDigits.length > 0 && getCompanySupportId(c).includes(qDigits)),
       );
     }
     return list;
@@ -237,7 +240,7 @@ function EmpresasContent() {
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar nome, dono, e-mail…"
+                placeholder="Buscar nome, dono, e-mail, WhatsApp ou ID suporte…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="pl-8"
@@ -299,6 +302,10 @@ function EmpresasContent() {
                         </div>
                         <p className="mt-0.5 truncate text-xs text-muted-foreground">
                           {c.dono_nome} · {c.dono_email}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          ID suporte:{" "}
+                          <span className="font-mono font-medium text-foreground">{getCompanySupportId(c)}</span>
                         </p>
                         {!isReal && (
                           <p className="mt-1 text-[11px] text-amber-700">

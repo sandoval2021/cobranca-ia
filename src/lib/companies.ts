@@ -468,6 +468,22 @@ export function getCurrentCompany(): Company | null {
   return getCompanyById(getCurrentCompanyId());
 }
 
+/**
+ * ID curto de suporte (até 4 dígitos) derivado do id da empresa.
+ * Estável, não editável, único o suficiente para localizar contas no super admin.
+ * Formato: número inteiro 0..9999, exibido com 4 dígitos (zero à esquerda).
+ */
+export function getCompanySupportId(company: { id: string } | null | undefined): string {
+  if (!company?.id) return "----";
+  // Hash determinístico simples (djb2) → mod 10000
+  let h = 5381;
+  for (let i = 0; i < company.id.length; i++) {
+    h = ((h << 5) + h + company.id.charCodeAt(i)) | 0;
+  }
+  const n = Math.abs(h) % 10000;
+  return String(n).padStart(4, "0");
+}
+
 export function getCompanyForUser(userEmail?: string | null): Company | null {
   if (!userEmail) return null;
   const e = userEmail.toLowerCase();
