@@ -17,6 +17,8 @@ import { useAuth } from "@/lib/use-auth";
 import { LoginPage, SessionLoading } from "@/components/auth/LoginPage";
 import { TrialGuard } from "@/components/auth/TrialGuard";
 import { supabase } from "@/integrations/supabase/client";
+import { initPwaUpdater } from "@/lib/pwa-updater";
+import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
@@ -290,9 +292,14 @@ function RootComponent() {
     };
   }, []);
 
+  useEffect(() => {
+    initPwaUpdater();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthGateApp />
+      <UpdatePrompt />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
   );
