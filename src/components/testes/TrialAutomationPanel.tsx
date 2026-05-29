@@ -135,39 +135,43 @@ export function TrialAutomationPanel() {
           </div>
         </div>
 
-        {/* Lista */}
-        <div className="divide-y">
+        {/* Grade compacta — um do lado do outro */}
+        <div className="grid grid-cols-2 gap-2 p-2">
           {templates.length === 0 && (
-            <div className="p-4 text-sm text-muted-foreground">
+            <div className="col-span-2 p-4 text-sm text-muted-foreground">
               Nenhum template de teste encontrado.
             </div>
           )}
           {templates.map((t) => (
-            <div key={t.id} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-3">
-              {/* Switch + nome */}
-              <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div
+              key={t.id}
+              className={cn(
+                "rounded-lg border bg-card p-2.5 transition-colors",
+                t.active ? "border-primary/30 bg-primary/5" : "border-border",
+              )}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate text-[13px] font-semibold leading-tight">{t.name}</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {formatOffset(t.offsetHours)}
+                  </div>
+                </div>
                 <Switch
                   checked={t.active}
                   onCheckedChange={(v) => toggleActive(t, v)}
                   aria-label={`Ativar ${t.name}`}
                 />
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">{t.name}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {formatOffset(t.offsetHours)}
-                  </div>
-                </div>
               </div>
 
-              {/* Janela de horário */}
-              <div className="flex items-center gap-1.5 text-xs">
-                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="mt-2 flex items-center gap-1 text-[11px]">
+                <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
                 <Input
                   type="time"
                   value={t.sendStart ?? "09:00"}
                   onChange={(e) => setWindow(t, "sendStart", e.target.value)}
                   disabled={!t.active}
-                  className="h-8 w-[92px] px-2 text-xs"
+                  className="h-7 flex-1 min-w-0 px-1.5 text-[11px]"
                 />
                 <span className="text-muted-foreground">→</span>
                 <Input
@@ -175,23 +179,23 @@ export function TrialAutomationPanel() {
                   value={t.sendEnd ?? "20:00"}
                   onChange={(e) => setWindow(t, "sendEnd", e.target.value)}
                   disabled={!t.active}
-                  className="h-8 w-[92px] px-2 text-xs"
+                  className="h-7 flex-1 min-w-0 px-1.5 text-[11px]"
                 />
               </div>
 
-              {/* Ação editar */}
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => openEdit(t)}
-                className="h-8 gap-1 text-xs"
+                className="mt-2 h-7 w-full gap-1 px-2 text-[11px]"
               >
-                <Pencil className="h-3.5 w-3.5" />
+                <Pencil className="h-3 w-3" />
                 Editar mensagem
               </Button>
             </div>
           ))}
         </div>
+
 
         {/* Rodapé */}
         <div className="flex items-center justify-between gap-2 border-t bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
