@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Download, Upload, Copy, Target, Calculator,
-  TrendingUp, Receipt, Settings as SettingsIcon, Info, Save,
+  TrendingUp, Receipt, Settings as SettingsIcon, Save,
 } from "lucide-react";
 
 import { PageContainer } from "@/components/layout/PageContainer";
