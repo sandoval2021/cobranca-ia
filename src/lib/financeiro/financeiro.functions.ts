@@ -5,6 +5,21 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const UUID = z.string().uuid();
 
+// Fase A — validação explícita de acesso à empresa antes de operar finance_*.
+// Mesmo com RLS ativo, validamos no servidor para impedir que payload com
+// companyId de outra empresa seja aceito.
+async function assertCompanyAccess(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  companyId: string,
+) {
+  const { data, error } = await supabase.rpc("has_company_access", {
+    _company_id: companyId,
+  });
+  if (error) throw new Error("forbidden");
+  if (!data) throw new Error("forbidden");
+}
+
 const EntryInput = z.object({
   id: z.string().uuid().optional(),
   companyId: UUID,
