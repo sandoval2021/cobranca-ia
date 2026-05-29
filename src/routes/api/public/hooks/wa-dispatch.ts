@@ -95,6 +95,8 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
                 status: "queued",
                 next_attempt_at: new Date(Date.now() + 60_000).toISOString(),
                 last_error: `instance_not_ready:${inst?.status ?? "missing"}`,
+                locked_at: null,
+                locked_by: null,
               })
               .eq("id", c.id);
             continue;
@@ -106,6 +108,8 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
                 status: "queued",
                 next_attempt_at: new Date(Date.now() + 30 * 60_000).toISOString(),
                 last_error: "daily_limit_reached",
+                locked_at: null,
+                locked_by: null,
               })
               .eq("id", c.id);
             continue;
@@ -131,6 +135,8 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
                 status: "queued",
                 next_attempt_at: new Date(Date.now() + 60_000).toISOString(),
                 last_error: "rate_limited",
+                locked_at: null,
+                locked_by: null,
               })
               .eq("id", c.id);
             continue;
@@ -145,7 +151,13 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
           if (!ref) {
             await supabaseAdmin
               .from("whatsapp_message_queue")
-              .update({ status: "failed", last_error: "ref_missing" })
+              .update({
+                status: "failed",
+                last_error: "ref_missing",
+                locked_at: null,
+                locked_by: null,
+                failed_at: new Date().toISOString(),
+              })
               .eq("id", c.id);
             failed++;
             continue;
