@@ -356,14 +356,10 @@ export function relinkCompanyId(oldId: string, newId: string): Company | null {
   if (getCurrentCompanyId() === oldId) write(CURRENT_KEY, newId);
 
   // CAUSA RAIZ: relinkar todos os dados locais escopados por empresa.
-  // Sem isso, testes/financeiro/planos/etc. ficam órfãos no ID antigo e
-  // somem da tela mesmo estando salvos.
+  // Sem isso, testes/financeiro/planos/etc. ficam órfãos no ID antigo
+  // e somem da tela mesmo estando salvos.
   try {
-    // Import lazy para evitar ciclo: companies.ts ↔ relink-scoped-data.ts é seguro,
-    // mas mantemos require dinâmico defensivo via dynamic import síncrono.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require("./relink-scoped-data") as typeof import("./relink-scoped-data");
-    mod.relinkScopedLocalStorageData(oldId, newId);
+    relinkScopedLocalStorageData(oldId, newId);
   } catch {
     /* nunca quebrar o login por causa do relink */
   }
