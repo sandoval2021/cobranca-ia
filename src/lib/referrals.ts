@@ -242,17 +242,89 @@ export function applyBonusForIndicator(indicatorKey: string, meta: number): numb
       changed++;
     }
   }
-  if (changed) write(STORAGE_KEY, list);
+  if (changed) {
+    write(STORAGE_KEY, list);
+    const touched = list.filter((r) => ids.has(r.id));
+    mirrorReferralsBulkToDb(touched);
+  }
   return changed;
 }
 
+// ---- Regras de indicação (DB-first com cache local) ----
+// Cache local por empresa para evitar contaminar regra de empresa A em B.
+function rulesKeyForCompany(cid: string | null): string {
+  // mantém legado quando não há empresa
+  if (!cid) return RULES_KEY;
+  return `${RULES_KEY}__${cid}`;
+}
+
+const RULES_UPLOADED_FLAG = "cobranca_ia_referral_rules_uploaded_v1";
+function readUploadedFlags(): Record<string, true> {
+  return read<Record<string, true>>(RULES_UPLOADED_FLAG, {});
+}
+
+export function markReferralRulesUploaded(companyId: string) {
+  const flags = readUploadedFlags();
+  flags[companyId] = true;
+  write(RULES_UPLOADED_FLAG, flags);
+}
+
 export function getReferralRules(): ReferralRules {
+  const cid = getActiveCompanyId();
+  // tenta chave scoped; fallback para chave legada
+  const scoped = cid ? read<ReferralRules | null>(rulesKeyForCompany(cid), null) : null;
+  if (scoped) return scoped;
   return read<ReferralRules>(RULES_KEY, DEFAULT_RULES);
 }
 
-export function saveReferralRules(rules: ReferralRules) {
-  write(RULES_KEY, rules);
+export function getLocalReferralRules(): ReferralRules {
+  return getReferralRules();
 }
+
+export function hasLocalReferralRulesPending(companyId: string): boolean {
+  const scoped = read<ReferralRules | null>(rulesKeyForCompany(companyId), null);
+  const legacy = read<ReferralRules | null>(RULES_KEY, null);
+  const candidate = scoped ?? legacy;
+  if (!candidate) return false;
+  // só considera "pendente" se difere do default
+  return (
+    candidate.meta !== DEFAULT_RULES.meta ||
+    candidate.tipo !== DEFAULT_RULES.tipo ||
+    (candidate.descricao || "") !== DEFAULT_RULES.descricao
+  );
+}
+
+export function hydrateReferralRulesFromDb(companyId: string, rules: ReferralRules) {
+  if (typeof window === "undefined") return;
+  write(rulesKeyForCompany(companyId), rules);
+  // marca como já sincronizado para o uploader não tentar de novo
+  markReferralRulesUploaded(companyId);
+  try {
+    window.dispatchEvent(new CustomEvent("referrals:changed"));
+  } catch { /* ignore */ }
+}
+
+export function saveReferralRules(rules: ReferralRules) {
+  const cid = getActiveCompanyId();
+  if (cid) write(rulesKeyForCompany(cid), rules);
+  // mantém chave legada como espelho para telas que ainda lêem direto
+  write(RULES_KEY, rules);
+  if (cid && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cid)) {
+    queueMicrotask(() => {
+      import("@/lib/referrals/referral-rules.functions").then(({ upsertReferralRulesDb }) =>
+        upsertReferralRulesDb({
+          data: {
+            companyId: cid,
+            meta: Math.max(1, Number(rules.meta) || 2),
+            tipo: String(rules.tipo || "1mes"),
+            descricao: String(rules.descricao || ""),
+          },
+        }),
+      ).then(() => markReferralRulesUploaded(cid)).catch(() => { /* hook periódico retenta */ });
+    });
+  }
+}
+
 
 export type IndicatorSummary = {
   key: string; // whatsapp or id
