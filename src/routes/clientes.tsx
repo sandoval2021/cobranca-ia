@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+
 import {
   Users,
   Search,
@@ -468,6 +469,32 @@ function ClientesPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [reloadBump, setReloadBump] = useState(0);
+  const navigate = useNavigate();
+  const returnToHomeRef = useRef(false);
+
+  // Abrir cadastro automaticamente quando vier de /?action=create
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    const action = sp.get("action");
+    if (action === "create" || action === "new") {
+      setOpenNew(true);
+      returnToHomeRef.current = true;
+      sp.delete("action");
+      const qs = sp.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    }
+  }, []);
+
+  const closeNew = () => {
+    setOpenNew(false);
+    if (returnToHomeRef.current) {
+      returnToHomeRef.current = false;
+      navigate({ to: "/" });
+    }
+  };
+
+
 
   useEffect(() => {
     if (authLoading) return;
@@ -1029,9 +1056,12 @@ function ClientesPage() {
 
       <NewCustomerSheet
         open={openNew}
-        onClose={() => setOpenNew(false)}
-        onCreated={reload}
+        onClose={closeNew}
+        onCreated={() => {
+          reload();
+        }}
       />
+
     </PageContainer>
   );
 }
