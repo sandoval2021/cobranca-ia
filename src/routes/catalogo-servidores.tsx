@@ -64,6 +64,8 @@ function CatalogoServidoresPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [importPreview, setImportPreview] = useState<ServerEntry[] | null>(null);
+  const [pendingLocal, setPendingLocal] = useState(0);
+  const [uploading, setUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const { guard, dialog: securityDialog } = useSecurityGuard();
 
@@ -72,9 +74,32 @@ function CatalogoServidoresPage() {
   useEffect(() => {
     refresh();
     const bump = () => refresh();
+    const onSync = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { pendingLocal?: number } | undefined;
+      if (detail && typeof detail.pendingLocal === "number") {
+        setPendingLocal(detail.pendingLocal);
+      }
+    };
     window.addEventListener(SERVER_CATALOG_EVENT, bump);
-    return () => window.removeEventListener(SERVER_CATALOG_EVENT, bump);
+    window.addEventListener(SERVER_CATALOG_SYNC_EVENT, onSync);
+    return () => {
+      window.removeEventListener(SERVER_CATALOG_EVENT, bump);
+      window.removeEventListener(SERVER_CATALOG_SYNC_EVENT, onSync);
+    };
   }, []);
+
+  const handleUploadLocal = async () => {
+    setUploading(true);
+    try {
+      const res = await uploadLocalServersToDb();
+      toast.success(`Enviados ${res.inserted + res.updated} servidor(es) para sua conta.`);
+      setPendingLocal(0);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao enviar");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const sorted = useMemo(() => {
     return [...servers].sort((a, b) => {
