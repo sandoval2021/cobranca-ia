@@ -164,6 +164,23 @@ function CadastrosServicosPage() {
     return () => window.removeEventListener(SERVICES_EVENT, h);
   }, []);
 
+  // Carrega contagem de elegíveis (clientes que receberão cada mensagem hoje).
+  useEffect(() => {
+    const companyId = getActiveCompanyId();
+    if (!companyId) return;
+    let cancelled = false;
+    getCountsFn({ data: { companyId } })
+      .then((rows) => {
+        if (cancelled) return;
+        const m = new Map<string, MessageEligibilityCount>();
+        for (const r of rows as MessageEligibilityCount[]) m.set(r.service_plan_message_id, r);
+        setEligibilityCounts(m);
+      })
+      .catch(() => { /* silencioso — UI opera sem contagens */ });
+    return () => { cancelled = true; };
+  }, [items, getCountsFn]);
+
+
   // Auto-seleciona o primeiro plano se nenhum estiver selecionado
   useEffect(() => {
     if (items.length > 0 && (!selectedPlanId || !items.find((p) => p.id === selectedPlanId))) {
