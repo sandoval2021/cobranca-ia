@@ -19,9 +19,20 @@ import { supabase } from "@/integrations/supabase/client";
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
-const PUBLIC_ROUTES = new Set<string>(["/reset-password", "/login"]);
+// Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
+const PUBLIC_ROUTES = new Set<string>([
+  "/reset-password",
+  "/login",
+  "/planos",
+  "/funcionalidades",
+  "/ia-atendente",
+  "/cobranca-automatica",
+  "/faq",
+  "/blog",
+]);
 
 import { LandingPage } from "@/components/landing/LandingPage";
+import { PublicWhatsappPage } from "@/components/landing/PublicWhatsappPage";
 
 function AuthGateApp() {
   const { loading, user } = useAuth();
@@ -30,6 +41,8 @@ function AuthGateApp() {
   if (PUBLIC_ROUTES.has(pathname)) return <Outlet />;
   if (loading) return <SessionLoading />;
   if (!user) {
+    // /whatsapp tem rota autenticada, mas visitante deve ver a página pública.
+    if (pathname === "/whatsapp") return <PublicWhatsappPage />;
     // Landing pública apenas em "/" quando não há intenção explícita de login.
     const wantsLogin = pathname !== "/" || search?.login === "1" || search?.auth === "expired";
     if (!wantsLogin) return <LandingPage />;
@@ -37,6 +50,7 @@ function AuthGateApp() {
   }
   return <AppShell />;
 }
+
 
 function NotFoundComponent() {
   return (
