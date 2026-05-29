@@ -142,6 +142,7 @@ export const listFinanceEntriesDb = createServerFn({ method: "GET" })
     z.object({ companyId: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { data: rows, error } = await context.supabase
       .from("finance_entries")
       .select("*")
@@ -155,6 +156,7 @@ export const upsertFinanceEntryDb = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => EntryInput.parse(input))
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { data: row, error } = await context.supabase
       .from("finance_entries")
       .upsert(entryInputToRow(data), { onConflict: "id" })
@@ -175,6 +177,7 @@ export const bulkUpsertFinanceEntriesDb = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     if (data.items.length === 0) return { upserted: 0 };
     const payload = data.items.map((i) =>
       entryInputToRow({ ...i, companyId: data.companyId }),
@@ -192,6 +195,7 @@ export const deleteFinanceEntryDb = createServerFn({ method: "POST" })
     z.object({ companyId: UUID, id: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { error } = await context.supabase
       .from("finance_entries")
       .delete()
