@@ -45,7 +45,10 @@ import { listServers, type ServerEntry } from "@/lib/server-catalog";
 import {
   hydrateDnsFromDb, pushDomainToDb, pushRouteToDb,
   removeDomainFromDb, removeRouteFromDb,
+  pushLocalDnsToDb, discardLocalDnsCache,
+  type HydrateResult,
 } from "@/lib/dns-routes-db";
+
 import { getCurrentCompanyAdmin, ensureUserDefaultCompany } from "@/lib/rpc-admin";
 
 export const Route = createFileRoute("/admin-dns-rotas")({
@@ -106,6 +109,16 @@ function AdminDnsRotasPage() {
   };
 
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [pendingLocal, setPendingLocal] = useState<HydrateResult | null>(null);
+  const [recovering, setRecovering] = useState(false);
+
+
+  const runHydrate = async (cid: string) => {
+    try {
+      const res = await hydrateDnsFromDb(cid);
+      setPendingLocal(res.status === "pending_local" ? res : null);
+    } catch (e) { console.error("dns hydrate", e); }
+  };
 
   useEffect(() => {
     (async () => {
@@ -113,7 +126,7 @@ function AdminDnsRotasPage() {
       if (!cid) cid = (await ensureUserDefaultCompany()).companyId;
       if (!cid) return;
       setCompanyId(cid);
-      try { await hydrateDnsFromDb(cid); } catch (e) { console.error("dns hydrate", e); }
+      await runHydrate(cid);
       refresh();
     })();
     refresh();
@@ -124,6 +137,30 @@ function AdminDnsRotasPage() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
+
+  const handleRecoverLocal = async () => {
+    if (!companyId) { toast.error("Empresa não identificada."); return; }
+    setRecovering(true);
+    try {
+      const res = await pushLocalDnsToDb(companyId);
+      toast.success(`Enviado: ${res.domains} domínios, ${res.routes} rotas.${res.skippedRoutes ? ` Ignoradas: ${res.skippedRoutes}.` : ""}`);
+      if (res.errors.length) console.warn("recover errors", res.errors);
+      setPendingLocal(null);
+      refresh();
+    } catch (e: unknown) {
+      toast.error("Falha ao enviar: " + ((e as Error)?.message ?? String(e)));
+    } finally { setRecovering(false); }
+  };
+
+  const handleDiscardLocal = () => {
+    if (!confirm("Tem certeza? Os dados deste navegador serão apagados e não poderão ser recuperados.")) return;
+    discardLocalDnsCache();
+    setPendingLocal(null);
+    refresh();
+    toast.success("Cache local descartado.");
+  };
+
+
 
   // Dual-write helpers used by sheets/handlers below
   const persistDomain = async (d: DnsDomain) => {
@@ -250,6 +287,30 @@ function AdminDnsRotasPage() {
           Hostinger ou GoDaddy é chamada. <em>Apenas Super Admin deve usar esta tela.</em>
         </p>
       </div>
+
+      {pendingLocal && (
+        <div className="rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-900 p-3 text-sm mb-4">
+          <div className="flex gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5 text-orange-600 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium">Encontramos rotas salvas neste navegador que ainda não estão no banco.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {pendingLocal.localDomains} domínio(s) e {pendingLocal.localRoutes} rota(s) em cache local. O banco está vazio para esta empresa.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <Button size="sm" onClick={handleRecoverLocal} disabled={recovering}>
+                  <Upload className="h-4 w-4 mr-1" />
+                  {recovering ? "Enviando..." : "Enviar rotas locais para o banco"}
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleDiscardLocal} disabled={recovering}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Descartar dados locais
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* ============================== DOMÍNIOS ============================ */}
       <Card className="p-4 mb-4 space-y-3">
