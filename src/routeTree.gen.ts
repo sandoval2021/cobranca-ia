@@ -80,6 +80,7 @@ import { Route as ApiPublicMpOauthCallbackRouteImport } from './routes/api/publi
 import { Route as ApiPublicMpMarketplaceWebhookRouteImport } from './routes/api/public/mp/marketplace-webhook'
 import { Route as ApiPublicHooksWaDispatchRouteImport } from './routes/api/public/hooks/wa-dispatch'
 import { Route as ApiPublicHooksServicesDispatchRouteImport } from './routes/api/public/hooks/services-dispatch'
+import { Route as ApiPublicHooksRenewalDispatchRouteImport } from './routes/api/public/hooks/renewal-dispatch'
 import { Route as ApiPublicHooksQueueRecoveryRouteImport } from './routes/api/public/hooks/queue-recovery'
 import { Route as ApiPublicWebhooksEvolutionInstanceRouteImport } from './routes/api/public/webhooks/evolution.$instance'
 
@@ -445,6 +446,12 @@ const ApiPublicHooksServicesDispatchRoute =
     path: '/api/public/hooks/services-dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksRenewalDispatchRoute =
+  ApiPublicHooksRenewalDispatchRouteImport.update({
+    id: '/api/public/hooks/renewal-dispatch',
+    path: '/api/public/hooks/renewal-dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksQueueRecoveryRoute =
   ApiPublicHooksQueueRecoveryRouteImport.update({
     id: '/api/public/hooks/queue-recovery',
@@ -521,6 +528,7 @@ export interface FileRoutesByFullPath {
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/queue-recovery': typeof ApiPublicHooksQueueRecoveryRoute
+  '/api/public/hooks/renewal-dispatch': typeof ApiPublicHooksRenewalDispatchRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
@@ -596,6 +604,7 @@ export interface FileRoutesByTo {
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/queue-recovery': typeof ApiPublicHooksQueueRecoveryRoute
+  '/api/public/hooks/renewal-dispatch': typeof ApiPublicHooksRenewalDispatchRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
@@ -672,6 +681,7 @@ export interface FileRoutesById {
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/queue-recovery': typeof ApiPublicHooksQueueRecoveryRoute
+  '/api/public/hooks/renewal-dispatch': typeof ApiPublicHooksRenewalDispatchRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
@@ -749,6 +759,7 @@ export interface FileRouteTypes {
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
     | '/api/public/hooks/queue-recovery'
+    | '/api/public/hooks/renewal-dispatch'
     | '/api/public/hooks/services-dispatch'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
@@ -824,6 +835,7 @@ export interface FileRouteTypes {
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
     | '/api/public/hooks/queue-recovery'
+    | '/api/public/hooks/renewal-dispatch'
     | '/api/public/hooks/services-dispatch'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
@@ -899,6 +911,7 @@ export interface FileRouteTypes {
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
     | '/api/public/hooks/queue-recovery'
+    | '/api/public/hooks/renewal-dispatch'
     | '/api/public/hooks/services-dispatch'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
@@ -975,6 +988,7 @@ export interface RootRouteChildren {
   PagamentosMercadoPagoRoute: typeof PagamentosMercadoPagoRoute
   PagarRefRoute: typeof PagarRefRoute
   ApiPublicHooksQueueRecoveryRoute: typeof ApiPublicHooksQueueRecoveryRoute
+  ApiPublicHooksRenewalDispatchRoute: typeof ApiPublicHooksRenewalDispatchRoute
   ApiPublicHooksServicesDispatchRoute: typeof ApiPublicHooksServicesDispatchRoute
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicMpMarketplaceWebhookRoute: typeof ApiPublicMpMarketplaceWebhookRoute
@@ -1486,6 +1500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksServicesDispatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/renewal-dispatch': {
+      id: '/api/public/hooks/renewal-dispatch'
+      path: '/api/public/hooks/renewal-dispatch'
+      fullPath: '/api/public/hooks/renewal-dispatch'
+      preLoaderRoute: typeof ApiPublicHooksRenewalDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/queue-recovery': {
       id: '/api/public/hooks/queue-recovery'
       path: '/api/public/hooks/queue-recovery'
@@ -1581,6 +1602,7 @@ const rootRouteChildren: RootRouteChildren = {
   PagamentosMercadoPagoRoute: PagamentosMercadoPagoRoute,
   PagarRefRoute: PagarRefRoute,
   ApiPublicHooksQueueRecoveryRoute: ApiPublicHooksQueueRecoveryRoute,
+  ApiPublicHooksRenewalDispatchRoute: ApiPublicHooksRenewalDispatchRoute,
   ApiPublicHooksServicesDispatchRoute: ApiPublicHooksServicesDispatchRoute,
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicMpMarketplaceWebhookRoute: ApiPublicMpMarketplaceWebhookRoute,
