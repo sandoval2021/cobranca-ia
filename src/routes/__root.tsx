@@ -37,19 +37,22 @@ import { PublicWhatsappPage } from "@/components/landing/PublicWhatsappPage";
 function AuthGateApp() {
   const { loading, user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   if (PUBLIC_ROUTES.has(pathname)) return <Outlet />;
   if (loading) return <SessionLoading />;
   if (!user) {
     // /whatsapp tem rota autenticada, mas visitante deve ver a página pública.
     if (pathname === "/whatsapp") return <PublicWhatsappPage />;
-    // Landing pública apenas em "/" quando não há intenção explícita de login.
-    const wantsLogin = pathname !== "/" || search?.login === "1" || search?.auth === "expired";
-    if (!wantsLogin) return <LandingPage />;
-    return <LoginPage />;
+    // Visitante não logado em "/" vê landing pública. Qualquer outra rota
+    // protegida → manda para /login (sem usar ?login=1).
+    if (pathname === "/") return <LandingPage />;
+    if (typeof window !== "undefined") {
+      window.location.replace("/login");
+    }
+    return <SessionLoading />;
   }
   return <AppShell />;
 }
+
 
 
 function NotFoundComponent() {
@@ -95,7 +98,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
       } catch {
         // ignore
       }
-      window.location.replace("/?auth=expired");
+      window.location.replace("/login?auth=expired");
     }
     void recover();
   }, [isInvalidToken]);
@@ -252,7 +255,7 @@ function RootComponent() {
       } catch {
         // ignore
       }
-      window.location.replace("/?auth=expired");
+      window.location.replace("/login?auth=expired");
     }
 
     const onRejection = (e: PromiseRejectionEvent) => {
