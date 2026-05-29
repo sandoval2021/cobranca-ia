@@ -277,6 +277,22 @@ function CobrancasPage() {
 
   const reload = () => setReloadBump((n) => n + 1);
 
+  // Abre a caixa de diálogo correspondente quando vier ?action=... da Home
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get("action");
+    if (!action) return;
+    if (action === "create") setShowCreate(true);
+    else if (action === "renew") setShowRenew(true);
+    else if (action === "charge" || action === "message") setShowCobrar(true);
+    // Remove o parâmetro para não reabrir ao navegar de novo
+    params.delete("action");
+    const qs = params.toString();
+    const url = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
+    window.history.replaceState(null, "", url);
+  }, []);
+
   useEffect(() => {
     if (authLoading) return;
     if (!supabaseConfigured || !supabase) {
