@@ -180,7 +180,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
       <PublicHeader />
-      <main className="pt-16">{children}</main>
+      <main style={{ paddingTop: "calc(4rem + env(safe-area-inset-top))" }}>{children}</main>
       <PublicFooter />
     </div>
   );
