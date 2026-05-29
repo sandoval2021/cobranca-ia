@@ -263,6 +263,35 @@ export function applyRenewal(draft: RenewalDraft): RenewalRecord {
   store[draft.customer_id] = list;
   writeAll(store);
 
+  // Write-through best-effort para o banco. Falhas são silenciosas — o banner
+  // de migração ou o próximo sync vão re-tentar.
+  const companyId = getActiveCompanyId();
+  if (companyId && /^[0-9a-f-]{36}$/i.test(draft.customer_id)) {
+    const amountNum = draft.amount ? Number(String(draft.amount).replace(",", ".")) : NaN;
+    void import("@/lib/manual-renewals/manual-renewals.functions").then(({ createManualRenewalDb }) =>
+      createManualRenewalDb({
+        data: {
+          companyId,
+          customerId: draft.customer_id,
+          new_due_date: draft.new_due_date,
+          old_due_date: screensLog[0]?.old_due_date ?? null,
+          amount_cents: Number.isFinite(amountNum) ? Math.round(amountNum * 100) : null,
+          payment_method: draft.payment_method ?? null,
+          note: draft.notes ?? null,
+          payload: {
+            customer_name: rec.customer_name,
+            customer_whatsapp: rec.customer_whatsapp,
+            screens: rec.screens,
+            app_amount: rec.app_amount,
+            amount: rec.amount,
+            confirmation_message: rec.confirmation_message,
+            notes: rec.notes,
+          },
+        },
+      }).catch(() => {}),
+    );
+  }
+
   return rec;
 }
 
