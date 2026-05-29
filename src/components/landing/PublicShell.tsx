@@ -31,8 +31,14 @@ export function PublicHeader() {
           ? "bg-white/85 backdrop-blur-lg border-b border-border shadow-sm"
           : "bg-white/70 backdrop-blur-md"
       }`}
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+      }}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
+
         <Link to="/" className="flex items-center gap-2" aria-label="CobraEasy">
           <BrandLogo variant="mark" className="h-8 w-8" />
           <span className="text-lg font-bold tracking-tight text-foreground">
@@ -174,7 +180,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
       <PublicHeader />
-      <main className="pt-16">{children}</main>
+      <main style={{ paddingTop: "calc(4rem + env(safe-area-inset-top))" }}>{children}</main>
       <PublicFooter />
     </div>
   );
