@@ -32,7 +32,7 @@ export function useReferralRulesSync() {
         if (row) {
           hydrateReferralRulesFromDb(companyId, {
             meta: Number(row.meta),
-            tipo: String(row.tipo),
+            tipo: (String(row.tipo) as any),
             descricao: String(row.descricao ?? ""),
           });
         } else if (hasLocalReferralRulesPending(companyId)) {
