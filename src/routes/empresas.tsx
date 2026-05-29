@@ -303,6 +303,10 @@ function EmpresasContent() {
                         <p className="mt-0.5 truncate text-xs text-muted-foreground">
                           {c.dono_nome} · {c.dono_email}
                         </p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          ID suporte:{" "}
+                          <span className="font-mono font-medium text-foreground">{getCompanySupportId(c)}</span>
+                        </p>
                         {!isReal && (
                           <p className="mt-1 text-[11px] text-amber-700">
                             Base de teste ainda não está ativa.
