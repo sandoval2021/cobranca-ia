@@ -60,7 +60,8 @@ type SignupContext = {
 };
 
 export function LoginPage() {
-  const search = useRouterState({ select: (s) => s.location.search }) as Record<string, unknown>;
+  const rawSearch = useRouterState({ select: (s) => s.location.search });
+  const search = rawSearch as unknown as Record<string, unknown>;
   const wantsSignup = search?.mode === "signup";
   const preselectedPlan = typeof search?.plan === "string" ? search.plan : undefined;
 
