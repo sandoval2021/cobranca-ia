@@ -64,6 +64,7 @@ function AuthedApp() {
   // Sincroniza catálogos com o banco em todo dispositivo logado.
   useServersSync();
   useScreensSync();
+  useServicesSync();
   return <AppShell />;
 }
 
