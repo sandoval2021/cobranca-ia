@@ -423,6 +423,27 @@ function TestesPage() {
         })}
       </div>
 
+      {/* Estatísticas (abaixo da lista) */}
+      <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        <StatTile label="Novos" value={stats.novos} />
+        <StatTile label="Em teste" value={stats.emTeste} />
+        <StatTile label="Aguardando" value={stats.aguardando} />
+        <StatTile label="Vencendo hoje" value={stats.vencendoHoje} />
+        <StatTile label="Fecharam" value={stats.fecharam} />
+        <StatTile label="Não fecharam" value={stats.naoFecharam} />
+        <StatTile label="Indicados" value={stats.indicados} />
+      </div>
+
+      {/* Automação dos testes (abaixo) */}
+      <div className="mt-6">
+        <TrialAutomationPanel />
+        <div className="mt-2 text-[11px] text-muted-foreground">
+          Mensagens usando dados de Minha Revenda.{" "}
+          <Link to="/configuracoes-revenda" className="underline">Editar Minha Revenda</Link>
+        </div>
+      </div>
+
+
       {pendingFollowups.length > 0 && (
         <div className="mt-6">
           <h3 className="mb-2 text-sm font-semibold">Agenda de acompanhamento</h3>
