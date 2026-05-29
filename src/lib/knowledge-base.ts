@@ -542,3 +542,42 @@ function mirrorKbDeleteToDb(id: string): void {
   });
 }
 
+// Espelha um lote (importação/merge/restore) no banco usando bulkUpsert
+// chunked. Fire-and-forget: não bloqueia UI. Não apaga entradas do banco
+// que não estejam no lote (não há ação destrutiva implícita). Após sucesso,
+// dispara um resync para promover ids legados (kb_*) para os UUIDs do banco.
+function mirrorBulkKbToDb(entries: KBEntry[]): void {
+  if (typeof window === "undefined") return;
+  if (!entries || entries.length === 0) return;
+  const companyId = getActiveCompanyId();
+  if (!companyId || !isUuid(companyId)) return;
+  const mapped = entries.map((e) => ({
+    id: isUuid(e.id) ? e.id : undefined,
+    title: e.title || "Sem título",
+    category: e.category,
+    app: e.app ?? null,
+    keywords: e.keywords ?? [],
+    short_text: e.short ?? "",
+    full_text: e.full ?? "",
+    when_to_use: e.when_to_use ?? null,
+    when_not_to_use: e.when_not_to_use ?? null,
+    needs_human: !!e.needs_human,
+    active: e.active !== false,
+  }));
+  const CHUNK = 200;
+  queueMicrotask(() => {
+    (async () => {
+      try {
+        for (let i = 0; i < mapped.length; i += CHUNK) {
+          const slice = mapped.slice(i, i + CHUNK);
+          await bulkUpsertKbEntriesDb({ data: { companyId, entries: slice } });
+        }
+        window.dispatchEvent(new CustomEvent("cobranca_ia_kb:resync"));
+      } catch (err) {
+        markKnowledgeBaseSyncError(
+          err instanceof Error ? err.message : "Falha ao espelhar KB em lote",
+        );
+      }
+    })();
+  });
+}
