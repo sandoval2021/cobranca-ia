@@ -1,97 +1,88 @@
-## Objetivo
+# Fase 3 — Eliminar dados presos em aparelho
 
-Eliminar `localStorage` como fonte da verdade para tudo que afeta cobrança automática e IA comercial:
+## Escopo
 
-- **Planos do dono** (nome, preço, telas, meses, ativo) — hoje em `services-catalog.ts`
-- **Mensagens por plano** (cobrança no dia, acompanhamentos N dias depois) — hoje aninhadas dentro de cada plano local
-- **Plano vinculado ao cliente** — hoje em `customer-plans.ts`
-- **Regras de disparo manual** (lembrete D-7, cobrança D-0, recuperação D+7…) — hoje em `manual-dispatch-rules.ts`
-- **Config de disparo automático** (horário, intervalo, lote, dias permitidos, horários por valor) — hoje em `auto-dispatch.ts`
+### Bloco A — Novas tabelas (migration única)
 
-Depois disso, IA, cobrança automática e valores por plano ficam iguais em desktop, celular e PWA.
+7 tabelas novas no `public`, todas com:
+- `id uuid pk`, `company_id uuid not null`, `created_at`, `updated_at` + trigger `touch_updated_at`
+- `GRANT SELECT/INSERT/UPDATE/DELETE` em `authenticated` + `GRANT ALL` em `service_role`
+- RLS `using/with check (has_company_access(company_id))`
+- `ALTER PUBLICATION supabase_realtime ADD TABLE …` para realtime
+- `REPLICA IDENTITY FULL` para eventos `UPDATE`/`DELETE` virem com row completa
 
-`localStorage` permanece apenas como cache de leitura síncrona + flags efêmeras (cancelados/enviados do dia).
+Tabelas:
+1. `trial_leads` — espelha `TrialLead` (nome, whatsapp, origem, status, datas, app, servidor, usuário, senha, valor_cents, horas_teste, interesse, notas)
+2. `trial_followups` — `lead_id` (fk → trial_leads on delete cascade), `company_id`, tipo, data_planejada, status, atualizado_em
+3. `finance_entries` — campos atuais de `FinanceEntry`
+4. `finance_goals` — campos atuais de `FinanceGoal`
+5. `customer_extras` — `(company_id, customer_id)` unique, email, birthday, due_date
+6. `auto_templates` — `(company_id, template_id)` unique, channels, body, ativo, time_window
+7. `revenda_settings` — `company_id` unique, jsonb com config inteira
 
-## Escopo desta tarefa (Fase 2A) — apenas Planos e Mensagens
+### Bloco B — Camada de acesso (server functions)
 
-A migração inteira é grande (5 módulos, 8+ consumidores, ~3500 linhas em `clientes.tsx`). Para entregar com segurança igual à Fase 1 (telas), corto a Fase 2 em duas:
+Para cada tabela, em `src/lib/<modulo>/<modulo>.functions.ts`:
+- `list…Db({ companyId })` — SELECT escopado
+- `upsert…Db({ companyId, item })` — INSERT … ON CONFLICT DO UPDATE
+- `bulkUpsert…Db({ companyId, items })` — usado pela auto-migração
+- `delete…Db({ companyId, id })` — DELETE escopado
 
-- **Fase 2A (esta tarefa)**: Planos do dono + Mensagens do plano + Vínculo cliente↔plano.
-- **Fase 2B (próxima tarefa)**: Regras de disparo manual + Config de disparo automático.
+Todas com `.middleware([requireSupabaseAuth])`, validação Zod, leitura via `supabaseAdmin` + verificação `has_company_access` no SQL (RLS é backstop).
 
-Motivo: 2A é o que afeta diretamente "valor do plano" e "mensagens por vencimento" mencionados pelo usuário. 2B é UX de agenda; pode ir em seguida sem bloquear cobrança/IA.
+### Bloco C — Hook genérico de sync (DB-first silencioso)
 
-## Banco — Fase 2A
+Refatorar o padrão atual (que ainda mostra "salvo neste aparelho") em `src/lib/sync/useDbFirstSync.ts`:
+- No mount: chama `list…Db`, hidrata cache local com payload do DB (substituindo, não mesclando — DB é fonte da verdade).
+- Detecta legado local com `company_id == oldId || company_id == null` ou registros locais não presentes no DB → faz `bulkUpsertDb` automaticamente e silenciosamente, sem banner, sem botão.
+- Após upload, marca como sincronizado e remove do cache "pending".
+- Nunca apaga cache se DB retornar vazio na primeira tentativa (failsafe offline).
+- Expõe apenas `{ loaded, error }` — sem `pendingLocal` na UI.
 
-Três tabelas novas no schema `public`, todas com RLS por `has_company_access`:
+### Bloco D — Realtime wrapper
 
-```text
-service_plans
-  id uuid pk
-  company_id uuid not null
-  nome text not null
-  preco_cents int not null default 0
-  telas int not null default 1
-  meses int not null default 1
-  ativo bool not null default true
-  created_at, updated_at timestamptz
-
-service_plan_messages
-  id uuid pk
-  company_id uuid not null   -- denormalizado p/ RLS direto
-  service_plan_id uuid not null references service_plans(id) on delete cascade
-  kind text not null check (kind in ('cobranca','acompanhamento'))
-  offset_days int not null default 0
-  label text not null
-  template text not null
-  created_at, updated_at timestamptz
-
-customer_service_plan
-  customer_id uuid pk references customers(id) on delete cascade
-  company_id uuid not null
-  service_plan_id uuid not null references service_plans(id) on delete cascade
-  updated_at timestamptz
+`src/hooks/useRealtimeTable.ts`:
+```ts
+useRealtimeTable({
+  table: 'trial_leads',
+  companyId,
+  onChange: () => queryClient.invalidateQueries(['trial_leads', companyId]),
+})
 ```
+- Cria channel único por (table, companyId), filtra `postgres_changes` por `company_id=eq.${companyId}`.
+- Unsubscribe no cleanup.
+- Reusa channel se montado em N componentes simultâneos (cache global por chave).
 
-GRANTs para `authenticated` (SELECT/INSERT/UPDATE/DELETE) + `service_role` ALL. RLS: `has_company_access(company_id)` em todas as policies. Sem grant para `anon`.
+Aplicar em: customers, service_plans, screens, servers, trial_leads, finance_entries, customer_extras, auto_templates, revenda_settings.
 
-Não reaproveito `price_group_plans` porque ele pertence ao módulo de "grupos de preço" (já em uso) e tem semântica diferente (`price_group_id`, `duration_days`, `allow_installments`). Misturar quebra a UI atual de grupos.
+### Bloco E — Refatorar módulos
 
-## Código — Fase 2A
+Para cada um dos 7 módulos, substituir leitura local pela query DB + hook acima:
+- `src/lib/trial-leads.ts` — listTrialLeads/save/delete viram thin wrappers que escrevem DB e atualizam cache.
+- `src/lib/financeiro-local.ts` — idem para entries/goals.
+- `src/lib/customer-extras.ts` — idem.
+- `src/lib/auto-templates.ts` — idem.
+- `src/lib/revenda-settings.ts` — idem.
 
-Mesma arquitetura validada na Fase 1 de telas:
+### Bloco F — Remover banners + botões legados
 
-1. **`src/lib/services/services.functions.ts` (novo)** — `listPlansDb`, `upsertPlanDb`, `deletePlanDb`, `bulkUpsertPlansDb`, `setCustomerPlanDb` com `requireSupabaseAuth` + `has_company_access`. Mensagens enviadas/lidas junto com o plano (sub-array).
-2. **`src/lib/services/useServicesSync.ts` (novo)** — hidrata cache local de planos + vínculos em mount/focus/troca de empresa/5 min, igual ao `useScreensSync`.
-3. **`src/lib/services-catalog.ts` (editar)** — normalizar IDs para UUID, manter API síncrona (`listServices`, `saveService`, `updateService`, `deleteService`, mensagens), e em cada mutação disparar upsert/delete no banco em background (fire-and-forget). Adicionar `hydrateServicesFromDb`, `getServicesSyncState`, `uploadLocalServicesToDb`, `SERVICES_SYNC_EVENT`, e `pendingLocal` (banco vazio + cache com dados → preserva).
-4. **`src/lib/customer-plans.ts` (editar)** — mesma estratégia: cache local + `setCustomerPlanDb` em background; hidratação via `useServicesSync` (uma chamada só traz planos + vínculos da empresa).
-5. **`src/routes/__root.tsx` (editar)** — montar `useServicesSync()` ao lado do `useScreensSync()`.
-6. **`src/routes/cadastros-servicos.tsx` (editar)** — adicionar banner "Enviar para minha conta" quando `pendingLocal > 0`, idêntico em UX ao banner de telas (compacto, mobile-first, botão grande, "Agora não"). Após upload, re-hidratar e atualizar lista.
+Buscar e remover toda UI que mostra "Encontramos planos salvos apenas neste aparelho", "Enviar para minha conta", e equivalentes nos módulos acima. A auto-migração do Bloco C torna isso obsoleto.
 
-## Garantias
+## Risco e tamanho
 
-- Banco é fonte da verdade; `localStorage` é cache.
-- Nunca sobrescrever banco com vazio (`pendingLocal` protege).
-- Nunca apagar cache local antes do banco confirmar.
-- Upsert por id evita duplicidade; IDs migrados para UUID.
-- `company_id` correto em todos os writes (vem de `getActiveCompanyId`, validado).
-- Vínculo cliente↔plano permanece (`customer_service_plan` é upsert por `customer_id`).
-- Sem alteração funcional em IA, WhatsApp, Mercado Pago, DNS.
+- **Migration**: 7 tabelas + RLS + publication + replica identity = ~250 linhas SQL.
+- **Server functions**: ~7 × 80 linhas = ~560 linhas.
+- **Hooks**: useDbFirstSync + useRealtimeTable = ~250 linhas.
+- **Refatoração dos módulos**: ~7 × 100 linhas modificadas.
+- **Remoção banners**: varia.
+- **Total estimado**: ~30 arquivos novos/alterados, ~2.000 linhas.
 
-## Fora de escopo (vai para Fase 2B)
+## Confirmações necessárias antes de executar
 
-- `manual-dispatch-rules.ts` (regras D-7/D0/D+7) → nova tabela `dispatch_rules`.
-- `auto-dispatch.ts` (config global + horários por valor) → nova tabela `auto_dispatch_config` (1 linha por empresa) + `auto_dispatch_amount_schedules`.
-- Flags do dia (`cobranca_ia_auto_dispatch_cancel_v1`, `sent_v1`) permanecem em `localStorage` (efêmeras, 14 dias, por aparelho).
+1. **OK aplicar a migration completa** (7 tabelas + RLS + realtime + publication)? Não é destrutiva — só CREATE TABLE.
+2. **Auto-migração de leads/financeiro existentes**: se o usuário tem leads locais com `company_id` válido (UUID), faço upload silencioso na primeira carga. OK?
+3. **`customer_extras`**: hoje a chave é `customer_id` global (sem company_id). Posso resolver `company_id` via JOIN com `customers` durante a migração? OK que extras de clientes deletados sejam descartados?
+4. **`revenda_settings`**: hoje é singleton por instalação (sem company_id). Vou tratar como **por empresa** (cada empresa tem suas próprias configs de revenda). Confirma?
+5. **Modo de execução**: prefere que eu (a) entregue tudo em um turno gigante, ou (b) divida em 3 PRs lógicos — primeiro migration+server-functions, depois hook+realtime, depois remoção dos banners — validando entre cada um?
 
-## Riscos e mitigação
-
-- **Risco**: ~8 arquivos consomem `listServices()` / `getCustomerPlan()` de forma síncrona; primeira render pode mostrar lista vazia até hidratar (~200 ms). **Mitigação**: cache local responde sync imediatamente; hidrate só substitui depois, evento `SERVICES_SYNC_EVENT` força re-render onde precisar.
-- **Risco**: dono com planos antigos só locais. **Mitigação**: banner explícito de migração, idêntico ao que já validamos para telas.
-
-## Entrega
-
-- SQL aplicado: SIM (3 tabelas novas + RLS + GRANTs)
-- PR: NÃO
-- Merge: NÃO
-- Build OK obrigatório
+Responde 1-5 que eu sigo direto.
