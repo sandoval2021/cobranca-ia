@@ -1,5 +1,40 @@
-// Módulo financeiro local (preview-only, localStorage).
-// Nenhuma chamada externa. Nenhum pagamento real. Nenhum Supabase.
+// Módulo financeiro DB-first. Cache local + espelhamento síncrono no banco.
+// Escrita: localStorage primeiro (UX instantânea) + mirror fire-and-forget no banco.
+// Leitura: cache local hidratado pelo useFinanceSync (banco é a fonte oficial).
+import { mirror } from "./sync/mirror";
+import {
+  upsertFinanceEntryDb,
+  deleteFinanceEntryDb,
+  upsertFinanceGoalDb,
+  deleteFinanceGoalDb,
+} from "./financeiro/financeiro.functions";
+
+function entryToDb(e: FinanceEntry) {
+  return {
+    id: e.id,
+    tipo: e.type,
+    categoria: null,
+    descricao: e.note ?? null,
+    valor_cents: Math.round((e.amount_received ?? 0) * 100),
+    data: e.date,
+    metodo_pagamento: e.method ?? null,
+    cliente_id: null,
+    servico_id: null,
+    observacoes: null,
+    extraJson: JSON.stringify(e),
+  };
+}
+
+function goalToDb(g: FinanceGoal) {
+  return {
+    id: g.id,
+    mes: g.deadline ?? g.name,
+    categoria: null,
+    valor_cents: Math.round((g.target ?? 0) * 100),
+    observacoes: g.description ?? null,
+    extraJson: JSON.stringify(g),
+  };
+}
 
 export type PaymentMethod = "pix" | "dinheiro" | "cartao" | "outro";
 export type EntryType =
@@ -87,8 +122,9 @@ export const FINANCE_DRAFT_EVENT = "cobranca_ia_finance_draft:changed";
 
 function nowIso() { return new Date().toISOString(); }
 function todayIso() { return new Date().toISOString().slice(0, 10); }
-export function newFinanceId(prefix = "fin"): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+export function newFinanceId(_prefix = "fin"): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return "00000000-0000-4000-8000-" + Math.random().toString(16).slice(2, 14).padEnd(12, "0");
 }
 
 export function formatBRL(n: number): string {
@@ -203,6 +239,7 @@ export function saveFinanceEntry(e: Omit<FinanceEntry, "id" | "created_at" | "up
   if (entry.goal_id && entry.reserve > 0) {
     addGoalReserve(entry.goal_id, entry.reserve);
   }
+  mirror((companyId) => upsertFinanceEntryDb({ data: { companyId, ...entryToDb(entry) } }));
   return entry;
 }
 
@@ -211,13 +248,16 @@ export function updateFinanceEntry(id: string, patch: Partial<FinanceEntry>): vo
   const idx = list.findIndex((e) => e.id === id);
   if (idx < 0) return;
   const prev = list[idx];
-  list[idx] = { ...prev, ...patch, company_id: patch.company_id ?? prev.company_id, updated_at: nowIso() };
+  const next = { ...prev, ...patch, company_id: patch.company_id ?? prev.company_id, updated_at: nowIso() };
+  list[idx] = next;
   writeJson(ENTRIES_KEY, list);
+  mirror((companyId) => upsertFinanceEntryDb({ data: { companyId, ...entryToDb(next) } }));
 }
 
 export function deleteFinanceEntry(id: string): void {
   const list = listAllFinanceEntriesRaw().filter((e) => e.id !== id);
   writeJson(ENTRIES_KEY, list);
+  mirror((companyId) => deleteFinanceEntryDb({ data: { companyId, id } }));
 }
 
 // ---------- Goals ----------
@@ -245,6 +285,7 @@ export function saveFinanceGoal(g: Omit<FinanceGoal, "id" | "created_at" | "upda
   } as FinanceGoal;
   list.unshift(goal);
   writeJson(GOALS_KEY, list);
+  mirror((companyId) => upsertFinanceGoalDb({ data: { companyId, ...goalToDb(goal) } }));
   return goal;
 }
 
@@ -252,13 +293,16 @@ export function updateFinanceGoal(id: string, patch: Partial<FinanceGoal>): void
   const list = listAllFinanceGoalsRaw();
   const idx = list.findIndex((g) => g.id === id);
   if (idx < 0) return;
-  list[idx] = { ...list[idx], ...patch, company_id: patch.company_id ?? list[idx].company_id, updated_at: nowIso() };
+  const next = { ...list[idx], ...patch, company_id: patch.company_id ?? list[idx].company_id, updated_at: nowIso() };
+  list[idx] = next;
   writeJson(GOALS_KEY, list);
+  mirror((companyId) => upsertFinanceGoalDb({ data: { companyId, ...goalToDb(next) } }));
 }
 
 export function deleteFinanceGoal(id: string): void {
   const list = listAllFinanceGoalsRaw().filter((g) => g.id !== id);
   writeJson(GOALS_KEY, list);
+  mirror((companyId) => deleteFinanceGoalDb({ data: { companyId, id } }));
 }
 
 function addGoalReserve(goalId: string, amount: number): void {

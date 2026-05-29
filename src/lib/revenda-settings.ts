@@ -1,4 +1,6 @@
-// Configurações da Revenda — 100% local (localStorage). Sem API, sem Supabase.
+// Configurações da Revenda — DB-first com cache local.
+import { mirror } from "./sync/mirror";
+import { saveRevendaSettingsDb } from "./revenda-settings.functions";
 
 export const REVENDA_SETTINGS_KEY = "cobranca_ia_revenda_settings_v1";
 export const REVENDA_SETTINGS_EVENT = "cobranca_ia_revenda_settings:changed";
@@ -156,6 +158,9 @@ export function saveRevendaSettings(settings: RevendaSettings): RevendaSettings 
   } catch {
     // silencioso
   }
+  mirror((companyId) =>
+    saveRevendaSettingsDb({ data: { companyId, dataJson: JSON.stringify(toSave) } }),
+  );
   return toSave;
 }
 
@@ -167,8 +172,12 @@ export function resetRevendaSettings(): RevendaSettings {
   } catch {
     // silencioso
   }
+  mirror((companyId) =>
+    saveRevendaSettingsDb({ data: { companyId, dataJson: JSON.stringify(DEFAULT_REVENDA_SETTINGS) } }),
+  );
   return DEFAULT_REVENDA_SETTINGS;
 }
+
 
 export function exportRevendaSettings(): string {
   const data = getRevendaSettings();

@@ -89,7 +89,8 @@ export type FollowUp = {
 };
 
 function uid() {
-  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return "00000000-0000-4000-8000-" + Math.random().toString(16).slice(2, 14).padEnd(12, "0");
 }
 
 function read<T>(key: string): T[] {
@@ -116,6 +117,30 @@ function write<T>(key: string, items: T[]) {
 
 import { getCurrentRole } from "./local-auth";
 import { getActiveCompanyId } from "./company-scope";
+import { mirror } from "./sync/mirror";
+import { upsertTrialLeadDb, deleteTrialLeadDb, bulkUpsertTrialFollowupsDb } from "./trial-leads/trial-leads.functions";
+
+function leadToDb(l: TrialLead) {
+  return {
+    id: l.id, nome: l.nome ?? null, whatsapp: l.whatsapp,
+    origem: l.origem ?? null, status: l.status ?? null,
+    data_contato: l.data_contato ?? null, data_inicio: l.data_inicio ?? null, data_fim: l.data_fim ?? null,
+    app: l.app ?? null, servidor: l.servidor ?? null, servidor_adicional: l.servidor_adicional ?? null,
+    usuario: l.usuario ?? null, senha: l.senha ?? null,
+    valor_cents: l.valor_cents ?? null, horas_teste: l.horas_teste ?? null,
+    interesse: l.interesse ?? null, observacoes: l.observacao ?? null,
+    extraJson: JSON.stringify({
+      indicado_por_cliente_id: l.indicado_por_cliente_id,
+      indicado_por_nome: l.indicado_por_nome,
+      indicado_por_whatsapp: l.indicado_por_whatsapp,
+      ultimo_contato: l.ultimo_contato,
+      proxima_acao: l.proxima_acao,
+      arquivado: l.arquivado,
+      criado_em: l.criado_em,
+      atualizado_em: l.atualizado_em,
+    }),
+  };
+}
 
 function scopedFilter<T extends { company_id?: string | null }>(list: T[]): T[] {
   const role = getCurrentRole();
@@ -205,8 +230,19 @@ export function saveTrialLead(
   list.unshift(lead);
   write(STORAGE_KEY, list);
   const fups = listFollowUps();
-  fups.push(...buildTrialFollowUpSchedule(lead));
+  const newFups = buildTrialFollowUpSchedule(lead);
+  fups.push(...newFups);
   saveAllFollowUps(fups);
+  mirror((companyId) => upsertTrialLeadDb({ data: { companyId, ...leadToDb(lead) } }));
+  mirror((companyId) => bulkUpsertTrialFollowupsDb({
+    data: {
+      companyId,
+      items: newFups.map((f) => ({
+        id: f.id, lead_id: f.lead_id, tipo: f.type,
+        data_planejada: f.data_planejada, status: f.status, atualizado_em: f.atualizado_em,
+      })),
+    },
+  }));
   return lead;
 }
 
@@ -223,6 +259,7 @@ export function updateTrialLead(id: string, patch: Partial<TrialLead>): TrialLea
   };
   list[idx] = updated;
   write(STORAGE_KEY, list);
+  mirror((companyId) => upsertTrialLeadDb({ data: { companyId, ...leadToDb(updated) } }));
   return updated;
 }
 

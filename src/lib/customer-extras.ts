@@ -1,5 +1,8 @@
-// Extras de cliente armazenados localmente (campos que ainda não existem na RPC):
-// email, data de aniversário. Persistidos em localStorage por customer_id.
+// Extras de cliente: email, aniversário, próximo vencimento.
+// DB-first: localStorage é cache; `useCustomerExtrasSync` hidrata do banco.
+// Escrita: salva local + mirror fire-and-forget no banco.
+import { mirror } from "./sync/mirror";
+import { upsertCustomerExtraDb } from "./customer-extras.functions";
 
 const KEY = "cobranca_ia_customer_extras_v1";
 export const CUSTOMER_EXTRAS_EVENT = "cobranca_ia_customer_extras:changed";
@@ -9,7 +12,6 @@ export type CustomerExtras = {
   birthday?: string; // YYYY-MM-DD
   dueDate?: string; // YYYY-MM-DD — data completa do próximo vencimento
 };
-
 
 type Store = Record<string, CustomerExtras>;
 
@@ -35,14 +37,32 @@ function write(s: Store) {
   }
 }
 
+function isUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
 export function getCustomerExtras(customerId: string): CustomerExtras {
   return read()[customerId] ?? {};
 }
 
 export function setCustomerExtras(customerId: string, extras: CustomerExtras) {
   const s = read();
-  s[customerId] = { ...s[customerId], ...extras };
+  const merged = { ...s[customerId], ...extras };
+  s[customerId] = merged;
   write(s);
+  if (!isUuid(customerId)) return; // só espelha quando temos UUID real do cliente
+  mirror((companyId) =>
+    upsertCustomerExtraDb({
+      data: {
+        companyId,
+        customer_id: customerId,
+        email: merged.email ?? null,
+        birthday: merged.birthday ?? null,
+        due_date: merged.dueDate ?? null,
+        extraJson: JSON.stringify(merged),
+      },
+    }),
+  );
 }
 
 export function fmtBirthdayBR(iso?: string | null): string {

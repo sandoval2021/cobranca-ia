@@ -79,7 +79,7 @@ function TemplatesAutomaticosPage() {
       <SectionHeader
         title="Templates automáticos"
         subtitle="Central de mensagens automáticas: cobrança, renovação, aplicativos e testes."
-        hint="Os textos ficam salvos neste navegador. As mensagens são sugeridas/enviadas pelos módulos que já existem (WhatsApp, E-mail e IA)."
+        hint="Os textos sincronizam entre todos os seus dispositivos. As mensagens são sugeridas/enviadas pelos módulos que já existem (WhatsApp, E-mail e IA)."
         action={
           <Button size="sm" variant="outline" onClick={() => { restoreAllDefaults(); refresh(); toast.success("Tudo restaurado ao padrão."); }}>
             <RotateCcw className="mr-1.5 h-4 w-4" /> Restaurar tudo

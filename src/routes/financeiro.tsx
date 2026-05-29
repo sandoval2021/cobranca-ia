@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Download, Upload, Copy, Target, Calculator,
-  TrendingUp, Receipt, Settings as SettingsIcon, Info, Save,
+  TrendingUp, Receipt, Settings as SettingsIcon, Save,
 } from "lucide-react";
 
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -122,12 +122,6 @@ function FinanceiroPage() {
       <PlanLimitNotice moduleKey="financeiro" action="usar" />
 
 
-      <Card className="p-3 border-dashed bg-muted/30 mb-4 flex items-start gap-2">
-        <Info className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-        <p className="text-xs text-muted-foreground">
-          Controle local: esses dados ficam neste navegador até existir persistência no servidor. Nenhum pagamento real é feito aqui.
-        </p>
-      </Card>
 
       <FinanceDashboard />
 
@@ -205,7 +199,7 @@ function FinanceiroPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir entrada?</AlertDialogTitle>
-            <AlertDialogDescription>Essa ação não pode ser desfeita. A entrada será removida deste navegador.</AlertDialogDescription>
+            <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
