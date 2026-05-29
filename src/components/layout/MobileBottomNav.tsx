@@ -87,7 +87,9 @@ export function MobileBottomNav() {
   const preloadMoreRoutes = useCallback(() => {
     if (preloadedMoreRef.current) return;
     preloadedMoreRef.current = true;
-    const routes = Array.from(new Set(groups.flatMap((group) => group.items.map((item) => item.to))));
+    const routes = Array.from(
+      new Set(groups.flatMap((group) => group.items.map((item) => item.to))),
+    );
     for (const route of routes) preloadRoute(route);
   }, [groups, preloadRoute]);
 
@@ -107,7 +109,9 @@ export function MobileBottomNav() {
         >
           {items.map((item) => {
             const active =
-              item.to === "/" ? pathname === "/" : pathname === item.to || pathname.startsWith(item.to + "/");
+              item.to === "/"
+                ? pathname === "/"
+                : pathname === item.to || pathname.startsWith(item.to + "/");
             const Icon = item.icon;
             return (
               <li key={item.to}>
@@ -177,7 +181,8 @@ export function MobileBottomNav() {
                           preload="intent"
                           onPointerDown={() => preloadRoute(item.to)}
                           onClick={(e) => {
-                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)
+                              return;
                             window.requestAnimationFrame(() => setOpenMore(false));
                           }}
                           className="flex h-full flex-col items-center gap-2 rounded-2xl border border-border bg-surface px-2 py-3 text-center transition-colors active:bg-surface-muted"

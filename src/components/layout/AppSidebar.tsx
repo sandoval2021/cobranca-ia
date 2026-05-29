@@ -82,13 +82,7 @@ const GROUPS: Group[] = [
     id: "ia",
     label: "IA",
     icon: Bot,
-    routes: [
-      "/ia",
-      "/ia-config",
-      "/treinar-ia",
-      "/base-conhecimento",
-      "/ajuda-ia",
-    ],
+    routes: ["/ia", "/ia-config", "/treinar-ia", "/base-conhecimento", "/ajuda-ia"],
   },
   {
     id: "relatorios",
@@ -127,7 +121,6 @@ const GROUPS: Group[] = [
     ],
   },
 ];
-
 
 const GROUPED = new Set(GROUPS.flatMap((g) => g.routes).concat(["/"]));
 
@@ -251,7 +244,6 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
         </div>
       </div>
 
-
       <nav className="flex-1 overflow-y-auto p-2">
         <ul className="space-y-1">
           {home && (
@@ -263,7 +255,7 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                   pathname === "/"
                     ? "bg-primary-soft font-medium text-primary"
-                    : "text-foreground/75 hover:bg-surface-muted hover:text-foreground"
+                    : "text-foreground/75 hover:bg-surface-muted hover:text-foreground",
                 )}
               >
                 <Home className={cn("h-4 w-4 shrink-0", pathname === "/" && "text-primary")} />
@@ -289,7 +281,7 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                     hasActive
                       ? "text-foreground"
-                      : "text-foreground/75 hover:bg-surface-muted hover:text-foreground"
+                      : "text-foreground/75 hover:bg-surface-muted hover:text-foreground",
                   )}
                 >
                   <GroupIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -300,7 +292,7 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
                   <ChevronRight
                     className={cn(
                       "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
-                      isOpen && "rotate-90"
+                      isOpen && "rotate-90",
                     )}
                   />
                 </button>
@@ -315,14 +307,16 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
                             to={item.to}
                             preload="intent"
                             onPointerDown={() => {
-                              void router.preloadRoute({ to: item.to as never }).catch(() => undefined);
+                              void router
+                                .preloadRoute({ to: item.to as never })
+                                .catch(() => undefined);
                             }}
                             onClick={onNavigate}
                             className={cn(
                               "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
                               active
                                 ? "bg-primary-soft font-medium text-primary"
-                                : "text-foreground/70 hover:bg-surface-muted hover:text-foreground"
+                                : "text-foreground/70 hover:bg-surface-muted hover:text-foreground",
                             )}
                           >
                             <Icon
