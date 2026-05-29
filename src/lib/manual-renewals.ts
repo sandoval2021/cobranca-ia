@@ -314,3 +314,155 @@ export function listScreenServers(screen: AppScreen): { id: string; name: string
     })
     .filter((s): s is { id: string; name: string; color: string } => !!s);
 }
+
+// ============================================================
+// Sincronização com o banco (manual_renewals)
+// ============================================================
+
+import {
+  bulkUpsertManualRenewalsDb,
+  type ManualRenewalDto,
+} from "@/lib/manual-renewals/manual-renewals.functions";
+
+export const MANUAL_RENEWALS_SYNC_EVENT = "cobranca_ia_manual_renewals:sync";
+
+type RenewalsSyncState = { loaded: boolean; lastError: string | null; pendingLocal: number };
+const renewalsSyncState: RenewalsSyncState = { loaded: false, lastError: null, pendingLocal: 0 };
+
+function emitRenewalsSync() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(MANUAL_RENEWALS_SYNC_EVENT, { detail: { ...renewalsSyncState } }),
+  );
+}
+
+export function getManualRenewalsSyncState(): RenewalsSyncState {
+  return { ...renewalsSyncState };
+}
+
+export function markManualRenewalsSyncError(message: string) {
+  renewalsSyncState.lastError = message;
+  emitRenewalsSync();
+}
+
+function isUuid(v: string | null | undefined): v is string {
+  return !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+}
+
+/**
+ * Hidrata o cache local com a lista vinda do banco para a empresa ativa.
+ * Se o banco está vazio mas há histórico local da empresa → preserva cache
+ * e marca pendência para o banner de migração.
+ */
+export function hydrateManualRenewalsFromDb(companyId: string, rows: ManualRenewalDto[]): void {
+  if (typeof window === "undefined") return;
+  if (!isUuid(companyId)) return;
+
+  const all = readAll();
+  let localCount = 0;
+  for (const list of Object.values(all)) {
+    for (const r of list) if ((r.company_id ?? null) === companyId) localCount++;
+  }
+
+  if (rows.length === 0 && localCount > 0) {
+    renewalsSyncState.loaded = true;
+    renewalsSyncState.lastError = null;
+    renewalsSyncState.pendingLocal = localCount;
+    emitRenewalsSync();
+    return;
+  }
+
+  // Mantém renovações de outras empresas; substitui só as desta empresa.
+  const next: Record<string, RenewalRecord[]> = {};
+  for (const [cid, list] of Object.entries(all)) {
+    const others = list.filter((r) => (r.company_id ?? null) !== companyId);
+    if (others.length > 0) next[cid] = others;
+  }
+  for (const r of rows) {
+    const payload = (() => {
+      try {
+        return JSON.parse(r.payload ?? "{}");
+      } catch {
+        return {};
+      }
+    })();
+    const rec: RenewalRecord = {
+      id: r.id,
+      company_id: r.company_id,
+      created_at: r.created_at,
+      customer_id: r.customer_id,
+      customer_name: (payload.customer_name as string) ?? "",
+      customer_whatsapp: (payload.customer_whatsapp as string | null) ?? null,
+      screens: Array.isArray(payload.screens) ? (payload.screens as RenewalScreenLog[]) : [],
+      amount:
+        r.amount_cents != null
+          ? (r.amount_cents / 100).toFixed(2)
+          : ((payload.amount as string) ?? undefined),
+      payment_method: (r.payment_method as PaymentMethod | null) ?? undefined,
+      app_amount: (payload.app_amount as string | undefined) ?? undefined,
+      notes: (r.note ?? (payload.notes as string | undefined)) ?? undefined,
+      next_due_date: r.new_due_date,
+      confirmation_message: (payload.confirmation_message as string) ?? "",
+    };
+    const arr = next[r.customer_id] ?? [];
+    arr.push(rec);
+    next[r.customer_id] = arr;
+  }
+  writeAll(next);
+  renewalsSyncState.loaded = true;
+  renewalsSyncState.lastError = null;
+  renewalsSyncState.pendingLocal = 0;
+  emitRenewalsSync();
+}
+
+/**
+ * Envia para o banco todas as renovações locais desta empresa que ainda não
+ * estão lá. Usa o próprio id local (uuid-like ou prefixado) — quando o id não
+ * é um UUID, o backend gera um novo.
+ */
+export async function uploadLocalManualRenewalsToDb(): Promise<{ inserted: number; updated: number }> {
+  const companyId = getActiveCompanyId();
+  if (!companyId) return { inserted: 0, updated: 0 };
+  const all = readAll();
+  const renewals: Array<{
+    id?: string;
+    customerId: string;
+    new_due_date: string;
+    old_due_date?: string | null;
+    amount_cents?: number | null;
+    payment_method?: string | null;
+    note?: string | null;
+    payload: Record<string, unknown>;
+  }> = [];
+  for (const list of Object.values(all)) {
+    for (const r of list) {
+      if ((r.company_id ?? null) !== companyId) continue;
+      if (!isUuid(r.customer_id)) continue;
+      const new_due_date = r.next_due_date || r.screens[0]?.new_due_date;
+      if (!new_due_date) continue;
+      const amountNum = r.amount ? Number(String(r.amount).replace(",", ".")) : NaN;
+      renewals.push({
+        id: isUuid(r.id) ? r.id : undefined,
+        customerId: r.customer_id,
+        new_due_date,
+        old_due_date: r.screens[0]?.old_due_date ?? null,
+        amount_cents: Number.isFinite(amountNum) ? Math.round(amountNum * 100) : null,
+        payment_method: r.payment_method ?? null,
+        note: r.notes ?? null,
+        payload: {
+          customer_name: r.customer_name,
+          customer_whatsapp: r.customer_whatsapp,
+          screens: r.screens,
+          app_amount: r.app_amount,
+          amount: r.amount,
+          confirmation_message: r.confirmation_message,
+          notes: r.notes,
+        },
+      });
+    }
+  }
+  if (renewals.length === 0) return { inserted: 0, updated: 0 };
+  const res = await bulkUpsertManualRenewalsDb({ data: { companyId, renewals } });
+  return res;
+}
+
