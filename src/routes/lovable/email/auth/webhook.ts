@@ -12,13 +12,14 @@ import { EmailChangeEmail } from '@/lib/email-templates/email-change'
 import { ReauthenticationEmail } from '@/lib/email-templates/reauthentication'
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Seu código de confirmação CobraEasy',
+  signup: '🔐 Seu código de confirmação CobraEasy',
   invite: 'Convite para o CobraEasy',
-  magiclink: 'Seu código de acesso CobraEasy',
-  recovery: 'Seu código para redefinir a senha CobraEasy',
+  magiclink: '🔐 Seu código de acesso CobraEasy',
+  recovery: '🔐 Código para redefinir sua senha CobraEasy',
   email_change: 'Confirme seu novo e-mail no CobraEasy',
-  reauthentication: 'Seu código de verificação CobraEasy',
+  reauthentication: '🔐 Código de verificação CobraEasy',
 }
+
 
 // Template mapping
 const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
