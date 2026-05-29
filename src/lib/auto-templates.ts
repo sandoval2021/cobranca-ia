@@ -360,13 +360,20 @@ function mirrorTemplate(t: AutoTemplate) {
   );
 }
 
-export function previewTemplate(body: string, scope: "cobranca" | "renovacao" | "app" | "teste"): string {
+export function previewTemplate(
+  body: string,
+  scope: "cobranca" | "renovacao" | "app" | "teste",
+  overrides?: Partial<Record<string, string>>,
+): string {
+  const trialEnd = new Date(Date.now() + 2 * 86400000).toLocaleDateString("pt-BR");
   const sample: Record<string, string> = {
     "{nome}": "Maria Silva",
     "{telefone}": "(11) 99999-0000",
     "{plano}": "Mensal 1 Tela",
+    "{servico}": "Plano Mensal 1 Tela",
     "{valor}": "49,90",
     "{vencimento}": new Date().toLocaleDateString("pt-BR"),
+    "{vencimento_teste}": trialEnd,
     "{dias}": "3",
     "{pix}": "pix@suaempresa.com",
     "{link_pagamento}": "https://pag.suaempresa.com/abcd",
@@ -376,6 +383,7 @@ export function previewTemplate(body: string, scope: "cobranca" | "renovacao" | 
     "{key}": "ABCD-1234-XYZW",
     "{app_vencimento}": new Date(Date.now() + 7 * 86400000).toLocaleDateString("pt-BR"),
     "{dias_restantes}": "2",
+    ...(overrides ?? {}),
   };
   let out = body;
   for (const [k, v] of Object.entries(sample)) out = out.split(k).join(v);
