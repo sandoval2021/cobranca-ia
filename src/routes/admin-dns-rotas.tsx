@@ -105,10 +105,16 @@ function AdminDnsRotasPage() {
     try {
       const raw = localStorage.getItem(CHECKLIST_KEY);
       setChecklist(raw ? JSON.parse(raw) : {});
-    } catch { setChecklist({}); }
-  };
-
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [pendingLocal, setPendingLocal] = useState<HydrateResult | null>(null);
+  const [recovering, setRecovering] = useState(false);
+
+  const runHydrate = async (cid: string) => {
+    try {
+      const res = await hydrateDnsFromDb(cid);
+      setPendingLocal(res.status === "pending_local" ? res : null);
+    } catch (e) { console.error("dns hydrate", e); }
+  };
 
   useEffect(() => {
     (async () => {
@@ -116,7 +122,7 @@ function AdminDnsRotasPage() {
       if (!cid) cid = (await ensureUserDefaultCompany()).companyId;
       if (!cid) return;
       setCompanyId(cid);
-      try { await hydrateDnsFromDb(cid); } catch (e) { console.error("dns hydrate", e); }
+      await runHydrate(cid);
       refresh();
     })();
     refresh();
@@ -124,6 +130,32 @@ function AdminDnsRotasPage() {
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(DNS_ROUTES_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  const handleRecoverLocal = async () => {
+    if (!companyId) { toast.error("Empresa não identificada."); return; }
+    setRecovering(true);
+    try {
+      const res = await pushLocalDnsToDb(companyId);
+      toast.success(`Enviado: ${res.domains} domínios, ${res.routes} rotas.${res.skippedRoutes ? ` Ignoradas: ${res.skippedRoutes}.` : ""}`);
+      if (res.errors.length) console.warn("recover errors", res.errors);
+      setPendingLocal(null);
+      refresh();
+    } catch (e: unknown) {
+      toast.error("Falha ao enviar: " + ((e as Error)?.message ?? String(e)));
+    } finally { setRecovering(false); }
+  };
+
+  const handleDiscardLocal = () => {
+    if (!confirm("Tem certeza? Os dados deste navegador serão apagados e não poderão ser recuperados.")) return;
+    discardLocalDnsCache();
+    setPendingLocal(null);
+    refresh();
+    toast.success("Cache local descartado.");
+  };
+
       window.removeEventListener("storage", refresh);
     };
   }, []);
