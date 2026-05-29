@@ -277,7 +277,11 @@ function AdminDnsRotasPage() {
                     <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
                   </Button>
                   {!d.archived && d.status !== "pausado" && (
-                    <Button size="sm" variant="ghost" onClick={() => { updateDomain(d.id, { status: "pausado" }); refresh(); }}>
+                    <Button size="sm" variant="ghost" onClick={async () => {
+                      const updated = updateDomain(d.id, { status: "pausado" });
+                      if (updated) await persistDomain(updated);
+                      refresh();
+                    }}>
                       Pausar
                     </Button>
                   )}
@@ -288,7 +292,13 @@ function AdminDnsRotasPage() {
                         kind: "delete",
                         title: "Arquivar domínio",
                         actionLabel: "Arquivar",
-                        onConfirm: () => { archiveDomain(d.id); refresh(); toast.success("Domínio arquivado."); },
+                        onConfirm: async () => {
+                          archiveDomain(d.id);
+                          const updated = updateDomain(d.id, {});
+                          if (updated) await persistDomain(updated);
+                          refresh();
+                          toast.success("Domínio arquivado.");
+                        },
                       })}
                     >
                       <Archive className="h-3.5 w-3.5 mr-1" /> Arquivar
