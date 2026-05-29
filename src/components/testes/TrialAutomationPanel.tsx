@@ -1,8 +1,10 @@
 // Painel de automação dos testes — UI direto na tela /testes.
 // Usa o storage existente de auto-templates (categoria "teste").
+// Cada template pode ser vinculado a um Serviço/Plano (scope = service.id)
+// para que {servico} e {valor} sejam substituídos na hora do envio.
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Zap, Clock, Pencil, ExternalLink, Eye, RotateCcw } from "lucide-react";
+import { Zap, Clock, Pencil, ExternalLink, Eye, RotateCcw, Package } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -12,6 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -20,6 +25,16 @@ import {
   listTemplates, upsertTemplate, restoreDefault, previewTemplate,
   VARIABLES_TESTE, type AutoTemplate,
 } from "@/lib/auto-templates";
+import { listActiveServices, type ServiceItem, SERVICES_EVENT } from "@/lib/services-catalog";
+
+function brl(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function serviceOverrides(s: ServiceItem | null): Record<string, string> {
+  if (!s) return {};
+  return { "{servico}": s.nome, "{valor}": brl(s.preco_cents) };
+}
 
 function formatOffset(hours?: number): string {
   if (hours == null) return "—";
@@ -30,6 +45,7 @@ function formatOffset(hours?: number): string {
 
 export function TrialAutomationPanel() {
   const [templates, setTemplates] = useState<AutoTemplate[]>([]);
+  const [services, setServices] = useState<ServiceItem[]>([]);
   const [editing, setEditing] = useState<AutoTemplate | null>(null);
   const [draftBody, setDraftBody] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -40,12 +56,25 @@ export function TrialAutomationPanel() {
     setTemplates(all);
   };
 
+  const refreshServices = () => setServices(listActiveServices());
+
   useEffect(() => {
     refresh();
+    refreshServices();
     const onChange = () => refresh();
+    const onSvc = () => refreshServices();
     window.addEventListener("cobraeasy:auto-templates-changed", onChange);
-    return () => window.removeEventListener("cobraeasy:auto-templates-changed", onChange);
+    window.addEventListener(SERVICES_EVENT, onSvc);
+    return () => {
+      window.removeEventListener("cobraeasy:auto-templates-changed", onChange);
+      window.removeEventListener(SERVICES_EVENT, onSvc);
+    };
   }, []);
+
+  const editingService = useMemo(
+    () => services.find((s) => s.id === editing?.scope) ?? null,
+    [services, editing],
+  );
 
   const activeCount = useMemo(() => templates.filter((t) => t.active).length, [templates]);
   const allOn = templates.length > 0 && activeCount === templates.length;
@@ -183,6 +212,30 @@ export function TrialAutomationPanel() {
                 />
               </div>
 
+              {/* Vincular serviço/plano usado em {servico} e {valor} */}
+              <div className="mt-2 flex items-center gap-1 text-[11px]">
+                <Package className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <Select
+                  value={t.scope ?? "__none"}
+                  onValueChange={(v) => {
+                    upsertTemplate({ ...t, scope: v === "__none" ? undefined : v });
+                    refresh();
+                  }}
+                >
+                  <SelectTrigger className="h-7 flex-1 min-w-0 px-1.5 text-[11px]">
+                    <SelectValue placeholder="Vincular serviço" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">Sem serviço vinculado</SelectItem>
+                    {services.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nome} — R$ {brl(s.preco_cents)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <Button
                 size="sm"
                 variant="outline"
@@ -282,7 +335,7 @@ export function TrialAutomationPanel() {
             <DialogDescription>Exemplo com dados fictícios.</DialogDescription>
           </DialogHeader>
           <pre className="max-h-[60vh] overflow-auto whitespace-pre-wrap rounded bg-muted/40 p-3 text-sm">
-            {previewTemplate(draftBody, "teste")}
+            {previewTemplate(draftBody, "teste", serviceOverrides(editingService))}
           </pre>
         </DialogContent>
       </Dialog>
