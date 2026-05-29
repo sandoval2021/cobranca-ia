@@ -29,7 +29,9 @@ import {
   RULE_TYPE_LABEL, RULE_PRIORITY_LABEL, RULE_TONE_LABEL,
   type ManualDispatchRule, type RuleType, type RulePriority, type RuleTone,
   type DispatchLimits,
+  getManualDispatchRulesSyncState, uploadLocalManualDispatchRulesToDb, MANUAL_RULES_SYNC_EVENT,
 } from "@/lib/manual-dispatch-rules";
+import { CloudUploadLocalDataBanner } from "@/components/cloud/CloudUploadLocalDataBanner";
 
 export const Route = createFileRoute("/regras-disparo")({
   component: RegrasDisparoPage,
@@ -279,6 +281,17 @@ function RegrasDisparoPage() {
         title="Regras de disparo"
         subtitle="Configure quando o sistema deve sugerir mensagens manuais de cobrança."
         hint="As regras ficam salvas apenas neste navegador."
+      />
+      <CloudUploadLocalDataBanner
+        storageScope="manual-rules"
+        modules={[
+          {
+            key: "manual-rules",
+            getPendingCount: () => getManualDispatchRulesSyncState().pendingLocal,
+            syncEvent: MANUAL_RULES_SYNC_EVENT,
+            upload: () => uploadLocalManualDispatchRulesToDb(),
+          },
+        ]}
       />
 
       <Card className="mb-3 border-amber-300/40 bg-amber-50/40 p-3 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-200">

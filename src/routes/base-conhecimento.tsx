@@ -26,7 +26,9 @@ import {
   KBCategory, KB_CATEGORY_LABEL, KBEntry,
   readAll, writeAll, upsert, remove, newId, buildDefaults,
   simulate, buildBackup, parseBackup, restoreDefaults, mergeEntries,
+  getKnowledgeBaseSyncState, uploadLocalKnowledgeBaseToDb, KB_SYNC_EVENT,
 } from "@/lib/knowledge-base";
+import { CloudUploadLocalDataBanner } from "@/components/cloud/CloudUploadLocalDataBanner";
 import { APP_OPTIONS, APP_CATALOG } from "@/lib/app-screens";
 
 export const Route = createFileRoute("/base-conhecimento")({
@@ -122,6 +124,17 @@ function BaseConhecimentoPage() {
       <SectionHeader
         title="Base da IA"
         subtitle="Cadastre respostas e regras para treinar o atendimento automático no futuro."
+      />
+      <CloudUploadLocalDataBanner
+        storageScope="kb"
+        modules={[
+          {
+            key: "kb",
+            getPendingCount: () => getKnowledgeBaseSyncState().pendingLocal,
+            syncEvent: KB_SYNC_EVENT,
+            upload: () => uploadLocalKnowledgeBaseToDb(),
+          },
+        ]}
       />
 
       <div className="rounded-md border border-amber-300/40 bg-amber-50/40 p-2 text-[11px] text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
