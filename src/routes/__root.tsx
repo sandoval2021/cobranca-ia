@@ -316,7 +316,12 @@ function RootComponent() {
       const msg =
         errorMessage(reason) ||
         (typeof reason === "object" && reason ? JSON.stringify(reason) : "");
-      return /Unauthorized:\s*Invalid token|invalid (JWT|token)|bad_jwt/i.test(msg);
+      // MUITO restrito: só dispara em erro REAL de token (JWT expirado / refresh inválido).
+      // "Unauthorized" / "Invalid token" genéricos podem ocorrer em 401 transitório
+      // durante a hidratação da sessão — não justifica deslogar o usuário.
+      return /bad_jwt|JWT expired|invalid_grant|refresh_token_not_found|invalid refresh token/i.test(
+        msg,
+      );
     }
 
     let recovering = false;
@@ -328,12 +333,9 @@ function RootComponent() {
       } catch {
         // ignore
       }
-      try {
-        localStorage.clear();
-        sessionStorage.clear();
-      } catch {
-        // ignore
-      }
+      // NUNCA usar localStorage.clear()/sessionStorage.clear() — apaga cache local
+      // (empresas, templates, clientes) e quebra a UI em todas as telas até o usuário
+      // reabrir e refazer o cache. signOut() já remove a sessão Supabase do storage.
       window.location.replace("/login?auth=expired");
     }
 
