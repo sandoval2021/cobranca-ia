@@ -1458,6 +1458,30 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_settings: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          settings: Json
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          settings?: Json
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          settings?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       imported_customer_due_dates: {
         Row: {
           company_id: string
