@@ -156,6 +156,9 @@ export function saveRevendaSettings(settings: RevendaSettings): RevendaSettings 
   } catch {
     // silencioso
   }
+  mirror((companyId) =>
+    saveRevendaSettingsDb({ data: { companyId, dataJson: JSON.stringify(toSave) } }),
+  );
   return toSave;
 }
 
@@ -167,7 +170,11 @@ export function resetRevendaSettings(): RevendaSettings {
   } catch {
     // silencioso
   }
+  mirror((companyId) =>
+    saveRevendaSettingsDb({ data: { companyId, dataJson: JSON.stringify(DEFAULT_REVENDA_SETTINGS) } }),
+  );
   return DEFAULT_REVENDA_SETTINGS;
+}
 }
 
 export function exportRevendaSettings(): string {

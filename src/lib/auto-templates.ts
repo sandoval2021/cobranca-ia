@@ -313,11 +313,13 @@ export function upsertTemplate(t: AutoTemplate) {
   const idx = all.findIndex((x) => x.id === t.id);
   if (idx >= 0) all[idx] = t; else all.push(t);
   writeRaw(all);
+  mirrorTemplate(t);
 }
 
 export function removeTemplate(id: string) {
   const all = listTemplates().filter((x) => x.id !== id);
   writeRaw(all);
+  mirror((companyId) => deleteAutoTemplateDb({ data: { companyId, template_id: id } }));
 }
 
 export function restoreDefault(key: string) {
@@ -328,10 +330,35 @@ export function restoreDefault(key: string) {
   if (idx >= 0) all[idx] = { ...def };
   else all.push({ ...def });
   writeRaw(all);
+  mirrorTemplate({ ...def });
 }
 
 export function restoreAllDefaults() {
   writeRaw([...DEFAULTS]);
+  mirror((companyId) => bulkUpsertAutoTemplatesDb({
+    data: { companyId, items: DEFAULTS.map(templateToDbItem) },
+  }));
+}
+
+function templateToDbItem(t: AutoTemplate) {
+  return {
+    template_id: t.id,
+    categoria: t.category,
+    ativo: t.active,
+    body: t.body ?? null,
+    channelsJson: JSON.stringify(t.channels),
+    timeWindowJson: JSON.stringify({ sendStart: t.sendStart, sendEnd: t.sendEnd }),
+    extraJson: JSON.stringify({
+      key: t.key, name: t.name, description: t.description,
+      offsetHours: t.offsetHours, scope: t.scope, isDefault: t.isDefault,
+    }),
+  };
+}
+
+function mirrorTemplate(t: AutoTemplate) {
+  mirror((companyId) =>
+    upsertAutoTemplateDb({ data: { companyId, ...templateToDbItem(t) } }),
+  );
 }
 
 export function previewTemplate(body: string, scope: "cobranca" | "renovacao" | "app" | "teste"): string {
