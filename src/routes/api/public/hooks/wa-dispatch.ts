@@ -98,13 +98,27 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
               .eq("id", c.id);
             continue;
           }
+          // Rate-limit por instância: in-run + janela de 60s no banco.
+          const perMinuteCap = inst.per_minute_limit ?? 10;
           const sentThisRun = perInstanceSent[inst.id] ?? 0;
-          if (sentThisRun >= (inst.per_minute_limit ?? 15)) {
+          let overLimit = sentThisRun >= perMinuteCap;
+          if (!overLimit) {
+            const since = new Date(Date.now() - 60_000).toISOString();
+            const { count: recentCount } = await supabaseAdmin
+              .from("whatsapp_message_queue")
+              .select("id", { count: "exact", head: true })
+              .eq("instance_id", inst.id)
+              .eq("status", "sent")
+              .gte("sent_at", since);
+            if ((recentCount ?? 0) >= perMinuteCap) overLimit = true;
+          }
+          if (overLimit) {
             await supabaseAdmin
               .from("whatsapp_message_queue")
               .update({
                 status: "queued",
                 next_attempt_at: new Date(Date.now() + 60_000).toISOString(),
+                last_error: "rate_limited",
               })
               .eq("id", c.id);
             continue;
