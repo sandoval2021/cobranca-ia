@@ -105,7 +105,7 @@ export const ownerMoreNav: NavItem[] = [
   { to: "/importar-clientes", label: "Importar clientes", icon: Upload },
   { to: "/campanhas-manuais", label: "Mensagens", icon: MessageCircle },
   { to: "/financeiro", label: "Financeiro", icon: Wallet },
-  { to: "/catalogo-servidores", label: "Servidores", icon: Server },
+  { to: "/catalogo-servidores", label: "Meus servidores", icon: Server },
   { to: "/agenda-disparo", label: "Disparo", icon: Send },
   { to: "/testes", label: "Indicações", icon: Gift },
   { to: "/meus-dados", label: "Minha conta", icon: UserCog },
