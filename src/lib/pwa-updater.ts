@@ -36,73 +36,10 @@ function isInIframe(): boolean {
   }
 }
 
-function captureCurrentAssetSignature(): string {
-  // Combina os src/href de scripts e stylesheets carregados na página atual.
-  // Como Vite emite filenames com hash de conteúdo, qualquer rebuild muda isto.
-  const scripts = Array.from(document.querySelectorAll("script[src]"))
-    .map((s) => (s as HTMLScriptElement).getAttribute("src") ?? "")
-    .filter((s) => s.startsWith("/"));
-  const links = Array.from(
-    document.querySelectorAll('link[rel="stylesheet"][href], link[rel="modulepreload"][href]'),
-  )
-    .map((l) => (l as HTMLLinkElement).getAttribute("href") ?? "")
-    .filter((s) => s.startsWith("/"));
-  return [...scripts, ...links].sort().join("|");
-}
-
-function extractAssetSignatureFromHtml(html: string): string {
-  const scripts = Array.from(html.matchAll(/<script[^>]+src=["']([^"']+)["']/g))
-    .map((m) => m[1])
-    .filter((s) => s.startsWith("/"));
-  const links = Array.from(
-    html.matchAll(
-      /<link[^>]+(?:rel=["'](?:stylesheet|modulepreload)["'])[^>]+href=["']([^"']+)["']/g,
-    ),
-  )
-    .map((m) => m[1])
-    .filter((s) => s.startsWith("/"));
-  // também tenta href antes de rel:
-  const links2 = Array.from(
-    html.matchAll(
-      /<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:stylesheet|modulepreload)["']/g,
-    ),
-  )
-    .map((m) => m[1])
-    .filter((s) => s.startsWith("/"));
-  return [...scripts, ...links, ...links2].sort().join("|");
-}
-
 function notifyUpdateAvailable() {
   if (updateNotified) return;
   updateNotified = true;
   window.dispatchEvent(new CustomEvent(UPDATE_EVENT));
-}
-
-async function checkServerVersion() {
-  if (updateNotified) return;
-  try {
-    // Busca a MESMA rota atual (não "/") — em SSR, cada rota tem seus
-    // próprios modulepreload/scripts com hash. Comparar com "/" sempre
-    // dá sigs diferentes e o banner fica preso em loop.
-    const path = window.location.pathname + window.location.search;
-    const sep = path.includes("?") ? "&" : "?";
-    const res = await fetch(path + sep + "__v=" + Date.now(), {
-      cache: "no-store",
-      credentials: "same-origin",
-      headers: { Accept: "text/html" },
-    });
-    if (!res.ok) return;
-    const ct = res.headers.get("content-type") ?? "";
-    if (!ct.includes("text/html")) return;
-    const html = await res.text();
-    const serverSig = extractAssetSignatureFromHtml(html);
-    if (!serverSig || !currentAssetSignature) return;
-    if (serverSig !== currentAssetSignature) {
-      notifyUpdateAvailable();
-    }
-  } catch {
-    // offline / ignore
-  }
 }
 
 async function registerServiceWorker() {
