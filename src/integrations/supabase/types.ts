@@ -664,6 +664,7 @@ export type Database = {
           customer_id: string
           device_key: string | null
           expires_at: string | null
+          extras: Json
           id: string
           iptv_password_enc: string | null
           iptv_username: string | null
@@ -680,6 +681,7 @@ export type Database = {
           customer_id: string
           device_key?: string | null
           expires_at?: string | null
+          extras?: Json
           id?: string
           iptv_password_enc?: string | null
           iptv_username?: string | null
@@ -696,6 +698,7 @@ export type Database = {
           customer_id?: string
           device_key?: string | null
           expires_at?: string | null
+          extras?: Json
           id?: string
           iptv_password_enc?: string | null
           iptv_username?: string | null
