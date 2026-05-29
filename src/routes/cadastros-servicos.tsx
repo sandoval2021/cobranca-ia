@@ -339,7 +339,7 @@ function CadastrosServicosPage() {
         <div className="mt-8">
           <SectionHeader
             title={`Mensagens do ${selectedPlan.nome}`}
-            subtitle="Toque em um prazo para escrever ou alterar o texto que será enviado."
+            subtitle="Configure quando cada mensagem será enviada."
             action={
               <Button
                 size="sm"
@@ -360,68 +360,122 @@ function CadastrosServicosPage() {
             }
           />
 
-          <div className="space-y-2">
-            {TIMING_SLOTS.map((days) => {
-              const msg = selectedPlan.messages.find((m) => m.offset_days === days);
-              const configured = !!(msg && msg.template.trim());
-              const tone = toneOf(days);
-              const count = msg ? eligibilityCounts.get(msg.id)?.eligible_count ?? 0 : 0;
-              return (
-                <div
-                  key={days}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-xl border-2 bg-card p-3 text-left shadow-sm transition-all",
-                    "hover:border-primary/60 hover:shadow-md",
-                    "border-border",
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                  >
-                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", toneDotClass(tone))} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold leading-tight">{slotLabel(days)}</p>
-                      <p className={cn(
-                        "mt-0.5 truncate text-xs",
-                        configured ? "text-muted-foreground" : "text-destructive/80 font-medium",
-                      )}>
-                        {configured ? msg!.template : "Não configurado"}
-                      </p>
+          {/* Resumo */}
+          {(() => {
+            const configuredCount = TIMING_SLOTS.filter((d) => {
+              const m = selectedPlan.messages.find((x) => x.offset_days === d);
+              return !!(m && m.template.trim());
+            }).length;
+            const notConfigured = TIMING_SLOTS.length - configuredCount;
+            const totalRecipients = selectedPlan.messages.reduce(
+              (acc, m) => acc + (eligibilityCounts.get(m.id)?.eligible_count ?? 0),
+              0,
+            );
+            const summary = [
+              { label: "Configuradas", value: configuredCount, cls: "text-success" },
+              { label: "Não configuradas", value: notConfigured, cls: "text-destructive" },
+              { label: "Clientes que recebem", value: totalRecipients, cls: "text-primary" },
+              { label: "Prazos disponíveis", value: TIMING_SLOTS.length, cls: "text-muted-foreground" },
+            ];
+            return (
+              <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {summary.map((s) => (
+                  <div key={s.label} className="rounded-lg border border-border bg-card px-3 py-2">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{s.label}</p>
+                    <p className={cn("text-lg font-bold leading-tight", s.cls)}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* Seções */}
+          {(() => {
+            const sections: { title: string; slots: number[] }[] = [
+              { title: "Cobrança antes do vencimento", slots: TIMING_SLOTS.filter((d) => d < 0) },
+              { title: "No vencimento", slots: TIMING_SLOTS.filter((d) => d === 0) },
+              { title: "Depois do vencimento", slots: TIMING_SLOTS.filter((d) => d > 0) },
+            ];
+            return (
+              <div className="space-y-5">
+                {sections.map((sec) => (
+                  <div key={sec.title}>
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {sec.title}
+                    </h4>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {sec.slots.map((days) => {
+                        const msg = selectedPlan.messages.find((m) => m.offset_days === days);
+                        const configured = !!(msg && msg.template.trim());
+                        const tone = toneOf(days);
+                        const count = msg ? eligibilityCounts.get(msg.id)?.eligible_count ?? 0 : 0;
+                        return (
+                          <div
+                            key={days}
+                            className={cn(
+                              "group relative flex h-full flex-col rounded-xl border bg-card p-3 shadow-sm transition-all",
+                              "hover:border-primary/60 hover:shadow-md",
+                              configured ? "border-border" : "border-dashed border-border",
+                            )}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
+                              className="flex min-w-0 flex-1 flex-col text-left"
+                            >
+                              <div className="mb-1.5 flex items-center gap-2">
+                                <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", toneDotClass(tone))} />
+                                <p className="truncate text-sm font-semibold leading-tight">{slotLabel(days)}</p>
+                              </div>
+                              <p
+                                className={cn(
+                                  "line-clamp-2 min-h-[2.25rem] text-xs leading-snug",
+                                  configured ? "text-muted-foreground" : "text-destructive/80 font-medium",
+                                )}
+                              >
+                                {configured ? msg!.template : "Não configurado"}
+                              </p>
+                            </button>
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              {configured ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setRecipientsDlg({
+                                      open: true,
+                                      planMessageIds: [msg!.id],
+                                      title: slotLabel(days),
+                                      subtitle: `Plano ${selectedPlan.nome}`,
+                                    })
+                                  }
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
+                                  title="Ver clientes que vão receber"
+                                >
+                                  <Users className="h-3 w-3" />
+                                  {count}
+                                </button>
+                              ) : (
+                                <span className="text-[10px] font-medium uppercase tracking-wide text-destructive/70">
+                                  Pendente
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
+                                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] hover:bg-muted"
+                              >
+                                <Pencil className="h-3 w-3" /> Editar
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </button>
-                  {configured && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRecipientsDlg({
-                          open: true,
-                          planMessageIds: [msg!.id],
-                          title: slotLabel(days),
-                          subtitle: `Plano ${selectedPlan.nome}`,
-                        })
-                      }
-                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
-                      title="Ver clientes que vão receber"
-                    >
-                      <Users className="h-3 w-3" />
-                      {count} {count === 1 ? "cliente" : "clientes"}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] hover:bg-muted"
-                  >
-                    <Pencil className="h-3 w-3" />
-                    <span className="hidden sm:inline">Editar</span>
-                  </button>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
-                </div>
-              );
-            })}
-          </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
