@@ -45,7 +45,72 @@ const DEFAULT_RULES: ReferralRules = {
 };
 
 function uid() {
-  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  if (typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
+    (Number(c) ^ (Math.random() * 16) & (15 >> (Number(c) / 4))).toString(16),
+  );
+}
+
+const UUID_RE_LOCAL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Mirror fire-and-forget: cache local é fonte instantânea; banco recebe em background.
+function mirrorReferralToDb(r: Referral) {
+  if (typeof window === "undefined") return;
+  const cid = r.company_id;
+  if (!cid || !UUID_RE_LOCAL.test(cid)) return;
+  queueMicrotask(() => {
+    import("@/lib/referrals/referrals.functions").then(({ upsertReferralDb }) => {
+      const payload: any = {
+        companyId: cid,
+        referrer_customer_id: r.indicador_cliente_id ?? null,
+        referrer_name: r.indicador_nome || null,
+        referrer_phone: r.indicador_whatsapp || null,
+        referred_name: r.indicado_nome || null,
+        referred_phone: r.indicado_whatsapp || null,
+        status: r.status,
+        reward_status: r.status === "Bonificação aplicada" ? "applied" : "none",
+        closed_at: r.data_fechamento ?? null,
+        reward_applied_at: r.bonificacao_aplicada_em ?? null,
+        note: r.observacao ?? null,
+        payload: {},
+      };
+      if (UUID_RE_LOCAL.test(r.id)) payload.id = r.id;
+      return upsertReferralDb({ data: payload });
+    }).catch(() => { /* hook periódico retenta */ });
+  });
+}
+
+function mirrorReferralsBulkToDb(rs: Referral[]) {
+  if (typeof window === "undefined" || rs.length === 0) return;
+  const cid = rs[0].company_id;
+  if (!cid || !UUID_RE_LOCAL.test(cid)) return;
+  queueMicrotask(() => {
+    import("@/lib/referrals/referrals.functions").then(({ bulkUpsertReferralsDb }) => {
+      const payload = rs
+        .filter((r) => r.company_id === cid)
+        .map((r) => {
+          const o: any = {
+            referrer_customer_id: r.indicador_cliente_id ?? null,
+            referrer_name: r.indicador_nome || null,
+            referrer_phone: r.indicador_whatsapp || null,
+            referred_name: r.indicado_nome || null,
+            referred_phone: r.indicado_whatsapp || null,
+            status: r.status,
+            reward_status: r.status === "Bonificação aplicada" ? "applied" : "none",
+            closed_at: r.data_fechamento ?? null,
+            reward_applied_at: r.bonificacao_aplicada_em ?? null,
+            note: r.observacao ?? null,
+            payload: {},
+          };
+          if (UUID_RE_LOCAL.test(r.id)) o.id = r.id;
+          return o;
+        });
+      if (payload.length === 0) return;
+      return bulkUpsertReferralsDb({ data: { companyId: cid, referrals: payload } });
+    }).catch(() => { /* hook periódico retenta */ });
+  });
 }
 
 function read<T>(key: string, fallback: T): T {
