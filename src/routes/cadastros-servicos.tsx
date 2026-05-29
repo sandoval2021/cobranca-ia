@@ -340,6 +340,24 @@ function CadastrosServicosPage() {
           <SectionHeader
             title={`Mensagens do ${selectedPlan.nome}`}
             subtitle="Toque em um prazo para escrever ou alterar o texto que será enviado."
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => {
+                  const ids = selectedPlan.messages.map((m) => m.id);
+                  setRecipientsDlg({
+                    open: true,
+                    planMessageIds: ids,
+                    title: `Quem vai receber — ${selectedPlan.nome}`,
+                    subtitle: "Clientes com vencimento dentro da janela de cada mensagem.",
+                  });
+                }}
+              >
+                <Users className="h-4 w-4" /> Ver quem vai receber
+              </Button>
+            }
           />
 
           <div className="space-y-2">
@@ -347,33 +365,60 @@ function CadastrosServicosPage() {
               const msg = selectedPlan.messages.find((m) => m.offset_days === days);
               const configured = !!(msg && msg.template.trim());
               const tone = toneOf(days);
+              const count = msg ? eligibilityCounts.get(msg.id)?.eligible_count ?? 0 : 0;
               return (
-                <button
+                <div
                   key={days}
-                  type="button"
-                  onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl border-2 bg-card p-3 text-left shadow-sm transition-all",
-                    "hover:border-primary/60 hover:shadow-md active:scale-[0.99]",
+                    "hover:border-primary/60 hover:shadow-md",
                     "border-border",
                   )}
                 >
-                  <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", toneDotClass(tone))} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold leading-tight">{slotLabel(days)}</p>
-                    <p className={cn(
-                      "mt-0.5 truncate text-xs",
-                      configured ? "text-muted-foreground" : "text-destructive/80 font-medium",
-                    )}>
-                      {configured ? msg!.template : "Não configurado"}
-                    </p>
-                  </div>
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", toneDotClass(tone))} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold leading-tight">{slotLabel(days)}</p>
+                      <p className={cn(
+                        "mt-0.5 truncate text-xs",
+                        configured ? "text-muted-foreground" : "text-destructive/80 font-medium",
+                      )}>
+                        {configured ? msg!.template : "Não configurado"}
+                      </p>
+                    </div>
+                  </button>
+                  {configured && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRecipientsDlg({
+                          open: true,
+                          planMessageIds: [msg!.id],
+                          title: slotLabel(days),
+                          subtitle: `Plano ${selectedPlan.nome}`,
+                        })
+                      }
+                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
+                      title="Ver clientes que vão receber"
+                    >
+                      <Users className="h-3 w-3" />
+                      {count} {count === 1 ? "cliente" : "clientes"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] hover:bg-muted"
+                  >
                     <Pencil className="h-3 w-3" />
-                    <span className="hidden sm:inline">Editar texto</span>
-                  </span>
+                    <span className="hidden sm:inline">Editar</span>
+                  </button>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
-                </button>
+                </div>
               );
             })}
           </div>
