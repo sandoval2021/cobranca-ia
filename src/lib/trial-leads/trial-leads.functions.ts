@@ -25,7 +25,8 @@ const LeadInput = z.object({
   horas_teste: z.number().int().nullable().optional(),
   interesse: z.string().max(20).nullable().optional(),
   observacoes: z.string().max(4000).nullable().optional(),
-  extra: z.record(z.string(), z.unknown()).nullable().optional(),
+  /** JSON-stringified extras (cross-boundary). */
+  extraJson: z.string().max(20000).nullable().optional(),
 });
 
 const FollowupInput = z.object({
@@ -57,7 +58,8 @@ export type TrialLeadDto = {
   horas_teste: number | null;
   interesse: string | null;
   observacoes: string | null;
-  extra: Record<string, unknown> | null;
+  /** JSON serializado para passar pelo limite do TanStack. */
+  extraJson: string;
   created_at: string;
   updated_at: string;
 };
@@ -72,6 +74,50 @@ export type TrialFollowupDto = {
   atualizado_em: string;
 };
 
+function rowToLead(r: Record<string, unknown>): TrialLeadDto {
+  return {
+    id: r.id as string,
+    company_id: r.company_id as string,
+    nome: (r.nome as string | null) ?? null,
+    whatsapp: r.whatsapp as string,
+    origem: (r.origem as string | null) ?? null,
+    status: (r.status as string | null) ?? null,
+    data_contato: (r.data_contato as string | null) ?? null,
+    data_inicio: (r.data_inicio as string | null) ?? null,
+    data_fim: (r.data_fim as string | null) ?? null,
+    app: (r.app as string | null) ?? null,
+    servidor: (r.servidor as string | null) ?? null,
+    servidor_adicional: (r.servidor_adicional as string | null) ?? null,
+    usuario: (r.usuario as string | null) ?? null,
+    senha: (r.senha as string | null) ?? null,
+    valor_cents: (r.valor_cents as number | null) ?? null,
+    horas_teste: (r.horas_teste as number | null) ?? null,
+    interesse: (r.interesse as string | null) ?? null,
+    observacoes: (r.observacoes as string | null) ?? null,
+    extraJson: JSON.stringify(r.extra ?? {}),
+    created_at: r.created_at as string,
+    updated_at: r.updated_at as string,
+  };
+}
+
+function leadInputToRow(data: z.infer<typeof LeadInput>) {
+  const { companyId, id, extraJson, ...rest } = data;
+  let extra: unknown = {};
+  if (extraJson) {
+    try {
+      extra = JSON.parse(extraJson);
+    } catch {
+      extra = {};
+    }
+  }
+  return {
+    ...rest,
+    extra: extra as never,
+    company_id: companyId,
+    ...(id ? { id } : {}),
+  };
+}
+
 export const listTrialLeadsDb = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { companyId: string }) =>
@@ -84,26 +130,21 @@ export const listTrialLeadsDb = createServerFn({ method: "GET" })
       .eq("company_id", data.companyId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return (rows ?? []) as TrialLeadDto[];
+    return (rows ?? []).map((r) => rowToLead(r as Record<string, unknown>));
   });
 
 export const upsertTrialLeadDb = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => LeadInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { companyId, id, ...rest } = data;
-    const payload = {
-      ...rest,
-      company_id: companyId,
-      ...(id ? { id } : {}),
-    };
+    const payload = leadInputToRow(data);
     const { data: row, error } = await context.supabase
       .from("trial_leads")
       .upsert(payload, { onConflict: "id" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
-    return row as TrialLeadDto;
+    return rowToLead(row as Record<string, unknown>);
   });
 
 export const bulkUpsertTrialLeadsDb = createServerFn({ method: "POST" })
@@ -118,7 +159,9 @@ export const bulkUpsertTrialLeadsDb = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     if (data.leads.length === 0) return { upserted: 0 };
-    const payload = data.leads.map((l) => ({ ...l, company_id: data.companyId }));
+    const payload = data.leads.map((l) =>
+      leadInputToRow({ ...l, companyId: data.companyId }),
+    );
     const { error, count } = await context.supabase
       .from("trial_leads")
       .upsert(payload, { onConflict: "id", count: "exact" });
