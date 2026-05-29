@@ -480,9 +480,14 @@ function QuickAction({
   icon: React.ComponentType<{ className?: string }>;
   tone?: Tone;
 }) {
+  const [path, qs] = to.split("?");
+  const search = qs
+    ? Object.fromEntries(new URLSearchParams(qs).entries())
+    : undefined;
   return (
     <Link
-      to={to}
+      to={path}
+      search={search as never}
       className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-3 text-center shadow-card transition-all hover:-translate-y-0.5 hover:shadow-pop"
     >
       <div
