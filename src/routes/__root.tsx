@@ -19,6 +19,7 @@ import { TrialGuard } from "@/components/auth/TrialGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { initPwaUpdater } from "@/lib/pwa-updater";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
+import { useServersSync } from "@/lib/servers/useServersSync";
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
