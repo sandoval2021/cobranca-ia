@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  Plus, Trash2, Pencil, Sparkles, Save, MessageCircle, Check, ChevronRight,
+  Plus, Trash2, Pencil, Sparkles, Save, MessageCircle, Check,
   CloudUpload, Loader2, Users,
 } from "lucide-react";
 import { EligibleRecipientsDialog } from "@/components/services/EligibleRecipientsDialog";
