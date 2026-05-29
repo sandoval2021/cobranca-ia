@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { ownerNav, adminNav, filterNavByRole, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import {
@@ -132,6 +132,7 @@ const GROUPS: Group[] = [
 const GROUPED = new Set(GROUPS.flatMap((g) => g.routes).concat(["/"]));
 
 export function AppSidebar({ variant = "owner", onNavigate }: Props) {
+  const router = useRouter();
   const baseItems = variant === "admin" ? adminNav : ownerNav;
   const { role, user, isOwner } = useLocalAuth();
   const [, setTick] = useState(0);
@@ -202,6 +203,11 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
   }, [pathname, visibleGroups.length]);
 
   const toggle = (id: string) => setOpenGroups((s) => ({ ...s, [id]: !s[id] }));
+  const preloadItems = (items: NavItem[]) => {
+    for (const item of items) {
+      void router.preloadRoute({ to: item.to as never }).catch(() => undefined);
+    }
+  };
 
   return (
     <aside className="flex h-full w-[var(--sidebar-width)] flex-col border-r border-border bg-surface">
@@ -274,6 +280,9 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
               <li key={group.id}>
                 <button
                   type="button"
+                  onPointerDown={() => preloadItems(group.items)}
+                  onMouseEnter={() => preloadItems(group.items)}
+                  onFocus={() => preloadItems(group.items)}
                   onClick={() => toggle(group.id)}
                   aria-expanded={isOpen}
                   className={cn(
@@ -304,6 +313,10 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
                         <li key={item.to}>
                           <Link
                             to={item.to}
+                            preload="intent"
+                            onPointerDown={() => {
+                              void router.preloadRoute({ to: item.to as never }).catch(() => undefined);
+                            }}
                             onClick={onNavigate}
                             className={cn(
                               "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
