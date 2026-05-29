@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus, Search, Copy, Check, X, Archive, MessageCircle, ExternalLink,
-  Download, Upload, Pencil, Info, Eye, EyeOff,
+  Download, Upload, Pencil, Eye, EyeOff,
 } from "lucide-react";
 import { listActiveServers } from "@/lib/server-catalog";
 
