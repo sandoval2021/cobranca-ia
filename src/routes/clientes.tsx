@@ -2755,7 +2755,7 @@ function NewCustomerSheet({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const servers = useMemo(() => listActiveServices(), [open]);
+  const servers = useMemo(() => listActiveServers(), [open]);
   const plans = useMemo<ServiceItem[]>(() => (open ? listActiveServices() : []), [open]);
 
   const [name, setName] = useState("");
