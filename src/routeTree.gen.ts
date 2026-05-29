@@ -77,7 +77,6 @@ import { Route as ApiPublicMpSaasWebhookRouteImport } from './routes/api/public/
 import { Route as ApiPublicMpOauthCallbackRouteImport } from './routes/api/public/mp/oauth-callback'
 import { Route as ApiPublicMpMarketplaceWebhookRouteImport } from './routes/api/public/mp/marketplace-webhook'
 import { Route as ApiPublicHooksWaDispatchRouteImport } from './routes/api/public/hooks/wa-dispatch'
-import { Route as ApiPublicHooksSyncCronSecretRouteImport } from './routes/api/public/hooks/sync-cron-secret'
 import { Route as ApiPublicHooksServicesDispatchRouteImport } from './routes/api/public/hooks/services-dispatch'
 import { Route as ApiPublicWebhooksEvolutionInstanceRouteImport } from './routes/api/public/webhooks/evolution.$instance'
 
@@ -427,12 +426,6 @@ const ApiPublicHooksWaDispatchRoute =
     path: '/api/public/hooks/wa-dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksSyncCronSecretRoute =
-  ApiPublicHooksSyncCronSecretRouteImport.update({
-    id: '/api/public/hooks/sync-cron-secret',
-    path: '/api/public/hooks/sync-cron-secret',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicHooksServicesDispatchRoute =
   ApiPublicHooksServicesDispatchRouteImport.update({
     id: '/api/public/hooks/services-dispatch',
@@ -507,7 +500,6 @@ export interface FileRoutesByFullPath {
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
-  '/api/public/hooks/sync-cron-secret': typeof ApiPublicHooksSyncCronSecretRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -580,7 +572,6 @@ export interface FileRoutesByTo {
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
-  '/api/public/hooks/sync-cron-secret': typeof ApiPublicHooksSyncCronSecretRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -654,7 +645,6 @@ export interface FileRoutesById {
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
-  '/api/public/hooks/sync-cron-secret': typeof ApiPublicHooksSyncCronSecretRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
@@ -729,7 +719,6 @@ export interface FileRouteTypes {
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
     | '/api/public/hooks/services-dispatch'
-    | '/api/public/hooks/sync-cron-secret'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -802,7 +791,6 @@ export interface FileRouteTypes {
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
     | '/api/public/hooks/services-dispatch'
-    | '/api/public/hooks/sync-cron-secret'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -875,7 +863,6 @@ export interface FileRouteTypes {
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
     | '/api/public/hooks/services-dispatch'
-    | '/api/public/hooks/sync-cron-secret'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
@@ -949,7 +936,6 @@ export interface RootRouteChildren {
   PagamentosMercadoPagoRoute: typeof PagamentosMercadoPagoRoute
   PagarRefRoute: typeof PagarRefRoute
   ApiPublicHooksServicesDispatchRoute: typeof ApiPublicHooksServicesDispatchRoute
-  ApiPublicHooksSyncCronSecretRoute: typeof ApiPublicHooksSyncCronSecretRoute
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicMpMarketplaceWebhookRoute: typeof ApiPublicMpMarketplaceWebhookRoute
   ApiPublicMpOauthCallbackRoute: typeof ApiPublicMpOauthCallbackRoute
@@ -1439,13 +1425,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksWaDispatchRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/sync-cron-secret': {
-      id: '/api/public/hooks/sync-cron-secret'
-      path: '/api/public/hooks/sync-cron-secret'
-      fullPath: '/api/public/hooks/sync-cron-secret'
-      preLoaderRoute: typeof ApiPublicHooksSyncCronSecretRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/hooks/services-dispatch': {
       id: '/api/public/hooks/services-dispatch'
       path: '/api/public/hooks/services-dispatch'
@@ -1539,7 +1518,6 @@ const rootRouteChildren: RootRouteChildren = {
   PagamentosMercadoPagoRoute: PagamentosMercadoPagoRoute,
   PagarRefRoute: PagarRefRoute,
   ApiPublicHooksServicesDispatchRoute: ApiPublicHooksServicesDispatchRoute,
-  ApiPublicHooksSyncCronSecretRoute: ApiPublicHooksSyncCronSecretRoute,
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicMpMarketplaceWebhookRoute: ApiPublicMpMarketplaceWebhookRoute,
   ApiPublicMpOauthCallbackRoute: ApiPublicMpOauthCallbackRoute,
@@ -1553,3 +1531,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

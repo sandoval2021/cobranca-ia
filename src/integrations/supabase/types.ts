@@ -2646,7 +2646,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      _probe_cron_hook: { Args: { p_url: string }; Returns: number }
       activate_saas_subscription: {
         Args: { _company_id: string; _period_days?: number; _plan_id: string }
         Returns: undefined
