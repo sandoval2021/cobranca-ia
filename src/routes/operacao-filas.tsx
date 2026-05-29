@@ -99,7 +99,7 @@ function OperacaoFilasPage() {
 
   const companyQ = useQuery({
     queryKey: ["operacao-filas-company"],
-    queryFn: () => ensureCompanyFn({ data: {} }),
+    queryFn: () => ensureCompanyFn(),
   });
   const companyId = companyQ.data?.company_id as string | undefined;
 
