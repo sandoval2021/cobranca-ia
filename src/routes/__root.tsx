@@ -15,6 +15,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/use-auth";
 import { LoginPage, SessionLoading } from "@/components/auth/LoginPage";
+import { TrialGuard } from "@/components/auth/TrialGuard";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -50,7 +51,11 @@ function AuthGateApp() {
     }
     return <SessionLoading />;
   }
-  return <AppShell />;
+  return (
+    <TrialGuard>
+      <AppShell />
+    </TrialGuard>
+  );
 }
 
 
