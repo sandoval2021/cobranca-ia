@@ -80,7 +80,8 @@ import {
   paidAppAlerts, paidAlertClass, PAID_ALERT_LABEL, appDueDays, isPaidApp,
   APP_WEBSITE, ACCESS_LABEL, mask, upsertScreen, newId, archiveScreen,
 } from "@/lib/app-screens";
-import { listActiveServices, SERVICES_EVENT, type ServiceItem } from "@/lib/services-catalog";
+import { listActiveServices, SERVICES_EVENT, formatBRL, type ServiceItem } from "@/lib/services-catalog";
+import { setCustomerPlan } from "@/lib/customer-plans";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
