@@ -156,6 +156,25 @@ export function appDueDays(s: AppScreen): number | null {
 }
 
 const STORAGE_KEY = "cobranca_ia_app_screens_v1";
+export const SCREENS_SYNC_EVENT = "cobranca_ia_app_screens:sync";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+type SyncState = { loaded: boolean; lastError: string | null; pendingLocal: number };
+const syncState: SyncState = { loaded: false, lastError: null, pendingLocal: 0 };
+
+function genUuid(): string {
+  if (
+    typeof globalThis.crypto !== "undefined" &&
+    typeof globalThis.crypto.randomUUID === "function"
+  ) {
+    return globalThis.crypto.randomUUID();
+  }
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
+    (Number(c) ^ (Math.random() * 16) & (15 >> (Number(c) / 4))).toString(16),
+  );
+}
 
 function readAll(): Record<string, AppScreen[]> {
   if (typeof window === "undefined") return {};
@@ -182,6 +201,10 @@ function writeAll(data: Record<string, AppScreen[]>): void {
 // ----- escopo local por empresa -----
 import { getCurrentRole } from "./local-auth";
 import { getActiveCompanyId } from "./company-scope";
+
+function isValidCompanyUuid(id: string | null): id is string {
+  return !!id && UUID_RE.test(id);
+}
 
 function filterScreensByScope(list: AppScreen[]): AppScreen[] {
   const role = getCurrentRole();
@@ -214,6 +237,78 @@ export function listAllScreensRaw(): Record<string, AppScreen[]> {
   return readAll();
 }
 
+// ----- mapeamento AppScreen <-> DB -----
+
+const DB_COLUMN_FIELDS = new Set([
+  "id", "customer_id", "company_id",
+  "username", "password", "mac", "app_key",
+  "app", "due_date", "notes", "primary_server_id",
+  "created_at", "updated_at",
+]);
+
+function appScreenToDbInput(s: AppScreen, companyId: string) {
+  // Extras = todos os campos do AppScreen que não têm coluna dedicada no banco.
+  const extras: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(s)) {
+    if (!DB_COLUMN_FIELDS.has(k)) extras[k] = v;
+  }
+  return {
+    id: UUID_RE.test(s.id) ? s.id : undefined,
+    companyId,
+    customerId: s.customer_id,
+    server_id: s.primary_server_id && UUID_RE.test(s.primary_server_id) ? s.primary_server_id : null,
+    iptv_username: s.username ?? null,
+    iptv_password: s.password ?? null,
+    mac: s.mac ?? null,
+    device_key: s.app_key ?? null,
+    app_used: s.app ?? null,
+    expires_at: s.due_date ? new Date(s.due_date + "T00:00:00").toISOString() : null,
+    plan_days: null,
+    notes: s.notes ?? null,
+    extras,
+  };
+}
+
+function dtoToAppScreen(d: ScreenDto): AppScreen {
+  let extras: Record<string, unknown> = {};
+  try { extras = JSON.parse(d.extras) || {}; } catch {}
+  const base: AppScreen = {
+    id: d.id,
+    customer_id: d.customer_id,
+    company_id: d.company_id,
+    name: (extras.name as string) ?? "",
+    app: (extras.app as AppKey) ?? (d.app_used as AppKey) ?? "outro",
+    access_type: (extras.access_type as AccessType) ?? "nao_informado",
+    status: (extras.status as ScreenStatus) ?? "ativa",
+    username: d.iptv_username ?? undefined,
+    password: d.iptv_password ?? undefined,
+    mac: d.mac ?? undefined,
+    app_key: d.device_key ?? undefined,
+    primary_server_id: d.server_id ?? undefined,
+    due_date: d.expires_at ? new Date(d.expires_at).toISOString().slice(0, 10) : undefined,
+    notes: d.notes ?? undefined,
+    created_at: d.created_at,
+    updated_at: d.updated_at,
+  };
+  // Aplicar extras adicionais (tier, port, portal_url, plan_*, app_due_date, route, server_ids, etc.)
+  return { ...base, ...extras, id: d.id, customer_id: d.customer_id, company_id: d.company_id } as AppScreen;
+}
+
+// ----- persistência em background -----
+
+function persistInBackground(fn: () => Promise<unknown>, failureMessage: string) {
+  void (async () => {
+    try {
+      await fn();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "erro";
+      console.error("[app-screens]", failureMessage, err);
+      toast.error(`${failureMessage}. ${msg}`);
+      markScreensSyncError(msg);
+    }
+  })();
+}
+
 export function upsertScreen(s: AppScreen): void {
   const all = readAll();
   const list = all[s.customer_id] ?? [];
@@ -225,38 +320,97 @@ export function upsertScreen(s: AppScreen): void {
   } else if (idx >= 0 && !s.company_id && list[idx].company_id) {
     next = { ...s, company_id: list[idx].company_id };
   }
-  if (idx >= 0) list[idx] = next;
-  else list.push(next);
+  // Normaliza ID para UUID (IDs legados scr_xxx não funcionam no banco).
+  if (!UUID_RE.test(next.id)) {
+    next = { ...next, id: genUuid() };
+    // Remove versão antiga com ID legado.
+    if (idx >= 0) list.splice(idx, 1);
+    list.push(next);
+  } else if (idx >= 0) {
+    list[idx] = next;
+  } else {
+    list.push(next);
+  }
   all[s.customer_id] = list;
   writeAll(all);
+
+  const cid = next.company_id ?? getActiveCompanyId();
+  if (isValidCompanyUuid(cid) && UUID_RE.test(next.customer_id)) {
+    persistInBackground(
+      () => upsertScreenDb({ data: appScreenToDbInput(next, cid) }),
+      "Não foi possível salvar a tela na sua conta",
+    );
+  }
 }
 
 export function archiveScreen(customerId: string, id: string): void {
   const all = readAll();
   const list = all[customerId] ?? [];
+  const found = list.find((s) => s.id === id);
   all[customerId] = list.map((s) =>
     s.id === id
       ? { ...s, status: "arquivada", updated_at: new Date().toISOString() }
       : s,
   );
   writeAll(all);
+  const cid = found?.company_id ?? getActiveCompanyId();
+  if (found && isValidCompanyUuid(cid) && UUID_RE.test(id)) {
+    persistInBackground(
+      () => upsertScreenDb({ data: appScreenToDbInput({ ...found, status: "arquivada" }, cid) }),
+      "Não foi possível arquivar a tela na sua conta",
+    );
+  }
 }
 
 export function reactivateScreen(customerId: string, id: string): void {
   const all = readAll();
   const list = all[customerId] ?? [];
+  const found = list.find((s) => s.id === id);
   all[customerId] = list.map((s) =>
     s.id === id
       ? { ...s, status: "ativa", updated_at: new Date().toISOString() }
       : s,
   );
   writeAll(all);
+  const cid = found?.company_id ?? getActiveCompanyId();
+  if (found && isValidCompanyUuid(cid) && UUID_RE.test(id)) {
+    persistInBackground(
+      () => upsertScreenDb({ data: appScreenToDbInput({ ...found, status: "ativa" }, cid) }),
+      "Não foi possível reativar a tela na sua conta",
+    );
+  }
+}
+
+export function deleteScreen(customerId: string, id: string): void {
+  const all = readAll();
+  const list = all[customerId] ?? [];
+  all[customerId] = list.filter((s) => s.id !== id);
+  writeAll(all);
+  const cid = getActiveCompanyId();
+  if (isValidCompanyUuid(cid) && UUID_RE.test(id)) {
+    persistInBackground(
+      () => deleteScreenDb({ data: { id, companyId: cid } }),
+      "Não foi possível excluir a tela na sua conta",
+    );
+  }
 }
 
 export function clearCustomerScreens(customerId: string): void {
   const all = readAll();
+  const removed = all[customerId] ?? [];
   delete all[customerId];
   writeAll(all);
+  const cid = getActiveCompanyId();
+  if (isValidCompanyUuid(cid)) {
+    for (const s of removed) {
+      if (UUID_RE.test(s.id)) {
+        persistInBackground(
+          () => deleteScreenDb({ data: { id: s.id, companyId: cid } }),
+          "Não foi possível excluir tela",
+        );
+      }
+    }
+  }
 }
 
 export function replaceAll(data: Record<string, AppScreen[]>): void {
@@ -275,8 +429,104 @@ export function mergeAll(incoming: Record<string, AppScreen[]>): void {
 }
 
 export function newId(): string {
-  return `scr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return genUuid();
 }
+
+// ----- sincronização com o banco -----
+
+/**
+ * Hidrata o cache local com a lista vinda do banco.
+ * Se o banco está vazio e há cache local com dados, NÃO sobrescreve —
+ * sinaliza migração pendente para a UI oferecer envio para a nuvem.
+ */
+export function hydrateScreensFromDb(companyId: string, rows: ScreenDto[]): void {
+  if (typeof window === "undefined") return;
+  if (!isValidCompanyUuid(companyId)) return;
+
+  const all = readAll();
+  // Conta quantas telas locais pertencem a esta empresa.
+  let localCount = 0;
+  for (const list of Object.values(all)) {
+    for (const s of list) if (s.company_id === companyId) localCount++;
+  }
+
+  if (rows.length === 0 && localCount > 0) {
+    // Banco vazio + cache com dados → preserva cache, sinaliza pendência.
+    syncState.loaded = true;
+    syncState.lastError = null;
+    syncState.pendingLocal = localCount;
+    window.dispatchEvent(
+      new CustomEvent(SCREENS_SYNC_EVENT, {
+        detail: { loaded: true, pendingLocal: localCount, error: null },
+      }),
+    );
+    return;
+  }
+
+  // Banco tem dados → substitui (apenas para esta empresa) pelas linhas do banco.
+  // Mantém telas de outras empresas intactas.
+  const next: Record<string, AppScreen[]> = {};
+  for (const [cid, list] of Object.entries(all)) {
+    const others = list.filter((s) => s.company_id !== companyId);
+    if (others.length > 0) next[cid] = others;
+  }
+  for (const r of rows) {
+    const screen = dtoToAppScreen(r);
+    const arr = next[r.customer_id] ?? [];
+    arr.push(screen);
+    next[r.customer_id] = arr;
+  }
+  writeAll(next);
+  syncState.loaded = true;
+  syncState.lastError = null;
+  syncState.pendingLocal = 0;
+  window.dispatchEvent(
+    new CustomEvent(SCREENS_SYNC_EVENT, {
+      detail: { loaded: true, pendingLocal: 0, error: null },
+    }),
+  );
+}
+
+export function markScreensSyncError(message: string): void {
+  syncState.lastError = message;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(SCREENS_SYNC_EVENT, {
+        detail: { loaded: syncState.loaded, pendingLocal: syncState.pendingLocal, error: message },
+      }),
+    );
+  }
+}
+
+export function getScreensSyncState(): SyncState {
+  return { ...syncState };
+}
+
+/**
+ * Envia para o banco as telas que estão apenas no cache local da empresa ativa.
+ * Usado pelo banner "Enviar para a nuvem" quando a sync detecta banco vazio.
+ */
+export async function uploadLocalScreensToDb(): Promise<{ inserted: number; updated: number }> {
+  const cid = getActiveCompanyId();
+  if (!isValidCompanyUuid(cid)) throw new Error("Empresa inválida");
+  const all = readAll();
+  const payload: ReturnType<typeof appScreenToDbInput>[] = [];
+  for (const list of Object.values(all)) {
+    for (const s of list) {
+      if (s.company_id !== cid) continue;
+      if (!UUID_RE.test(s.customer_id)) continue;
+      // Garante ID UUID antes de enviar.
+      const normalized = UUID_RE.test(s.id) ? s : { ...s, id: genUuid() };
+      payload.push(appScreenToDbInput(normalized, cid));
+    }
+  }
+  if (payload.length === 0) return { inserted: 0, updated: 0 };
+  // bulkUpsertScreensDb espera screens sem companyId interno.
+  const screens = payload.map(({ companyId, ...rest }) => rest);
+  return bulkUpsertScreensDb({ data: { companyId: cid, screens } });
+}
+
+
 
 // ----- vencimento helpers -----
 
