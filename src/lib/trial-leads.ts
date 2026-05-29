@@ -117,6 +117,30 @@ function write<T>(key: string, items: T[]) {
 
 import { getCurrentRole } from "./local-auth";
 import { getActiveCompanyId } from "./company-scope";
+import { mirror } from "./sync/mirror";
+import { upsertTrialLeadDb, deleteTrialLeadDb, bulkUpsertTrialFollowupsDb } from "./trial-leads/trial-leads.functions";
+
+function leadToDb(l: TrialLead) {
+  return {
+    id: l.id, nome: l.nome ?? null, whatsapp: l.whatsapp,
+    origem: l.origem ?? null, status: l.status ?? null,
+    data_contato: l.data_contato ?? null, data_inicio: l.data_inicio ?? null, data_fim: l.data_fim ?? null,
+    app: l.app ?? null, servidor: l.servidor ?? null, servidor_adicional: l.servidor_adicional ?? null,
+    usuario: l.usuario ?? null, senha: l.senha ?? null,
+    valor_cents: l.valor_cents ?? null, horas_teste: l.horas_teste ?? null,
+    interesse: l.interesse ?? null, observacoes: l.observacao ?? null,
+    extraJson: JSON.stringify({
+      indicado_por_cliente_id: l.indicado_por_cliente_id,
+      indicado_por_nome: l.indicado_por_nome,
+      indicado_por_whatsapp: l.indicado_por_whatsapp,
+      ultimo_contato: l.ultimo_contato,
+      proxima_acao: l.proxima_acao,
+      arquivado: l.arquivado,
+      criado_em: l.criado_em,
+      atualizado_em: l.atualizado_em,
+    }),
+  };
+}
 
 function scopedFilter<T extends { company_id?: string | null }>(list: T[]): T[] {
   const role = getCurrentRole();
