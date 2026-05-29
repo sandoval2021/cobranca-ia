@@ -28,7 +28,13 @@ import {
   addServiceMessage, updateServiceMessage, removeServiceMessage,
   renderTemplate, DEFAULT_COBRANCA,
   SERVICES_EVENT, type ServiceItem, type ServiceMessage,
+  uploadLocalServicesToDb, hydrateServicesFromDb, getServicesSyncState,
+  SERVICES_SYNC_EVENT,
 } from "@/lib/services-catalog";
+import { uploadLocalCustomerPlansToDb } from "@/lib/customer-plans";
+import { listServicePlansDb, type ServicePlanDto } from "@/lib/services/services.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { getActiveCompanyId } from "@/lib/company-scope";
 import { ensureCanEditService } from "@/lib/plan-gate";
 
 export const Route = createFileRoute("/cadastros-servicos")({
