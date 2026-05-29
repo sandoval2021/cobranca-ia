@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { initPwaUpdater } from "@/lib/pwa-updater";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 import { useServersSync } from "@/lib/servers/useServersSync";
+import { useScreensSync } from "@/lib/screens/useScreensSync";
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
