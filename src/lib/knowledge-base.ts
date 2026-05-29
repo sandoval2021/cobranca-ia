@@ -390,14 +390,20 @@ function isValid(x: unknown): x is KBEntry {
 }
 
 export function restoreDefaults(): void {
-  writeAll(buildDefaults());
+  const defaults = buildDefaults();
+  writeAll(defaults);
+  // Espelha a restauração padrão no banco em lote (best-effort).
+  mirrorBulkKbToDb(defaults);
 }
 
 export function mergeEntries(incoming: KBEntry[]): void {
   const cur = readAll();
   const byId = new Map(cur.map((e) => [e.id, e]));
   for (const e of incoming) byId.set(e.id, e);
-  writeAll(Array.from(byId.values()));
+  const merged = Array.from(byId.values());
+  writeAll(merged);
+  // Espelha apenas o incoming (delta) no banco em lote — não reenvia tudo.
+  mirrorBulkKbToDb(incoming);
 }
 
 // ============================================================
