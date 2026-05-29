@@ -15,6 +15,7 @@ import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useLocalAuth } from "@/lib/use-local-auth";
 import {
   HELP_ARTICLES,
   HELP_CATEGORY_LABEL,
@@ -39,9 +40,13 @@ export const Route = createFileRoute("/ajuda")({
   }),
 });
 
+// Categorias que só fazem sentido para super_admin — escondidas do Dono.
+const ADMIN_ONLY_CATEGORIES: HelpCategory[] = ["dns_rotas", "backend_futuro"];
+
 type ChipKey = "todos" | HelpCategory;
 
-const CHIPS: { key: ChipKey; label: string }[] = [
+
+const ALL_CHIPS: { key: ChipKey; label: string }[] = [
   { key: "todos", label: "Todos" },
   ...(Object.keys(HELP_CATEGORY_LABEL) as HelpCategory[]).map((k) => ({
     key: k as ChipKey,
