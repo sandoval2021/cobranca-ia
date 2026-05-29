@@ -527,6 +527,7 @@ function SectionTitle({
 
 function Dashboard() {
   const { counters } = useDashboardData();
+  const { isSuperAdmin } = useLocalAuth();
   const [protectedMode, setProtectedMode] = useState(false);
   const [setup, setSetup] = useState(() => getSetupProgress());
   const [setupRec, setSetupRec] = useState(() => getNextRecommendation());
@@ -548,10 +549,7 @@ function Dashboard() {
     };
   }, []);
 
-  // Projeção simples = receita + (custos do mês → indica volume restante)
   const projecaoMes = counters.receitaMes + counters.custosMes;
-
-
 
   const aiCompanyId = (() => {
     const cid = getActiveCompanyId();
@@ -574,13 +572,62 @@ function Dashboard() {
 
       <HeaderChips />
 
-
-      {/* SEÇÃO 1 — Resumo rápido */}
+      {/* 1 — O que precisa de você hoje */}
       <section className="mb-6">
         <SectionTitle
-          title="Resumo rápido"
-          subtitle="Sua base em um relance"
+          title="Atenção hoje"
+          subtitle="Comece por aqui"
         />
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          <MetricCard
+            label="Vencidos"
+            value={counters.clientesVencidos}
+            icon={AlertTriangle}
+            tone="danger"
+            help="Clientes com lista vencida — precisam de cobrança."
+            to="/operacao-dia"
+          />
+          <MetricCard
+            label="Vence hoje"
+            value={counters.clientesHoje}
+            icon={Clock}
+            tone="warning"
+            help="Clientes com vencimento exatamente hoje."
+            to="/operacao-dia"
+          />
+          <MetricCard
+            label="Vence amanhã"
+            value={counters.clientesAmanha}
+            icon={CalendarClock}
+            tone="info"
+            help="Clientes que vencem amanhã — bom momento para lembrar."
+            to="/operacao-dia"
+          />
+          <MetricCard
+            label="Pendências"
+            value={counters.pendenciasCriticas}
+            icon={AlertCircle}
+            tone="danger"
+            help="Itens críticos: apps vencidos, telas em atraso e similares."
+            to="/pendencias"
+          />
+        </div>
+      </section>
+
+      {/* 2 — Atalhos principais */}
+      <section className="mb-6">
+        <SectionTitle title="O que você quer fazer?" />
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <QuickAction to="/clientes" label="Novo cliente" icon={UserPlus} tone="primary" />
+          <QuickAction to="/operacao-dia" label="Cobrar" icon={Receipt} tone="success" />
+          <QuickAction to="/gestao-servicos" label="Renovar" icon={RefreshCcw} tone="info" />
+          <QuickAction to="/campanhas-manuais" label="Enviar mensagem" icon={MessageCircle} tone="warning" />
+        </div>
+      </section>
+
+      {/* 3 — Resumo da base */}
+      <section className="mb-6">
+        <SectionTitle title="Sua base" subtitle="Visão geral dos clientes" />
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <MetricCard
             label="Clientes"
@@ -599,12 +646,12 @@ function Dashboard() {
             to="/clientes"
           />
           <MetricCard
-            label="Vencidos"
-            value={counters.clientesVencidos}
-            icon={AlertTriangle}
-            tone="danger"
-            help="Clientes com lista vencida — precisam de cobrança."
-            to="/operacao-dia"
+            label="Próximos 7 dias"
+            value={counters.proximos7}
+            icon={CalendarClock}
+            tone="info"
+            help="Clientes vencendo nos próximos 7 dias."
+            to="/clientes"
           />
           <MetricCard
             label="Testes"
@@ -617,15 +664,14 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* SEÇÃO 2 — Financeiro */}
+      {/* 4 — Financeiro */}
       <section className="mb-6">
         <SectionTitle
           title="Financeiro do mês"
-          subtitle="Acompanhe receita, custos e projeção"
           action={
             <Link to="/financeiro">
               <Button size="sm" variant="outline">
-                Detalhes
+                Ver tudo
                 <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             </Link>
@@ -636,7 +682,7 @@ function Dashboard() {
             label="Recebido"
             value={formatBRL(counters.receitaMes)}
             tone="success"
-            help="Total recebido neste mês (lançamentos do financeiro)."
+            help="Total recebido neste mês."
             to="/financeiro"
           />
           <MoneyCard
@@ -644,7 +690,7 @@ function Dashboard() {
             value={formatBRL(counters.lucroLiquido)}
             tone="info"
             hint={`Margem ${counters.margemPct.toFixed(1)}%`}
-            help="Receita do mês menos custos e reservas."
+            help="Receita menos custos do mês."
             to="/financeiro"
           />
           <MoneyCard
@@ -652,130 +698,42 @@ function Dashboard() {
             value={String(counters.clientesVencidos)}
             tone="danger"
             hint="cliente(s)"
-            help="Clientes com lista vencida aguardando cobrança."
+            help="Clientes com lista vencida."
             to="/operacao-dia"
           />
           <MoneyCard
             label="Projeção"
             value={formatBRL(projecaoMes)}
             tone="primary"
-            help="Estimativa do mês com base em recebido + custos lançados."
+            help="Estimativa do mês."
             to="/financeiro"
           />
         </div>
       </section>
 
-      {/* SEÇÃO 3 — Ação rápida */}
-      <section className="mb-6">
-        <SectionTitle
-          title="Ação rápida"
-          subtitle="Atalhos para o que você mais usa"
-        />
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-          <QuickAction to="/clientes" label="Cliente" icon={UserPlus} tone="primary" />
-          <QuickAction to="/testes" label="Teste" icon={Beaker} tone="warning" />
-          <QuickAction to="/operacao-dia" label="Cobrança" icon={Receipt} tone="success" />
-          <QuickAction to="/gestao-servicos" label="Renovar" icon={RefreshCcw} tone="info" />
-          <QuickAction to="/campanhas-manuais" label="Mensagem" icon={MessageCircle} tone="danger" />
-        </div>
-      </section>
-
-      {/* SEÇÃO 4 — Atenção hoje */}
-      <section className="mb-6">
-        <SectionTitle
-          title="Atenção hoje"
-          subtitle="Quem precisa do seu contato agora"
-        />
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          <MetricCard
-            label="Vence hoje"
-            value={counters.clientesHoje}
-            icon={Clock}
-            tone="warning"
-            help="Clientes com vencimento exatamente hoje."
-            to="/operacao-dia"
+      {/* 5 — IA */}
+      {aiCompanyId && (
+        <section className="mb-6">
+          <SectionTitle
+            title="IA Cobrança"
+            subtitle="Seu atendente automático"
+            action={
+              <Link to="/treinar-ia">
+                <Button size="sm" variant="outline">
+                  <Bot className="mr-1 h-3.5 w-3.5" />
+                  Treinar IA
+                </Button>
+              </Link>
+            }
           />
-          <MetricCard
-            label="Vence amanhã"
-            value={counters.clientesAmanha}
-            icon={CalendarClock}
-            tone="info"
-            help="Clientes que vencem amanhã — bom momento para lembrar."
-            to="/operacao-dia"
-          />
-          <MetricCard
-            label="Próximos 7 dias"
-            value={counters.proximos7}
-            icon={Users}
-            tone="primary"
-            help="Clientes vencendo nos próximos 7 dias."
-            to="/clientes"
-          />
-          <MetricCard
-            label="Pendências"
-            value={counters.pendenciasCriticas}
-            icon={AlertCircle}
-            tone="danger"
-            help="Itens críticos: apps vencidos, telas em atraso e similares."
-            to="/pendencias"
-          />
-        </div>
-      </section>
-
-      {/* SEÇÃO 5 — IA */}
-      <section className="mb-6">
-        <SectionTitle
-          title="IA Cobrança"
-          subtitle="Seu atendente automático"
-          action={
-            <Link to="/ia-config">
-              <Button size="sm" variant="outline">
-                <Bot className="mr-1 h-3.5 w-3.5" />
-                Treinar IA
-              </Button>
-            </Link>
-          }
-        />
-        {aiCompanyId ? (
           <div className="rounded-2xl border border-border bg-card shadow-card">
             <AiQuotaCard companyId={aiCompanyId} />
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            <MetricCard
-              label="Conversas IA"
-              value="—"
-              icon={Sparkles}
-              tone="primary"
-              help="Quantas conversas a IA já atendeu este mês."
-            />
-            <MetricCard
-              label="Precisa de humano"
-              value="—"
-              icon={AlertCircle}
-              tone="warning"
-              help="Conversas escaladas para você responder."
-            />
-            <MetricCard
-              label="Uso do plano"
-              value="—"
-              icon={TrendingUp}
-              tone="info"
-              help="Porcentagem do limite mensal de respostas da IA."
-            />
-            <MetricCard
-              label="Economia"
-              value="—"
-              icon={HandCoins}
-              tone="success"
-              help="Estimativa do que você poupou em atendimento humano."
-            />
-          </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      {/* Indicações + Configuração inicial */}
-      <section className="mb-6 grid gap-3 lg:grid-cols-2">
+      {/* 6 — Indicações + (apenas super admin) Configuração inicial */}
+      <section className="mb-2 grid gap-3 lg:grid-cols-2">
         <Link
           to="/indicacoes"
           className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-card transition-shadow hover:shadow-pop"
@@ -793,51 +751,40 @@ function Dashboard() {
           <ArrowRight className="h-4 w-4 text-muted-foreground" />
         </Link>
 
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Configuração inicial
-              </p>
-              <p className="mt-0.5 text-sm font-bold text-foreground">
-                {setup.percent}% concluída
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {setup.completed}/{setup.total} passos
-              </p>
+        {isSuperAdmin && (
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Configuração inicial
+                </p>
+                <p className="mt-0.5 text-sm font-bold text-foreground">
+                  {setup.percent}% concluída
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {setup.completed}/{setup.total} passos
+                </p>
+              </div>
+              <Link to="/configuracao-inicial" className="shrink-0">
+                <Button size="sm" variant="outline">
+                  Continuar
+                </Button>
+              </Link>
             </div>
-            <Link to="/configuracao-inicial" className="shrink-0">
-              <Button size="sm" variant="outline">
-                Continuar
-              </Button>
-            </Link>
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${setup.percent}%` }}
+              />
+            </div>
+            {setupRec && (
+              <p className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                <Info className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+                <span>{setupRec.message}</span>
+              </p>
+            )}
           </div>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full bg-primary transition-all"
-              style={{ width: `${setup.percent}%` }}
-            />
-          </div>
-          {setupRec && (
-            <p className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground">
-              <Info className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
-              <span>{setupRec.message}</span>
-            </p>
-          )}
-        </div>
-      </section>
-
-      {/* Atalhos finais */}
-      <section className="mb-2">
-        <SectionTitle title="Mais ações" />
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-          <QuickAction to="/cadastros-servicos" label="Planos e preços" icon={Wallet} tone="info" />
-          <QuickAction to="/financeiro" label="Financeiro" icon={TrendingUp} tone="success" />
-          <QuickAction to="/whatsapp" label="WhatsApp" icon={MessageCircle} tone="success" />
-          <QuickAction to="/importar-clientes" label="Importar" icon={Plus} tone="primary" />
-          <QuickAction to="/meus-dados" label="Meus dados" icon={Users} tone="neutral" />
-          <QuickAction to="/ajuda" label="Ajuda" icon={HelpCircle} tone="info" />
-        </div>
+        )}
       </section>
     </PageContainer>
   );
