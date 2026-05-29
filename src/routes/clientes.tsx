@@ -469,6 +469,20 @@ function ClientesPage() {
   const [deleting, setDeleting] = useState(false);
   const [reloadBump, setReloadBump] = useState(0);
 
+  // Abrir cadastro automaticamente quando vier de /?action=create
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    const action = sp.get("action");
+    if (action === "create" || action === "new") {
+      setOpenNew(true);
+      sp.delete("action");
+      const qs = sp.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    }
+  }, []);
+
+
   useEffect(() => {
     if (authLoading) return;
     if (!supabaseConfigured || !supabase) {
