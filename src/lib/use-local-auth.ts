@@ -18,8 +18,11 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
  *   1) RPC public.current_user_is_super_admin()      — backend, autoritativa
  *   2) RPC public.is_super_admin(uuid) com nomes de  — fallback direto
  *      argumento testados: uid, user_id, p_user_id, _user_id
- *   3) Allowlist VITE_SUPER_ADMIN_EMAILS             — fallback de UX
- *   4) "owner"                                       — default seguro
+ *   3) "owner"                                       — default seguro
+ *
+ * Fase A — A allowlist VITE_SUPER_ADMIN_EMAILS foi removida do bundle
+ * público. `isSuperAdminEmail` continua importável mas sempre retorna
+ * false. A decisão de privilégio crítico é responsabilidade do backend.
  *
  * Cadastro público NUNCA vira super_admin (ver local-auth.ts:signUp).
  *
