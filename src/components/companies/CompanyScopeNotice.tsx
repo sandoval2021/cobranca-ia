@@ -39,6 +39,18 @@ export function CompanyScopeNotice({ moduleKey, className }: Props) {
   }
 
   const isAdminGlobal = role === "super_admin" && !company;
+  const ownerWithoutCompany = role === "owner" && !company;
+  const hasUnscopedWarning = unscoped > 0 && role === "super_admin";
+
+  // Só renderiza quando há algo realmente útil pra mostrar:
+  // - Admin em visão global (sem empresa ativa)
+  // - Owner ainda não vinculado a empresa
+  // - Aviso de registros sem empresa
+  // Caso contrário (owner com sua empresa, ou admin visualizando uma empresa),
+  // não polui a tela com o aviso "Visualizando empresa: ...".
+  if (!isAdminGlobal && !ownerWithoutCompany && !hasUnscopedWarning) {
+    return null;
+  }
 
   return (
     <Card className={`p-2.5 mb-3 border-dashed bg-muted/30 flex items-start gap-2 ${className ?? ""}`}>
@@ -54,22 +66,12 @@ export function CompanyScopeNotice({ moduleKey, className }: Props) {
             registros sem empresa podem aparecer.
           </p>
         )}
-        {role === "super_admin" && company && (
-          <p className="text-muted-foreground">
-            Visualizando empresa: <span className="font-medium text-foreground">{company.nome}</span>
-          </p>
-        )}
-        {role === "owner" && company && (
-          <p className="text-muted-foreground">
-            Empresa: <span className="font-medium text-foreground">{company.nome}</span>
-          </p>
-        )}
-        {role === "owner" && !company && (
+        {ownerWithoutCompany && (
           <p className="text-muted-foreground">
             Sua conta ainda não está vinculada a uma empresa.
           </p>
         )}
-        {unscoped > 0 && role === "super_admin" && (
+        {hasUnscopedWarning && (
           <p className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" />
             {unscoped} registro(s) sem empresa neste módulo.{" "}
