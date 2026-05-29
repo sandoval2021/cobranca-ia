@@ -44,6 +44,57 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_knowledge_entries: {
+        Row: {
+          active: boolean
+          app: string | null
+          category: string
+          company_id: string
+          created_at: string
+          full_text: string
+          id: string
+          keywords: string[]
+          needs_human: boolean
+          short_text: string
+          title: string
+          updated_at: string
+          when_not_to_use: string | null
+          when_to_use: string | null
+        }
+        Insert: {
+          active?: boolean
+          app?: string | null
+          category?: string
+          company_id: string
+          created_at?: string
+          full_text?: string
+          id?: string
+          keywords?: string[]
+          needs_human?: boolean
+          short_text?: string
+          title: string
+          updated_at?: string
+          when_not_to_use?: string | null
+          when_to_use?: string | null
+        }
+        Update: {
+          active?: boolean
+          app?: string | null
+          category?: string
+          company_id?: string
+          created_at?: string
+          full_text?: string
+          id?: string
+          keywords?: string[]
+          needs_human?: boolean
+          short_text?: string
+          title?: string
+          updated_at?: string
+          when_not_to_use?: string | null
+          when_to_use?: string | null
+        }
+        Relationships: []
+      }
       ai_usage_log: {
         Row: {
           company_id: string
@@ -692,6 +743,51 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_import_jobs: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          failed_rows: number
+          filename: string | null
+          id: string
+          imported_rows: number
+          mapping: Json
+          status: string
+          summary: Json
+          total_rows: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          failed_rows?: number
+          filename?: string | null
+          id?: string
+          imported_rows?: number
+          mapping?: Json
+          status?: string
+          summary?: Json
+          total_rows?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          failed_rows?: number
+          filename?: string | null
+          id?: string
+          imported_rows?: number
+          mapping?: Json
+          status?: string
+          summary?: Json
+          total_rows?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_iptv_credentials: {
         Row: {
           app_used: string | null
@@ -784,6 +880,66 @@ export type Database = {
           mac?: string | null
           notes?: string | null
           portal_app_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_referrals: {
+        Row: {
+          closed_at: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          payload: Json
+          referred_customer_id: string | null
+          referred_name: string | null
+          referred_phone: string | null
+          referrer_customer_id: string | null
+          referrer_name: string | null
+          referrer_phone: string | null
+          reward_applied_at: string | null
+          reward_status: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          payload?: Json
+          referred_customer_id?: string | null
+          referred_name?: string | null
+          referred_phone?: string | null
+          referrer_customer_id?: string | null
+          referrer_name?: string | null
+          referrer_phone?: string | null
+          reward_applied_at?: string | null
+          reward_status?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          payload?: Json
+          referred_customer_id?: string | null
+          referred_name?: string | null
+          referred_phone?: string | null
+          referrer_customer_id?: string | null
+          referrer_name?: string | null
+          referrer_phone?: string | null
+          reward_applied_at?: string | null
+          reward_status?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -1131,6 +1287,93 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      imported_customer_due_dates: {
+        Row: {
+          company_id: string
+          created_at: string
+          customer_id: string | null
+          customer_name: string | null
+          due_date: string
+          id: string
+          phone: string | null
+          raw_row: Json
+          source_job_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          due_date: string
+          id?: string
+          phone?: string | null
+          raw_row?: Json
+          source_job_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          due_date?: string
+          id?: string
+          phone?: string | null
+          raw_row?: Json
+          source_job_id?: string | null
+        }
+        Relationships: []
+      }
+      manual_dispatch_rules: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          days_offset: number
+          id: string
+          is_active: boolean
+          name: string
+          priority: string
+          rule_key: string
+          rule_type: string
+          settings: Json
+          template: string
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          days_offset?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          priority?: string
+          rule_key: string
+          rule_type?: string
+          settings?: Json
+          template?: string
+          tone?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          days_offset?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          priority?: string
+          rule_key?: string
+          rule_type?: string
+          settings?: Json
+          template?: string
+          tone?: string
+          updated_at?: string
         }
         Relationships: []
       }
