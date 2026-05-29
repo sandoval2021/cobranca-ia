@@ -62,7 +62,7 @@ function rowToDto(r: any): ScreenDto {
     expires_at: r.expires_at,
     plan_days: r.plan_days,
     notes: r.notes,
-    extras: r.extras ?? {},
+    extras: JSON.stringify(r.extras ?? {}),
     created_at: r.created_at,
     updated_at: r.updated_at,
   };
