@@ -669,6 +669,30 @@ export type Database = {
           },
         ]
       }
+      company_setup_progress: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          steps: Json
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          steps?: Json
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          steps?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       company_subscriptions: {
         Row: {
           cancel_at_period_end: boolean
