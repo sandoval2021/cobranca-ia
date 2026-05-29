@@ -7,6 +7,8 @@ import {
   KeyRound,
   ArrowLeft,
   ShieldCheck,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import { toast } from "sonner";
