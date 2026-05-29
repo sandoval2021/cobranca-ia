@@ -2,6 +2,7 @@ import { Menu, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthStatus } from "@/components/auth/AuthStatus";
 import { UpdateButton } from "@/components/pwa/UpdateButton";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 type Props = {
   title: string;
@@ -33,6 +34,7 @@ export function AppHeader({ title, onMenu, action }: Props) {
             <Menu className="h-5 w-5" />
           </Button>
         ) : null}
+        <BrandLogo variant="mark" className="h-7 w-7 shrink-0 rounded-md" alt="CobraEasy" />
         <h1 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight md:text-lg">
           {title}
         </h1>
