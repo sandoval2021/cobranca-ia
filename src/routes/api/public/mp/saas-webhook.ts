@@ -60,7 +60,7 @@ export const Route = createFileRoute("/api/public/mp/saas-webhook")({
             data_id: paymentId,
             event_type: "payment",
             status: "received",
-            raw_reference: { topic, payment_id: paymentId } as Record<string, unknown>,
+            raw_reference: { topic, payment_id: paymentId } as any,
           })
           .select("id")
           .single();
