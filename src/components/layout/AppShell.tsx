@@ -72,7 +72,7 @@ export function AppShell() {
   const [openSheet, setOpenSheet] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const title = titles[pathname] ?? "Painel";
-  const { user, isOwner } = useLocalAuth();
+  const { user, isOwner, roleResolved } = useLocalAuth();
   const { isAuthenticated } = useAuth();
   const company = useActiveCompany();
   const denial = isOwner ? ownerRouteDenial(pathname, company) : null;
