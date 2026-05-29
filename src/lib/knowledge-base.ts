@@ -64,11 +64,17 @@ export function upsert(entry: KBEntry): void {
   if (idx >= 0) list[idx] = entry;
   else list.push(entry);
   writeAll(list);
+  // Write-through DB-first (best-effort). Se o id local não for UUID,
+  // o banco gera um e reescrevemos o id local para manter idempotência.
+  mirrorKbEntryToDb(entry);
 }
 
 export function remove(id: string): void {
   writeAll(readAll().filter((e) => e.id !== id));
+  // Write-through delete (apenas para ids UUID; ids locais kb_* nunca foram ao banco).
+  mirrorKbDeleteToDb(id);
 }
+
 
 // ----- Sementes padrão -----
 
