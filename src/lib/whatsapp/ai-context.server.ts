@@ -263,6 +263,38 @@ export async function buildAiContext(params: {
     needsHuman,
   });
 
+  // 9) Treinamento da empresa (knowledge / faqs / apps / payment / MP status)
+  const [
+    { data: trainingRow },
+    { data: faqRows },
+    { data: appRows },
+    { data: payRow },
+    { data: mpRow },
+  ] = await Promise.all([
+    supabaseAdmin.from("company_ai_knowledge").select("*").eq("company_id", companyId).maybeSingle(),
+    supabaseAdmin.from("company_ai_faqs").select("category, question, answer").eq("company_id", companyId).eq("is_active", true).limit(60),
+    supabaseAdmin.from("company_ai_app_guides").select("app_name, is_paid, app_price_cents, login_type, install_steps, update_steps, cache_steps, route_steps, common_issues, default_reply").eq("company_id", companyId).eq("is_active", true).limit(20),
+    supabaseAdmin.from("company_ai_payment_settings").select("manual_pix_key, manual_pix_holder, manual_pix_bank, payment_note").eq("company_id", companyId).maybeSingle(),
+    supabaseAdmin.from("marketplace_accounts").select("status").eq("company_id", companyId).eq("provider", "mercado_pago").maybeSingle(),
+  ]);
+
+  const companyTraining: AiContext["companyTraining"] = {
+    knowledge_text: trainingRow?.knowledge_text ?? null,
+    tone: trainingRow?.tone ?? null,
+    answer_length: trainingRow?.answer_length ?? null,
+    allow_after_hours: trainingRow?.allow_after_hours ?? true,
+    accepts_audio: trainingRow?.accepts_audio ?? false,
+    auto_offer_trial: trainingRow?.auto_offer_trial ?? false,
+    human_on_complaint: trainingRow?.human_on_complaint ?? true,
+    human_when_unsure: trainingRow?.human_when_unsure ?? true,
+    allow_paid_apps_info: trainingRow?.allow_paid_apps_info ?? true,
+    use_manual_pix_fallback: trainingRow?.use_manual_pix_fallback ?? true,
+    faqs: (faqRows ?? []) as any,
+    apps: (appRows ?? []) as any,
+    payment: payRow ?? null,
+    mercadoPagoConnected: mpRow?.status === "connected",
+  };
+
   return {
     intent,
     classification,
@@ -281,6 +313,7 @@ export async function buildAiContext(params: {
     app: { name: appName, issue: appIssue, entry: appEntry },
     memory,
     settings,
+    companyTraining,
     needsHuman,
     reason,
   };
