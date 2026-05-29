@@ -156,9 +156,7 @@ function AdminDnsRotasPage() {
     toast.success("Cache local descartado.");
   };
 
-      window.removeEventListener("storage", refresh);
-    };
-  }, []);
+
 
   // Dual-write helpers used by sheets/handlers below
   const persistDomain = async (d: DnsDomain) => {
