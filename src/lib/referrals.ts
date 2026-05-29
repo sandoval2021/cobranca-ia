@@ -179,7 +179,33 @@ export function saveReferral(input: Partial<Referral> & {
   };
   list.unshift(ref);
   write(STORAGE_KEY, list);
+  mirrorReferralToDb(ref);
   return ref;
+}
+
+export function updateReferral(id: string, patch: Partial<Referral>): Referral | null {
+  const list = listAllReferralsRaw();
+  const idx = list.findIndex((r) => r.id === id);
+  if (idx < 0) return null;
+  list[idx] = { ...list[idx], ...patch, company_id: patch.company_id ?? list[idx].company_id };
+  write(STORAGE_KEY, list);
+  mirrorReferralToDb(list[idx]);
+  return list[idx];
+}
+
+export function updateReferralByLead(leadId: string, patch: Partial<Referral>) {
+  const list = listAllReferralsRaw();
+  const changed: Referral[] = [];
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].lead_id === leadId) {
+      list[i] = { ...list[i], ...patch };
+      changed.push(list[i]);
+    }
+  }
+  if (changed.length) {
+    write(STORAGE_KEY, list);
+    mirrorReferralsBulkToDb(changed);
+  }
 }
 
 export function updateReferral(id: string, patch: Partial<Referral>): Referral | null {
