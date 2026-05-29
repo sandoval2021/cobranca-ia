@@ -441,6 +441,14 @@ function CadastrosServicosPage() {
         onSaved={() => { setEditor(null); reload(); }}
       />
 
+      <EligibleRecipientsDialog
+        open={recipientsDlg.open}
+        onClose={() => setRecipientsDlg((p) => ({ ...p, open: false }))}
+        planMessageIds={recipientsDlg.planMessageIds}
+        title={recipientsDlg.title}
+        subtitle={recipientsDlg.subtitle}
+      />
+
       <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
