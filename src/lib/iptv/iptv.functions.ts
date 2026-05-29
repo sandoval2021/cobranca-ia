@@ -368,8 +368,18 @@ export const updateRenewalTaskStatus = createServerFn({ method: "POST" })
     if (data.status === "renewed" || data.status === "failed") {
       update.completed_at = new Date().toISOString();
     }
+    if (data.status === "failed") {
+      update.failed_at = new Date().toISOString();
+      update.locked_at = null;
+      update.locked_by = null;
+    }
+    if (data.status === "pending") {
+      // Operator re-queued the task: clear lock so a worker can pick it up.
+      update.locked_at = null;
+      update.locked_by = null;
+    }
     if (data.status === "trying") {
-      // incrementa tentativas
+      // Incrementa tentativas (mantém compatibilidade com fluxo manual).
       const { data: cur } = await context.supabase
         .from("renewal_tasks")
         .select("attempts")
