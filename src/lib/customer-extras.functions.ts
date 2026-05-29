@@ -66,6 +66,7 @@ export const listCustomerExtrasDb = createServerFn({ method: "GET" })
     z.object({ companyId: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { data: rows, error } = await context.supabase
       .from("customer_extras")
       .select("*")
