@@ -98,7 +98,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
       } catch {
         // ignore
       }
-      window.location.replace("/?auth=expired");
+      window.location.replace("/login?auth=expired");
     }
     void recover();
   }, [isInvalidToken]);
@@ -255,7 +255,7 @@ function RootComponent() {
       } catch {
         // ignore
       }
-      window.location.replace("/?auth=expired");
+      window.location.replace("/login?auth=expired");
     }
 
     const onRejection = (e: PromiseRejectionEvent) => {

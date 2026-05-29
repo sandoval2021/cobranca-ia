@@ -291,7 +291,7 @@ function AdminVpsPage() {
       } catch {
         // ignore
       }
-      if (!cancelled) window.location.replace("/?auth=expired");
+      if (!cancelled) window.location.replace("/login?auth=expired");
     }
     void recoverAuth();
     return () => {
