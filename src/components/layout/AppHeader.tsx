@@ -2,6 +2,7 @@ import { Menu, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthStatus } from "@/components/auth/AuthStatus";
 import { UpdateButton } from "@/components/pwa/UpdateButton";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 type Props = {
   title: string;
