@@ -17,6 +17,10 @@ import {
   formatChargeReply,
   type SimplePlan,
 } from "@/lib/payments/whatsapp-charge.server";
+import {
+  detectCredentialsRequest,
+  buildCredentialsReply,
+} from "./credentials-reply.server";
 
 const COOLDOWN_MS = 8_000;
 const HOURLY_LIMIT = 20;
@@ -293,6 +297,94 @@ export async function handleInboundForAiReply(
     text: parts.text,
     memory,
   });
+
+  // ===== Pedido de credenciais ("meus dados de acesso") =====
+  // Resposta determinística — nunca chama IA, nunca envia usuário/senha/link
+  // sem validação. Sempre encaminha para humano enviar o link.
+  if (detectCredentialsRequest(parts.text)) {
+    const credRes = await buildCredentialsReply({
+      companyId: inst.company_id,
+      fromPhone: parts.fromPhone,
+      customerName: ctx.customer?.name ?? null,
+      customerId: ctx.customer?.id ?? null,
+    });
+
+    if (credRes.ok) {
+      const reply = credRes.reply;
+      await logWhatsAppAutomation({
+        instance_id: inst.id, company_id: inst.company_id,
+        event_type: "credentials_request", status: "ok",
+        from_phone: parts.fromPhone, message_preview: reply,
+        details: { reason: credRes.reason, customer_found: !!ctx.customer },
+      });
+
+      const send = await evolutionProvider.sendText(ref, parts.fromPhone, reply);
+      if (send.ok) {
+        await logWhatsAppAutomation({
+          instance_id: inst.id, company_id: inst.company_id,
+          event_type: "whatsapp_reply_sent", status: "ok",
+          from_phone: parts.fromPhone, message_preview: reply,
+          details: { providerMsgId: send.provider_msg_id ?? null, kind: "credentials_handoff" },
+        });
+
+        const nowIso = new Date().toISOString();
+        await supabaseAdmin
+          .from("whatsapp_inbound_messages")
+          .update({
+            reply_text: reply,
+            reply_status: "sent",
+            replied_at: nowIso,
+          })
+          .eq("id", inboundId);
+
+        const updatedMessages = [
+          ...memory.last_messages,
+          { role: "user" as const, text: parts.text, at: nowIso },
+          { role: "assistant" as const, text: reply, at: nowIso },
+        ].slice(-MAX_MEMORY_MESSAGES);
+
+        await supabaseAdmin
+          .from("whatsapp_conversation_state")
+          .update({
+            last_messages: updatedMessages as any,
+            flags: { ...(memory.flags ?? {}), credentials_handoff: true } as any,
+            classification: "support",
+            needs_human: true,
+            human_reason: credRes.reason,
+            muted_until: new Date(now + MUTE_ON_HUMAN_MS).toISOString(),
+            responses_hour_window: [...window, nowIso] as any,
+            last_response_hash: hashText(reply),
+            last_response_at: nowIso,
+            total_messages_in: (state.total_messages_in ?? 0) + 1,
+            total_messages_out: (state.total_messages_out ?? 0) + 1,
+            updated_at: nowIso,
+          })
+          .eq("id", state.id);
+
+        const { data: credHandoff } = await supabaseAdmin
+          .from("ai_company_settings")
+          .select("human_handoff_number")
+          .eq("company_id", inst.company_id)
+          .maybeSingle();
+        const credHandoffNumber = credHandoff?.human_handoff_number ?? null;
+        if (credHandoffNumber && !state.human_notified_at) {
+          await notifyHuman(
+            ref,
+            credHandoffNumber,
+            parts.fromPhone,
+            "credentials_request",
+            parts.text,
+          );
+          await supabaseAdmin
+            .from("whatsapp_conversation_state")
+            .update({ human_notified_at: nowIso })
+            .eq("id", state.id);
+        }
+
+        return { handled: true };
+      }
+    }
+  }
 
   // ===== Geração determinística de cobrança Mercado Pago via IA =====
   // Se o cliente pediu Pix/link/cartão/renovar de forma explícita, gera cobrança
