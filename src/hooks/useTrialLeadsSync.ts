@@ -131,14 +131,10 @@ export function useTrialLeadsSync() {
     } catch { /* noop */ }
   }, []);
 
-  const uploadLegacy = useCallback(async (companyId: string) => {
+  const uploadAll = useCallback(async (companyId: string) => {
     if (!isBrowser()) return;
-    if (localStorage.getItem(UPLOADED_FLAG + ":" + companyId) === "1") return;
     const local = readArr<TrialLead>(STORAGE_KEY);
-    if (local.length === 0) {
-      localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
-      return;
-    }
+    if (local.length === 0) return;
     // Atribui UUIDs aos leads locais que ainda não têm
     let mutated = false;
     const remapped = local.map((l) => {
@@ -169,8 +165,20 @@ export function useTrialLeadsSync() {
         catch { /* noop */ }
       }
     }
-    localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
   }, []);
 
-  useDbFirstSync({ table: "trial_leads", hydrate, uploadLegacy });
+  const uploadLegacy = useCallback(async (companyId: string) => {
+    if (!isBrowser()) return;
+    if (localStorage.getItem(UPLOADED_FLAG + ":" + companyId) === "1") return;
+    await uploadAll(companyId);
+    localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
+  }, [uploadAll]);
+
+  useDbFirstSync({
+    table: "trial_leads",
+    hydrate,
+    uploadLegacy,
+    mirror: uploadAll,
+    mirrorEvents: ["trial-leads:changed"],
+  });
 }
