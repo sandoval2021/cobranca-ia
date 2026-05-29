@@ -1,5 +1,16 @@
-// Storage local (preview-only) para "Telas e aplicativos" de cada cliente.
-// Não há backend/RPC para isso ainda — quando existir, trocar este módulo.
+// Telas e aplicativos do cliente.
+// Banco é a fonte da verdade (tabela customer_iptv_credentials).
+// localStorage é APENAS cache para resposta instantânea no boot — toda
+// mutação é replicada em background via server functions.
+// Sincronização: src/lib/screens/useScreensSync.ts (montado no AppShell).
+import { toast } from "sonner";
+import {
+  upsertScreenDb,
+  deleteScreenDb,
+  bulkUpsertScreensDb,
+  type ScreenDto,
+} from "@/lib/screens/screens.functions";
+
 
 export type AppKey =
   | "xciptv"
