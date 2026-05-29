@@ -105,9 +105,13 @@ function AdminDnsRotasPage() {
     try {
       const raw = localStorage.getItem(CHECKLIST_KEY);
       setChecklist(raw ? JSON.parse(raw) : {});
+    } catch { setChecklist({}); }
+  };
+
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [pendingLocal, setPendingLocal] = useState<HydrateResult | null>(null);
   const [recovering, setRecovering] = useState(false);
+
 
   const runHydrate = async (cid: string) => {
     try {
