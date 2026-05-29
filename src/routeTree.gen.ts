@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WhatsappRouteImport } from './routes/whatsapp'
+import { Route as TreinarIaRouteImport } from './routes/treinar-ia'
 import { Route as TestesRouteImport } from './routes/testes'
 import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
 import { Route as SaasPlanosRouteImport } from './routes/saas-planos'
@@ -72,6 +73,11 @@ import { Route as ApiPublicWebhooksEvolutionInstanceRouteImport } from './routes
 const WhatsappRoute = WhatsappRouteImport.update({
   id: '/whatsapp',
   path: '/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TreinarIaRoute = TreinarIaRouteImport.update({
+  id: '/treinar-ia',
+  path: '/treinar-ia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TestesRoute = TestesRouteImport.update({
@@ -416,6 +422,7 @@ export interface FileRoutesByFullPath {
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/treinar-ia': typeof TreinarIaRoute
   '/whatsapp': typeof WhatsappRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/vps': typeof AdminVpsRoute
@@ -477,6 +484,7 @@ export interface FileRoutesByTo {
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/treinar-ia': typeof TreinarIaRoute
   '/whatsapp': typeof WhatsappRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/vps': typeof AdminVpsRoute
@@ -539,6 +547,7 @@ export interface FileRoutesById {
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/testes': typeof TestesRoute
+  '/treinar-ia': typeof TreinarIaRoute
   '/whatsapp': typeof WhatsappRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/vps': typeof AdminVpsRoute
@@ -602,6 +611,7 @@ export interface FileRouteTypes {
     | '/saas-planos'
     | '/seguranca-local'
     | '/testes'
+    | '/treinar-ia'
     | '/whatsapp'
     | '/admin/marketplace'
     | '/admin/vps'
@@ -663,6 +673,7 @@ export interface FileRouteTypes {
     | '/saas-planos'
     | '/seguranca-local'
     | '/testes'
+    | '/treinar-ia'
     | '/whatsapp'
     | '/admin/marketplace'
     | '/admin/vps'
@@ -724,6 +735,7 @@ export interface FileRouteTypes {
     | '/saas-planos'
     | '/seguranca-local'
     | '/testes'
+    | '/treinar-ia'
     | '/whatsapp'
     | '/admin/marketplace'
     | '/admin/vps'
@@ -786,6 +798,7 @@ export interface RootRouteChildren {
   SaasPlanosRoute: typeof SaasPlanosRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   TestesRoute: typeof TestesRoute
+  TreinarIaRoute: typeof TreinarIaRoute
   WhatsappRoute: typeof WhatsappRoute
   AdminMarketplaceRoute: typeof AdminMarketplaceRoute
   AdminVpsRoute: typeof AdminVpsRoute
@@ -810,6 +823,13 @@ declare module '@tanstack/react-router' {
       path: '/whatsapp'
       fullPath: '/whatsapp'
       preLoaderRoute: typeof WhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/treinar-ia': {
+      id: '/treinar-ia'
+      path: '/treinar-ia'
+      fullPath: '/treinar-ia'
+      preLoaderRoute: typeof TreinarIaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/testes': {
@@ -1280,6 +1300,7 @@ const rootRouteChildren: RootRouteChildren = {
   SaasPlanosRoute: SaasPlanosRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
   TestesRoute: TestesRoute,
+  TreinarIaRoute: TreinarIaRoute,
   WhatsappRoute: WhatsappRoute,
   AdminMarketplaceRoute: AdminMarketplaceRoute,
   AdminVpsRoute: AdminVpsRoute,
