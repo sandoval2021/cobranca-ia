@@ -825,62 +825,89 @@ function CampanhasManuaisPage() {
         <Link to="/configuracoes-revenda" className="underline">Editar Minha Revenda</Link>
       </div>
 
-      {/* Resumo */}
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        <Mini label="Encontrados" value={summary.found} />
+      {/* Resumo enxuto */}
+      <div className="mb-4 grid grid-cols-3 gap-2">
         <Mini label="Selecionados" value={summary.sel} tone="primary" />
-        <Mini label="Copiadas" value={summary.copied} tone="emerald" />
-        <Mini label="Pendentes" value={summary.pending} tone="amber" />
         <Mini label="Vencidos" value={summary.vencidos} tone="red" />
         <Mini label="Vencem hoje" value={summary.hoje} tone="orange" />
       </div>
 
-      {/* Filtros de público */}
-      <div className="mb-2 text-xs font-medium text-muted-foreground">Filtro de público</div>
+      {/* Filtros de público — primários + "Mais filtros" */}
+      <div className="mb-2 flex items-center justify-between">
+        <div className="text-xs font-medium text-muted-foreground">Filtro de público</div>
+        <button
+          type="button"
+          onClick={() => setShowAllFilters((v) => !v)}
+          className="text-xs text-primary hover:underline"
+        >
+          {showAllFilters ? "Menos filtros" : "Mais filtros"}
+        </button>
+      </div>
       <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         <Chip active={audience === "todos"} onClick={() => setAudience("todos")} label="Todos" count={counts.todos} />
         <Chip active={audience === "hoje"} onClick={() => setAudience("hoje")} label="Hoje" count={counts.hoje} />
         <Chip active={audience === "3d"} onClick={() => setAudience("3d")} label="3 dias" count={counts["3d"]} />
         <Chip active={audience === "7d"} onClick={() => setAudience("7d")} label="7 dias" count={counts["7d"]} />
         <Chip active={audience === "vencidos"} onClick={() => setAudience("vencidos")} label="Vencidos" count={counts.vencidos} />
-        <Chip active={audience === "needs_update"} onClick={() => setAudience("needs_update")} label="Atualizar servidor" count={counts.needs_update} />
-        <Chip active={audience === "sem_app"} onClick={() => setAudience("sem_app")} label="Sem app" count={counts.sem_app} dim={counts.sem_app === 0} />
-        <Chip active={audience === "app_bob"} onClick={() => setAudience("app_bob")} label="Bob Player" count={counts.app_bob} dim={counts.app_bob === 0} />
-        <Chip active={audience === "app_xciptv"} onClick={() => setAudience("app_xciptv")} label="XCIPTV" count={counts.app_xciptv} dim={counts.app_xciptv === 0} />
-        <Chip active={audience === "app_ibo"} onClick={() => setAudience("app_ibo")} label="IBO" count={counts.app_ibo} dim={counts.app_ibo === 0} />
-        <Chip active={audience === "app_vu"} onClick={() => setAudience("app_vu")} label="Vu Player" count={counts.app_vu} dim={counts.app_vu === 0} />
-        <Chip active={audience === "acc_mac_key"} onClick={() => setAudience("acc_mac_key")} label="MAC/Key" count={counts.acc_mac_key} dim={counts.acc_mac_key === 0} />
-        <Chip active={audience === "acc_user_pass"} onClick={() => setAudience("acc_user_pass")} label="Usuário/Senha" count={counts.acc_user_pass} dim={counts.acc_user_pass === 0} />
-        <Chip active={audience === "app_pago_vencendo"} onClick={() => setAudience("app_pago_vencendo")} label="App pago vencendo" count={counts.app_pago_vencendo} dim={counts.app_pago_vencendo === 0} />
-        <Chip active={audience === "app_pago_vencido"} onClick={() => setAudience("app_pago_vencido")} label="App pago vencido" count={counts.app_pago_vencido} dim={counts.app_pago_vencido === 0} />
-        <Chip active={audience === "app_pago_7d"} onClick={() => setAudience("app_pago_7d")} label="App pago 7 dias" count={counts.app_pago_7d} dim={counts.app_pago_7d === 0} />
-        <Chip active={audience === "app_sem_venc"} onClick={() => setAudience("app_sem_venc")} label="Sem vencimento do app" count={counts.app_sem_venc} dim={counts.app_sem_venc === 0} />
-        <Chip active={audience === "app_sem_mackey"} onClick={() => setAudience("app_sem_mackey")} label="Sem MAC/Key" count={counts.app_sem_mackey} dim={counts.app_sem_mackey === 0} />
       </div>
+      {showAllFilters && (
+        <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          <Chip active={audience === "needs_update"} onClick={() => setAudience("needs_update")} label="Atualizar servidor" count={counts.needs_update} />
+          <Chip active={audience === "sem_app"} onClick={() => setAudience("sem_app")} label="Sem app" count={counts.sem_app} dim={counts.sem_app === 0} />
+          <Chip active={audience === "app_bob"} onClick={() => setAudience("app_bob")} label="Bob Player" count={counts.app_bob} dim={counts.app_bob === 0} />
+          <Chip active={audience === "app_xciptv"} onClick={() => setAudience("app_xciptv")} label="XCIPTV" count={counts.app_xciptv} dim={counts.app_xciptv === 0} />
+          <Chip active={audience === "app_ibo"} onClick={() => setAudience("app_ibo")} label="IBO" count={counts.app_ibo} dim={counts.app_ibo === 0} />
+          <Chip active={audience === "app_vu"} onClick={() => setAudience("app_vu")} label="Vu Player" count={counts.app_vu} dim={counts.app_vu === 0} />
+          <Chip active={audience === "acc_mac_key"} onClick={() => setAudience("acc_mac_key")} label="MAC/Key" count={counts.acc_mac_key} dim={counts.acc_mac_key === 0} />
+          <Chip active={audience === "acc_user_pass"} onClick={() => setAudience("acc_user_pass")} label="Usuário/Senha" count={counts.acc_user_pass} dim={counts.acc_user_pass === 0} />
+          <Chip active={audience === "app_pago_vencendo"} onClick={() => setAudience("app_pago_vencendo")} label="App pago vencendo" count={counts.app_pago_vencendo} dim={counts.app_pago_vencendo === 0} />
+          <Chip active={audience === "app_pago_vencido"} onClick={() => setAudience("app_pago_vencido")} label="App pago vencido" count={counts.app_pago_vencido} dim={counts.app_pago_vencido === 0} />
+          <Chip active={audience === "app_pago_7d"} onClick={() => setAudience("app_pago_7d")} label="App pago 7 dias" count={counts.app_pago_7d} dim={counts.app_pago_7d === 0} />
+          <Chip active={audience === "app_sem_venc"} onClick={() => setAudience("app_sem_venc")} label="Sem vencimento do app" count={counts.app_sem_venc} dim={counts.app_sem_venc === 0} />
+          <Chip active={audience === "app_sem_mackey"} onClick={() => setAudience("app_sem_mackey")} label="Sem MAC/Key" count={counts.app_sem_mackey} dim={counts.app_sem_mackey === 0} />
+        </div>
+      )}
 
-      {/* Filtros por servidor */}
-      <div className="mb-2 text-xs font-medium text-muted-foreground">Servidor</div>
-      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        <Chip active={serverFilter === "__all__"} onClick={() => setServerFilter("__all__")} label="Todos servidores" count={serverCounts.total} />
-        <Chip active={serverFilter === "__none__"} onClick={() => setServerFilter("__none__")} label="Sem servidor" count={serverCounts.none} dim={serverCounts.none === 0} />
-        {serverCounts.servers.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setServerFilter(s.id)}
-            className={cn(
-              "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition",
-              serverFilter === s.id
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-foreground hover:bg-muted",
-              s.count === 0 && serverFilter !== s.id && "opacity-60",
-            )}
-          >
-            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} aria-hidden />
-            {s.name} <span className={cn("ml-0.5 tabular-nums", serverFilter === s.id ? "opacity-90" : "text-muted-foreground")}>({s.count})</span>
-          </button>
-        ))}
-      </div>
+      {/* Filtro por servidor — recolhido por padrão */}
+      {serverCounts.servers.length > 0 && (
+        <>
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-xs font-medium text-muted-foreground">
+              Servidor {serverFilter !== "__all__" && <span className="text-foreground">· filtrando</span>}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowServerRow((v) => !v)}
+              className="text-xs text-primary hover:underline"
+            >
+              {showServerRow ? "Ocultar" : "Filtrar por servidor"}
+            </button>
+          </div>
+          {showServerRow && (
+            <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+              <Chip active={serverFilter === "__all__"} onClick={() => setServerFilter("__all__")} label="Todos servidores" count={serverCounts.total} />
+              <Chip active={serverFilter === "__none__"} onClick={() => setServerFilter("__none__")} label="Sem servidor" count={serverCounts.none} dim={serverCounts.none === 0} />
+              {serverCounts.servers.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setServerFilter(s.id)}
+                  className={cn(
+                    "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition",
+                    serverFilter === s.id
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-foreground hover:bg-muted",
+                    s.count === 0 && serverFilter !== s.id && "opacity-60",
+                  )}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.color }} aria-hidden />
+                  {s.name} <span className={cn("ml-0.5 tabular-nums", serverFilter === s.id ? "opacity-90" : "text-muted-foreground")}>({s.count})</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
 
       {/* Busca */}
