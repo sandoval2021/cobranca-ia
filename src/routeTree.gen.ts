@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as TreinarIaRouteImport } from './routes/treinar-ia'
 import { Route as TestesRouteImport } from './routes/testes'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
 import { Route as SaasPlanosRouteImport } from './routes/saas-planos'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -83,6 +84,11 @@ const TreinarIaRoute = TreinarIaRouteImport.update({
 const TestesRoute = TestesRouteImport.update({
   id: '/testes',
   path: '/testes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SegurancaLocalRoute = SegurancaLocalRouteImport.update({
@@ -421,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/testes': typeof TestesRoute
   '/treinar-ia': typeof TreinarIaRoute
   '/whatsapp': typeof WhatsappRoute
@@ -483,6 +490,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/testes': typeof TestesRoute
   '/treinar-ia': typeof TreinarIaRoute
   '/whatsapp': typeof WhatsappRoute
@@ -546,6 +554,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/testes': typeof TestesRoute
   '/treinar-ia': typeof TreinarIaRoute
   '/whatsapp': typeof WhatsappRoute
@@ -610,6 +619,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/saas-planos'
     | '/seguranca-local'
+    | '/sitemap.xml'
     | '/testes'
     | '/treinar-ia'
     | '/whatsapp'
@@ -672,6 +682,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/saas-planos'
     | '/seguranca-local'
+    | '/sitemap.xml'
     | '/testes'
     | '/treinar-ia'
     | '/whatsapp'
@@ -734,6 +745,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/saas-planos'
     | '/seguranca-local'
+    | '/sitemap.xml'
     | '/testes'
     | '/treinar-ia'
     | '/whatsapp'
@@ -797,6 +809,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SaasPlanosRoute: typeof SaasPlanosRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TestesRoute: typeof TestesRoute
   TreinarIaRoute: typeof TreinarIaRoute
   WhatsappRoute: typeof WhatsappRoute
@@ -837,6 +850,13 @@ declare module '@tanstack/react-router' {
       path: '/testes'
       fullPath: '/testes'
       preLoaderRoute: typeof TestesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/seguranca-local': {
@@ -1299,6 +1319,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SaasPlanosRoute: SaasPlanosRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TestesRoute: TestesRoute,
   TreinarIaRoute: TreinarIaRoute,
   WhatsappRoute: WhatsappRoute,
@@ -1320,13 +1341,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
