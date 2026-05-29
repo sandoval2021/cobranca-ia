@@ -116,6 +116,7 @@ export const deleteCustomerExtraDb = createServerFn({ method: "POST" })
     z.object({ companyId: UUID, customer_id: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { error } = await context.supabase
       .from("customer_extras")
       .delete()
