@@ -45,6 +45,7 @@ function formatOffset(hours?: number): string {
 
 export function TrialAutomationPanel() {
   const [templates, setTemplates] = useState<AutoTemplate[]>([]);
+  const [services, setServices] = useState<ServiceItem[]>([]);
   const [editing, setEditing] = useState<AutoTemplate | null>(null);
   const [draftBody, setDraftBody] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -55,12 +56,25 @@ export function TrialAutomationPanel() {
     setTemplates(all);
   };
 
+  const refreshServices = () => setServices(listActiveServices());
+
   useEffect(() => {
     refresh();
+    refreshServices();
     const onChange = () => refresh();
+    const onSvc = () => refreshServices();
     window.addEventListener("cobraeasy:auto-templates-changed", onChange);
-    return () => window.removeEventListener("cobraeasy:auto-templates-changed", onChange);
+    window.addEventListener(SERVICES_EVENT, onSvc);
+    return () => {
+      window.removeEventListener("cobraeasy:auto-templates-changed", onChange);
+      window.removeEventListener(SERVICES_EVENT, onSvc);
+    };
   }, []);
+
+  const editingService = useMemo(
+    () => services.find((s) => s.id === editing?.scope) ?? null,
+    [services, editing],
+  );
 
   const activeCount = useMemo(() => templates.filter((t) => t.active).length, [templates]);
   const allOn = templates.length > 0 && activeCount === templates.length;
