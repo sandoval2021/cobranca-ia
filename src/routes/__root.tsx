@@ -28,6 +28,12 @@ import { useReferralsSync } from "@/lib/referrals/useReferralsSync";
 import { useKnowledgeBaseSync } from "@/lib/knowledge-base/useKnowledgeBaseSync";
 import { useManualDispatchRulesSync } from "@/lib/manual-dispatch-rules/useManualDispatchRulesSync";
 import { useImportedDueDatesSync } from "@/lib/imports/useImportedDueDatesSync";
+import { useAutoTemplatesSync } from "@/hooks/useAutoTemplatesSync";
+import { useRevendaSettingsSync } from "@/hooks/useRevendaSettingsSync";
+import { useCustomerExtrasSync } from "@/hooks/useCustomerExtrasSync";
+import { useTrialLeadsSync } from "@/hooks/useTrialLeadsSync";
+import { useFinanceSync } from "@/hooks/useFinanceSync";
+
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
@@ -77,6 +83,12 @@ function AuthedApp() {
   useKnowledgeBaseSync();
   useManualDispatchRulesSync();
   useImportedDueDatesSync();
+  // Fase B — módulos que estavam só no aparelho agora sincronizam com o banco.
+  useAutoTemplatesSync();
+  useRevendaSettingsSync();
+  useCustomerExtrasSync();
+  useTrialLeadsSync();
+  useFinanceSync();
   return <AppShell />;
 }
 
