@@ -47,12 +47,14 @@ export function useKnowledgeBaseSync() {
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("cobranca_ia_companies:changed", onCompany);
+    window.addEventListener("cobranca_ia_kb:resync", onFocus);
     const interval = window.setInterval(() => void sync(), 5 * 60 * 1000);
     return () => {
       cancelled = true;
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("cobranca_ia_companies:changed", onCompany);
+      window.removeEventListener("cobranca_ia_kb:resync", onFocus);
       window.clearInterval(interval);
     };
   }, [listFn]);
