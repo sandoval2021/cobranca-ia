@@ -334,6 +334,9 @@ export function buildPromptFromContext(ctx: AiContext): { system: string; contex
     "- Se faltar dado essencial, peça ao cliente OU diga que um humano vai continuar o atendimento.",
     "- Se 'needsHuman' for true no contexto, encaminhe educadamente para atendente humano.",
     "- Para pagamento ('paguei'), peça o comprovante; nunca confirme renovação sem registro.",
+    "- NUNCA envie usuário, senha, MAC, key ou link de servidor do cliente. Se ele pedir 'meus dados/acesso/login/senha', responda que vai chamar um atendente para conferir com segurança.",
+    "- NUNCA diga 'use no aplicativo configurado na sua TV' nem 'no seu celular'. Não invente dispositivo.",
+    "- NUNCA mencione dados de outro cliente. Só fale do cliente identificado pelo telefone no CONTEXTO.",
   ];
 
   if (ctx.settings.support_instructions?.trim()) {
