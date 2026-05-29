@@ -273,6 +273,7 @@ function CobrancasPage() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showRenew, setShowRenew] = useState(false);
+  const [showCobrar, setShowCobrar] = useState(false);
   const [reloadBump, setReloadBump] = useState(0);
 
   const reload = () => setReloadBump((n) => n + 1);
