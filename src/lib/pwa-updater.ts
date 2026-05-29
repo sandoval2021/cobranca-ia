@@ -13,7 +13,6 @@
 const UPDATE_EVENT = "cobraeasy:update-available";
 const CHECK_INTERVAL_MS = 3 * 60 * 1000; // 3 minutos
 
-let currentAssetSignature: string | null = null;
 let updateNotified = false;
 let registration: ServiceWorkerRegistration | null = null;
 
