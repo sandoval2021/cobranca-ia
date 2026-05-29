@@ -14,7 +14,6 @@ export const Route = createFileRoute("/sitemap.xml")({
     handlers: {
       GET: async () => {
         const today = new Date().toISOString().slice(0, 10);
-        const today = new Date().toISOString().slice(0, 10);
         const entries: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
           { path: "/planos", changefreq: "weekly", priority: "0.9" },
@@ -26,6 +25,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/blog", changefreq: "weekly", priority: "0.7" },
         ];
 
+        const urls = entries.map((e) =>
           [
             `  <url>`,
             `    <loc>${BASE_URL}${e.path}</loc>`,
@@ -37,6 +37,7 @@ export const Route = createFileRoute("/sitemap.xml")({
             .filter(Boolean)
             .join("\n"),
         );
+
 
         const xml = [
           `<?xml version="1.0" encoding="UTF-8"?>`,
