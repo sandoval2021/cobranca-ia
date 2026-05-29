@@ -213,15 +213,24 @@ export const Route = createFileRoute("/api/public/mp/marketplace-webhook")({
           })
           .eq("id", tx.id);
 
-        // 4) Pós-pagamento: criar tarefa de renovação assistida quando aprovado
+        // 4) Pós-pagamento: criar tarefa de renovação assistida quando aprovado.
+        // Fase B — Idempotência: UNIQUE(company_id, customer_id, source_payment_id)
+        // garante que retry do MP não duplica a renewal_task.
         if (newStatus === "approved" && tx.customer_id) {
-          await db.from("renewal_tasks").insert({
-            company_id: tx.company_id,
-            customer_id: tx.customer_id,
-            kind: "iptv",
-            status: "pending",
-            notes: `Pagamento aprovado via Mercado Pago (ref ${tx.external_reference}).`,
-          });
+          await db.from("renewal_tasks").upsert(
+            {
+              company_id: tx.company_id,
+              customer_id: tx.customer_id,
+              source_payment_id: tx.id,
+              kind: "iptv",
+              status: "pending",
+              notes: `Pagamento aprovado via Mercado Pago (ref ${tx.external_reference}).`,
+            },
+            {
+              onConflict: "company_id,customer_id,source_payment_id",
+              ignoreDuplicates: true,
+            },
+          );
         }
 
         await db
