@@ -21,7 +21,7 @@ import {
   supabase,
   supabaseConfigured,
 } from "@/integrations/supabase/compat";
-import { friendlyAuthError } from "@/lib/use-auth";
+import { AUTH_REFRESH_EVENT, friendlyAuthError } from "@/lib/use-auth";
 import { syncDefaultCompanyForUser } from "@/lib/rpc-admin";
 import {
   requestSignupOtp,
@@ -43,6 +43,20 @@ type View =
   | "confirm_email";
 
 const OTP_LENGTH = 8;
+const AUTH_TIMEOUT_MS = 15_000;
+
+async function withAuthTimeout<T>(promise: PromiseLike<T>, timeoutMessage: string): Promise<T> {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(timeoutMessage)), AUTH_TIMEOUT_MS);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
+}
 
 
 
@@ -167,6 +181,7 @@ function LoginForm({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     if (!supabase) {
       setError("Conexão não configurada.");
       return;
@@ -174,21 +189,30 @@ function LoginForm({
     setError(null);
     setSubmitting(true);
     const trimmed = email.trim();
-    const { error: err } = await supabase.auth.signInWithPassword({
-      email: trimmed,
-      password,
-    });
-    if (err) {
-      if (err.message?.toLowerCase().includes("email not confirmed")) {
-        setSubmitting(false);
-        onNeedsConfirm(trimmed, password);
+    try {
+      const { error: err } = await withAuthTimeout(
+        supabase.auth.signInWithPassword({
+          email: trimmed,
+          password,
+        }),
+        "Tempo esgotado ao entrar.",
+      );
+      if (err) {
+        if (err.message?.toLowerCase().includes("email not confirmed")) {
+          onNeedsConfirm(trimmed, password);
+          return;
+        }
+        setError(friendlyAuthError(err.message));
         return;
       }
-      setError(friendlyAuthError(err.message));
+      toast.success("Bem-vindo!");
+      window.dispatchEvent(new Event(AUTH_REFRESH_EVENT));
+      window.location.replace("/");
+    } catch (err) {
+      setError(friendlyAuthError(err instanceof Error ? err.message : "Falha de conexão."));
+    } finally {
       setSubmitting(false);
-      return;
     }
-    toast.success("Bem-vindo!");
   }
 
   return (
