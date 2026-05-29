@@ -206,17 +206,31 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
               if (!willRetry) failed++;
             }
           } catch (err: any) {
+            // Resultado INCERTO: o request foi disparado contra o provedor mas
+            // não obtivemos resposta. Não podemos saber se a mensagem chegou
+            // ao cliente. Retry cego duplicaria a mensagem.
+            // Política: timeout/abort/network = terminal (failed) com marcador
+            // para revisão humana. Sem retry automático.
+            const rawMsg = String(err?.message ?? err);
+            const isUncertain =
+              err?.name === "AbortError" ||
+              /timeout|timed out|ETIMEDOUT|ECONNRESET|ENETUNREACH|fetch failed|network/i.test(
+                rawMsg,
+              );
             const attempts = (c.attempts ?? 0) + 1;
-            const willRetry = attempts < (c.max_attempts ?? 5);
+            const willRetry = !isUncertain && attempts < (c.max_attempts ?? 5);
             const backoff = Math.min(60 * 60_000, 30_000 * 2 ** attempts);
             const nowIso = new Date().toISOString();
+            const lastError = isUncertain
+              ? `send_uncertain:${rawMsg}`.slice(0, 500)
+              : rawMsg.slice(0, 500);
             await supabaseAdmin
               .from("whatsapp_message_queue")
               .update({
                 status: willRetry ? "queued" : "failed",
                 attempts,
                 next_attempt_at: new Date(Date.now() + backoff).toISOString(),
-                last_error: String(err?.message ?? err).slice(0, 500),
+                last_error: lastError,
                 locked_at: null,
                 locked_by: null,
                 failed_at: willRetry ? null : nowIso,
