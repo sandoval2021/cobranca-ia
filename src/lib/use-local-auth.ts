@@ -120,15 +120,17 @@ export function useLocalAuth() {
         }
 
         // Nenhuma das duas RPCs existe no backend.
+        // Fase A — sem allowlist no frontend: tratar como NÃO super admin
+        // (resposta resolvida = false) para liberar a UI sem conceder privilégio.
         if (import.meta.env.DEV) {
           // eslint-disable-next-line no-console
           console.info(
-            "[auth] Super Admin não confirmado pelo backend (nenhuma RPC disponível). Usuário tratado como Dono por segurança até a migration ser aplicada ou VITE_SUPER_ADMIN_EMAILS ser configurado.",
+            "[auth] Super Admin não confirmado pelo backend (nenhuma RPC disponível). Usuário tratado como Dono.",
           );
         }
-        setBackendSuperAdmin(null);
+        setBackendSuperAdmin(false);
       } catch {
-        if (!cancelled) setBackendSuperAdmin(null);
+        if (!cancelled) setBackendSuperAdmin(false);
       }
     })();
     return () => {
