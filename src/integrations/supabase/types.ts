@@ -752,6 +752,42 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_service_plan: {
+        Row: {
+          company_id: string
+          customer_id: string
+          service_plan_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          customer_id: string
+          service_plan_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          customer_id?: string
+          service_plan_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_service_plan_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_service_plan_service_plan_id_fkey"
+            columns: ["service_plan_id"]
+            isOneToOne: false
+            referencedRelation: "service_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_support_tokens: {
         Row: {
           company_id: string
@@ -1716,6 +1752,86 @@ export type Database = {
           panel_url?: string | null
           panel_username?: string | null
           sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      service_plan_messages: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          offset_days: number
+          service_plan_id: string
+          template: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          label: string
+          offset_days?: number
+          service_plan_id: string
+          template: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          offset_days?: number
+          service_plan_id?: string
+          template?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_plan_messages_service_plan_id_fkey"
+            columns: ["service_plan_id"]
+            isOneToOne: false
+            referencedRelation: "service_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_plans: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          id: string
+          meses: number
+          nome: string
+          preco_cents: number
+          telas: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          created_at?: string
+          id?: string
+          meses?: number
+          nome: string
+          preco_cents?: number
+          telas?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          meses?: number
+          nome?: string
+          preco_cents?: number
+          telas?: number
           updated_at?: string
         }
         Relationships: []
