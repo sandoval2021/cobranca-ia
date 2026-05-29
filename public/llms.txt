@@ -1,0 +1,9 @@
+# CobraEasy
+
+> CobraEasy é uma plataforma brasileira de cobrança inteligente para pequenos negócios: gestão de clientes, cobranças automáticas via WhatsApp, mensagens com IA e pagamentos integrados em um só painel.
+
+CobraEasy ajuda donos de revenda, provedores e prestadores de serviço recorrente a cobrar clientes em atraso, automatizar lembretes de vencimento, renovar planos e receber via Pix com Mercado Pago — sem precisar de equipe técnica.
+
+## Pages
+
+- [Início](/): Visão geral da plataforma CobraEasy e acesso ao painel.

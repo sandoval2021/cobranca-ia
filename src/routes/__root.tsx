@@ -124,7 +124,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "CobraEasy — Cobrança inteligente para o seu negócio" },
       { property: "og:description", content: "CobraEasy: gestão de clientes, cobranças automáticas e mensagens inteligentes em um só painel." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://app.cobraeasy.com.br" },
+      { property: "og:url", content: "https://cobraeasy.com.br" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "CobraEasy — Cobrança inteligente para o seu negócio" },
       { name: "twitter:description", content: "CobraEasy: gestão de clientes, cobranças automáticas e mensagens inteligentes em um só painel." },
@@ -141,7 +141,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&display=swap" },
+      { rel: "canonical", href: "https://cobraeasy.com.br" },
     ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "CobraEasy",
+          url: "https://cobraeasy.com.br",
+          logo: "https://cobraeasy.com.br/apple-touch-icon.png",
+          description: "Plataforma brasileira de cobrança inteligente com WhatsApp, IA e Mercado Pago.",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "CobraEasy",
+          url: "https://cobraeasy.com.br",
+        }),
+      },
+    ],
+
 
   }),
   shellComponent: RootShell,
