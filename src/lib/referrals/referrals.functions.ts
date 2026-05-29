@@ -109,9 +109,29 @@ export const upsertReferralDb = createServerFn({ method: "POST" })
       ? supabaseAdmin.from("customer_referrals").upsert({ ...base, id: data.id }).select("id").single()
       : supabaseAdmin.from("customer_referrals").insert(base).select("id").single();
     const { data: row, error } = await q;
-    if (error) throw new Error(error.message);
+    if (error) {
+      // 23505 = unique_violation: indicação já existe (chave de negócio).
+      // Trata como sucesso idempotente devolvendo o id existente.
+      if ((error as any).code === "23505" && !data.id) {
+        const rp = (data.referrer_phone || "").replace(/\D/g, "");
+        const dp = (data.referred_phone || "").replace(/\D/g, "");
+        const { data: existing } = await supabaseAdmin
+          .from("customer_referrals")
+          .select("id, referrer_phone, referred_phone")
+          .eq("company_id", data.companyId)
+          .limit(500);
+        const match = (existing ?? []).find(
+          (r: any) =>
+            (r.referrer_phone || "").replace(/\D/g, "") === rp &&
+            (r.referred_phone || "").replace(/\D/g, "") === dp,
+        );
+        if (match) return { id: match.id as string };
+      }
+      throw new Error(error.message);
+    }
     return { id: row!.id as string };
   });
+
 
 export const deleteReferralDb = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
