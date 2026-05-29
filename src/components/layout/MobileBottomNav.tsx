@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { MoreHorizontal } from "lucide-react";
 import { ownerBottomNav, ownerMoreNav, filterNavByRole, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
@@ -33,10 +33,11 @@ const MORE_GROUPS: { title: string; routes: string[] }[] = [
 ];
 
 export function MobileBottomNav() {
+  const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { role, user, isOwner } = useLocalAuth();
-  const navigate = useNavigate();
   const [openMore, setOpenMore] = useState(false);
+  const preloadedMoreRef = useRef(false);
 
   // Reage a mudanças locais de empresa para reavaliar permissões do plano.
   const [, setTick] = useState(0);
@@ -76,6 +77,24 @@ export function MobileBottomNav() {
     })).filter((g) => g.items.length > 0);
   }, [itemByRoute]);
 
+  const preloadRoute = useCallback(
+    (to: string) => {
+      void router.preloadRoute({ to: to as never }).catch(() => undefined);
+    },
+    [router],
+  );
+
+  const preloadMoreRoutes = useCallback(() => {
+    if (preloadedMoreRef.current) return;
+    preloadedMoreRef.current = true;
+    const routes = Array.from(new Set(groups.flatMap((group) => group.items.map((item) => item.to))));
+    for (const route of routes) preloadRoute(route);
+  }, [groups, preloadRoute]);
+
+  useEffect(() => {
+    if (openMore) preloadMoreRoutes();
+  }, [openMore, preloadMoreRoutes]);
+
   // 5 atalhos + 1 botão "Mais"
   const cols = items.length + 1;
 
@@ -94,7 +113,7 @@ export function MobileBottomNav() {
               <li key={item.to}>
                 <Link
                   to={item.to}
-                  preload="intent"
+                  preload="render"
                   className={cn(
                     "flex h-[var(--bottomnav-height)] flex-col items-center justify-center gap-1 px-1 text-[11px] transition-colors",
                     active ? "text-primary" : "text-muted-foreground",
@@ -109,7 +128,16 @@ export function MobileBottomNav() {
           <li>
             <button
               type="button"
-              onClick={() => setOpenMore(true)}
+              onPointerDown={() => {
+                preloadMoreRoutes();
+                setOpenMore(true);
+              }}
+              onMouseEnter={preloadMoreRoutes}
+              onFocus={preloadMoreRoutes}
+              onClick={() => {
+                preloadMoreRoutes();
+                setOpenMore(true);
+              }}
               className={cn(
                 "flex h-[var(--bottomnav-height)] w-full flex-col items-center justify-center gap-1 px-1 text-[11px] transition-colors",
                 openMore ? "text-primary" : "text-muted-foreground",
@@ -125,7 +153,7 @@ export function MobileBottomNav() {
       <Sheet open={openMore} onOpenChange={setOpenMore}>
         <SheetContent
           side="bottom"
-          className="max-h-[85vh] overflow-y-auto rounded-t-2xl p-0"
+          className="max-h-[85vh] overflow-y-auto rounded-t-2xl p-0 data-[state=closed]:duration-100 data-[state=open]:duration-75"
         >
           <div className="px-4 pt-4 pb-3">
             <SheetHeader className="text-left">
@@ -144,13 +172,13 @@ export function MobileBottomNav() {
                     const Icon = item.icon;
                     return (
                       <li key={item.to}>
-                        <a
-                          href={item.to}
+                        <Link
+                          to={item.to}
+                          preload="intent"
+                          onPointerDown={() => preloadRoute(item.to)}
                           onClick={(e) => {
-                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-                            e.preventDefault();
-                            setOpenMore(false);
-                            void navigate({ to: item.to as string });
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                            window.requestAnimationFrame(() => setOpenMore(false));
                           }}
                           className="flex h-full flex-col items-center gap-2 rounded-2xl border border-border bg-surface px-2 py-3 text-center transition-colors active:bg-surface-muted"
                         >
@@ -160,7 +188,7 @@ export function MobileBottomNav() {
                           <span className="line-clamp-2 text-[12px] font-semibold leading-tight text-foreground">
                             {item.label}
                           </span>
-                        </a>
+                        </Link>
                       </li>
                     );
                   })}
