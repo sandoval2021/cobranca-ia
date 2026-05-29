@@ -335,7 +335,7 @@ export function TrialAutomationPanel() {
             <DialogDescription>Exemplo com dados fictícios.</DialogDescription>
           </DialogHeader>
           <pre className="max-h-[60vh] overflow-auto whitespace-pre-wrap rounded bg-muted/40 p-3 text-sm">
-            {previewTemplate(draftBody, "teste")}
+            {previewTemplate(draftBody, "teste", serviceOverrides(editingService))}
           </pre>
         </DialogContent>
       </Dialog>
