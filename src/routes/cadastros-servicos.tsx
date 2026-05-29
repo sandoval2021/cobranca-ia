@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Pencil, Sparkles, Save, MessageCircle, Check, ChevronRight,
+  CloudUpload, Loader2,
 } from "lucide-react";
 
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -27,7 +28,13 @@ import {
   addServiceMessage, updateServiceMessage, removeServiceMessage,
   renderTemplate, DEFAULT_COBRANCA,
   SERVICES_EVENT, type ServiceItem, type ServiceMessage,
+  uploadLocalServicesToDb, hydrateServicesFromDb, getServicesSyncState,
+  SERVICES_SYNC_EVENT,
 } from "@/lib/services-catalog";
+import { uploadLocalCustomerPlansToDb } from "@/lib/customer-plans";
+import { listServicePlansDb, type ServicePlanDto } from "@/lib/services/services.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { getActiveCompanyId } from "@/lib/company-scope";
 import { ensureCanEditService } from "@/lib/plan-gate";
 
 export const Route = createFileRoute("/cadastros-servicos")({
@@ -76,6 +83,69 @@ function CadastrosServicosPage() {
   const [pendingDelete, setPendingDelete] = useState<ServiceItem | null>(null);
   const [editor, setEditor] = useState<{ planId: string; offsetDays: number } | null>(null);
 
+  // --- banner: enviar planos/mensagens locais para a nuvem ---
+  const CLOUD_BANNER_DISMISS_KEY = "cobranca_ia_services_cloud_banner_dismissed_v1";
+  const [pendingLocal, setPendingLocal] = useState<number>(() =>
+    typeof window === "undefined" ? 0 : getServicesSyncState().pendingLocal,
+  );
+  const [cloudBannerDismissed, setCloudBannerDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(CLOUD_BANNER_DISMISS_KEY) === "1";
+  });
+  const [uploadingLocal, setUploadingLocal] = useState(false);
+  const listPlansFn = useServerFn(listServicePlansDb);
+
+  useEffect(() => {
+    const onSync = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { pendingLocal?: number } | undefined;
+      if (detail && typeof detail.pendingLocal === "number") {
+        setPendingLocal(detail.pendingLocal);
+      } else {
+        setPendingLocal(getServicesSyncState().pendingLocal);
+      }
+    };
+    window.addEventListener(SERVICES_SYNC_EVENT, onSync);
+    return () => window.removeEventListener(SERVICES_SYNC_EVENT, onSync);
+  }, []);
+
+  const handleUploadLocal = async () => {
+    if (uploadingLocal) return;
+    setUploadingLocal(true);
+    try {
+      const [resPlans, resLinks] = await Promise.all([
+        uploadLocalServicesToDb(),
+        uploadLocalCustomerPlansToDb(),
+      ]);
+      const totalPlans = (resPlans?.inserted ?? 0) + (resPlans?.updated ?? 0);
+      const totalLinks = resLinks?.upserted ?? 0;
+      // re-hidrata do banco para evitar duplicidade e refletir tudo
+      const companyId = getActiveCompanyId();
+      if (companyId) {
+        try {
+          const rows = await listPlansFn({ data: { companyId } });
+          hydrateServicesFromDb(companyId, rows as ServicePlanDto[]);
+        } catch {
+          /* hidratação falhou — useServicesSync vai tentar novamente */
+        }
+      }
+      reload();
+      toast.success(
+        totalPlans > 0 || totalLinks > 0
+          ? "Planos enviados para sua conta com sucesso."
+          : "Planos já estavam sincronizados.",
+      );
+    } catch {
+      toast.error("Não foi possível enviar agora. Verifique sua conexão e tente novamente.");
+    } finally {
+      setUploadingLocal(false);
+    }
+  };
+
+  const dismissCloudBanner = () => {
+    setCloudBannerDismissed(true);
+    try { window.localStorage.setItem(CLOUD_BANNER_DISMISS_KEY, "1"); } catch { /* noop */ }
+  };
+
   const reload = () => setItems(listServices());
 
   useEffect(() => {
@@ -121,6 +191,45 @@ function CadastrosServicosPage() {
 
   return (
     <PageContainer>
+      {pendingLocal > 0 && !cloudBannerDismissed && (
+        <div className="rounded-xl border border-primary/40 bg-primary/5 p-3">
+          <div className="flex items-start gap-2">
+            <CloudUpload className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold text-foreground">
+                Encontramos planos salvos apenas neste aparelho.
+              </div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                Envie esses planos para sua conta para acessar em qualquer celular, computador ou PWA.
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleUploadLocal}
+                  disabled={uploadingLocal}
+                  className="h-9"
+                >
+                  {uploadingLocal ? (
+                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Enviando…</>
+                  ) : (
+                    <><CloudUpload className="mr-1.5 h-3.5 w-3.5" /> Enviar para minha conta</>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={dismissCloudBanner}
+                  disabled={uploadingLocal}
+                  className="h-9"
+                >
+                  Agora não
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* =================== BLOCO 1 — PLANOS =================== */}
       <SectionHeader
         title="Escolha o plano"
