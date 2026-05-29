@@ -9,7 +9,7 @@ import { openaiChat } from "@/lib/openai.server";
 import { logWhatsAppAutomation } from "./automation-log.server";
 import { buildAiContext, buildPromptFromContext, type ConvoMemory } from "./ai-context.server";
 import { isLowSignal } from "./intent";
-import { ensureAiQuota, incrementAiUsage, markPausedByLimit } from "@/lib/billing-saas/quota.server";
+import { ensureAiQuota, incrementAiUsageIdempotent, markPausedByLimit } from "@/lib/billing-saas/quota.server";
 import type { WAInstanceRef } from "./provider";
 import {
   detectPaymentRequest,
