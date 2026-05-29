@@ -169,13 +169,7 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
   return (
     <aside className="flex h-full w-[var(--sidebar-width)] flex-col border-r border-border bg-surface">
       <div className="flex h-[var(--header-height)] items-center gap-2 border-b border-border px-4">
-        {role === "super_admin" ? (
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-        ) : (
-          <BrandLogo variant="mark" className="h-9 w-9" />
-        )}
+        <BrandLogo variant="mark" className="h-9 w-9" />
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold tracking-tight">
             {role === "super_admin" ? "Painel Admin" : "CobraEasy"}
