@@ -36,6 +36,7 @@ import { useTrialLeadsSync } from "@/hooks/useTrialLeadsSync";
 import { useFinanceSync } from "@/hooks/useFinanceSync";
 import { useFinanceSettingsSync } from "@/hooks/useFinanceSettingsSync";
 import { useDnsRoutesSync } from "@/hooks/useDnsRoutesSync";
+import { useSetupWizardSync } from "@/lib/setup-wizard/useSetupWizardSync";
 
 
 
@@ -95,6 +96,7 @@ function AuthedApp() {
   useFinanceSync();
   useFinanceSettingsSync();
   useDnsRoutesSync();
+  useSetupWizardSync();
   return <AppShell />;
 }
 

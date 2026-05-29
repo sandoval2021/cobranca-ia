@@ -230,7 +230,45 @@ function writeData(data: SetupWizardData) {
   } catch {
     /* noop */
   }
+  // Write-through DB-first (best-effort): banco é fonte da verdade.
+  mirrorSetupProgressToDb(toSave);
 }
+
+// ----- DB sync (Fase F2B) -----
+const UUID_RE_SETUP = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function mirrorSetupProgressToDb(data: SetupWizardData) {
+  if (typeof window === "undefined") return;
+  // Import dinâmico para evitar circular e manter SSR-safe.
+  import("@/lib/company-scope").then(({ getActiveCompanyId }) => {
+    const cid = getActiveCompanyId();
+    if (!cid || !UUID_RE_SETUP.test(cid)) return;
+    import("@/lib/setup-wizard/setup-wizard.functions").then(({ upsertSetupProgressDb }) => {
+      upsertSetupProgressDb({ data: { companyId: cid, steps: data.steps as Record<string, any> } })
+        .catch(() => { /* hook periódico retenta */ });
+    }).catch(() => { /* ignore */ });
+  }).catch(() => { /* ignore */ });
+}
+
+export function hydrateSetupProgressFromDb(companyId: string, steps: Record<string, any> | null) {
+  if (typeof window === "undefined") return;
+  if (!UUID_RE_SETUP.test(companyId)) return;
+  // Banco vence cache antigo. Cache vazio do banco NÃO apaga local
+  // (preserva progresso pendente para uploader).
+  if (!steps || Object.keys(steps).length === 0) return;
+  const toSave: SetupWizardData = { steps: steps as Record<string, SetupStepState>, updated_at: new Date().toISOString() };
+  try {
+    window.localStorage.setItem(SETUP_WIZARD_KEY, JSON.stringify(toSave));
+    window.dispatchEvent(new Event(SETUP_WIZARD_EVENT));
+  } catch {
+    /* noop */
+  }
+}
+
+export function getLocalSetupWizardData(): SetupWizardData {
+  return readData();
+}
+
 
 function getStepState(data: SetupWizardData, id: SetupStepId): SetupStepState {
   return (

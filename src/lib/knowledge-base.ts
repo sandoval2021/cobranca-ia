@@ -64,11 +64,17 @@ export function upsert(entry: KBEntry): void {
   if (idx >= 0) list[idx] = entry;
   else list.push(entry);
   writeAll(list);
+  // Write-through DB-first (best-effort). Se o id local não for UUID,
+  // o banco gera um e reescrevemos o id local para manter idempotência.
+  mirrorKbEntryToDb(entry);
 }
 
 export function remove(id: string): void {
   writeAll(readAll().filter((e) => e.id !== id));
+  // Write-through delete (apenas para ids UUID; ids locais kb_* nunca foram ao banco).
+  mirrorKbDeleteToDb(id);
 }
+
 
 // ----- Sementes padrão -----
 
@@ -480,3 +486,53 @@ export async function uploadLocalKnowledgeBaseToDb(): Promise<{ inserted: number
   }));
   return bulkUpsertKbEntriesDb({ data: { companyId, entries } });
 }
+
+// Write-through fire-and-forget para mutações pontuais (upsert/remove).
+function mirrorKbEntryToDb(entry: KBEntry): void {
+  if (typeof window === "undefined") return;
+  const companyId = getActiveCompanyId();
+  if (!companyId || !isUuid(companyId)) return;
+  queueMicrotask(() => {
+    import("@/lib/knowledge-base/kb.functions").then(({ upsertKbEntryDb }) => {
+      const payload: any = {
+        companyId,
+        title: entry.title || "Sem título",
+        category: entry.category,
+        app: entry.app ?? null,
+        keywords: entry.keywords ?? [],
+        short_text: entry.short ?? "",
+        full_text: entry.full ?? "",
+        when_to_use: entry.when_to_use ?? null,
+        when_not_to_use: entry.when_not_to_use ?? null,
+        needs_human: !!entry.needs_human,
+        active: entry.active !== false,
+      };
+      if (isUuid(entry.id)) payload.id = entry.id;
+      return upsertKbEntryDb({ data: payload }).then((res) => {
+        // Se o id local não era UUID e o banco retornou outro, atualiza o cache
+        // local para que próximos writes sejam idempotentes.
+        if (!isUuid(entry.id) && res && (res as any).id) {
+          const list = readAll();
+          const idx = list.findIndex((e) => e.id === entry.id);
+          if (idx >= 0) {
+            list[idx] = { ...list[idx], id: (res as any).id };
+            writeAll(list);
+          }
+        }
+      });
+    }).catch(() => { /* hook periódico/manual upload retenta */ });
+  });
+}
+
+function mirrorKbDeleteToDb(id: string): void {
+  if (typeof window === "undefined") return;
+  if (!isUuid(id)) return;
+  const companyId = getActiveCompanyId();
+  if (!companyId || !isUuid(companyId)) return;
+  queueMicrotask(() => {
+    import("@/lib/knowledge-base/kb.functions").then(({ deleteKbEntryDb }) =>
+      deleteKbEntryDb({ data: { id, companyId } }),
+    ).catch(() => { /* ignore */ });
+  });
+}
+
