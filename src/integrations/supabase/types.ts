@@ -2105,9 +2105,15 @@ export type Database = {
           created_at: string
           credential_id: string | null
           customer_id: string
+          dead_at: string | null
+          failed_at: string | null
           id: string
           kind: string
           last_error: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          next_attempt_at: string
           notes: string | null
           plan_days: number | null
           screenshot_url: string | null
@@ -2124,9 +2130,15 @@ export type Database = {
           created_at?: string
           credential_id?: string | null
           customer_id: string
+          dead_at?: string | null
+          failed_at?: string | null
           id?: string
           kind?: string
           last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
           notes?: string | null
           plan_days?: number | null
           screenshot_url?: string | null
@@ -2143,9 +2155,15 @@ export type Database = {
           created_at?: string
           credential_id?: string | null
           customer_id?: string
+          dead_at?: string | null
+          failed_at?: string | null
           id?: string
           kind?: string
           last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
           notes?: string | null
           plan_days?: number | null
           screenshot_url?: string | null
@@ -2985,9 +3003,12 @@ export type Database = {
           body: string
           company_id: string
           created_at: string
+          failed_at: string | null
           id: string
           instance_id: string
           last_error: string | null
+          locked_at: string | null
+          locked_by: string | null
           max_attempts: number
           next_attempt_at: string
           provider_msg_id: string | null
@@ -3002,9 +3023,12 @@ export type Database = {
           body: string
           company_id: string
           created_at?: string
+          failed_at?: string | null
           id?: string
           instance_id: string
           last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
           max_attempts?: number
           next_attempt_at?: string
           provider_msg_id?: string | null
@@ -3019,9 +3043,12 @@ export type Database = {
           body?: string
           company_id?: string
           created_at?: string
+          failed_at?: string | null
           id?: string
           instance_id?: string
           last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
           max_attempts?: number
           next_attempt_at?: string
           provider_msg_id?: string | null
@@ -3115,9 +3142,23 @@ export type Database = {
         Args: { p_customer_id: string }
         Returns: undefined
       }
+      claim_renewal_tasks_batch: {
+        Args: { p_company_id: string; p_limit?: number; p_worker?: string }
+        Returns: {
+          attempts: number
+          company_id: string
+          credential_id: string
+          customer_id: string
+          id: string
+          kind: string
+          max_attempts: number
+          plan_days: number
+          server_id: string
+        }[]
+      }
       claim_super_admin_bootstrap: { Args: never; Returns: Json }
       claim_whatsapp_queue_batch: {
-        Args: { p_limit?: number }
+        Args: { p_limit?: number; p_worker?: string }
         Returns: {
           attempts: number
           body: string
@@ -3274,6 +3315,14 @@ export type Database = {
           p_notes?: string
         }
         Returns: Json
+      }
+      requeue_stuck_renewal_tasks: {
+        Args: { p_stale_minutes?: number }
+        Returns: number
+      }
+      requeue_stuck_whatsapp_messages: {
+        Args: { p_stale_minutes?: number }
+        Returns: number
       }
       set_vault_secret: {
         Args: { p_name: string; p_value: string }
