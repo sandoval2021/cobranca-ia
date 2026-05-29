@@ -416,6 +416,7 @@ export function LandingPage() {
             {[
               {
                 name: "Inicial",
+                planSlug: "essencial",
                 price: "49,90",
                 desc: "Para quem está começando a organizar a cobrança.",
                 features: [
@@ -430,6 +431,7 @@ export function LandingPage() {
               },
               {
                 name: "Profissional",
+                planSlug: "profissional",
                 price: "119,90",
                 desc: "Para revendas em crescimento que precisam escalar.",
                 features: [
@@ -444,6 +446,7 @@ export function LandingPage() {
               },
               {
                 name: "Escala",
+                planSlug: "escala",
                 price: "249,90",
                 desc: "Para equipes e operações de alto volume.",
                 features: [
