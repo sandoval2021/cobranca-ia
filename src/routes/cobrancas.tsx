@@ -4,7 +4,6 @@ import {
   Receipt,
   Search,
   X,
-  Plus,
   Eye,
   Pencil,
   Check,
