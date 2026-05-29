@@ -187,5 +187,19 @@ export function useLocalAuth() {
     }
   }, [supaUser?.email, user, localUser]);
 
-  return { user, role, isOwner: role === "owner", isSuperAdmin: role === "super_admin" };
+  // roleResolved = sabemos com segurança qual é a role do usuário.
+  // - Sem usuário Supabase: depende apenas do localUser (já resolvido).
+  // - Com usuário Supabase: precisa do backend OU da allowlist confirmar
+  //   antes de assumir "owner" (senão flasha banner de trial para Super Admin).
+  const roleResolved = !supaUser
+    ? true
+    : backendSuperAdmin !== null || isSuperAdminEmail(supaUser.email);
+
+  return {
+    user,
+    role,
+    isOwner: role === "owner",
+    isSuperAdmin: role === "super_admin",
+    roleResolved,
+  };
 }
