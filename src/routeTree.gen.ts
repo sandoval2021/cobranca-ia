@@ -23,6 +23,7 @@ import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
 import { Route as PreparacaoBackendRouteImport } from './routes/preparacao-backend'
 import { Route as PlanosRouteImport } from './routes/planos'
 import { Route as PendenciasRouteImport } from './routes/pendencias'
+import { Route as OperacaoFilasRouteImport } from './routes/operacao-filas'
 import { Route as OperacaoDiaRouteImport } from './routes/operacao-dia'
 import { Route as MinhaAssinaturaRouteImport } from './routes/minha-assinatura'
 import { Route as MigracaoEmpresaRouteImport } from './routes/migracao-empresa'
@@ -79,6 +80,7 @@ import { Route as ApiPublicMpOauthCallbackRouteImport } from './routes/api/publi
 import { Route as ApiPublicMpMarketplaceWebhookRouteImport } from './routes/api/public/mp/marketplace-webhook'
 import { Route as ApiPublicHooksWaDispatchRouteImport } from './routes/api/public/hooks/wa-dispatch'
 import { Route as ApiPublicHooksServicesDispatchRouteImport } from './routes/api/public/hooks/services-dispatch'
+import { Route as ApiPublicHooksQueueRecoveryRouteImport } from './routes/api/public/hooks/queue-recovery'
 import { Route as ApiPublicWebhooksEvolutionInstanceRouteImport } from './routes/api/public/webhooks/evolution.$instance'
 
 const WhatsappRoute = WhatsappRouteImport.update({
@@ -149,6 +151,11 @@ const PlanosRoute = PlanosRouteImport.update({
 const PendenciasRoute = PendenciasRouteImport.update({
   id: '/pendencias',
   path: '/pendencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperacaoFilasRoute = OperacaoFilasRouteImport.update({
+  id: '/operacao-filas',
+  path: '/operacao-filas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OperacaoDiaRoute = OperacaoDiaRouteImport.update({
@@ -438,6 +445,12 @@ const ApiPublicHooksServicesDispatchRoute =
     path: '/api/public/hooks/services-dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksQueueRecoveryRoute =
+  ApiPublicHooksQueueRecoveryRouteImport.update({
+    id: '/api/public/hooks/queue-recovery',
+    path: '/api/public/hooks/queue-recovery',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWebhooksEvolutionInstanceRoute =
   ApiPublicWebhooksEvolutionInstanceRouteImport.update({
     id: '/$instance',
@@ -486,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
+  '/operacao-filas': typeof OperacaoFilasRoute
   '/pendencias': typeof PendenciasRoute
   '/planos': typeof PlanosRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
@@ -506,6 +520,7 @@ export interface FileRoutesByFullPath {
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
+  '/api/public/hooks/queue-recovery': typeof ApiPublicHooksQueueRecoveryRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
@@ -559,6 +574,7 @@ export interface FileRoutesByTo {
   '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
+  '/operacao-filas': typeof OperacaoFilasRoute
   '/pendencias': typeof PendenciasRoute
   '/planos': typeof PlanosRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
@@ -579,6 +595,7 @@ export interface FileRoutesByTo {
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
+  '/api/public/hooks/queue-recovery': typeof ApiPublicHooksQueueRecoveryRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
@@ -633,6 +650,7 @@ export interface FileRoutesById {
   '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
+  '/operacao-filas': typeof OperacaoFilasRoute
   '/pendencias': typeof PendenciasRoute
   '/planos': typeof PlanosRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
@@ -653,6 +671,7 @@ export interface FileRoutesById {
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
+  '/api/public/hooks/queue-recovery': typeof ApiPublicHooksQueueRecoveryRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
@@ -708,6 +727,7 @@ export interface FileRouteTypes {
     | '/migracao-empresa'
     | '/minha-assinatura'
     | '/operacao-dia'
+    | '/operacao-filas'
     | '/pendencias'
     | '/planos'
     | '/preparacao-backend'
@@ -728,6 +748,7 @@ export interface FileRouteTypes {
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
+    | '/api/public/hooks/queue-recovery'
     | '/api/public/hooks/services-dispatch'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
@@ -781,6 +802,7 @@ export interface FileRouteTypes {
     | '/migracao-empresa'
     | '/minha-assinatura'
     | '/operacao-dia'
+    | '/operacao-filas'
     | '/pendencias'
     | '/planos'
     | '/preparacao-backend'
@@ -801,6 +823,7 @@ export interface FileRouteTypes {
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
+    | '/api/public/hooks/queue-recovery'
     | '/api/public/hooks/services-dispatch'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
@@ -854,6 +877,7 @@ export interface FileRouteTypes {
     | '/migracao-empresa'
     | '/minha-assinatura'
     | '/operacao-dia'
+    | '/operacao-filas'
     | '/pendencias'
     | '/planos'
     | '/preparacao-backend'
@@ -874,6 +898,7 @@ export interface FileRouteTypes {
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
+    | '/api/public/hooks/queue-recovery'
     | '/api/public/hooks/services-dispatch'
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
@@ -928,6 +953,7 @@ export interface RootRouteChildren {
   MigracaoEmpresaRoute: typeof MigracaoEmpresaRoute
   MinhaAssinaturaRoute: typeof MinhaAssinaturaRoute
   OperacaoDiaRoute: typeof OperacaoDiaRoute
+  OperacaoFilasRoute: typeof OperacaoFilasRoute
   PendenciasRoute: typeof PendenciasRoute
   PlanosRoute: typeof PlanosRoute
   PreparacaoBackendRoute: typeof PreparacaoBackendRoute
@@ -948,6 +974,7 @@ export interface RootRouteChildren {
   PagamentosHistoricoRoute: typeof PagamentosHistoricoRoute
   PagamentosMercadoPagoRoute: typeof PagamentosMercadoPagoRoute
   PagarRefRoute: typeof PagarRefRoute
+  ApiPublicHooksQueueRecoveryRoute: typeof ApiPublicHooksQueueRecoveryRoute
   ApiPublicHooksServicesDispatchRoute: typeof ApiPublicHooksServicesDispatchRoute
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicMpMarketplaceWebhookRoute: typeof ApiPublicMpMarketplaceWebhookRoute
@@ -1058,6 +1085,13 @@ declare module '@tanstack/react-router' {
       path: '/pendencias'
       fullPath: '/pendencias'
       preLoaderRoute: typeof PendenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operacao-filas': {
+      id: '/operacao-filas'
+      path: '/operacao-filas'
+      fullPath: '/operacao-filas'
+      preLoaderRoute: typeof OperacaoFilasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/operacao-dia': {
@@ -1452,6 +1486,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksServicesDispatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/queue-recovery': {
+      id: '/api/public/hooks/queue-recovery'
+      path: '/api/public/hooks/queue-recovery'
+      fullPath: '/api/public/hooks/queue-recovery'
+      preLoaderRoute: typeof ApiPublicHooksQueueRecoveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/evolution/$instance': {
       id: '/api/public/webhooks/evolution/$instance'
       path: '/$instance'
@@ -1518,6 +1559,7 @@ const rootRouteChildren: RootRouteChildren = {
   MigracaoEmpresaRoute: MigracaoEmpresaRoute,
   MinhaAssinaturaRoute: MinhaAssinaturaRoute,
   OperacaoDiaRoute: OperacaoDiaRoute,
+  OperacaoFilasRoute: OperacaoFilasRoute,
   PendenciasRoute: PendenciasRoute,
   PlanosRoute: PlanosRoute,
   PreparacaoBackendRoute: PreparacaoBackendRoute,
@@ -1538,6 +1580,7 @@ const rootRouteChildren: RootRouteChildren = {
   PagamentosHistoricoRoute: PagamentosHistoricoRoute,
   PagamentosMercadoPagoRoute: PagamentosMercadoPagoRoute,
   PagarRefRoute: PagarRefRoute,
+  ApiPublicHooksQueueRecoveryRoute: ApiPublicHooksQueueRecoveryRoute,
   ApiPublicHooksServicesDispatchRoute: ApiPublicHooksServicesDispatchRoute,
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicMpMarketplaceWebhookRoute: ApiPublicMpMarketplaceWebhookRoute,
@@ -1552,13 +1595,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
