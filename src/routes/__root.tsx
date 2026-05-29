@@ -24,6 +24,10 @@ import { useScreensSync } from "@/lib/screens/useScreensSync";
 import { useServicesSync } from "@/lib/services/useServicesSync";
 import { useManualRenewalsSync } from "@/lib/manual-renewals/useManualRenewalsSync";
 import { useCustomerDueOverridesSync } from "@/lib/customer-due-overrides/useCustomerDueOverridesSync";
+import { useReferralsSync } from "@/lib/referrals/useReferralsSync";
+import { useKnowledgeBaseSync } from "@/lib/knowledge-base/useKnowledgeBaseSync";
+import { useManualDispatchRulesSync } from "@/lib/manual-dispatch-rules/useManualDispatchRulesSync";
+import { useImportedDueDatesSync } from "@/lib/imports/useImportedDueDatesSync";
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
@@ -69,6 +73,10 @@ function AuthedApp() {
   useServicesSync();
   useManualRenewalsSync();
   useCustomerDueOverridesSync();
+  useReferralsSync();
+  useKnowledgeBaseSync();
+  useManualDispatchRulesSync();
+  useImportedDueDatesSync();
   return <AppShell />;
 }
 

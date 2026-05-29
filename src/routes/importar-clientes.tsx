@@ -44,7 +44,13 @@ import {
   validateRows,
   type ValidatedRow,
 } from "@/lib/import-parse";
-import { setImportedDueBulk } from "@/lib/imported-due-dates";
+import {
+  setImportedDueBulk,
+  getImportedDueDatesSyncState,
+  uploadLocalImportedDueDatesToDb,
+  IMPORTED_DUE_SYNC_EVENT,
+} from "@/lib/imported-due-dates";
+import { CloudUploadLocalDataBanner } from "@/components/cloud/CloudUploadLocalDataBanner";
 import {
   buildSchedule,
   applyPersistedStatus,
@@ -842,6 +848,17 @@ function ImportarClientesPage() {
         hint="Lemos o PDF, mostramos a prévia e você confirma antes de gravar."
       />
       <CompanyScopeNotice moduleKey="cobranca_ia_import_schedule_items_v1" />
+      <CloudUploadLocalDataBanner
+        storageScope="imported-due"
+        modules={[
+          {
+            key: "imported-due",
+            getPendingCount: () => getImportedDueDatesSyncState().pendingLocal,
+            syncEvent: IMPORTED_DUE_SYNC_EVENT,
+            upload: () => uploadLocalImportedDueDatesToDb(),
+          },
+        ]}
+      />
 
       {/* Aviso */}
       <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300/50 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-100">
