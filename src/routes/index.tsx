@@ -474,16 +474,49 @@ function QuickAction({
   label,
   icon: Icon,
   tone = "primary",
+  bold = false,
 }: {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   tone?: Tone;
+  bold?: boolean;
 }) {
   const [path, qs] = to.split("?");
   const search = qs
     ? Object.fromEntries(new URLSearchParams(qs).entries())
     : undefined;
+
+  if (bold) {
+    const boldSurface: Record<Tone, string> = {
+      primary:
+        "bg-primary text-primary-foreground shadow-[0_6px_18px_-6px_color-mix(in_oklab,var(--primary)_60%,transparent)]",
+      success:
+        "bg-emerald-600 text-white shadow-[0_6px_18px_-6px_rgba(5,150,105,0.55)]",
+      warning:
+        "bg-amber-500 text-white shadow-[0_6px_18px_-6px_rgba(245,158,11,0.6)]",
+      info:
+        "bg-sky-500 text-white shadow-[0_6px_18px_-6px_rgba(14,165,233,0.55)]",
+      danger:
+        "bg-red-500 text-white shadow-[0_6px_18px_-6px_rgba(239,68,68,0.55)]",
+      neutral:
+        "bg-card text-foreground border border-border shadow-card",
+    };
+    return (
+      <Link
+        to={path}
+        search={search as never}
+        className={cn(
+          "flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 text-center transition-all hover:-translate-y-0.5 active:scale-[0.98]",
+          boldSurface[tone],
+        )}
+      >
+        <Icon className="h-5 w-5" />
+        <span className="text-xs font-bold leading-tight">{label}</span>
+      </Link>
+    );
+  }
+
   return (
     <Link
       to={path}
@@ -504,6 +537,7 @@ function QuickAction({
     </Link>
   );
 }
+
 
 function SectionTitle({
   title,
