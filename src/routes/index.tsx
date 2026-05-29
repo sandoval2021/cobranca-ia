@@ -104,7 +104,7 @@ function HeaderChips() {
     }
   };
 
-  const showPlanChip = isOwner && company;
+  const showPlanChip = roleResolved && isOwner && company;
   const isTrial = status === "teste";
   let planChipTone = "bg-muted text-muted-foreground border-border";
   let planLabel: string | null = null;
