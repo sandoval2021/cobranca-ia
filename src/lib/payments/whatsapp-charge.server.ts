@@ -265,15 +265,20 @@ export async function generateWhatsAppPaymentCharge(opts: {
       .single();
     if (txErr) throw new Error(String(txErr.message));
 
-    await db().from("payment_split_logs").insert({
-      company_id: opts.companyId,
-      transaction_id: tx.id,
-      application_fee_cents: fee.feeCents,
-      owner_amount_cents: fee.totalCents - fee.feeCents,
-      total_amount_cents: fee.totalCents,
-      status: "ok",
-      mp_response: { source: "whatsapp_ai", method, mp_payment_id: mpId, mp_preference_id: prefId },
-    });
+    await db()
+      .from("payment_split_logs")
+      .upsert(
+        {
+          company_id: opts.companyId,
+          transaction_id: tx.id,
+          application_fee_cents: fee.feeCents,
+          owner_amount_cents: fee.totalCents - fee.feeCents,
+          total_amount_cents: fee.totalCents,
+          status: "ok",
+          mp_response: { source: "whatsapp_ai", method, mp_payment_id: mpId, mp_preference_id: prefId },
+        },
+        { onConflict: "transaction_id", ignoreDuplicates: true },
+      );
 
     return {
       ok: true,

@@ -33,6 +33,7 @@ const EntryInput = z.object({
   servico_id: UUID.nullable().optional(),
   observacoes: z.string().max(2000).nullable().optional(),
   extraJson: z.string().max(20000).nullable().optional(),
+  idempotencyKey: z.string().min(8).max(128).nullable().optional(),
 });
 
 const GoalInput = z.object({
@@ -117,13 +118,14 @@ function rowToGoal(r: Record<string, unknown>): FinanceGoalDto {
 }
 
 function entryInputToRow(d: z.infer<typeof EntryInput>) {
-  const { companyId, id, extraJson, ...rest } = d;
+  const { companyId, id, extraJson, idempotencyKey, ...rest } = d;
   return {
     ...rest,
     extra: parseExtra(extraJson) as never,
     company_id: companyId,
     ...(id ? { id } : {}),
-  };
+    ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
+  } as never;
 }
 
 function goalInputToRow(d: z.infer<typeof GoalInput>) {

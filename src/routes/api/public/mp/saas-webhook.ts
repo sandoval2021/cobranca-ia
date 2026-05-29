@@ -50,11 +50,57 @@ export const Route = createFileRoute("/api/public/mp/saas-webhook")({
           return new Response("ignored", { status: 200 });
         }
 
+        // Fase B — Idempotência: registra evento ANTES de processar.
+        // UNIQUE(provider, data_id, event_type). Se duplicado, retorna 200
+        // sem reprocessar ativação de assinatura.
+        const { data: evRow, error: evErr } = await supabaseAdmin
+          .from("saas_webhook_events")
+          .insert({
+            provider: "mercado_pago",
+            data_id: paymentId,
+            event_type: "payment",
+            status: "received",
+            raw_reference: { topic, payment_id: paymentId } as any,
+          })
+          .select("id")
+          .single();
+
+        if (evErr) {
+          const code = (evErr as { code?: string }).code;
+          if (code === "23505") {
+            return new Response("duplicate", { status: 200 });
+          }
+          console.error("[saas webhook] insert event failed", evErr);
+          // Falha ao registrar evento — não processa mutação financeira.
+          return new Response("event_log_failed", { status: 500 });
+        }
+
+        const eventRowId = (evRow as { id: string }).id;
+
         const payment = await fetchSaasPayment(paymentId);
-        if (!payment) return new Response("not_found", { status: 200 });
+        if (!payment) {
+          await supabaseAdmin
+            .from("saas_webhook_events")
+            .update({
+              status: "processed",
+              processed_at: new Date().toISOString(),
+              error_message: "payment_not_found",
+            })
+            .eq("id", eventRowId);
+          return new Response("not_found", { status: 200 });
+        }
 
         const ext = payment.external_reference ?? "";
         if (!ext.startsWith("saas_")) {
+          await supabaseAdmin
+            .from("saas_webhook_events")
+            .update({
+              status: "processed",
+              processed_at: new Date().toISOString(),
+              error_message: "external_reference_ignored",
+              external_reference: ext || null,
+            })
+            .eq("id", eventRowId);
           return new Response("ignored", { status: 200 });
         }
 
@@ -64,7 +110,20 @@ export const Route = createFileRoute("/api/public/mp/saas-webhook")({
           .select("*")
           .eq("external_reference", ext)
           .maybeSingle();
-        if (!sess) return new Response("session_not_found", { status: 200 });
+        if (!sess) {
+          await supabaseAdmin
+            .from("saas_webhook_events")
+            .update({
+              status: "processed",
+              processed_at: new Date().toISOString(),
+              error_message: "session_not_found",
+              external_reference: ext,
+            })
+            .eq("id", eventRowId);
+          return new Response("session_not_found", { status: 200 });
+        }
+
+        const companyIdSess = (sess as { company_id: string }).company_id;
 
         // atualiza sempre o registro
         await supabaseAdmin
@@ -80,11 +139,21 @@ export const Route = createFileRoute("/api/public/mp/saas-webhook")({
 
         if (payment.status === "approved") {
           await supabaseAdmin.rpc("activate_saas_subscription", {
-            _company_id: (sess as { company_id: string }).company_id,
+            _company_id: companyIdSess,
             _plan_id: (sess as { plan_id: string }).plan_id,
             _period_days: 30,
           });
         }
+
+        await supabaseAdmin
+          .from("saas_webhook_events")
+          .update({
+            status: "processed",
+            processed_at: new Date().toISOString(),
+            external_reference: ext,
+            company_id: companyIdSess,
+          })
+          .eq("id", eventRowId);
 
         return new Response("ok", { status: 200 });
       },

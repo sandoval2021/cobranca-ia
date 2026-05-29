@@ -169,6 +169,7 @@ export const createPixCharge = createServerFn({ method: "POST" })
       customerId?: string | null;
       amountCents: number;
       description: string;
+      idempotencyKey?: string | null;
     }) =>
       z
         .object({
@@ -176,6 +177,7 @@ export const createPixCharge = createServerFn({ method: "POST" })
           customerId: z.string().uuid().nullable().optional(),
           amountCents: z.number().int().min(100).max(10_000_000), // R$1 — R$100k
           description: z.string().min(1).max(200),
+          idempotencyKey: z.string().min(8).max(128).nullable().optional(),
         })
         .parse(input),
   )
@@ -184,6 +186,33 @@ export const createPixCharge = createServerFn({ method: "POST" })
       throw new Error("forbidden");
     }
     const db = admin();
+
+    // Fase B — Idempotência: se o cliente enviar idempotencyKey, e já houver
+    // transação com (company_id, idempotency_key), devolve a existente em vez
+    // de chamar o MP de novo. Duplo clique deixa de gerar segunda cobrança.
+    if (data.idempotencyKey) {
+      const { data: existing } = await db
+        .from("payment_transactions")
+        .select("*")
+        .eq("company_id", data.companyId)
+        .eq("idempotency_key", data.idempotencyKey)
+        .maybeSingle();
+      if (existing) {
+        const appUrl0 = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "");
+        return {
+          id: existing.id as string,
+          externalReference: existing.external_reference as string,
+          amountCents: existing.amount_cents as number,
+          feeCents: existing.processing_fee_cents as number,
+          totalCents: existing.total_amount_cents as number,
+          feeMode: existing.fee_mode as FeeMode,
+          qrCode: (existing.qr_code as string | null) ?? null,
+          qrCodeBase64: (existing.qr_code_base64 as string | null) ?? null,
+          ticketUrl: (existing.ticket_url as string | null) ?? null,
+          payUrl: `${appUrl0}/pagar/${existing.external_reference}`,
+        };
+      }
+    }
 
     // Garante config
     const { data: settings } = await db
@@ -236,21 +265,27 @@ export const createPixCharge = createServerFn({ method: "POST" })
         ticket_url: pix.ticket_url,
         expires_at: expiresAt,
         raw_response: pix.raw as Record<string, unknown>,
+        idempotency_key: data.idempotencyKey ?? null,
       })
       .select("*")
       .single();
     if (txErr) throw new Error(String(txErr.message));
 
-    // Log split
-    await db.from("payment_split_logs").insert({
-      company_id: data.companyId,
-      transaction_id: tx.id,
-      application_fee_cents: fee.feeCents,
-      owner_amount_cents: fee.totalCents - fee.feeCents,
-      total_amount_cents: fee.totalCents,
-      status: "ok",
-      mp_response: { payment_id: pix.id, status: pix.status },
-    });
+    // Fase B — split log idempotente (UNIQUE em transaction_id).
+    await db
+      .from("payment_split_logs")
+      .upsert(
+        {
+          company_id: data.companyId,
+          transaction_id: tx.id,
+          application_fee_cents: fee.feeCents,
+          owner_amount_cents: fee.totalCents - fee.feeCents,
+          total_amount_cents: fee.totalCents,
+          status: "ok",
+          mp_response: { payment_id: pix.id, status: pix.status },
+        },
+        { onConflict: "transaction_id", ignoreDuplicates: true },
+      );
 
     return {
       id: tx.id,
@@ -277,6 +312,7 @@ export const createPaymentLink = createServerFn({ method: "POST" })
       customerId?: string | null;
       amountCents: number;
       description: string;
+      idempotencyKey?: string | null;
     }) =>
       z
         .object({
@@ -284,6 +320,7 @@ export const createPaymentLink = createServerFn({ method: "POST" })
           customerId: z.string().uuid().nullable().optional(),
           amountCents: z.number().int().min(100).max(10_000_000),
           description: z.string().min(1).max(200),
+          idempotencyKey: z.string().min(8).max(128).nullable().optional(),
         })
         .parse(input),
   )
@@ -292,6 +329,30 @@ export const createPaymentLink = createServerFn({ method: "POST" })
       throw new Error("forbidden");
     }
     const db = admin();
+
+    // Fase B — Idempotência
+    if (data.idempotencyKey) {
+      const { data: existing } = await db
+        .from("payment_transactions")
+        .select("*")
+        .eq("company_id", data.companyId)
+        .eq("idempotency_key", data.idempotencyKey)
+        .maybeSingle();
+      if (existing) {
+        const appUrl0 = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "");
+        return {
+          id: existing.id as string,
+          externalReference: existing.external_reference as string,
+          initPoint: (existing.init_point as string | null) ?? null,
+          payUrl: `${appUrl0}/pagar/${existing.external_reference}`,
+          amountCents: existing.amount_cents as number,
+          feeCents: existing.processing_fee_cents as number,
+          totalCents: existing.total_amount_cents as number,
+          feeMode: existing.fee_mode as FeeMode,
+        };
+      }
+    }
+
     const { data: settings } = await db
       .from("payment_settings")
       .select("*")
@@ -333,20 +394,26 @@ export const createPaymentLink = createServerFn({ method: "POST" })
         mp_preference_id: pref.id,
         init_point: pref.init_point,
         raw_response: pref.raw as Record<string, unknown>,
+        idempotency_key: data.idempotencyKey ?? null,
       })
       .select("*")
       .single();
     if (txErr) throw new Error(String(txErr.message));
 
-    await db.from("payment_split_logs").insert({
-      company_id: data.companyId,
-      transaction_id: tx.id,
-      application_fee_cents: fee.feeCents,
-      owner_amount_cents: fee.totalCents - fee.feeCents,
-      total_amount_cents: fee.totalCents,
-      status: "ok",
-      mp_response: { preference_id: pref.id },
-    });
+    await db
+      .from("payment_split_logs")
+      .upsert(
+        {
+          company_id: data.companyId,
+          transaction_id: tx.id,
+          application_fee_cents: fee.feeCents,
+          owner_amount_cents: fee.totalCents - fee.feeCents,
+          total_amount_cents: fee.totalCents,
+          status: "ok",
+          mp_response: { preference_id: pref.id },
+        },
+        { onConflict: "transaction_id", ignoreDuplicates: true },
+      );
 
     return {
       id: tx.id,

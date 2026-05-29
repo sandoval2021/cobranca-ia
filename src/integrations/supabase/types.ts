@@ -1378,6 +1378,7 @@ export type Database = {
           descricao: string | null
           extra: Json | null
           id: string
+          idempotency_key: string | null
           metodo_pagamento: string | null
           observacoes: string | null
           servico_id: string | null
@@ -1394,6 +1395,7 @@ export type Database = {
           descricao?: string | null
           extra?: Json | null
           id?: string
+          idempotency_key?: string | null
           metodo_pagamento?: string | null
           observacoes?: string | null
           servico_id?: string | null
@@ -1410,6 +1412,7 @@ export type Database = {
           descricao?: string | null
           extra?: Json | null
           id?: string
+          idempotency_key?: string | null
           metodo_pagamento?: string | null
           observacoes?: string | null
           servico_id?: string | null
@@ -1778,6 +1781,7 @@ export type Database = {
           external_reference: string
           fee_mode: string
           id: string
+          idempotency_key: string | null
           init_point: string | null
           mp_payment_id: string | null
           mp_preference_id: string | null
@@ -1802,6 +1806,7 @@ export type Database = {
           external_reference: string
           fee_mode?: string
           id?: string
+          idempotency_key?: string | null
           init_point?: string | null
           mp_payment_id?: string | null
           mp_preference_id?: string | null
@@ -1826,6 +1831,7 @@ export type Database = {
           external_reference?: string
           fee_mode?: string
           id?: string
+          idempotency_key?: string | null
           init_point?: string | null
           mp_payment_id?: string | null
           mp_preference_id?: string | null
@@ -2004,6 +2010,7 @@ export type Database = {
           plan_days: number | null
           screenshot_url: string | null
           server_id: string | null
+          source_payment_id: string | null
           status: string
           updated_at: string
         }
@@ -2022,6 +2029,7 @@ export type Database = {
           plan_days?: number | null
           screenshot_url?: string | null
           server_id?: string | null
+          source_payment_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -2040,6 +2048,7 @@ export type Database = {
           plan_days?: number | null
           screenshot_url?: string | null
           server_id?: string | null
+          source_payment_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -2218,6 +2227,51 @@ export type Database = {
           slug?: string
           sort_order?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      saas_webhook_events: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          data_id: string
+          error_message: string | null
+          event_type: string
+          external_reference: string | null
+          id: string
+          processed_at: string | null
+          provider: string
+          raw_reference: Json
+          received_at: string
+          status: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          data_id: string
+          error_message?: string | null
+          event_type?: string
+          external_reference?: string | null
+          id?: string
+          processed_at?: string | null
+          provider?: string
+          raw_reference?: Json
+          received_at?: string
+          status?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          data_id?: string
+          error_message?: string | null
+          event_type?: string
+          external_reference?: string | null
+          id?: string
+          processed_at?: string | null
+          provider?: string
+          raw_reference?: Json
+          received_at?: string
+          status?: string
         }
         Relationships: []
       }
