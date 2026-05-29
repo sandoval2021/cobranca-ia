@@ -380,7 +380,7 @@ function CadastrosServicosPage() {
                           <div
                             key={days}
                             className={cn(
-                              "group relative flex h-full flex-col rounded-xl border bg-card p-3 shadow-sm transition-all",
+                              "group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border bg-card p-3 shadow-sm transition-all",
                               "hover:border-primary/60 hover:shadow-md",
                               configured ? "border-border" : "border-dashed border-border",
                             )}
@@ -389,9 +389,9 @@ function CadastrosServicosPage() {
                               type="button"
                               onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
                               aria-label={`Editar mensagem: ${slotLabel(days)}`}
-                              className="flex min-w-0 flex-1 cursor-pointer flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-md"
+                              className="flex w-full min-w-0 flex-1 cursor-pointer flex-col rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                             >
-                              <div className="mb-1.5 flex items-center gap-2">
+                              <div className="mb-1.5 flex w-full min-w-0 items-center gap-2">
                                 <span
                                   className={cn("h-2.5 w-2.5 shrink-0 rounded-full", toneDotClass(tone))}
                                   aria-hidden="true"
@@ -412,7 +412,7 @@ function CadastrosServicosPage() {
                               </div>
                               <p
                                 className={cn(
-                                  "line-clamp-2 min-h-[2.25rem] text-xs leading-snug",
+                                  "line-clamp-2 min-h-[2.25rem] w-full break-words text-xs leading-snug",
                                   configured
                                     ? "text-muted-foreground"
                                     : "italic text-muted-foreground/70",
@@ -421,7 +421,7 @@ function CadastrosServicosPage() {
                                 {configured ? msg!.template : "Mensagem ainda não configurada"}
                               </p>
                             </button>
-                            <div className="mt-2 flex items-center justify-between gap-2">
+                            <div className="mt-2 flex w-full min-w-0 flex-wrap items-center justify-between gap-2">
                               {configured ? (
                                 <button
                                   type="button"
@@ -433,7 +433,7 @@ function CadastrosServicosPage() {
                                       subtitle: `Plano ${selectedPlan.nome}`,
                                     })
                                   }
-                                  className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-2.5 text-xs font-medium text-primary hover:bg-primary/10"
+                                  className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 text-xs font-medium text-primary hover:bg-primary/10"
                                   aria-label={`Ver ${count} cliente(s) que vão receber esta mensagem`}
                                   title="Ver quem vai receber"
                                 >
@@ -449,7 +449,7 @@ function CadastrosServicosPage() {
                               <button
                                 type="button"
                                 onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
-                                className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium hover:bg-muted"
+                                className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-medium hover:bg-muted"
                                 aria-label={`Editar mensagem ${slotLabel(days)}`}
                               >
                                 <Pencil className="h-3.5 w-3.5" />
