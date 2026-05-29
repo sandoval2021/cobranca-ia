@@ -157,15 +157,15 @@ export async function buildCredentialsReply(params: {
   }
 
   const host = route.host.startsWith("http") ? route.host : `http://${route.host}`;
-
   const reply =
-    `Olá, ${first} 😊\n\n` +
-    `Aqui estão seus dados de acesso:\n\n` +
-    `🌐 Link:\n${host}\n\n` +
-    `👤 Usuário:\n${cred.iptv_username}\n\n` +
-    `🔐 Senha:\n${password}\n\n` +
-    `📅 Vencimento:\n${fmtDateBR(cred.expires_at)}\n\n` +
-    `Caso precise de ajuda, estamos à disposição.`;
+    `✅ *Seus dados de acesso*\n\n` +
+    `👤 *Cliente:* ${first}\n` +
+    `🌐 *Link:* ${host}\n` +
+    `🔑 *Usuário:* ${cred.iptv_username}\n` +
+    `🔐 *Senha:* ${password}\n` +
+    `📅 *Vencimento:* ${fmtDateBR(cred.expires_at)}\n\n` +
+    `Qualquer dúvida, estamos à disposição. 😊`;
+
 
   // Log de acesso a credencial (auditoria)
   try {
