@@ -280,7 +280,7 @@ function RegrasDisparoPage() {
       <SectionHeader
         title="Regras de disparo"
         subtitle="Configure quando o sistema deve sugerir mensagens manuais de cobrança."
-        hint="As regras ficam salvas apenas neste navegador."
+        hint="As regras ficam salvas na sua conta e sincronizam entre dispositivos."
       />
       <CloudUploadLocalDataBanner
         storageScope="manual-rules"
