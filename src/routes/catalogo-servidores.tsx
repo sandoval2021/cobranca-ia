@@ -25,7 +25,7 @@ import {
   ServerEntry, listServers, saveServer, archiveServer, reactivateServer,
   deleteServer, restoreDefaultServers, exportServers, parseServerBackup,
   importServers, newServerId, serverBadgeStyle, maskSecret, formatServerAsText,
-  SERVER_CATALOG_EVENT,
+  SERVER_CATALOG_EVENT, SERVER_CATALOG_SYNC_EVENT, uploadLocalServersToDb,
 } from "@/lib/server-catalog";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
