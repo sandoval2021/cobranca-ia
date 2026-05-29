@@ -31,12 +31,13 @@ export function useAuth() {
     }
     let alive = true;
     let settled = false;
+    // Failsafe NÃO destrutivo: só destrava a UI se o getSession() travar.
+    // NÃO mexe na sessão nem limpa storage — assim PWA/mobile não perde login
+    // por rede lenta na abertura.
     const failSafe = window.setTimeout(() => {
       if (!alive || settled) return;
       settled = true;
-      setSession(null);
       setLoading(false);
-      void clearStaleSession();
     }, 12_000);
 
     const finishLoading = (nextSession: Session | null) => {
@@ -47,29 +48,28 @@ export function useAuth() {
       setLoading(false);
     };
 
-    // INITIAL_SESSION vem do storage local e pode conter JWT antigo após rotação
-    // de chaves. Não confiar nele antes de revalidar com getUser().
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       if (!alive) return;
       if (_e === "INITIAL_SESSION") return;
       finishLoading(s);
     });
 
-    // 1) Render IMEDIATO a partir da sessão em storage — UI não bloqueia.
-    // 2) Em paralelo (fire-and-forget), revalida o JWT contra o servidor.
-    //    Só desloga se o token estiver realmente inválido. Isso evita o
-    //    flash "Carregando sua sessão..." em todo refresh/navegação.
+    // 1) Render IMEDIATO a partir da sessão em storage.
+    // 2) Em background, revalida com getUser(); só desloga em token
+    //    comprovadamente inválido (assinatura/expiração). Erros de rede
+    //    são ignorados — a sessão local continua.
     supabase.auth.getSession().then(({ data }) => {
       if (!alive) return;
       finishLoading(data.session);
 
       if (!data.session) return;
-      // Revalidação em background — não bloqueia o render.
       supabase!.auth.getUser().then(async ({ error }) => {
         if (!alive || !error) return;
-        if (isInvalidAuthToken(error.message)) await clearStaleSession();
-        else await supabase!.auth.signOut().catch(() => undefined);
-        if (alive) setSession(null);
+        if (isInvalidAuthToken(error.message)) {
+          await signOutInvalidSession();
+          if (alive) setSession(null);
+        }
+        // Erro genérico (rede, 5xx) → mantém a sessão local; refresh automático cuida.
       }).catch(() => undefined);
     }).catch(() => {
       if (alive) finishLoading(null);
