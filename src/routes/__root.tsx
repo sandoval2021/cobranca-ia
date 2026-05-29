@@ -96,6 +96,7 @@ function AuthedApp() {
   useFinanceSync();
   useFinanceSettingsSync();
   useDnsRoutesSync();
+  useSetupWizardSync();
   return <AppShell />;
 }
 
