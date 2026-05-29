@@ -388,19 +388,37 @@ function CadastrosServicosPage() {
                             <button
                               type="button"
                               onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
-                              className="flex min-w-0 flex-1 flex-col text-left"
+                              aria-label={`Editar mensagem: ${slotLabel(days)}`}
+                              className="flex min-w-0 flex-1 cursor-pointer flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-md"
                             >
                               <div className="mb-1.5 flex items-center gap-2">
-                                <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", toneDotClass(tone))} />
-                                <p className="truncate text-sm font-semibold leading-tight">{slotLabel(days)}</p>
+                                <span
+                                  className={cn("h-2.5 w-2.5 shrink-0 rounded-full", toneDotClass(tone))}
+                                  aria-hidden="true"
+                                />
+                                <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight">
+                                  {slotLabel(days)}
+                                </p>
+                                <span
+                                  className={cn(
+                                    "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                    configured
+                                      ? "bg-success/10 text-success"
+                                      : "bg-destructive/10 text-destructive",
+                                  )}
+                                >
+                                  {configured ? "Configurada" : "Pendente"}
+                                </span>
                               </div>
                               <p
                                 className={cn(
                                   "line-clamp-2 min-h-[2.25rem] text-xs leading-snug",
-                                  configured ? "text-muted-foreground" : "text-destructive/80 font-medium",
+                                  configured
+                                    ? "text-muted-foreground"
+                                    : "italic text-muted-foreground/70",
                                 )}
                               >
-                                {configured ? msg!.template : "Não configurado"}
+                                {configured ? msg!.template : "Mensagem ainda não configurada"}
                               </p>
                             </button>
                             <div className="mt-2 flex items-center justify-between gap-2">
@@ -415,23 +433,27 @@ function CadastrosServicosPage() {
                                       subtitle: `Plano ${selectedPlan.nome}`,
                                     })
                                   }
-                                  className="inline-flex shrink-0 items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
-                                  title="Ver clientes que vão receber"
+                                  className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-2.5 text-xs font-medium text-primary hover:bg-primary/10"
+                                  aria-label={`Ver ${count} cliente(s) que vão receber esta mensagem`}
+                                  title="Ver quem vai receber"
                                 >
-                                  <Users className="h-3 w-3" />
-                                  {count}
+                                  <Users className="h-3.5 w-3.5" />
+                                  <span>{count}</span>
+                                  <span className="hidden sm:inline">cliente{count === 1 ? "" : "s"}</span>
                                 </button>
                               ) : (
-                                <span className="text-[10px] font-medium uppercase tracking-wide text-destructive/70">
-                                  Pendente
+                                <span className="text-[11px] text-muted-foreground">
+                                  Toque para configurar
                                 </span>
                               )}
                               <button
                                 type="button"
                                 onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
-                                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] hover:bg-muted"
+                                className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium hover:bg-muted"
+                                aria-label={`Editar mensagem ${slotLabel(days)}`}
                               >
-                                <Pencil className="h-3 w-3" /> Editar
+                                <Pencil className="h-3.5 w-3.5" />
+                                <span>Editar</span>
                               </button>
                             </div>
                           </div>
