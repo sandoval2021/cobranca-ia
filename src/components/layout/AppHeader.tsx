@@ -34,6 +34,7 @@ export function AppHeader({ title, onMenu, action }: Props) {
             <Menu className="h-5 w-5" />
           </Button>
         ) : null}
+        <BrandLogo variant="mark" className="h-7 w-7 shrink-0 rounded-md" alt="CobraEasy" />
         <h1 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight md:text-lg">
           {title}
         </h1>
