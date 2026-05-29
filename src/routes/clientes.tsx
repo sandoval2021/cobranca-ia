@@ -80,7 +80,8 @@ import {
   paidAppAlerts, paidAlertClass, PAID_ALERT_LABEL, appDueDays, isPaidApp,
   APP_WEBSITE, ACCESS_LABEL, mask, upsertScreen, newId, archiveScreen,
 } from "@/lib/app-screens";
-import { listActiveServices, SERVICES_EVENT, type ServiceItem } from "@/lib/services-catalog";
+import { listActiveServices, SERVICES_EVENT, formatBRL, type ServiceItem } from "@/lib/services-catalog";
+import { setCustomerPlan } from "@/lib/customer-plans";
 import { AppScreensSection } from "@/components/clientes/AppScreensSection";
 import { QuickSupportSection } from "@/components/clientes/QuickSupportSection";
 import { QuickRenewDialog } from "@/components/clientes/QuickRenewDialog";
@@ -2755,6 +2756,7 @@ function NewCustomerSheet({
   onCreated: () => void;
 }) {
   const servers = useMemo(() => listActiveServers(), [open]);
+  const plans = useMemo<ServiceItem[]>(() => (open ? listActiveServices() : []), [open]);
 
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -2763,17 +2765,29 @@ function NewCustomerSheet({
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [planId, setPlanId] = useState<string>("__none__");
   const [screens, setScreens] = useState<ScreenDraft[]>([makeScreenDraft(1)]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (open) {
       setName(""); setWhatsapp(""); setCountryCode("BR"); setCustomDdi("");
-      setAmount(""); setDueDate(""); setNotes("");
+      setAmount(""); setDueDate(""); setNotes(""); setPlanId("__none__");
       setScreens([makeScreenDraft(1)]);
       setBusy(false);
     }
   }, [open]);
+
+  const onPickPlan = (id: string) => {
+    setPlanId(id);
+    if (id !== "__none__") {
+      const p = plans.find((x) => x.id === id);
+      if (p) {
+        const reais = (p.preco_cents / 100).toFixed(2).replace(".", ",");
+        setAmount(reais);
+      }
+    }
+  };
 
   const updateScreen = (uid: string, patch: Partial<ScreenDraft>) => {
     setScreens((prev) => prev.map((s) => (s.uid === uid ? { ...s, ...patch } : s)));
@@ -2891,6 +2905,12 @@ function NewCustomerSheet({
         }
       }
     }
+
+    if (customerId && planId !== "__none__") {
+      try { setCustomerPlan(customerId, planId); } catch (err) { console.warn("[customer-create] plan link", err); }
+    }
+
+
 
     setBusy(false);
     toast.success(
@@ -3140,6 +3160,30 @@ function NewCustomerSheet({
           {/* Cobrança consolidada */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
             <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Cobrança</h3>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs">Plano de serviço</Label>
+                <HelpTip text="Escolha um plano cadastrado para preencher o valor automaticamente. Você pode editar depois." />
+              </div>
+              <Select value={planId} onValueChange={onPickPlan}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder={plans.length ? "Selecionar plano" : "Nenhum plano cadastrado"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem plano</SelectItem>
+                  {plans.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome} — {p.meses}m · {formatBRL(p.preco_cents)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {plans.length === 0 && (
+                <p className="text-[10px] text-muted-foreground">
+                  Cadastre planos em Serviços para reutilizar valores aqui.
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">Valor mensal total</Label>
@@ -3154,6 +3198,7 @@ function NewCustomerSheet({
               </div>
             </div>
           </section>
+
 
           {/* Observações */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
