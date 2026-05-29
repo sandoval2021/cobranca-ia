@@ -51,9 +51,10 @@ export const upsertSetupProgressDb = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin
       .from("company_setup_progress")
       .upsert(
-        { company_id: data.companyId, steps: data.steps, updated_at: new Date().toISOString() },
+        { company_id: data.companyId, steps: data.steps as any, updated_at: new Date().toISOString() },
         { onConflict: "company_id" },
       );
+
     if (error) throw new Error(error.message);
     return { ok: true };
   });
