@@ -1,5 +1,7 @@
 // Empresas, planos e membros — cache local da UI.
 
+import { relinkScopedLocalStorageData } from "./relink-scoped-data";
+
 export type CompanyStatus = "teste" | "ativa" | "vencida" | "suspensa" | "cancelada";
 export type MemberRole = "owner" | "atendente" | "financeiro" | "suporte";
 export type MemberStatus = "ativo" | "pendente" | "bloqueado";
@@ -352,6 +354,16 @@ export function relinkCompanyId(oldId: string, newId: string): Company | null {
   const nextMembers = members.map((m) => (m.company_id === oldId ? { ...m, company_id: newId } : m));
   write(MEMBERS_KEY, nextMembers);
   if (getCurrentCompanyId() === oldId) write(CURRENT_KEY, newId);
+
+  // CAUSA RAIZ: relinkar todos os dados locais escopados por empresa.
+  // Sem isso, testes/financeiro/planos/etc. ficam órfãos no ID antigo
+  // e somem da tela mesmo estando salvos.
+  try {
+    relinkScopedLocalStorageData(oldId, newId);
+  } catch {
+    /* nunca quebrar o login por causa do relink */
+  }
+
   emit();
   return updated;
 }
