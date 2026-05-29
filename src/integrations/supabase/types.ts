@@ -656,6 +656,42 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_due_overrides: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          due_date: string
+          id: string
+          note: string | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          due_date: string
+          id?: string
+          note?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          due_date?: string
+          id?: string
+          note?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_iptv_credentials: {
         Row: {
           app_used: string | null
@@ -1095,6 +1131,54 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      manual_renewals: {
+        Row: {
+          amount_cents: number | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          months_added: number | null
+          new_due_date: string
+          note: string | null
+          old_due_date: string | null
+          payload: Json
+          payment_method: string | null
+          service_plan_id: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          months_added?: number | null
+          new_due_date: string
+          note?: string | null
+          old_due_date?: string | null
+          payload?: Json
+          payment_method?: string | null
+          service_plan_id?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          months_added?: number | null
+          new_due_date?: string
+          note?: string | null
+          old_due_date?: string | null
+          payload?: Json
+          payment_method?: string | null
+          service_plan_id?: string | null
         }
         Relationships: []
       }
