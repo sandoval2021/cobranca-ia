@@ -52,19 +52,27 @@ export function useRevendaSettingsSync() {
     } catch { /* mantém cache */ }
   }, []);
 
-  const uploadLegacy = useCallback(async (companyId: string) => {
+  const uploadAll = useCallback(async (companyId: string) => {
     if (typeof window === "undefined") return;
-    if (localStorage.getItem(UPLOADED_FLAG + ":" + companyId) === "1") return;
     const local = readLocal();
-    if (!isMeaningful(local)) {
-      localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
-      return;
-    }
+    if (!isMeaningful(local)) return;
     await saveRevendaSettingsDb({
       data: { companyId, dataJson: JSON.stringify(local) },
     });
-    localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
   }, []);
 
-  useDbFirstSync({ table: "revenda_settings", hydrate, uploadLegacy });
+  const uploadLegacy = useCallback(async (companyId: string) => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(UPLOADED_FLAG + ":" + companyId) === "1") return;
+    await uploadAll(companyId);
+    localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
+  }, [uploadAll]);
+
+  useDbFirstSync({
+    table: "revenda_settings",
+    hydrate,
+    uploadLegacy,
+    mirror: uploadAll,
+    mirrorEvents: [REVENDA_SETTINGS_EVENT],
+  });
 }
