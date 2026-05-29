@@ -23,7 +23,21 @@ type Props = {
   storageScope?: string;
 };
 
-export function CloudUploadLocalDataBanner({
+export function CloudUploadLocalDataBanner(_props: Props) {
+  // Banner desativado: módulos migrados agora fazem auto-upload silencioso e
+  // escrita espelhada imediata (useDbFirstSync). O usuário não precisa mais
+  // ver detalhes técnicos sobre dados "salvos apenas neste aparelho".
+  return null;
+}
+
+function _unusedKeepProps(_p: Props) {
+  const _ = `${_p.storageScope ?? ""}`;
+  return _;
+}
+
+// Implementação original mantida abaixo (não exportada) caso seja necessário
+// reativar no futuro.
+function CloudUploadLocalDataBannerLegacy({
   modules,
   title = "Encontramos dados salvos apenas neste aparelho.",
   subtitle = "Envie para sua conta para acessar em qualquer celular, computador ou PWA.",
