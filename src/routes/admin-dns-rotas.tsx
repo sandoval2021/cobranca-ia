@@ -665,9 +665,9 @@ function DomainSheet({
   const handleSave = () => {
     const d = domain.trim();
     if (!d) { toast.error("Informe o domínio."); return; }
-    saveDomain({ id: data?.id, domain: d, provider, status, notes });
+    const saved = saveDomain({ id: data?.id, domain: d, provider, status, notes });
     toast.success(data ? "Domínio atualizado." : "Domínio cadastrado.");
-    onSaved();
+    onSaved(saved);
   };
 
   return (
