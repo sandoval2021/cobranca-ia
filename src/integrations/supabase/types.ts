@@ -284,6 +284,177 @@ export type Database = {
         }
         Relationships: []
       }
+      company_ai_app_guides: {
+        Row: {
+          app_name: string
+          app_price_cents: number
+          cache_steps: string | null
+          common_issues: string | null
+          company_id: string
+          created_at: string
+          default_reply: string | null
+          id: string
+          install_steps: string | null
+          is_active: boolean
+          is_paid: boolean
+          login_type: string
+          route_steps: string | null
+          update_steps: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_name: string
+          app_price_cents?: number
+          cache_steps?: string | null
+          common_issues?: string | null
+          company_id: string
+          created_at?: string
+          default_reply?: string | null
+          id?: string
+          install_steps?: string | null
+          is_active?: boolean
+          is_paid?: boolean
+          login_type?: string
+          route_steps?: string | null
+          update_steps?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_name?: string
+          app_price_cents?: number
+          cache_steps?: string | null
+          common_issues?: string | null
+          company_id?: string
+          created_at?: string
+          default_reply?: string | null
+          id?: string
+          install_steps?: string | null
+          is_active?: boolean
+          is_paid?: boolean
+          login_type?: string
+          route_steps?: string | null
+          update_steps?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_ai_faqs: {
+        Row: {
+          answer: string
+          category: string
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          question: string
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          category?: string
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          question: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          category?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          question?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_ai_knowledge: {
+        Row: {
+          accepts_audio: boolean
+          allow_after_hours: boolean
+          allow_paid_apps_info: boolean
+          answer_length: string
+          auto_offer_trial: boolean
+          company_id: string
+          created_at: string
+          human_on_complaint: boolean
+          human_when_unsure: boolean
+          id: string
+          knowledge_text: string
+          tone: string
+          updated_at: string
+          use_manual_pix_fallback: boolean
+        }
+        Insert: {
+          accepts_audio?: boolean
+          allow_after_hours?: boolean
+          allow_paid_apps_info?: boolean
+          answer_length?: string
+          auto_offer_trial?: boolean
+          company_id: string
+          created_at?: string
+          human_on_complaint?: boolean
+          human_when_unsure?: boolean
+          id?: string
+          knowledge_text?: string
+          tone?: string
+          updated_at?: string
+          use_manual_pix_fallback?: boolean
+        }
+        Update: {
+          accepts_audio?: boolean
+          allow_after_hours?: boolean
+          allow_paid_apps_info?: boolean
+          answer_length?: string
+          auto_offer_trial?: boolean
+          company_id?: string
+          created_at?: string
+          human_on_complaint?: boolean
+          human_when_unsure?: boolean
+          id?: string
+          knowledge_text?: string
+          tone?: string
+          updated_at?: string
+          use_manual_pix_fallback?: boolean
+        }
+        Relationships: []
+      }
+      company_ai_payment_settings: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          manual_pix_bank: string | null
+          manual_pix_holder: string | null
+          manual_pix_key: string | null
+          payment_note: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          manual_pix_bank?: string | null
+          manual_pix_holder?: string | null
+          manual_pix_key?: string | null
+          payment_note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          manual_pix_bank?: string | null
+          manual_pix_holder?: string | null
+          manual_pix_key?: string | null
+          payment_note?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       company_ai_usage_cycle: {
         Row: {
           base_limit: number
