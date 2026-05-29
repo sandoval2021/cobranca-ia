@@ -159,12 +159,48 @@ export const upsertFinanceEntryDb = createServerFn({ method: "POST" })
   .inputValidator((input) => EntryInput.parse(input))
   .handler(async ({ data, context }) => {
     await assertCompanyAccess(context.supabase, data.companyId);
+
+    // Fase B — Idempotência completa para finance_entries.
+    // Se o caller fornecer idempotencyKey e NÃO houver id explícito
+    // (= criação), tenta localizar lançamento já existente por
+    // (company_id, idempotency_key). Se existir, devolve a linha sem
+    // criar novo lançamento. Evita lançamento duplicado em retry / duplo clique.
+    if (data.idempotencyKey && !data.id) {
+      const { data: existing } = await context.supabase
+        .from("finance_entries")
+        .select("*")
+        .eq("company_id", data.companyId)
+        .eq("idempotency_key", data.idempotencyKey)
+        .maybeSingle();
+      if (existing) {
+        return rowToEntry(existing as Record<string, unknown>);
+      }
+    }
+
     const { data: row, error } = await context.supabase
       .from("finance_entries")
       .upsert(entryInputToRow(data), { onConflict: "id" })
       .select("*")
       .single();
-    if (error) throw new Error(error.message);
+
+    if (error) {
+      // Fase B — trata violação do índice único parcial
+      // uq_finance_entries_company_idem como sucesso idempotente:
+      // refetcha a linha existente e devolve sem criar duplicata.
+      const code = (error as { code?: string }).code;
+      if (code === "23505" && data.idempotencyKey) {
+        const { data: existing2 } = await context.supabase
+          .from("finance_entries")
+          .select("*")
+          .eq("company_id", data.companyId)
+          .eq("idempotency_key", data.idempotencyKey)
+          .maybeSingle();
+        if (existing2) {
+          return rowToEntry(existing2 as Record<string, unknown>);
+        }
+      }
+      throw new Error(error.message);
+    }
     return rowToEntry(row as Record<string, unknown>);
   });
 
