@@ -59,11 +59,14 @@ export function setImportedDueByWhatsapp(wa: string, isoOrRaw: string) {
   const s = read();
   s[wa] = iso;
   write(s);
+  // Write-through best-effort para o banco (fonte da verdade).
+  void persistImportedDueToDb([{ phone: wa, due_date: iso }]);
 }
 
 export function setImportedDueBulk(entries: Array<{ wa: string | null; date: string | null }>) {
   const s = read();
   let changed = false;
+  const toPersist: Array<{ phone: string; due_date: string }> = [];
   for (const e of entries) {
     if (!e.wa) continue;
     const iso = toIso(e.date);
@@ -72,8 +75,25 @@ export function setImportedDueBulk(entries: Array<{ wa: string | null; date: str
       s[e.wa] = iso;
       changed = true;
     }
+    toPersist.push({ phone: e.wa, due_date: iso });
   }
   if (changed) write(s);
+  if (toPersist.length > 0) void persistImportedDueToDb(toPersist);
+}
+
+async function persistImportedDueToDb(items: Array<{ phone: string; due_date: string }>) {
+  try {
+    const companyId = getActiveCompanyId();
+    if (!companyId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(companyId)) return;
+    await bulkUpsertImportedDueDb({
+      data: {
+        companyId,
+        items: items.map((it) => ({ phone: it.phone, due_date: it.due_date, raw_row: { source: "live-set" } })),
+      },
+    });
+  } catch {
+    /* falha silenciosa — próximo sync re-tenta via uploadLocalImportedDueDatesToDb */
+  }
 }
 
 export function clearImportedDueByWhatsapp(wa: string) {
