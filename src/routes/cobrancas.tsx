@@ -619,32 +619,32 @@ function QuickActionMore() {
         <DropdownMenuLabel>Mais ações</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/templates-automaticos" className="gap-2 cursor-pointer">
+          <Link to="/templates-automaticos" preload="intent" className="gap-2 cursor-pointer">
             <FileText className="h-4 w-4 text-primary" />
             Templates de mensagens
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/cobranca-automatica" className="gap-2 cursor-pointer">
+          <Link to="/cobranca-automatica" preload="intent" className="gap-2 cursor-pointer">
             <RefreshCw className="h-4 w-4 text-emerald-600" />
             Cobrança automática
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/regras-disparo" className="gap-2 cursor-pointer">
+          <Link to="/regras-disparo" preload="intent" className="gap-2 cursor-pointer">
             <Settings className="h-4 w-4 text-amber-500" />
             Regras de disparo
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/mensagens" className="gap-2 cursor-pointer">
+          <Link to="/mensagens" preload="intent" className="gap-2 cursor-pointer">
             <MessageSquare className="h-4 w-4 text-primary" />
             Histórico de mensagens
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/relatorio" className="gap-2 cursor-pointer">
+          <Link to="/relatorio" preload="intent" className="gap-2 cursor-pointer">
             <ExternalLink className="h-4 w-4 text-muted-foreground" />
             Relatório
           </Link>

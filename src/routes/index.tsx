@@ -506,6 +506,7 @@ function QuickAction({
       <Link
         to={path}
         search={search as never}
+        preload="render"
         className={cn(
           "flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 text-center transition-all hover:-translate-y-0.5 active:scale-[0.98]",
           boldSurface[tone],
@@ -521,6 +522,7 @@ function QuickAction({
     <Link
       to={path}
       search={search as never}
+      preload="render"
       className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-3 text-center shadow-card transition-all hover:-translate-y-0.5 hover:shadow-pop"
     >
       <div

@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { ownerNav, adminNav, filterNavByRole, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import {
@@ -82,13 +82,7 @@ const GROUPS: Group[] = [
     id: "ia",
     label: "IA",
     icon: Bot,
-    routes: [
-      "/ia",
-      "/ia-config",
-      "/treinar-ia",
-      "/base-conhecimento",
-      "/ajuda-ia",
-    ],
+    routes: ["/ia", "/ia-config", "/treinar-ia", "/base-conhecimento", "/ajuda-ia"],
   },
   {
     id: "relatorios",
@@ -128,10 +122,10 @@ const GROUPS: Group[] = [
   },
 ];
 
-
 const GROUPED = new Set(GROUPS.flatMap((g) => g.routes).concat(["/"]));
 
 export function AppSidebar({ variant = "owner", onNavigate }: Props) {
+  const router = useRouter();
   const baseItems = variant === "admin" ? adminNav : ownerNav;
   const { role, user, isOwner } = useLocalAuth();
   const [, setTick] = useState(0);
@@ -202,6 +196,11 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
   }, [pathname, visibleGroups.length]);
 
   const toggle = (id: string) => setOpenGroups((s) => ({ ...s, [id]: !s[id] }));
+  const preloadItems = (items: NavItem[]) => {
+    for (const item of items) {
+      void router.preloadRoute({ to: item.to as never }).catch(() => undefined);
+    }
+  };
 
   return (
     <aside className="flex h-full w-[var(--sidebar-width)] flex-col border-r border-border bg-surface">
@@ -245,7 +244,6 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
         </div>
       </div>
 
-
       <nav className="flex-1 overflow-y-auto p-2">
         <ul className="space-y-1">
           {home && (
@@ -257,7 +255,7 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                   pathname === "/"
                     ? "bg-primary-soft font-medium text-primary"
-                    : "text-foreground/75 hover:bg-surface-muted hover:text-foreground"
+                    : "text-foreground/75 hover:bg-surface-muted hover:text-foreground",
                 )}
               >
                 <Home className={cn("h-4 w-4 shrink-0", pathname === "/" && "text-primary")} />
@@ -274,13 +272,16 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
               <li key={group.id}>
                 <button
                   type="button"
+                  onPointerDown={() => preloadItems(group.items)}
+                  onMouseEnter={() => preloadItems(group.items)}
+                  onFocus={() => preloadItems(group.items)}
                   onClick={() => toggle(group.id)}
                   aria-expanded={isOpen}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                     hasActive
                       ? "text-foreground"
-                      : "text-foreground/75 hover:bg-surface-muted hover:text-foreground"
+                      : "text-foreground/75 hover:bg-surface-muted hover:text-foreground",
                   )}
                 >
                   <GroupIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -291,7 +292,7 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
                   <ChevronRight
                     className={cn(
                       "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
-                      isOpen && "rotate-90"
+                      isOpen && "rotate-90",
                     )}
                   />
                 </button>
@@ -304,12 +305,18 @@ export function AppSidebar({ variant = "owner", onNavigate }: Props) {
                         <li key={item.to}>
                           <Link
                             to={item.to}
+                            preload="intent"
+                            onPointerDown={() => {
+                              void router
+                                .preloadRoute({ to: item.to as never })
+                                .catch(() => undefined);
+                            }}
                             onClick={onNavigate}
                             className={cn(
                               "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
                               active
                                 ? "bg-primary-soft font-medium text-primary"
-                                : "text-foreground/70 hover:bg-surface-muted hover:text-foreground"
+                                : "text-foreground/70 hover:bg-surface-muted hover:text-foreground",
                             )}
                           >
                             <Icon
