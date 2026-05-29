@@ -42,6 +42,7 @@ import {
   exportCompanies,
   getCompanyMembers,
   getCompanyStatus,
+  getCompanySupportId,
   getCurrentCompanyId,
   getPlanById,
   importCompanies,
