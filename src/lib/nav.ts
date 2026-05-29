@@ -71,6 +71,7 @@ export const ownerNav: NavItem[] = [
   { to: "/relatorio", label: "Relatório", icon: BarChart3, hint: "Relatório da simulação", superAdminOnly: true },
   { to: "/base-conhecimento", label: "Base da IA", icon: BookOpen, hint: "Respostas e regras para o atendimento", superAdminOnly: true },
   { to: "/ia-config", label: "Configurar IA", icon: Bot, hint: "Tabelas de preço, indicação, apps e instruções da IA" },
+  { to: "/treinar-ia", label: "Treinar IA", icon: Sparkles, hint: "Ensine sua IA com conhecimento, FAQs, regras e apps da empresa" },
   { to: "/catalogo-servidores", label: "Servidores", icon: Server, hint: "Servidores e painéis usados nas telas", superAdminOnly: true },
   { to: "/testes", label: "Testes", icon: Beaker, hint: "Pessoas em teste/leads" },
   { to: "/indicacoes", label: "Indicações", icon: Gift, hint: "Indicações e bonificações" },

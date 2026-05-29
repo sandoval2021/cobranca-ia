@@ -69,6 +69,38 @@ export type AiContext = {
     escalate_when_referrer_missing: boolean;
     human_handoff_number: string | null;
   };
+  companyTraining: {
+    knowledge_text: string | null;
+    tone: string | null;
+    answer_length: string | null;
+    allow_after_hours: boolean;
+    accepts_audio: boolean;
+    auto_offer_trial: boolean;
+    human_on_complaint: boolean;
+    human_when_unsure: boolean;
+    allow_paid_apps_info: boolean;
+    use_manual_pix_fallback: boolean;
+    faqs: Array<{ category: string; question: string; answer: string }>;
+    apps: Array<{
+      app_name: string;
+      is_paid: boolean;
+      app_price_cents: number;
+      login_type: string;
+      install_steps: string | null;
+      update_steps: string | null;
+      cache_steps: string | null;
+      route_steps: string | null;
+      common_issues: string | null;
+      default_reply: string | null;
+    }>;
+    payment: {
+      manual_pix_key: string | null;
+      manual_pix_holder: string | null;
+      manual_pix_bank: string | null;
+      payment_note: string | null;
+    } | null;
+    mercadoPagoConnected: boolean;
+  };
   needsHuman: boolean;
   reason: string | null;
 };
@@ -231,6 +263,38 @@ export async function buildAiContext(params: {
     needsHuman,
   });
 
+  // 9) Treinamento da empresa (knowledge / faqs / apps / payment / MP status)
+  const [
+    { data: trainingRow },
+    { data: faqRows },
+    { data: appRows },
+    { data: payRow },
+    { data: mpRow },
+  ] = await Promise.all([
+    supabaseAdmin.from("company_ai_knowledge").select("*").eq("company_id", companyId).maybeSingle(),
+    supabaseAdmin.from("company_ai_faqs").select("category, question, answer").eq("company_id", companyId).eq("is_active", true).limit(60),
+    supabaseAdmin.from("company_ai_app_guides").select("app_name, is_paid, app_price_cents, login_type, install_steps, update_steps, cache_steps, route_steps, common_issues, default_reply").eq("company_id", companyId).eq("is_active", true).limit(20),
+    supabaseAdmin.from("company_ai_payment_settings").select("manual_pix_key, manual_pix_holder, manual_pix_bank, payment_note").eq("company_id", companyId).maybeSingle(),
+    supabaseAdmin.from("marketplace_accounts").select("status").eq("company_id", companyId).eq("provider", "mercado_pago").maybeSingle(),
+  ]);
+
+  const companyTraining: AiContext["companyTraining"] = {
+    knowledge_text: trainingRow?.knowledge_text ?? null,
+    tone: trainingRow?.tone ?? null,
+    answer_length: trainingRow?.answer_length ?? null,
+    allow_after_hours: trainingRow?.allow_after_hours ?? true,
+    accepts_audio: trainingRow?.accepts_audio ?? false,
+    auto_offer_trial: trainingRow?.auto_offer_trial ?? false,
+    human_on_complaint: trainingRow?.human_on_complaint ?? true,
+    human_when_unsure: trainingRow?.human_when_unsure ?? true,
+    allow_paid_apps_info: trainingRow?.allow_paid_apps_info ?? true,
+    use_manual_pix_fallback: trainingRow?.use_manual_pix_fallback ?? true,
+    faqs: (faqRows ?? []) as any,
+    apps: (appRows ?? []) as any,
+    payment: payRow ?? null,
+    mercadoPagoConnected: mpRow?.status === "connected",
+  };
+
   return {
     intent,
     classification,
@@ -249,6 +313,7 @@ export async function buildAiContext(params: {
     app: { name: appName, issue: appIssue, entry: appEntry },
     memory,
     settings,
+    companyTraining,
     needsHuman,
     reason,
   };
@@ -332,6 +397,53 @@ export function buildPromptFromContext(ctx: AiContext): { system: string; contex
 
   if (ctx.needsHuman && ctx.settings.human_handoff_number) {
     compact.contato_humano = ctx.settings.human_handoff_number;
+  }
+
+  // ===== Treinamento da empresa (camada 2) =====
+  const ct = ctx.companyTraining;
+  if (ct) {
+    if (ct.knowledge_text?.trim()) {
+      compact.conhecimento_empresa = ct.knowledge_text.slice(0, 8000);
+      rules.push("- Use 'conhecimento_empresa' como base preferencial, mas REGRAS DURAS prevalecem.");
+    }
+    if (ct.faqs?.length) {
+      compact.faqs_empresa = ct.faqs.slice(0, 30);
+      rules.push("- Se a pergunta casar com 'faqs_empresa.question', prefira a resposta correspondente.");
+    }
+    if (ct.apps?.length && (ctx.intent === "app_issue" || ctx.intent === "other" || ctx.intent === "greeting" || ctx.intent === "price")) {
+      compact.apps_empresa = ct.apps;
+    }
+    compact.pagamento_empresa = {
+      mercado_pago_conectado: ct.mercadoPagoConnected,
+      pix_manual: ct.payment?.manual_pix_key
+        ? {
+            chave: ct.payment.manual_pix_key,
+            titular: ct.payment.manual_pix_holder,
+            banco: ct.payment.manual_pix_bank,
+            observacao: ct.payment.payment_note,
+          }
+        : null,
+    };
+    if (!ct.mercadoPagoConnected && ct.payment?.manual_pix_key && ct.use_manual_pix_fallback) {
+      rules.push("- Para pagamento, envie o Pix manual em 'pagamento_empresa.pix_manual'.");
+    } else if (!ct.mercadoPagoConnected && !ct.payment?.manual_pix_key) {
+      rules.push("- Sem Mercado Pago e sem Pix manual: encaminhe a humano para tratar pagamento.");
+    } else if (ct.mercadoPagoConnected) {
+      rules.push("- Para pagamento, prefira o link/Pix gerado pelo Mercado Pago da empresa.");
+    }
+    compact.preferencias = {
+      tom: ct.tone,
+      tamanho: ct.answer_length,
+      fora_horario: ct.allow_after_hours,
+      aceita_audio: ct.accepts_audio,
+      oferece_teste: ct.auto_offer_trial,
+      humano_em_reclamacao: ct.human_on_complaint,
+      humano_quando_nao_sabe: ct.human_when_unsure,
+      falar_apps_pagos: ct.allow_paid_apps_info,
+    };
+    if (ct.human_when_unsure) rules.push("- Quando não souber responder com segurança, encaminhe a humano.");
+    if (!ct.allow_paid_apps_info) rules.push("- NÃO ofereça aplicativos pagos.");
+    if (!ct.accepts_audio) rules.push("- Peça mensagem de texto; não trate áudios.");
   }
 
   return {

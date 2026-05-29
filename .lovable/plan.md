@@ -1,102 +1,104 @@
-# Integração Mercado Pago Marketplace/Split — CobraEasy
+# Treinar minha IA — Plano de Implementação
 
 ## Visão geral
 
-Integração multi-tenant onde cada dono conecta sua conta Mercado Pago via OAuth. O CobraEasy cobra 1% via `application_fee` em cada pagamento (split nativo do Mercado Pago). Backend é fonte da verdade; tokens criptografados; webhook idempotente.
+Nova rota `/treinar-ia` no painel da empresa, com 6 abas (Conhecimento, FAQs, Regras, Pagamento, Aplicativos, Testar). Tudo isolado por `company_id` via RLS. O motor de contexto da IA do WhatsApp passa a carregar essa base privada antes de chamar OpenAI, sem violar regras globais do CobraEasy.
 
-## Fase 1 — Fundação (SQL + OAuth)
+Sem PR, sem merge.
 
-### 1.1 Migration SQL (será apresentada antes de aplicar)
+## Arquitetura em 3 camadas
 
-Tabelas novas em `public`:
+1. **Global CobraEasy** (já existe em `src/lib/whatsapp/ai-context.server.ts` → `buildPromptFromContext`): regras duras, anti-invenção, handoff. Não editável pelo dono.
+2. **Base da empresa** (novo): conhecimento, FAQs, regras, pagamento, apps — tudo com `company_id`.
+3. **Dados reais do sistema** (já existe): cliente, plano, grupo, Mercado Pago, indicação.
 
-- **`marketplace_accounts`** — conta MP conectada por empresa
-  - `company_id` (unique), `mp_user_id`, `access_token_enc`, `refresh_token_enc`, `expires_at`, `public_key`, `status` (`connected`/`disconnected`/`error`/`expired`), `last_error`, `connected_at`
-- **`payment_settings`** — config de taxa por empresa
-  - `company_id` (unique), `platform_fee_bps` (default 100 = 1%), `fee_mode` (`customer_pays`/`owner_pays`, default `customer_pays`), `is_active`
-- **`payment_transactions`** — cobranças geradas
-  - `company_id`, `customer_id`, `amount_cents` (valor do plano), `processing_fee_cents`, `total_amount_cents` (o que cliente paga), `fee_mode`, `status` (`pending`/`approved`/`rejected`/`cancelled`/`refunded`), `payment_method` (`pix`/`card`/`link`), `external_reference` (unique), `mp_payment_id`, `mp_preference_id`, `qr_code`, `qr_code_base64`, `ticket_url`, `paid_at`, `expires_at`, `raw_response` jsonb
-- **`payment_split_logs`** — log de cada split executado
-  - `transaction_id`, `application_fee_cents`, `owner_amount_cents`, `mp_response` jsonb, `status`, `error`
-- **`mercado_pago_webhook_events`** — idempotência
-  - `mp_event_id` (unique), `mp_topic`, `mp_resource_id`, `processed_at`, `status`, `raw_payload` jsonb, `transaction_id`
+## Banco — 4 tabelas novas
 
-RLS: dono via `has_company_access(company_id)`, super_admin bypass, escrita sensível via `service_role`. GRANTs explícitos. Tokens nunca lidos pelo cliente — usar coluna `_enc` + função server-side.
-
-### 1.2 Secrets necessários
-
-Pedir ao usuário via `add_secret`:
-- `MERCADO_PAGO_CLIENT_ID` — OAuth do app marketplace CobraEasy
-- `MERCADO_PAGO_CLIENT_SECRET` — OAuth secret
-- `MERCADO_PAGO_PLATFORM_ACCESS_TOKEN` — conta MP do CobraEasy (recebe os 1%)
-- `MERCADO_PAGO_WEBHOOK_SECRET` — validação de assinatura
-- `CREDENTIALS_ENC_KEY` — já existe ✓
-
-### 1.3 OAuth (server-side)
-
-- `src/lib/payments/mp-oauth.server.ts` — troca code→token, refresh
-- Server fn `getMpAuthUrl` — gera URL `https://auth.mercadopago.com.br/authorization?...&state=<companyId-signed>`
-- Server route `/api/public/mp/oauth/callback` — recebe `code`, troca por token, criptografa, salva
-- Server fn `disconnectMercadoPago`, `getMpAccountStatus`
-
-## Fase 2 — Cobrança + Split
-
-### 2.1 Server fns (`src/lib/payments/payments.functions.ts`)
-
-- `createPayment({ customerId, amountCents, method, description })` — usa token do dono, aplica `application_fee` = 1%, cria preference (link) ou payment Pix, persiste em `payment_transactions`, retorna `{ qrCode, ticketUrl, externalReference }`
-- `listPayments({ filter })` — histórico para painel dono
-- `getPaymentSettings` / `updatePaymentSettings` — config taxa
-
-### 2.2 Cálculo da taxa
+Todas com `company_id uuid not null`, RLS via `has_company_access(company_id)`, GRANTs para `authenticated` e `service_role` (sem `anon`).
 
 ```
-plano = 100,00
-fee = 1% = 1,00
-customer_pays → total = 101,00; owner recebe 100,00; CobraEasy 1,00
-owner_pays    → total = 100,00; owner recebe 99,00;  CobraEasy 1,00
+company_ai_knowledge        (1 linha por empresa — upsert por company_id)
+  knowledge_text text, tone text, answer_length text,
+  allow_after_hours, accepts_audio, auto_offer_trial,
+  human_on_complaint, human_when_unsure, allow_paid_apps_info,
+  use_manual_pix_fallback (booleans)
+
+company_ai_faqs             (várias por empresa)
+  category text, question text, answer text, is_active bool
+
+company_ai_payment_settings (1 por empresa)
+  manual_pix_key, manual_pix_holder, manual_pix_bank, payment_note
+
+company_ai_app_guides       (várias por empresa)
+  app_name, is_paid, app_price_cents, login_type,
+  install_steps, update_steps, cache_steps, route_steps,
+  common_issues, default_reply, is_active
 ```
 
-### 2.3 Webhook idempotente
+## Server functions
 
-- `src/routes/api/public/mp/webhook.ts` — POST
-- Valida assinatura (`x-signature` HMAC do MP), insere em `mercado_pago_webhook_events` (UNIQUE em `mp_event_id` garante idempotência), busca payment por `external_reference`, atualiza status, registra split em `payment_split_logs`, dispara renovação (cria `renewal_tasks`) e WhatsApp.
+Novo arquivo `src/lib/ai-training/ai-training.functions.ts` com:
 
-## Fase 3 — Telas
+- `getCompanyAiKnowledge`, `upsertCompanyAiKnowledge`
+- `listCompanyAiFaqs`, `upsertCompanyAiFaq`, `deleteCompanyAiFaq`
+- `getCompanyAiPaymentSettings`, `upsertCompanyAiPaymentSettings`
+- `listCompanyAiApps`, `upsertCompanyAiApp`, `deleteCompanyAiApp`
+- `simulateAiReply` — não envia WhatsApp; usa o mesmo `buildAiContext` + `buildPromptFromContext` e retorna `{ reply, sources[] }` (de onde vieram os dados).
 
-### 3.1 Painel do dono
-- **`/pagamentos/mercado-pago`** — status conexão, botão conectar/desconectar, escolha `fee_mode` com explicação amigável dos dois cenários, exemplo de cálculo dinâmico
-- **`/pagamentos/historico`** — lista transações com filtros (aprovados/pendentes/falhos), totais
-- Adicionar item no `src/lib/nav.ts`
+Todas com `requireSupabaseAuth` + `has_company_access` checado server-side.
 
-### 3.2 Tela pública do cliente
-- **`/pagar/$externalReference`** — mostra "Valor do plano", "Taxa de processamento" (só se `customer_pays`), "Total a pagar", QR Pix + copia-cola + botão link. Nunca usar termos "comissão", "taxa do dono", "CobraEasy" no rótulo.
+## Limites por plano (UI)
 
-### 3.3 Super admin
-- **`/admin/marketplace`** — empresas conectadas, volume processado, taxas geradas, erros de webhook/split
+- Essencial: aba escondida ou knowledge_text ≤ 2.000
+- Profissional: ≤ 20.000
+- Escala: ≤ 200.000
 
-## Fase 4 — IA + Renovação
+Contador de caracteres no editor.
 
-- `src/lib/whatsapp/ai-reply.server.ts` — adicionar tool `generate_payment_link` que só dispara se `marketplace_accounts.status='connected'`. Se não conectado, IA responde pedindo dono configurar.
-- Após webhook `approved`: criar `renewal_tasks` (assistida) — só confirma renovação ao cliente após execução real.
+## Nova tela `/treinar-ia`
 
-## Detalhes técnicos
+Arquivo `src/routes/treinar-ia.tsx`. Mobile-first, tabs no topo. Cada aba é um componente em `src/components/ai-training/`:
 
-- **Bibliotecas**: usar `fetch` direto (Mercado Pago REST). Não instalar SDK Node (Worker runtime).
-- **Endpoints MP**:
-  - OAuth: `POST https://api.mercadopago.com/oauth/token`
-  - Preference: `POST /checkout/preferences` com `marketplace_fee`
-  - Pix payment: `POST /v1/payments` com `application_fee`, header `Authorization: Bearer <ownerToken>`
-- **Criptografia**: reusar `src/lib/iptv/crypto.server.ts` (AES-GCM com `CREDENTIALS_ENC_KEY`).
-- **State OAuth**: HMAC do `companyId` com `MERCADO_PAGO_WEBHOOK_SECRET` para prevenir CSRF.
+- `KnowledgeTab.tsx` — textarea grande, placeholder com exemplo R$30/60/90, contador, botões salvar/limpar/restaurar exemplo.
+- `FaqsTab.tsx` — lista de cards (pergunta/resposta/categoria/ativo), dialog de edição, exclusão com confirm.
+- `RulesTab.tsx` — selects (tom, tamanho) + switches com HelpTip (?).
+- `PaymentTab.tsx` — campos Pix manual + status do Mercado Pago (lê `marketplace_accounts`) + link para `/pagamentos/mercado-pago`.
+- `AppsTab.tsx` — lista de apps, dialog completo, sugestões pré-preenchidas (Bob, IBO, VU, Smarters etc.).
+- `TestTab.tsx` — input + chips de exemplos rápidos, mostra resposta + badges das fontes usadas. Banner: "Simulação. Nada foi enviado."
+
+Adicionar entrada no menu (`src/lib/nav.ts` ou onde estiver definido) com label "Treinar IA".
+
+## Integração no motor de IA do WhatsApp
+
+Editar `src/lib/whatsapp/ai-context.server.ts`:
+
+1. `buildAiContext` carrega adicionalmente: knowledge, faqs ativos, payment_settings, apps da empresa.
+2. `buildPromptFromContext` inclui esses blocos no `compact` JSON quando relevantes à intenção, e adiciona regras:
+   - "Prefira respostas do bloco `faqs_empresa` quando a pergunta casar com `question`."
+   - "Use `conhecimento_empresa` como contexto adicional, mas REGRAS GLOBAIS prevalecem."
+   - "Se `mercado_pago_conectado=false` e existir `pix_manual`, envie o Pix manual quando o cliente pedir pagamento; senão, encaminhe a humano."
+
+Sem alterar nada de Evolution, webhook, Mercado Pago, OTP, DNS, VPS.
+
+## Segurança
+
+- RLS isola por empresa.
+- Server functions revalidam `has_company_access`.
+- Prompt global continua proibindo: inventar preço, confirmar pagamento sem webhook, expor dados internos, falar de split 1%, custos OpenAI, prompts internos.
+- Aviso na UI: "Evite colocar senhas ou dados sensíveis."
+
+## Entregáveis
+
+- 1 migration (4 tabelas + RLS + GRANTs)
+- 1 arquivo de server functions
+- 1 rota nova + 6 componentes de aba + 1 helper de limites
+- Patch em `ai-context.server.ts` para carregar e injetar a base da empresa
+- Entrada no menu
 
 ## Não mexer
-OTP/login, Resend, Evolution QR, webhook WhatsApp existente, IA atual, DNS, VPS.
 
-## Entrega
-Build OK | SQL aplicado: SIM (após aprovação) | PR: NÃO | MERGE: NÃO
+OTP, Resend, Evolution QR, webhook WhatsApp, Mercado Pago, DNS, VPS, PWA/logo, regras de cobrança/automação existentes.
 
 ## Próximo passo
 
-Confirme:
-1. Aprovar este plano para eu começar pela **migration SQL** (apresento o SQL para você aprovar antes de aplicar).
-2. Você tem app Mercado Pago Marketplace criado em https://www.mercadopago.com.br/developers/panel/app? Precisarei dos secrets `MERCADO_PAGO_CLIENT_ID`, `MERCADO_PAGO_CLIENT_SECRET`, `MERCADO_PAGO_PLATFORM_ACCESS_TOKEN`, `MERCADO_PAGO_WEBHOOK_SECRET`.
+Aprovar para eu rodar a migration (passo 1) e em seguida implementar as server functions + UI + integração.
