@@ -70,7 +70,7 @@ import { Route as PagamentosHistoricoRouteImport } from './routes/pagamentos.his
 import { Route as AtendimentoIaTokenRouteImport } from './routes/atendimento-ia.$token'
 import { Route as AdminVpsRouteImport } from './routes/admin.vps'
 import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
-import { Route as ApiPublicG2bTestRouteImport } from './routes/api/public/_g2b-test'
+import { Route as ApiPublicG2bTestRouteImport } from './routes/api/public/g2b-test'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -391,8 +391,8 @@ const AdminMarketplaceRoute = AdminMarketplaceRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicG2bTestRoute = ApiPublicG2bTestRouteImport.update({
-  id: '/api/public/_g2b-test',
-  path: '/api/public',
+  id: '/api/public/g2b-test',
+  path: '/api/public/g2b-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LovableEmailQueueProcessRoute =
@@ -533,7 +533,7 @@ export interface FileRoutesByFullPath {
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
-  '/api/public': typeof ApiPublicG2bTestRoute
+  '/api/public/g2b-test': typeof ApiPublicG2bTestRoute
   '/api/public/hooks/queue-recovery': typeof ApiPublicHooksQueueRecoveryRoute
   '/api/public/hooks/renewal-dispatch': typeof ApiPublicHooksRenewalDispatchRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
@@ -610,7 +610,7 @@ export interface FileRoutesByTo {
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
-  '/api/public': typeof ApiPublicG2bTestRoute
+  '/api/public/g2b-test': typeof ApiPublicG2bTestRoute
   '/api/public/hooks/queue-recovery': typeof ApiPublicHooksQueueRecoveryRoute
   '/api/public/hooks/renewal-dispatch': typeof ApiPublicHooksRenewalDispatchRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
@@ -688,7 +688,7 @@ export interface FileRoutesById {
   '/pagamentos/historico': typeof PagamentosHistoricoRoute
   '/pagamentos/mercado-pago': typeof PagamentosMercadoPagoRoute
   '/pagar/$ref': typeof PagarRefRoute
-  '/api/public/_g2b-test': typeof ApiPublicG2bTestRoute
+  '/api/public/g2b-test': typeof ApiPublicG2bTestRoute
   '/api/public/hooks/queue-recovery': typeof ApiPublicHooksQueueRecoveryRoute
   '/api/public/hooks/renewal-dispatch': typeof ApiPublicHooksRenewalDispatchRoute
   '/api/public/hooks/services-dispatch': typeof ApiPublicHooksServicesDispatchRoute
@@ -767,7 +767,7 @@ export interface FileRouteTypes {
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
-    | '/api/public'
+    | '/api/public/g2b-test'
     | '/api/public/hooks/queue-recovery'
     | '/api/public/hooks/renewal-dispatch'
     | '/api/public/hooks/services-dispatch'
@@ -844,7 +844,7 @@ export interface FileRouteTypes {
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
-    | '/api/public'
+    | '/api/public/g2b-test'
     | '/api/public/hooks/queue-recovery'
     | '/api/public/hooks/renewal-dispatch'
     | '/api/public/hooks/services-dispatch'
@@ -921,7 +921,7 @@ export interface FileRouteTypes {
     | '/pagamentos/historico'
     | '/pagamentos/mercado-pago'
     | '/pagar/$ref'
-    | '/api/public/_g2b-test'
+    | '/api/public/g2b-test'
     | '/api/public/hooks/queue-recovery'
     | '/api/public/hooks/renewal-dispatch'
     | '/api/public/hooks/services-dispatch'
@@ -1443,10 +1443,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMarketplaceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/_g2b-test': {
-      id: '/api/public/_g2b-test'
-      path: '/api/public'
-      fullPath: '/api/public'
+    '/api/public/g2b-test': {
+      id: '/api/public/g2b-test'
+      path: '/api/public/g2b-test'
+      fullPath: '/api/public/g2b-test'
       preLoaderRoute: typeof ApiPublicG2bTestRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -1638,3 +1638,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
