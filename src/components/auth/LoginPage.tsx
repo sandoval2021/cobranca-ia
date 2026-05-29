@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import {
   Loader2,
   LogIn,
@@ -59,10 +60,17 @@ type SignupContext = {
 };
 
 export function LoginPage() {
-  const [view, setView] = useState<View>("login");
+  const search = useRouterState({ select: (s) => s.location.search }) as Record<string, unknown>;
+  const wantsSignup = search?.mode === "signup";
+  const preselectedPlan = typeof search?.plan === "string" ? search.plan : undefined;
+
+  const [view, setView] = useState<View>(wantsSignup ? "signup" : "login");
   const [signupCtx, setSignupCtx] = useState<SignupContext | null>(null);
   const [forgotEmail, setForgotEmail] = useState("");
   const [confirmCtx, setConfirmCtx] = useState<{ email: string; password: string } | null>(null);
+
+  // Pré-seleciona plano no cadastro quando vier da landing
+  const [signupPlan, setSignupPlan] = useState<string | undefined>(preselectedPlan);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-surface to-primary-soft px-4 py-8 safe-top safe-bottom">

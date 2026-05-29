@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
-const PUBLIC_ROUTES = new Set<string>(["/reset-password"]);
+const PUBLIC_ROUTES = new Set<string>(["/reset-password", "/login"]);
 
 import { LandingPage } from "@/components/landing/LandingPage";
 
