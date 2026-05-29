@@ -153,6 +153,10 @@ export function listAllReferralsRaw(): Referral[] {
   return read<Referral[]>(STORAGE_KEY, []);
 }
 
+function normalizePhone(s: string | undefined | null): string {
+  return (s || "").replace(/\D/g, "");
+}
+
 export function saveReferral(input: Partial<Referral> & {
   indicador_nome: string;
   indicador_whatsapp: string;
@@ -162,9 +166,41 @@ export function saveReferral(input: Partial<Referral> & {
   const list = listAllReferralsRaw();
   const now = new Date().toISOString();
   const activeId = getActiveCompanyId();
+  const companyId = input.company_id ?? activeId ?? null;
+
+  // Idempotência por chave de negócio: mesma empresa + mesmos telefones normalizados.
+  // Evita duplicar em duplo clique, duas abas, PWA+desktop ou retry.
+  const rp = normalizePhone(input.indicador_whatsapp);
+  const dp = normalizePhone(input.indicado_whatsapp);
+  if (companyId && rp && dp) {
+    const existing = list.find(
+      (r) =>
+        (r.company_id ?? null) === companyId &&
+        normalizePhone(r.indicador_whatsapp) === rp &&
+        normalizePhone(r.indicado_whatsapp) === dp,
+    );
+    if (existing) {
+      // Atualiza campos não-críticos sem trocar id/status/datas existentes.
+      const merged: Referral = {
+        ...existing,
+        indicador_nome: input.indicador_nome || existing.indicador_nome,
+        indicado_nome: input.indicado_nome || existing.indicado_nome,
+        indicador_cliente_id: input.indicador_cliente_id ?? existing.indicador_cliente_id,
+        lead_id: input.lead_id ?? existing.lead_id,
+        observacao: input.observacao ?? existing.observacao,
+        regra_bonificacao: input.regra_bonificacao ?? existing.regra_bonificacao,
+      };
+      const idx = list.findIndex((r) => r.id === existing.id);
+      if (idx >= 0) list[idx] = merged;
+      write(STORAGE_KEY, list);
+      mirrorReferralToDb(merged);
+      return merged;
+    }
+  }
+
   const ref: Referral = {
     id: uid(),
-    company_id: input.company_id ?? activeId ?? null,
+    company_id: companyId,
     indicador_cliente_id: input.indicador_cliente_id,
     indicador_nome: input.indicador_nome,
     indicador_whatsapp: input.indicador_whatsapp,
@@ -182,6 +218,7 @@ export function saveReferral(input: Partial<Referral> & {
   mirrorReferralToDb(ref);
   return ref;
 }
+
 
 export function updateReferral(id: string, patch: Partial<Referral>): Referral | null {
   const list = listAllReferralsRaw();
