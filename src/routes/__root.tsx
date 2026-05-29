@@ -110,13 +110,43 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  const isInvalidToken = /Unauthorized:\s*Invalid token|invalid (JWT|token)|bad_jwt/i.test(
-    `${error.message} ${error.stack ?? ""}`,
-  );
+  const msg = `${error.message} ${error.stack ?? ""}`;
+  const isInvalidToken = /Unauthorized:\s*Invalid token|invalid (JWT|token)|bad_jwt/i.test(msg);
+  // Bundle obsoleto preso em cache do PWA: chunks lazy referenciam arquivos
+  // que não existem mais após deploy. Limpamos caches/SW e recarregamos.
+  const isStaleChunk =
+    /ChunkLoadError|Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(
+      msg,
+    );
 
   useEffect(() => {
-    if (!isInvalidToken) return;
+    if (!isInvalidToken && !isStaleChunk) return;
     async function recover() {
+      if (isStaleChunk) {
+        try {
+          if ("caches" in window) {
+            const names = await caches.keys();
+            await Promise.all(names.map((n) => caches.delete(n)));
+          }
+        } catch {
+          // ignore
+        }
+        try {
+          if ("serviceWorker" in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map((r) => r.unregister()));
+          }
+        } catch {
+          // ignore
+        }
+        // Reload uma vez (flag em sessionStorage evita loop infinito).
+        const flag = "cobraeasy:stale-reload";
+        if (sessionStorage.getItem(flag) !== "1") {
+          sessionStorage.setItem(flag, "1");
+          window.location.reload();
+        }
+        return;
+      }
       try {
         await supabase.auth.signOut();
       } catch {
@@ -131,7 +161,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
       window.location.replace("/login?auth=expired");
     }
     void recover();
-  }, [isInvalidToken]);
+  }, [isInvalidToken, isStaleChunk]);
+
 
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-6 pt-[max(env(safe-area-inset-top),2.5rem)] pb-[max(env(safe-area-inset-bottom),2.5rem)]">
