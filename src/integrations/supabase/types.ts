@@ -2790,6 +2790,10 @@ export type Database = {
         }
         Returns: Json
       }
+      set_vault_secret: {
+        Args: { p_name: string; p_value: string }
+        Returns: undefined
+      }
       update_customer_admin: {
         Args: {
           p_amount_cents?: number
