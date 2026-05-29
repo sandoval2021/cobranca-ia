@@ -105,7 +105,8 @@ function AdminDnsRotasPage() {
     try {
       const raw = localStorage.getItem(CHECKLIST_KEY);
       setChecklist(raw ? JSON.parse(raw) : {});
-    } catch { setChecklist({}); }
+    } catch (_e) { setChecklist({}); }
+
   };
 
   const [companyId, setCompanyId] = useState<string | null>(null);
