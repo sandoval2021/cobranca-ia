@@ -1756,6 +1756,54 @@ export type Database = {
         }
         Relationships: []
       }
+      service_message_dispatch_log: {
+        Row: {
+          company_id: string
+          created_at: string
+          customer_id: string
+          cycle_key: string
+          dispatch_type: string
+          error: string | null
+          id: string
+          message_body: string | null
+          sent_at: string | null
+          service_plan_id: string
+          service_plan_message_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          customer_id: string
+          cycle_key: string
+          dispatch_type?: string
+          error?: string | null
+          id?: string
+          message_body?: string | null
+          sent_at?: string | null
+          service_plan_id: string
+          service_plan_message_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          cycle_key?: string
+          dispatch_type?: string
+          error?: string | null
+          id?: string
+          message_body?: string | null
+          sent_at?: string | null
+          service_plan_id?: string
+          service_plan_message_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       service_plan_messages: {
         Row: {
           company_id: string
