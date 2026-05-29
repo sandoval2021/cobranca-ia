@@ -361,10 +361,16 @@ export async function handleInboundForAiReply(
           })
           .eq("id", state.id);
 
-        if (handoffNumberPreload(aiSettingsPreload) && !state.human_notified_at) {
+        const { data: credHandoff } = await supabaseAdmin
+          .from("ai_company_settings")
+          .select("human_handoff_number")
+          .eq("company_id", inst.company_id)
+          .maybeSingle();
+        const credHandoffNumber = credHandoff?.human_handoff_number ?? null;
+        if (credHandoffNumber && !state.human_notified_at) {
           await notifyHuman(
             ref,
-            handoffNumberPreload(aiSettingsPreload)!,
+            credHandoffNumber,
             parts.fromPhone,
             "credentials_request",
             parts.text,
