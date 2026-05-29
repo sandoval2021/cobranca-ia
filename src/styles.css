@@ -74,10 +74,11 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.20 0.02 250);
 
-  /* iOS system blue (#007AFF) */
-  --primary: oklch(0.60 0.18 252);
+  /* Azul vibrante CobraEasy — saturado, energia premium */
+  --primary: oklch(0.56 0.24 258);
   --primary-foreground: oklch(1 0 0);
-  --primary-soft: oklch(0.955 0.035 245);
+  --primary-soft: oklch(0.94 0.06 258);
+
 
   --secondary: oklch(0.965 0.01 245);
   --secondary-foreground: oklch(0.28 0.03 250);
@@ -101,14 +102,14 @@
   --danger-foreground: oklch(1 0 0);
   --danger-soft: oklch(0.96 0.04 25);
 
-  --info: oklch(0.60 0.18 252);
+  --info: oklch(0.56 0.24 258);
   --info-foreground: oklch(1 0 0);
-  --info-soft: oklch(0.955 0.035 245);
+  --info-soft: oklch(0.94 0.06 258);
 
   --border: oklch(0.93 0.01 245);
   --border-strong: oklch(0.88 0.012 245);
   --input: oklch(0.93 0.01 245);
-  --ring: oklch(0.60 0.18 252);
+  --ring: oklch(0.56 0.24 258);
 
   /* Soft, premium iOS-like shadows */
   --shadow-card: 0 1px 2px oklch(0.20 0.04 252 / 0.04), 0 4px 14px oklch(0.20 0.04 252 / 0.05);
