@@ -83,7 +83,7 @@ export function MobileBottomNav() {
                       if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
                       e.preventDefault();
                       setOpenMore(false);
-                      void navigate({ to: item.to });
+                      void navigate({ to: item.to as string });
                     }}
                     className="flex h-20 flex-col items-center justify-center gap-1 rounded-xl border border-border bg-card p-2 text-center text-[11px] font-medium leading-tight text-foreground active:scale-[0.98]"
                   >
