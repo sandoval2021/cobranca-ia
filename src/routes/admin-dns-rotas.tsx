@@ -646,7 +646,7 @@ function DomainSheet({
   open, data, onClose, onSaved,
 }: {
   open: boolean; data: DnsDomain | null;
-  onClose: () => void; onSaved: () => void;
+  onClose: () => void; onSaved: (d: DnsDomain) => void;
 }) {
   const [domain, setDomain] = useState("");
   const [provider, setProvider] = useState<DnsProvider>("outro");
