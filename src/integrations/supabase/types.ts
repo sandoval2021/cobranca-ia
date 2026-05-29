@@ -95,6 +95,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_idempotency: {
+        Row: {
+          company_id: string
+          created_at: string
+          cycle_id: string
+          id: string
+          idempotency_key: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          cycle_id: string
+          id?: string
+          idempotency_key: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          cycle_id?: string
+          id?: string
+          idempotency_key?: string
+        }
+        Relationships: []
+      }
       ai_usage_log: {
         Row: {
           company_id: string
@@ -3164,6 +3188,30 @@ export type Database = {
       }
       increment_ai_usage: {
         Args: { _company_id: string }
+        Returns: {
+          base_limit: number
+          blocked_at: string | null
+          company_id: string
+          created_at: string
+          cycle_end: string
+          cycle_start: string
+          extra_limit: number
+          id: string
+          last_increment_at: string | null
+          updated_at: string
+          used_count: number
+          warned_70_at: string | null
+          warned_90_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "company_ai_usage_cycle"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      increment_ai_usage_idempotent: {
+        Args: { _company_id: string; _idempotency_key: string }
         Returns: {
           base_limit: number
           blocked_at: string | null
