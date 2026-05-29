@@ -48,9 +48,8 @@ export function useCustomerExtrasSync() {
     writeLocal({ ...local, ...map });
   }, []);
 
-  const uploadLegacy = useCallback(async (companyId: string) => {
+  const uploadAll = useCallback(async (companyId: string) => {
     if (typeof window === "undefined") return;
-    if (localStorage.getItem(UPLOADED_FLAG + ":" + companyId) === "1") return;
     const local = readLocal();
     const items = Object.entries(local)
       .filter(([cid, v]) => isUuid(cid) && (v.email || v.birthday || v.dueDate))
@@ -60,13 +59,22 @@ export function useCustomerExtrasSync() {
         birthday: v.birthday ?? null,
         due_date: v.dueDate ?? null,
       }));
-    if (items.length === 0) {
-      localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
-      return;
-    }
+    if (items.length === 0) return;
     await bulkUpsertCustomerExtrasDb({ data: { companyId, items } });
-    localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
   }, []);
 
-  useDbFirstSync({ table: "customer_extras", hydrate, uploadLegacy });
+  const uploadLegacy = useCallback(async (companyId: string) => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(UPLOADED_FLAG + ":" + companyId) === "1") return;
+    await uploadAll(companyId);
+    localStorage.setItem(UPLOADED_FLAG + ":" + companyId, "1");
+  }, [uploadAll]);
+
+  useDbFirstSync({
+    table: "customer_extras",
+    hydrate,
+    uploadLegacy,
+    mirror: uploadAll,
+    mirrorEvents: [CUSTOMER_EXTRAS_EVENT],
+  });
 }
