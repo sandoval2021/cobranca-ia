@@ -61,8 +61,10 @@ export const Route = createFileRoute("/api/public/webhooks/mercado-pago")({
         }
 
         let body: any;
+        let rawBody = "";
         try {
-          body = await request.json();
+          rawBody = await request.text();
+          body = rawBody ? JSON.parse(rawBody) : {};
         } catch {
           return new Response("Invalid JSON", { status: 400 });
         }
@@ -82,6 +84,23 @@ export const Route = createFileRoute("/api/public/webhooks/mercado-pago")({
           body?.resource?.toString?.() ||
           url.searchParams.get("data.id") ||
           undefined;
+
+        // Fase A — Segurança: assinatura do MP é obrigatória. Sem assinatura válida,
+        // nenhuma assinatura SaaS, payment_attempt ou owner_subscription é alterada.
+        const sigHeader = request.headers.get("x-signature");
+        const reqIdHeader = request.headers.get("x-request-id");
+        const signatureValid = verifyMpSignature(
+          sigHeader,
+          reqIdHeader,
+          resourceId ?? providerEventId ?? null,
+        );
+        if (!signatureValid) {
+          console.warn("[mp webhook] invalid signature; rejecting");
+          return new Response(JSON.stringify({ ok: false }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
 
         const sanitized = sanitizeWebhookPayload(body);
         const db = admin();
