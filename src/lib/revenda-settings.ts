@@ -175,7 +175,7 @@ export function resetRevendaSettings(): RevendaSettings {
   );
   return DEFAULT_REVENDA_SETTINGS;
 }
-}
+
 
 export function exportRevendaSettings(): string {
   const data = getRevendaSettings();
