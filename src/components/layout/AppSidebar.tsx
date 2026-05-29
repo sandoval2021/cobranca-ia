@@ -25,8 +25,11 @@ import {
   canCompanyUseModule,
   getCompanyForUser,
   getCurrentCompany,
+  getCompanySupportId,
   COMPANIES_EVENT,
 } from "@/lib/companies";
+import { Copy } from "lucide-react";
+import { toast } from "sonner";
 
 type Props = {
   variant?: "owner" | "admin";
