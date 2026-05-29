@@ -83,6 +83,7 @@ function AuthedApp() {
   useManualRenewalsSync();
   useCustomerDueOverridesSync();
   useReferralsSync();
+  useReferralRulesSync();
   useKnowledgeBaseSync();
   useManualDispatchRulesSync();
   useImportedDueDatesSync();
