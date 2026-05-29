@@ -210,66 +210,58 @@ Equipe {empresa}`,
     isDefault: true,
   },
 
-  // Testes (conversão)
+  // Testes — mensagens enviadas AO CLIENTE FINAL que está testando o serviço
+  // de streaming/canais/IPTV. Foco em ativação, suporte e conversão.
   ten("teste_1h", "Após 1 hora", 1,
-`👋 Olá {nome}
+`Olá {nome} 👋
 
-Percebemos que você iniciou seu teste.
+Seu teste do *{servico}* já está liberado!
 
-Se precisar de ajuda para configurar ou entender qualquer função, estamos à disposição.
+Se precisar de ajuda para configurar o app na TV, no celular ou no TV Box, é só me chamar por aqui.
 
-🚀 Aproveite para explorar todas as funcionalidades.
-
-Equipe {empresa}`),
+Bom teste!
+{empresa}`),
   ten("teste_6h", "Após 6 horas", 6,
-`Oi {nome}! Já conseguiu testar as principais funções? Qualquer dúvida estamos por aqui. — Equipe {empresa}`),
+`Oi {nome}, tudo certo com o seu teste do *{servico}*? Conseguiu assistir? Qualquer dúvida estou por aqui. — {empresa}`),
   ten("teste_12h", "Após 12 horas", 12,
-`Olá {nome}, como está o seu teste? Posso te mostrar algum recurso? — Equipe {empresa}`),
+`Olá {nome}! E aí, como está o seu teste do *{servico}*? Se precisar de ajuda com algum canal ou filme, é só falar. — {empresa}`),
   ten("teste_24h", "Após 24 horas", 24,
-`📈 Como está sendo sua experiência?
+`Olá {nome} 🎬
 
-Olá {nome},
+Hoje seu teste do *{servico}* completa 1 dia.
 
-Você já testou:
+Se gostou da qualidade, já posso liberar seu acesso completo por *R$ {valor}*.
 
-✅ Cadastro de clientes
-✅ Cobrança automática
-✅ WhatsApp
-✅ Relatórios
-✅ Controle financeiro
-
-Caso tenha dúvidas, estamos aqui para ajudar.
-
-Equipe {empresa}`),
+Para ativar, é só me chamar.
+{empresa}`),
   ten("teste_2d", "Após 2 dias", 48,
-`Olá {nome}, faltam {dias_restantes} dias para o fim do teste. Posso ajudar com algo? — Equipe {empresa}`),
+`Oi {nome}! Faltam *{dias_restantes}* dias para acabar seu teste do *{servico}*. Quer já garantir seu acesso por R$ {valor}? — {empresa}`),
   ten("teste_3d", "Após 3 dias", 72,
-`Oi {nome}! Já está aproveitando o sistema? Em {dias_restantes} dias seu teste termina. — Equipe {empresa}`),
+`Olá {nome}, seu teste do *{servico}* termina em *{vencimento_teste}*. Aproveite e renove agora por R$ {valor}. — {empresa}`),
   ten("teste_5d", "Após 5 dias", 120,
-`⏳ Seu período de teste está acabando
+`⏳ Seu teste está acabando
 
 Olá {nome},
 
-Faltam apenas {dias_restantes} dias para o término do seu teste.
+Faltam apenas *{dias_restantes}* dias para o fim do seu teste do *{servico}*.
 
-Garanta seu acesso e continue utilizando todas as funcionalidades.
+Para continuar assistindo sem interrupção:
+💳 Plano por *R$ {valor}*
+📲 Ativação na hora pelo Pix
 
-Equipe {empresa}`),
+Me chame por aqui que envio o pagamento.
+{empresa}`),
   ten("teste_7d", "Após 7 dias", 168,
-`🎉 Gostou do sistema?
+`🎬 Seu teste terminou
 
-Seu período de teste chegou ao fim.
+Olá {nome}, esperamos que tenha gostado do *{servico}*.
 
-Caso deseje continuar utilizando:
+Para liberar seu acesso completo:
+💰 Valor: *R$ {valor}*
+📅 Vencimento do teste: {vencimento_teste}
 
-💳 Plano mensal
-📈 Cobrança automática
-🤖 IA Atendente
-📱 WhatsApp integrado
-
-Entre em contato para ativar sua conta.
-
-Equipe {empresa}`),
+Envie o comprovante por aqui e libero na hora.
+{empresa}`),
 ];
 
 function ten(key: string, name: string, offsetHours: number, body: string): AutoTemplate {
