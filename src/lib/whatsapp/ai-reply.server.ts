@@ -343,15 +343,20 @@ export async function handleInboundForAiReply(
           { role: "assistant" as const, text: reply, at: nowIso },
         ].slice(-MAX_MEMORY_MESSAGES);
 
+        const sentOk = credRes.sent === true;
         await supabaseAdmin
           .from("whatsapp_conversation_state")
           .update({
             last_messages: updatedMessages as any,
-            flags: { ...(memory.flags ?? {}), credentials_handoff: true } as any,
+            flags: {
+              ...(memory.flags ?? {}),
+              credentials_handoff: !sentOk,
+              credentials_sent: sentOk,
+            } as any,
             classification: "support",
-            needs_human: true,
-            human_reason: credRes.reason,
-            muted_until: new Date(now + MUTE_ON_HUMAN_MS).toISOString(),
+            needs_human: !sentOk,
+            human_reason: sentOk ? null : credRes.reason,
+            muted_until: sentOk ? null : new Date(now + MUTE_ON_HUMAN_MS).toISOString(),
             responses_hour_window: [...window, nowIso] as any,
             last_response_hash: hashText(reply),
             last_response_at: nowIso,
@@ -361,25 +366,29 @@ export async function handleInboundForAiReply(
           })
           .eq("id", state.id);
 
-        const { data: credHandoff } = await supabaseAdmin
-          .from("ai_company_settings")
-          .select("human_handoff_number")
-          .eq("company_id", inst.company_id)
-          .maybeSingle();
-        const credHandoffNumber = credHandoff?.human_handoff_number ?? null;
-        if (credHandoffNumber && !state.human_notified_at) {
-          await notifyHuman(
-            ref,
-            credHandoffNumber,
-            parts.fromPhone,
-            "credentials_request",
-            parts.text,
-          );
-          await supabaseAdmin
-            .from("whatsapp_conversation_state")
-            .update({ human_notified_at: nowIso })
-            .eq("id", state.id);
+        // Notifica humano apenas quando NÃO foi possível enviar dados
+        if (!sentOk) {
+          const { data: credHandoff } = await supabaseAdmin
+            .from("ai_company_settings")
+            .select("human_handoff_number")
+            .eq("company_id", inst.company_id)
+            .maybeSingle();
+          const credHandoffNumber = credHandoff?.human_handoff_number ?? null;
+          if (credHandoffNumber && !state.human_notified_at) {
+            await notifyHuman(
+              ref,
+              credHandoffNumber,
+              parts.fromPhone,
+              "credentials_request",
+              parts.text,
+            );
+            await supabaseAdmin
+              .from("whatsapp_conversation_state")
+              .update({ human_notified_at: nowIso })
+              .eq("id", state.id);
+          }
         }
+
 
         return { handled: true };
       }

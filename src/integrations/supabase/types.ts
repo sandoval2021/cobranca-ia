@@ -865,6 +865,113 @@ export type Database = {
           },
         ]
       }
+      dns_domains: {
+        Row: {
+          archived: boolean
+          company_id: string
+          created_at: string
+          domain: string
+          id: string
+          notes: string | null
+          provider: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          archived?: boolean
+          company_id: string
+          created_at?: string
+          domain: string
+          id?: string
+          notes?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          archived?: boolean
+          company_id?: string
+          created_at?: string
+          domain?: string
+          id?: string
+          notes?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dns_routes: {
+        Row: {
+          archived: boolean
+          company_id: string
+          created_at: string
+          destination: string
+          domain_id: string
+          environment: string
+          host: string
+          id: string
+          is_active: boolean
+          is_backup: boolean
+          is_primary: boolean
+          notes: string | null
+          previous_value: string | null
+          record_type: string
+          server_id: string | null
+          status: string
+          subdomain: string
+          updated_at: string
+        }
+        Insert: {
+          archived?: boolean
+          company_id: string
+          created_at?: string
+          destination?: string
+          domain_id: string
+          environment?: string
+          host: string
+          id?: string
+          is_active?: boolean
+          is_backup?: boolean
+          is_primary?: boolean
+          notes?: string | null
+          previous_value?: string | null
+          record_type?: string
+          server_id?: string | null
+          status?: string
+          subdomain?: string
+          updated_at?: string
+        }
+        Update: {
+          archived?: boolean
+          company_id?: string
+          created_at?: string
+          destination?: string
+          domain_id?: string
+          environment?: string
+          host?: string
+          id?: string
+          is_active?: boolean
+          is_backup?: boolean
+          is_primary?: boolean
+          notes?: string | null
+          previous_value?: string | null
+          record_type?: string
+          server_id?: string | null
+          status?: string
+          subdomain?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dns_routes_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "dns_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string

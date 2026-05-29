@@ -42,6 +42,11 @@ import {
   exportDnsRoutes, parseDnsRoutesBackup, importDnsRoutes,
 } from "@/lib/dns-routes";
 import { listServers, type ServerEntry } from "@/lib/server-catalog";
+import {
+  hydrateDnsFromDb, pushDomainToDb, pushRouteToDb,
+  removeDomainFromDb, removeRouteFromDb,
+} from "@/lib/dns-routes-db";
+import { getCurrentCompanyAdmin, ensureUserDefaultCompany } from "@/lib/rpc-admin";
 
 export const Route = createFileRoute("/admin-dns-rotas")({
   head: () => ({
@@ -100,7 +105,17 @@ function AdminDnsRotasPage() {
     } catch { setChecklist({}); }
   };
 
+  const [companyId, setCompanyId] = useState<string | null>(null);
+
   useEffect(() => {
+    (async () => {
+      let cid = (await getCurrentCompanyAdmin()).companyId;
+      if (!cid) cid = (await ensureUserDefaultCompany()).companyId;
+      if (!cid) return;
+      setCompanyId(cid);
+      try { await hydrateDnsFromDb(cid); } catch (e) { console.error("dns hydrate", e); }
+      refresh();
+    })();
     refresh();
     window.addEventListener(DNS_ROUTES_EVENT, refresh);
     window.addEventListener("storage", refresh);
@@ -109,6 +124,21 @@ function AdminDnsRotasPage() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
+
+  // Dual-write helpers used by sheets/handlers below
+  const persistDomain = async (d: DnsDomain) => {
+    if (!companyId) { toast.error("Empresa não identificada."); return; }
+    try { await pushDomainToDb(companyId, d); }
+    catch (e: any) { toast.error("Falha ao salvar domínio no banco: " + (e?.message ?? e)); }
+  };
+  const persistRoute = async (r: DnsRoute) => {
+    if (!companyId) { toast.error("Empresa não identificada."); return; }
+    try { await pushRouteToDb(companyId, r); }
+    catch (e: any) { toast.error("Falha ao salvar rota no banco: " + (e?.message ?? e)); }
+  };
+  const removeDomainDb = async (id: string) => { if (companyId) await removeDomainFromDb(companyId, id).catch(() => {}); };
+  const removeRouteDb  = async (id: string) => { if (companyId) await removeRouteFromDb(companyId, id).catch(() => {}); };
+
 
   const activeDomains = domains.filter((d) => !d.archived);
   const activeRoutes = routes.filter((r) => !r.archived);
