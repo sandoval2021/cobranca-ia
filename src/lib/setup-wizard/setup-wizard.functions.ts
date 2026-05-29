@@ -7,9 +7,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type SetupProgressDto = {
   company_id: string;
-  steps: Record<string, unknown>;
+  steps: Record<string, any>;
   updated_at: string;
 };
+
 
 async function assertCompanyAccess(supabase: any, companyId: string) {
   const { data, error } = await supabase.rpc("has_company_access", { _company_id: companyId });
