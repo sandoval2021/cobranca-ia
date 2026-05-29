@@ -1,8 +1,10 @@
 // Painel de automação dos testes — UI direto na tela /testes.
 // Usa o storage existente de auto-templates (categoria "teste").
+// Cada template pode ser vinculado a um Serviço/Plano (scope = service.id)
+// para que {servico} e {valor} sejam substituídos na hora do envio.
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Zap, Clock, Pencil, ExternalLink, Eye, RotateCcw } from "lucide-react";
+import { Zap, Clock, Pencil, ExternalLink, Eye, RotateCcw, Package } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -12,6 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -20,6 +25,16 @@ import {
   listTemplates, upsertTemplate, restoreDefault, previewTemplate,
   VARIABLES_TESTE, type AutoTemplate,
 } from "@/lib/auto-templates";
+import { listActiveServices, type ServiceItem, SERVICES_EVENT } from "@/lib/services-catalog";
+
+function brl(cents: number): string {
+  return (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function serviceOverrides(s: ServiceItem | null): Record<string, string> {
+  if (!s) return {};
+  return { "{servico}": s.nome, "{valor}": brl(s.preco_cents) };
+}
 
 function formatOffset(hours?: number): string {
   if (hours == null) return "—";
