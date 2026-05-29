@@ -724,7 +724,7 @@ function RouteSheet({
   domains: DnsDomain[];
   servers: ServerEntry[];
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (r: DnsRoute, replacedPrimary?: DnsRoute) => void;
   onPrimaryConflict: (existing: DnsRoute | null, doSave: () => void) => void;
 }) {
   const [domainId, setDomainId] = useState<string>("");
