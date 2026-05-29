@@ -305,18 +305,8 @@ function AppsPortalPage() {
               <Label>URL do painel</Label>
               <Input value={form.panel_url} onChange={(e) => setForm({ ...form, panel_url: e.target.value })} placeholder="https://painel.bobplayer.com" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Login do painel</Label>
-                <Input value={form.panel_login} onChange={(e) => setForm({ ...form, panel_login: e.target.value })} />
-              </div>
-              <div>
-                <Label>Senha do painel</Label>
-                <Input type="password" placeholder={form.id ? "(manter atual)" : ""}
-                       value={form.panel_password}
-                       onChange={(e) => setForm({ ...form, panel_password: e.target.value })} />
-              </div>
-            </div>
+            {/* Login/Senha removidos: estes painéis usam apenas MAC e/ou Key */}
+
             <div>
               <Label>Modelo URL para MAC</Label>
               <Input value={form.mac_url_template} onChange={(e) => setForm({ ...form, mac_url_template: e.target.value })}
