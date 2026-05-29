@@ -16,6 +16,7 @@ import {
   Sparkles,
   ChevronDown,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
@@ -31,11 +32,6 @@ const NAV = [
 function scrollToId(id: string) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function goToApp() {
-  // recarrega para a home autenticada (login)
-  window.location.href = "/?login=1";
 }
 
 export function LandingPage() {
@@ -107,8 +103,8 @@ export function LandingPage() {
           </nav>
 
           <div className="hidden lg:block">
-            <Button onClick={goToApp} size="lg" className="rounded-full px-5 shadow-sm">
-              Acessar plataforma
+            <Button asChild size="lg" className="rounded-full px-5 shadow-sm">
+              <Link to="/login">Acessar plataforma</Link>
             </Button>
           </div>
 
@@ -137,8 +133,8 @@ export function LandingPage() {
                     {n.label}
                   </button>
                 ))}
-                <Button onClick={goToApp} className="mt-2 h-12 w-full rounded-xl text-base">
-                  Acessar plataforma
+                <Button asChild className="mt-2 h-12 w-full rounded-xl text-base">
+                  <Link to="/login">Acessar plataforma</Link>
                 </Button>
               </nav>
             </div>
@@ -193,12 +189,14 @@ export function LandingPage() {
 
             <div className="mx-auto mt-8 flex max-w-md flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row">
               <Button
-                onClick={goToApp}
+                asChild
                 size="lg"
                 className="h-12 rounded-xl px-7 text-base shadow-lg shadow-primary/30"
               >
-                Começar grátis
-                <ArrowRight className="ml-1 h-4 w-4" />
+                <Link to="/login?mode=signup">
+                  Começar grátis
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
               </Button>
               <Button
                 onClick={() => scrollToId("recursos")}
@@ -418,6 +416,7 @@ export function LandingPage() {
             {[
               {
                 name: "Inicial",
+                planSlug: "essencial",
                 price: "49,90",
                 desc: "Para quem está começando a organizar a cobrança.",
                 features: [
@@ -432,6 +431,7 @@ export function LandingPage() {
               },
               {
                 name: "Profissional",
+                planSlug: "profissional",
                 price: "119,90",
                 desc: "Para revendas em crescimento que precisam escalar.",
                 features: [
@@ -446,6 +446,7 @@ export function LandingPage() {
               },
               {
                 name: "Escala",
+                planSlug: "escala",
                 price: "249,90",
                 desc: "Para equipes e operações de alto volume.",
                 features: [
@@ -499,12 +500,12 @@ export function LandingPage() {
                 </ul>
 
                 <Button
-                  onClick={goToApp}
+                  asChild
                   size="lg"
                   variant={p.highlight ? "default" : "outline"}
                   className="mt-6 h-12 w-full rounded-xl text-base"
                 >
-                  Começar grátis
+                  <Link to={`/login?mode=signup&plan=${p.planSlug}`}>Começar grátis</Link>
                 </Button>
               </div>
             ))}
@@ -641,12 +642,14 @@ export function LandingPage() {
             Teste grátis por 5 dias. Sem cartão de crédito. Cancele quando quiser.
           </p>
           <Button
-            onClick={goToApp}
+            asChild
             size="lg"
             className="mt-7 h-12 rounded-xl px-8 text-base shadow-lg shadow-black/30"
           >
-            Começar grátis agora
-            <ArrowRight className="ml-1 h-4 w-4" />
+            <Link to="/login?mode=signup">
+              Começar grátis agora
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </section>

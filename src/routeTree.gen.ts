@@ -26,6 +26,7 @@ import { Route as MinhaAssinaturaRouteImport } from './routes/minha-assinatura'
 import { Route as MigracaoEmpresaRouteImport } from './routes/migracao-empresa'
 import { Route as MeusDadosRouteImport } from './routes/meus-dados'
 import { Route as MensagensRouteImport } from './routes/mensagens'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndicacoesRouteImport } from './routes/indicacoes'
 import { Route as ImportarClientesRouteImport } from './routes/importar-clientes'
 import { Route as IaConfigRouteImport } from './routes/ia-config'
@@ -154,6 +155,11 @@ const MeusDadosRoute = MeusDadosRouteImport.update({
 const MensagensRoute = MensagensRouteImport.update({
   id: '/mensagens',
   path: '/mensagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndicacoesRoute = IndicacoesRouteImport.update({
@@ -414,6 +420,7 @@ export interface FileRoutesByFullPath {
   '/ia-config': typeof IaConfigRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
+  '/login': typeof LoginRoute
   '/mensagens': typeof MensagensRoute
   '/meus-dados': typeof MeusDadosRoute
   '/migracao-empresa': typeof MigracaoEmpresaRoute
@@ -477,6 +484,7 @@ export interface FileRoutesByTo {
   '/ia-config': typeof IaConfigRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
+  '/login': typeof LoginRoute
   '/mensagens': typeof MensagensRoute
   '/meus-dados': typeof MeusDadosRoute
   '/migracao-empresa': typeof MigracaoEmpresaRoute
@@ -541,6 +549,7 @@ export interface FileRoutesById {
   '/ia-config': typeof IaConfigRoute
   '/importar-clientes': typeof ImportarClientesRoute
   '/indicacoes': typeof IndicacoesRoute
+  '/login': typeof LoginRoute
   '/mensagens': typeof MensagensRoute
   '/meus-dados': typeof MeusDadosRoute
   '/migracao-empresa': typeof MigracaoEmpresaRoute
@@ -606,6 +615,7 @@ export interface FileRouteTypes {
     | '/ia-config'
     | '/importar-clientes'
     | '/indicacoes'
+    | '/login'
     | '/mensagens'
     | '/meus-dados'
     | '/migracao-empresa'
@@ -669,6 +679,7 @@ export interface FileRouteTypes {
     | '/ia-config'
     | '/importar-clientes'
     | '/indicacoes'
+    | '/login'
     | '/mensagens'
     | '/meus-dados'
     | '/migracao-empresa'
@@ -732,6 +743,7 @@ export interface FileRouteTypes {
     | '/ia-config'
     | '/importar-clientes'
     | '/indicacoes'
+    | '/login'
     | '/mensagens'
     | '/meus-dados'
     | '/migracao-empresa'
@@ -796,6 +808,7 @@ export interface RootRouteChildren {
   IaConfigRoute: typeof IaConfigRoute
   ImportarClientesRoute: typeof ImportarClientesRoute
   IndicacoesRoute: typeof IndicacoesRoute
+  LoginRoute: typeof LoginRoute
   MensagensRoute: typeof MensagensRoute
   MeusDadosRoute: typeof MeusDadosRoute
   MigracaoEmpresaRoute: typeof MigracaoEmpresaRoute
@@ -948,6 +961,13 @@ declare module '@tanstack/react-router' {
       path: '/mensagens'
       fullPath: '/mensagens'
       preLoaderRoute: typeof MensagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/indicacoes': {
@@ -1306,6 +1326,7 @@ const rootRouteChildren: RootRouteChildren = {
   IaConfigRoute: IaConfigRoute,
   ImportarClientesRoute: ImportarClientesRoute,
   IndicacoesRoute: IndicacoesRoute,
+  LoginRoute: LoginRoute,
   MensagensRoute: MensagensRoute,
   MeusDadosRoute: MeusDadosRoute,
   MigracaoEmpresaRoute: MigracaoEmpresaRoute,
@@ -1341,3 +1362,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
