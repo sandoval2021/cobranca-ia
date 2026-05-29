@@ -98,6 +98,7 @@ export const bulkUpsertCustomerExtrasDb = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     if (data.items.length === 0) return { upserted: 0 };
     const payload = data.items.map((i) =>
       inputToRow({ ...i, companyId: data.companyId }),
