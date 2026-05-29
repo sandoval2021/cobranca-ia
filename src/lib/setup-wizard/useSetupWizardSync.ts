@@ -1,13 +1,23 @@
 // Hidrata company_setup_progress do banco no boot/troca de empresa.
-import { useEffect } from "react";
-import { useActiveCompanyId } from "@/lib/company-scope";
+import { useEffect, useState } from "react";
+import { getActiveCompanyId } from "@/lib/company-scope";
 import { getSetupProgressDb } from "@/lib/setup-wizard/setup-wizard.functions";
 import { hydrateSetupProgressFromDb, getLocalSetupWizardData } from "@/lib/setup-wizard";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function useSetupWizardSync() {
-  const companyId = useActiveCompanyId();
+  const [companyId, setCompanyId] = useState<string | null>(() => getActiveCompanyId());
+  useEffect(() => {
+    const handler = () => setCompanyId(getActiveCompanyId());
+    window.addEventListener("active-company:changed", handler);
+    window.addEventListener("storage", handler);
+    return () => {
+      window.removeEventListener("active-company:changed", handler);
+      window.removeEventListener("storage", handler);
+    };
+  }, []);
+
   useEffect(() => {
     if (!companyId || !UUID_RE.test(companyId)) return;
     let cancelled = false;
