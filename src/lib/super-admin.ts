@@ -1,20 +1,17 @@
-// Allowlist de Super Admin baseada em e-mail.
-// Configurável via secret VITE_SUPER_ADMIN_EMAILS (lista separada por vírgulas).
-// Fonte da verdade no frontend; o backend deve ter sua própria proteção (RLS).
-const RAW =
-  (import.meta.env.VITE_SUPER_ADMIN_EMAILS as string | undefined) ??
-  (import.meta.env.VITE_SUPER_ADMIN_EMAIL as string | undefined) ??
-  "";
+// Allowlist de Super Admin — Fase A: NUNCA mais expor lista no bundle público.
+//
+// A fonte da verdade é o backend (RPC `is_super_admin` no Supabase). A lista de
+// e-mails permitidos vive em uma secret server-only (`SUPER_ADMIN_EMAILS`, sem
+// prefixo VITE_) consumida apenas por server functions ou por queries SQL.
+//
+// Estas funções de cliente existem só para manter a API antiga em uso, mas
+// agora retornam sempre `false`. Quem precisa decidir privilégio crítico deve
+// consultar o backend.
 
-const ALLOWLIST = RAW.split(/[\s,;]+/)
-  .map((s) => s.trim().toLowerCase())
-  .filter(Boolean);
-
-export function isSuperAdminEmail(email?: string | null): boolean {
-  if (!email) return false;
-  return ALLOWLIST.includes(email.trim().toLowerCase());
+export function isSuperAdminEmail(_email?: string | null): boolean {
+  return false;
 }
 
 export function hasSuperAdminAllowlist(): boolean {
-  return ALLOWLIST.length > 0;
+  return false;
 }
