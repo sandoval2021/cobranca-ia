@@ -3,8 +3,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Pencil, Sparkles, Save, MessageCircle, Check, ChevronRight,
-  CloudUpload, Loader2,
+  CloudUpload, Loader2, Users,
 } from "lucide-react";
+import { EligibleRecipientsDialog } from "@/components/services/EligibleRecipientsDialog";
+import { getServiceDispatchCountsDb, type MessageEligibilityCount } from "@/lib/services/dispatch.functions";
+
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
@@ -82,6 +85,12 @@ function CadastrosServicosPage() {
   });
   const [pendingDelete, setPendingDelete] = useState<ServiceItem | null>(null);
   const [editor, setEditor] = useState<{ planId: string; offsetDays: number } | null>(null);
+  const [recipientsDlg, setRecipientsDlg] = useState<{
+    open: boolean; planMessageIds: string[] | null; title: string; subtitle?: string;
+  }>({ open: false, planMessageIds: null, title: "" });
+  const [eligibilityCounts, setEligibilityCounts] = useState<Map<string, MessageEligibilityCount>>(new Map());
+  const getCountsFn = useServerFn(getServiceDispatchCountsDb);
+
 
   // --- banner: enviar planos/mensagens locais para a nuvem ---
   const CLOUD_BANNER_DISMISS_KEY = "cobranca_ia_services_cloud_banner_dismissed_v1";
@@ -154,6 +163,23 @@ function CadastrosServicosPage() {
     window.addEventListener(SERVICES_EVENT, h);
     return () => window.removeEventListener(SERVICES_EVENT, h);
   }, []);
+
+  // Carrega contagem de elegíveis (clientes que receberão cada mensagem hoje).
+  useEffect(() => {
+    const companyId = getActiveCompanyId();
+    if (!companyId) return;
+    let cancelled = false;
+    getCountsFn({ data: { companyId } })
+      .then((rows) => {
+        if (cancelled) return;
+        const m = new Map<string, MessageEligibilityCount>();
+        for (const r of rows as MessageEligibilityCount[]) m.set(r.service_plan_message_id, r);
+        setEligibilityCounts(m);
+      })
+      .catch(() => { /* silencioso — UI opera sem contagens */ });
+    return () => { cancelled = true; };
+  }, [items, getCountsFn]);
+
 
   // Auto-seleciona o primeiro plano se nenhum estiver selecionado
   useEffect(() => {
@@ -314,6 +340,24 @@ function CadastrosServicosPage() {
           <SectionHeader
             title={`Mensagens do ${selectedPlan.nome}`}
             subtitle="Toque em um prazo para escrever ou alterar o texto que será enviado."
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => {
+                  const ids = selectedPlan.messages.map((m) => m.id);
+                  setRecipientsDlg({
+                    open: true,
+                    planMessageIds: ids,
+                    title: `Quem vai receber — ${selectedPlan.nome}`,
+                    subtitle: "Clientes com vencimento dentro da janela de cada mensagem.",
+                  });
+                }}
+              >
+                <Users className="h-4 w-4" /> Ver quem vai receber
+              </Button>
+            }
           />
 
           <div className="space-y-2">
@@ -321,33 +365,60 @@ function CadastrosServicosPage() {
               const msg = selectedPlan.messages.find((m) => m.offset_days === days);
               const configured = !!(msg && msg.template.trim());
               const tone = toneOf(days);
+              const count = msg ? eligibilityCounts.get(msg.id)?.eligible_count ?? 0 : 0;
               return (
-                <button
+                <div
                   key={days}
-                  type="button"
-                  onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl border-2 bg-card p-3 text-left shadow-sm transition-all",
-                    "hover:border-primary/60 hover:shadow-md active:scale-[0.99]",
+                    "hover:border-primary/60 hover:shadow-md",
                     "border-border",
                   )}
                 >
-                  <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", toneDotClass(tone))} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold leading-tight">{slotLabel(days)}</p>
-                    <p className={cn(
-                      "mt-0.5 truncate text-xs",
-                      configured ? "text-muted-foreground" : "text-destructive/80 font-medium",
-                    )}>
-                      {configured ? msg!.template : "Não configurado"}
-                    </p>
-                  </div>
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", toneDotClass(tone))} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold leading-tight">{slotLabel(days)}</p>
+                      <p className={cn(
+                        "mt-0.5 truncate text-xs",
+                        configured ? "text-muted-foreground" : "text-destructive/80 font-medium",
+                      )}>
+                        {configured ? msg!.template : "Não configurado"}
+                      </p>
+                    </div>
+                  </button>
+                  {configured && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRecipientsDlg({
+                          open: true,
+                          planMessageIds: [msg!.id],
+                          title: slotLabel(days),
+                          subtitle: `Plano ${selectedPlan.nome}`,
+                        })
+                      }
+                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
+                      title="Ver clientes que vão receber"
+                    >
+                      <Users className="h-3 w-3" />
+                      {count} {count === 1 ? "cliente" : "clientes"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setEditor({ planId: selectedPlan.id, offsetDays: days })}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] hover:bg-muted"
+                  >
                     <Pencil className="h-3 w-3" />
-                    <span className="hidden sm:inline">Editar texto</span>
-                  </span>
+                    <span className="hidden sm:inline">Editar</span>
+                  </button>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
-                </button>
+                </div>
               );
             })}
           </div>
@@ -368,6 +439,14 @@ function CadastrosServicosPage() {
         offsetDays={editor?.offsetDays ?? 0}
         onClose={() => setEditor(null)}
         onSaved={() => { setEditor(null); reload(); }}
+      />
+
+      <EligibleRecipientsDialog
+        open={recipientsDlg.open}
+        onClose={() => setRecipientsDlg((p) => ({ ...p, open: false }))}
+        planMessageIds={recipientsDlg.planMessageIds}
+        title={recipientsDlg.title}
+        subtitle={recipientsDlg.subtitle}
       />
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
