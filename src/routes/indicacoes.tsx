@@ -30,6 +30,12 @@ import {
 import { getActiveAccountId, listCustomersForSelectAdmin } from "@/lib/rpc-admin";
 import { useSecurityGuard } from "@/components/security/PinConfirmDialog";
 import { ProtectedModeBadge } from "@/components/security/ProtectedModeBadge";
+import { CloudUploadLocalDataBanner } from "@/components/cloud/CloudUploadLocalDataBanner";
+import {
+  getReferralsSyncState,
+  uploadLocalReferralsToDb,
+  REFERRALS_SYNC_EVENT,
+} from "@/lib/referrals";
 
 
 
