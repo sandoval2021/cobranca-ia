@@ -72,8 +72,8 @@ export const Route = createFileRoute("/")({ component: Dashboard });
 
 // Chips compactos: status do plano (owner) + dica de instalar PWA.
 function HeaderChips() {
-  const { isOwner, user } = useLocalAuth();
-  const company = isOwner ? getCompanyForUser(user?.email) : null;
+  const { isOwner, user, roleResolved } = useLocalAuth();
+  const company = roleResolved && isOwner ? getCompanyForUser(user?.email) : null;
   const plan = company ? getPlanById(company.plano_id) : null;
   const status = company ? getCompanyStatus(company) : null;
   const days = company ? daysUntilDue(company) : null;
@@ -104,7 +104,7 @@ function HeaderChips() {
     }
   };
 
-  const showPlanChip = isOwner && company;
+  const showPlanChip = roleResolved && isOwner && company;
   const isTrial = status === "teste";
   let planChipTone = "bg-muted text-muted-foreground border-border";
   let planLabel: string | null = null;
@@ -133,10 +133,12 @@ function HeaderChips() {
   if (!showPlanChip && !showPwaChip) return null;
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-1.5">
-      <span className="text-base font-bold tracking-tight text-foreground">
+    <div className="mb-3 flex flex-col items-start gap-1.5">
+      <span className="text-base font-bold tracking-tight text-foreground leading-tight">
         Início
       </span>
+      <div className="flex flex-wrap items-center gap-1.5">
+
       {showPlanChip && planLabel && (
         <Link
           to="/minha-assinatura"
@@ -163,6 +165,7 @@ function HeaderChips() {
           </button>
         </span>
       )}
+      </div>
     </div>
   );
 }

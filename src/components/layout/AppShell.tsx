@@ -72,7 +72,7 @@ export function AppShell() {
   const [openSheet, setOpenSheet] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const title = titles[pathname] ?? "Painel";
-  const { user, isOwner } = useLocalAuth();
+  const { user, isOwner, roleResolved } = useLocalAuth();
   const { isAuthenticated } = useAuth();
   const company = useActiveCompany();
   const denial = isOwner ? ownerRouteDenial(pathname, company) : null;
@@ -106,7 +106,7 @@ export function AppShell() {
         <div className="flex min-w-0 flex-1 flex-col">
           <AppHeader title={title} onMenu={() => setOpenSheet(true)} />
           <main className="min-w-0 flex-1">
-            {isOwner && <AccountStatusBanner company={company} />}
+            {roleResolved && isOwner && <AccountStatusBanner company={company} />}
             {denial ? <RestrictedView reason={denial} /> : <Outlet />}
           </main>
         </div>

@@ -29,12 +29,18 @@ function isAllowedPath(path: string): boolean {
 export function TrialGuard({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const { isSuperAdmin } = useLocalAuth();
+  const { isSuperAdmin, roleResolved } = useLocalAuth();
   const companyId = getActiveCompanyId();
   const fetchQuota = useServerFn(getAiQuotaStatus);
   const [blocked, setBlocked] = useState<null | { reason: string }>(null);
 
   useEffect(() => {
+    // Aguarda role ser confirmada — evita bloquear Super Admin que ainda
+    // não foi reconhecido pelo backend.
+    if (!roleResolved) {
+      setBlocked(null);
+      return;
+    }
     if (isSuperAdmin || !companyId) {
       setBlocked(null);
       return;
@@ -62,7 +68,7 @@ export function TrialGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [companyId, isSuperAdmin, pathname, fetchQuota]);
+  }, [companyId, isSuperAdmin, roleResolved, pathname, fetchQuota]);
 
   useEffect(() => {
     if (blocked && !isAllowedPath(pathname)) {

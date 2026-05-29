@@ -69,15 +69,24 @@ export function MobileBottomNav() {
               const Icon = item.icon;
               return (
                 <li key={item.to}>
-                  <Link
-                    to={item.to}
-                    preload="intent"
-                    onClick={() => setOpenMore(false)}
+                  {/* anchor simples: evita preload especulativo do TanStack que
+                      pode disparar loader de rota quebrada e cair no
+                      errorComponent global ("Não foi possível carregar"). */}
+                  <a
+                    href={item.to}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setOpenMore(false);
+                      // pequeno delay para o sheet fechar antes de navegar
+                      setTimeout(() => {
+                        window.location.assign(item.to);
+                      }, 50);
+                    }}
                     className="flex h-20 flex-col items-center justify-center gap-1 rounded-xl border border-border bg-card p-2 text-center text-[11px] font-medium leading-tight text-foreground active:scale-[0.98]"
                   >
                     <Icon className="h-5 w-5 text-primary" />
                     <span className="line-clamp-2">{item.label}</span>
-                  </Link>
+                  </a>
                 </li>
               );
             })}
