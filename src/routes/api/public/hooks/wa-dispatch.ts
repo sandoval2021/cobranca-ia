@@ -15,16 +15,21 @@ function isNight(d = new Date()): boolean {
   return h >= NIGHT_START_H || h < NIGHT_END_H;
 }
 
+function timingSafeEq(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 function checkAuth(request: Request): boolean {
-  const key =
-    request.headers.get("apikey") ||
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
-    "";
-  const expected =
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    "";
-  return Boolean(key && expected && key === expected);
+  const provided = request.headers.get("x-cobraeasy-cron-secret") || "";
+  const expected = process.env.CRON_HOOK_SECRET || "";
+  if (!expected) {
+    console.error("[wa-dispatch] CRON_HOOK_SECRET not configured");
+    return false;
+  }
+  return Boolean(provided) && timingSafeEq(provided, expected);
 }
 
 export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
