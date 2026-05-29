@@ -3,8 +3,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Pencil, Sparkles, Save, MessageCircle, Check, ChevronRight,
-  CloudUpload, Loader2,
+  CloudUpload, Loader2, Users,
 } from "lucide-react";
+import { EligibleRecipientsDialog } from "@/components/services/EligibleRecipientsDialog";
+import { getServiceDispatchCountsDb, type MessageEligibilityCount } from "@/lib/services/dispatch.functions";
+
 
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
