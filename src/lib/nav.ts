@@ -55,7 +55,7 @@ export const ownerNav: NavItem[] = [
   { to: "/cadastros-servicos", label: "Cadastros · Serviços", icon: Tv, hint: "Cadastre seus planos/valores (ex.: 1 tela R$ 12)" },
   { to: "/gestao-servicos", label: "Gestão Serviços", icon: Tv, hint: "Renove, edite e acompanhe cada serviço" },
   { to: "/operacao-dia", label: "Operação do dia", icon: CalendarClock, hint: "Quem precisa de atenção hoje" },
-  { to: "/operacao-filas", label: "Operação · Filas", icon: ListChecks, hint: "Mensagens e renovações em fila, falhas e reprocessamento", superAdminOnly: true },
+  { to: "/operacao-filas", label: "Operação · Filas", icon: ListChecks, hint: "Mensagens e renovações em fila, falhas e reprocessamento" },
   { to: "/renovacoes-paineis", label: "Renovações e painéis", icon: RefreshCcw, hint: "Fila de renovações IPTV e credenciais dos painéis" },
   { to: "/apps-portal", label: "Aplicativos pagos", icon: Smartphone, hint: "Cadastre os aplicativos pagos que seus clientes usam (Bob, IBO, Vu, etc.)" },
   { to: "/campanhas-manuais", label: "Campanhas manuais", icon: Megaphone, hint: "Monte listas e copie mensagens" },

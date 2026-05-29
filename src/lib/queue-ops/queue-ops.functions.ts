@@ -302,7 +302,11 @@ export const reprocessWhatsAppMessage = createServerFn({ method: "POST" })
       );
     }
 
-    const note = uncertain ? "|manual_reprocess_after_uncertain" : "|manual_reprocess";
+    const ts = new Date().toISOString().slice(0, 16).replace("T", " ");
+    const actor = String(context.userId ?? "").slice(0, 8);
+    const note = uncertain
+      ? `|manual_reprocess_after_uncertain@${ts}_by_${actor}`
+      : `|manual_reprocess@${ts}_by_${actor}`;
     const { error: updErr } = await supabaseAdmin
       .from("whatsapp_message_queue")
       .update({
