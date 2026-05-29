@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { CloudUploadRenewalsBanner } from "@/components/clientes/CloudUploadRenewalsBanner";
 
 import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { EmptyState } from "@/components/ui-premium/EmptyState";
@@ -725,6 +726,7 @@ function ClientesPage() {
 
   return (
     <PageContainer>
+      <CloudUploadRenewalsBanner />
       <div className="flex items-center justify-end mb-4">
         <Button onClick={() => setOpenNew(true)} className="gap-1.5">
           <Plus className="h-4 w-4" /> Novo cliente
