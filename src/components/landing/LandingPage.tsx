@@ -133,8 +133,8 @@ export function LandingPage() {
                     {n.label}
                   </button>
                 ))}
-                <Button onClick={goToApp} className="mt-2 h-12 w-full rounded-xl text-base">
-                  Acessar plataforma
+                <Button asChild className="mt-2 h-12 w-full rounded-xl text-base">
+                  <Link to="/login">Acessar plataforma</Link>
                 </Button>
               </nav>
             </div>
