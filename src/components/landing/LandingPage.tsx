@@ -16,6 +16,7 @@ import {
   Sparkles,
   ChevronDown,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
@@ -31,11 +32,6 @@ const NAV = [
 function scrollToId(id: string) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function goToApp() {
-  // recarrega para a home autenticada (login)
-  window.location.href = "/?login=1";
 }
 
 export function LandingPage() {
