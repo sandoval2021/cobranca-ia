@@ -42,6 +42,11 @@ import {
   exportDnsRoutes, parseDnsRoutesBackup, importDnsRoutes,
 } from "@/lib/dns-routes";
 import { listServers, type ServerEntry } from "@/lib/server-catalog";
+import {
+  hydrateDnsFromDb, pushDomainToDb, pushRouteToDb,
+  removeDomainFromDb, removeRouteFromDb,
+} from "@/lib/dns-routes-db";
+import { getCurrentCompanyAdmin, ensureUserDefaultCompany } from "@/lib/rpc-admin";
 
 export const Route = createFileRoute("/admin-dns-rotas")({
   head: () => ({
