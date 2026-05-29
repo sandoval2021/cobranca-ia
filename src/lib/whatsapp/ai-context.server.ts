@@ -69,6 +69,38 @@ export type AiContext = {
     escalate_when_referrer_missing: boolean;
     human_handoff_number: string | null;
   };
+  companyTraining: {
+    knowledge_text: string | null;
+    tone: string | null;
+    answer_length: string | null;
+    allow_after_hours: boolean;
+    accepts_audio: boolean;
+    auto_offer_trial: boolean;
+    human_on_complaint: boolean;
+    human_when_unsure: boolean;
+    allow_paid_apps_info: boolean;
+    use_manual_pix_fallback: boolean;
+    faqs: Array<{ category: string; question: string; answer: string }>;
+    apps: Array<{
+      app_name: string;
+      is_paid: boolean;
+      app_price_cents: number;
+      login_type: string;
+      install_steps: string | null;
+      update_steps: string | null;
+      cache_steps: string | null;
+      route_steps: string | null;
+      common_issues: string | null;
+      default_reply: string | null;
+    }>;
+    payment: {
+      manual_pix_key: string | null;
+      manual_pix_holder: string | null;
+      manual_pix_bank: string | null;
+      payment_note: string | null;
+    } | null;
+    mercadoPagoConnected: boolean;
+  };
   needsHuman: boolean;
   reason: string | null;
 };
