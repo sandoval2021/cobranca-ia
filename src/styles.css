@@ -74,46 +74,49 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.20 0.02 250);
 
-  /* Azul vibrante CobraEasy — saturado, energia premium */
-  --primary: oklch(0.56 0.24 258);
+  /* CobraEasy — paleta forte: Azul Elétrico + Esmeralda + Âmbar */
+  --primary: oklch(0.55 0.255 264);            /* #2563EB azul elétrico */
   --primary-foreground: oklch(1 0 0);
-  --primary-soft: oklch(0.94 0.06 258);
+  --primary-soft: oklch(0.95 0.07 264);
+  --primary-glow: oklch(0.66 0.22 258);
+  --gradient-primary: linear-gradient(135deg, oklch(0.55 0.255 264), oklch(0.66 0.22 258));
 
 
-  --secondary: oklch(0.965 0.01 245);
+  --secondary: oklch(0.965 0.012 245);
   --secondary-foreground: oklch(0.28 0.03 250);
-  --muted: oklch(0.965 0.01 245);
-  --muted-foreground: oklch(0.55 0.02 250);
-  --accent: oklch(0.955 0.035 245);
-  --accent-foreground: oklch(0.42 0.14 252);
+  --muted: oklch(0.965 0.012 245);
+  --muted-foreground: oklch(0.52 0.025 250);
+  --accent: oklch(0.94 0.08 264);
+  --accent-foreground: oklch(0.38 0.18 264);
 
-  --destructive: oklch(0.62 0.20 25);
+  --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(1 0 0);
 
-  --success: oklch(0.66 0.15 155);
+  --success: oklch(0.69 0.17 162);             /* #10B981 esmeralda */
   --success-foreground: oklch(1 0 0);
-  --success-soft: oklch(0.955 0.05 155);
+  --success-soft: oklch(0.95 0.07 162);
 
-  --warning: oklch(0.78 0.14 70);
+  --warning: oklch(0.77 0.17 70);              /* #F59E0B âmbar */
   --warning-foreground: oklch(0.28 0.06 70);
-  --warning-soft: oklch(0.965 0.06 80);
+  --warning-soft: oklch(0.96 0.08 80);
 
-  --danger: oklch(0.62 0.20 25);
+  --danger: oklch(0.62 0.22 25);
   --danger-foreground: oklch(1 0 0);
-  --danger-soft: oklch(0.96 0.04 25);
+  --danger-soft: oklch(0.96 0.06 25);
 
-  --info: oklch(0.56 0.24 258);
+  --info: oklch(0.55 0.255 264);
   --info-foreground: oklch(1 0 0);
-  --info-soft: oklch(0.94 0.06 258);
+  --info-soft: oklch(0.95 0.07 264);
 
-  --border: oklch(0.93 0.01 245);
-  --border-strong: oklch(0.88 0.012 245);
-  --input: oklch(0.93 0.01 245);
-  --ring: oklch(0.56 0.24 258);
+  --border: oklch(0.92 0.014 245);
+  --border-strong: oklch(0.86 0.02 245);
+  --input: oklch(0.92 0.014 245);
+  --ring: oklch(0.55 0.255 264);
 
-  /* Soft, premium iOS-like shadows */
-  --shadow-card: 0 1px 2px oklch(0.20 0.04 252 / 0.04), 0 4px 14px oklch(0.20 0.04 252 / 0.05);
-  --shadow-pop: 0 12px 36px oklch(0.20 0.04 252 / 0.14);
+  /* Sombras com leve tom azulado para reforçar a paleta */
+  --shadow-card: 0 1px 2px oklch(0.30 0.10 264 / 0.06), 0 4px 14px oklch(0.30 0.10 264 / 0.07);
+  --shadow-pop: 0 14px 40px oklch(0.30 0.12 264 / 0.18);
+  --shadow-elegant: 0 10px 30px -10px oklch(0.55 0.255 264 / 0.35);
 
   --sidebar-width: 16rem;
   --sidebar-width-icon: 4rem;
@@ -130,23 +133,26 @@
   --card-foreground: oklch(0.97 0.005 250);
   --popover: oklch(0.19 0.02 260);
   --popover-foreground: oklch(0.97 0.005 250);
-  --primary: oklch(0.72 0.17 275);
+  --primary: oklch(0.68 0.20 264);
   --primary-foreground: oklch(0.15 0.015 260);
-  --primary-soft: oklch(0.28 0.08 275);
+  --primary-soft: oklch(0.30 0.10 264);
+  --primary-glow: oklch(0.74 0.18 258);
+  --gradient-primary: linear-gradient(135deg, oklch(0.68 0.20 264), oklch(0.74 0.18 258));
   --secondary: oklch(0.25 0.02 260);
   --secondary-foreground: oklch(0.97 0.005 250);
   --muted: oklch(0.25 0.02 260);
   --muted-foreground: oklch(0.68 0.015 260);
-  --accent: oklch(0.28 0.05 275);
+  --accent: oklch(0.30 0.10 264);
   --accent-foreground: oklch(0.97 0.005 250);
   --border: oklch(1 0 0 / 8%);
   --border-strong: oklch(1 0 0 / 14%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.72 0.17 275);
-  --success-soft: oklch(0.3 0.08 155);
-  --warning-soft: oklch(0.32 0.08 75);
-  --danger-soft: oklch(0.32 0.08 25);
-  --info-soft: oklch(0.3 0.08 235);
+  --ring: oklch(0.68 0.20 264);
+  --success-soft: oklch(0.30 0.10 162);
+  --warning-soft: oklch(0.32 0.10 75);
+  --danger-soft: oklch(0.32 0.10 25);
+  --info-soft: oklch(0.30 0.10 264);
+  --shadow-elegant: 0 10px 30px -10px oklch(0.68 0.20 264 / 0.45);
 }
 
 @keyframes fade-in {
