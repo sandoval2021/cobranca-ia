@@ -165,6 +165,7 @@ function HeaderChips() {
           </button>
         </span>
       )}
+      </div>
     </div>
   );
 }
