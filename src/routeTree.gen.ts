@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WhatsappRouteImport } from './routes/whatsapp'
 import { Route as TreinarIaRouteImport } from './routes/treinar-ia'
 import { Route as TestesRouteImport } from './routes/testes'
+import { Route as TemplatesAutomaticosRouteImport } from './routes/templates-automaticos'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SegurancaLocalRouteImport } from './routes/seguranca-local'
 import { Route as SaasPlanosRouteImport } from './routes/saas-planos'
@@ -93,6 +94,11 @@ const TreinarIaRoute = TreinarIaRouteImport.update({
 const TestesRoute = TestesRouteImport.update({
   id: '/testes',
   path: '/testes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatesAutomaticosRoute = TemplatesAutomaticosRouteImport.update({
+  id: '/templates-automaticos',
+  path: '/templates-automaticos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -490,6 +496,7 @@ export interface FileRoutesByFullPath {
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/templates-automaticos': typeof TemplatesAutomaticosRoute
   '/testes': typeof TestesRoute
   '/treinar-ia': typeof TreinarIaRoute
   '/whatsapp': typeof WhatsappRoute
@@ -562,6 +569,7 @@ export interface FileRoutesByTo {
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/templates-automaticos': typeof TemplatesAutomaticosRoute
   '/testes': typeof TestesRoute
   '/treinar-ia': typeof TreinarIaRoute
   '/whatsapp': typeof WhatsappRoute
@@ -635,6 +643,7 @@ export interface FileRoutesById {
   '/saas-planos': typeof SaasPlanosRoute
   '/seguranca-local': typeof SegurancaLocalRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/templates-automaticos': typeof TemplatesAutomaticosRoute
   '/testes': typeof TestesRoute
   '/treinar-ia': typeof TreinarIaRoute
   '/whatsapp': typeof WhatsappRoute
@@ -709,6 +718,7 @@ export interface FileRouteTypes {
     | '/saas-planos'
     | '/seguranca-local'
     | '/sitemap.xml'
+    | '/templates-automaticos'
     | '/testes'
     | '/treinar-ia'
     | '/whatsapp'
@@ -781,6 +791,7 @@ export interface FileRouteTypes {
     | '/saas-planos'
     | '/seguranca-local'
     | '/sitemap.xml'
+    | '/templates-automaticos'
     | '/testes'
     | '/treinar-ia'
     | '/whatsapp'
@@ -853,6 +864,7 @@ export interface FileRouteTypes {
     | '/saas-planos'
     | '/seguranca-local'
     | '/sitemap.xml'
+    | '/templates-automaticos'
     | '/testes'
     | '/treinar-ia'
     | '/whatsapp'
@@ -926,6 +938,7 @@ export interface RootRouteChildren {
   SaasPlanosRoute: typeof SaasPlanosRoute
   SegurancaLocalRoute: typeof SegurancaLocalRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TemplatesAutomaticosRoute: typeof TemplatesAutomaticosRoute
   TestesRoute: typeof TestesRoute
   TreinarIaRoute: typeof TreinarIaRoute
   WhatsappRoute: typeof WhatsappRoute
@@ -968,6 +981,13 @@ declare module '@tanstack/react-router' {
       path: '/testes'
       fullPath: '/testes'
       preLoaderRoute: typeof TestesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/templates-automaticos': {
+      id: '/templates-automaticos'
+      path: '/templates-automaticos'
+      fullPath: '/templates-automaticos'
+      preLoaderRoute: typeof TemplatesAutomaticosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -1508,6 +1528,7 @@ const rootRouteChildren: RootRouteChildren = {
   SaasPlanosRoute: SaasPlanosRoute,
   SegurancaLocalRoute: SegurancaLocalRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TemplatesAutomaticosRoute: TemplatesAutomaticosRoute,
   TestesRoute: TestesRoute,
   TreinarIaRoute: TreinarIaRoute,
   WhatsappRoute: WhatsappRoute,
