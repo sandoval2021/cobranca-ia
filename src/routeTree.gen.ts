@@ -73,6 +73,7 @@ import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/em
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicWebhooksMercadoPagoRouteImport } from './routes/api/public/webhooks/mercado-pago'
 import { Route as ApiPublicWebhooksEvolutionRouteImport } from './routes/api/public/webhooks/evolution'
+import { Route as ApiPublicMpSaasWebhookRouteImport } from './routes/api/public/mp/saas-webhook'
 import { Route as ApiPublicMpOauthCallbackRouteImport } from './routes/api/public/mp/oauth-callback'
 import { Route as ApiPublicMpMarketplaceWebhookRouteImport } from './routes/api/public/mp/marketplace-webhook'
 import { Route as ApiPublicHooksWaDispatchRouteImport } from './routes/api/public/hooks/wa-dispatch'
@@ -401,6 +402,11 @@ const ApiPublicWebhooksEvolutionRoute =
     path: '/api/public/webhooks/evolution',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicMpSaasWebhookRoute = ApiPublicMpSaasWebhookRouteImport.update({
+  id: '/api/public/mp/saas-webhook',
+  path: '/api/public/mp/saas-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMpOauthCallbackRoute =
   ApiPublicMpOauthCallbackRouteImport.update({
     id: '/api/public/mp/oauth-callback',
@@ -489,6 +495,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
+  '/api/public/mp/saas-webhook': typeof ApiPublicMpSaasWebhookRoute
   '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRouteWithChildren
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -559,6 +566,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
+  '/api/public/mp/saas-webhook': typeof ApiPublicMpSaasWebhookRoute
   '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRouteWithChildren
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -630,6 +638,7 @@ export interface FileRoutesById {
   '/api/public/hooks/wa-dispatch': typeof ApiPublicHooksWaDispatchRoute
   '/api/public/mp/marketplace-webhook': typeof ApiPublicMpMarketplaceWebhookRoute
   '/api/public/mp/oauth-callback': typeof ApiPublicMpOauthCallbackRoute
+  '/api/public/mp/saas-webhook': typeof ApiPublicMpSaasWebhookRoute
   '/api/public/webhooks/evolution': typeof ApiPublicWebhooksEvolutionRouteWithChildren
   '/api/public/webhooks/mercado-pago': typeof ApiPublicWebhooksMercadoPagoRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -702,6 +711,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
+    | '/api/public/mp/saas-webhook'
     | '/api/public/webhooks/evolution'
     | '/api/public/webhooks/mercado-pago'
     | '/lovable/email/auth/preview'
@@ -772,6 +782,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
+    | '/api/public/mp/saas-webhook'
     | '/api/public/webhooks/evolution'
     | '/api/public/webhooks/mercado-pago'
     | '/lovable/email/auth/preview'
@@ -842,6 +853,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/wa-dispatch'
     | '/api/public/mp/marketplace-webhook'
     | '/api/public/mp/oauth-callback'
+    | '/api/public/mp/saas-webhook'
     | '/api/public/webhooks/evolution'
     | '/api/public/webhooks/mercado-pago'
     | '/lovable/email/auth/preview'
@@ -913,6 +925,7 @@ export interface RootRouteChildren {
   ApiPublicHooksWaDispatchRoute: typeof ApiPublicHooksWaDispatchRoute
   ApiPublicMpMarketplaceWebhookRoute: typeof ApiPublicMpMarketplaceWebhookRoute
   ApiPublicMpOauthCallbackRoute: typeof ApiPublicMpOauthCallbackRoute
+  ApiPublicMpSaasWebhookRoute: typeof ApiPublicMpSaasWebhookRoute
   ApiPublicWebhooksEvolutionRoute: typeof ApiPublicWebhooksEvolutionRouteWithChildren
   ApiPublicWebhooksMercadoPagoRoute: typeof ApiPublicWebhooksMercadoPagoRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -1370,6 +1383,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksEvolutionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/mp/saas-webhook': {
+      id: '/api/public/mp/saas-webhook'
+      path: '/api/public/mp/saas-webhook'
+      fullPath: '/api/public/mp/saas-webhook'
+      preLoaderRoute: typeof ApiPublicMpSaasWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mp/oauth-callback': {
       id: '/api/public/mp/oauth-callback'
       path: '/api/public/mp/oauth-callback'
@@ -1479,6 +1499,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksWaDispatchRoute: ApiPublicHooksWaDispatchRoute,
   ApiPublicMpMarketplaceWebhookRoute: ApiPublicMpMarketplaceWebhookRoute,
   ApiPublicMpOauthCallbackRoute: ApiPublicMpOauthCallbackRoute,
+  ApiPublicMpSaasWebhookRoute: ApiPublicMpSaasWebhookRoute,
   ApiPublicWebhooksEvolutionRoute: ApiPublicWebhooksEvolutionRouteWithChildren,
   ApiPublicWebhooksMercadoPagoRoute: ApiPublicWebhooksMercadoPagoRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,

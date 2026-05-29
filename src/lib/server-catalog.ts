@@ -16,26 +16,21 @@ export type ServerEntry = {
   updated_at: string;
 };
 
-const STORAGE_KEY = "cobranca_ia_server_catalog_v1";
+const STORAGE_KEY_LEGACY = "cobranca_ia_server_catalog_v1";
 export const SERVER_CATALOG_EVENT = "cobranca_ia_server_catalog:changed";
 
 const DEFAULT_COLORS = [
-  "#6366f1", // indigo - Lunar
-  "#f59e0b", // amber - Solar
-  "#10b981", // emerald - Principal
-  "#3b82f6", // blue - Alternativo
-  "#a855f7", // purple - Teste
-  "#64748b", // slate - Outro
+  "#6366f1",
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#a855f7",
+  "#64748b",
 ];
 
-const DEFAULTS: { name: string; color: string }[] = [
-  { name: "Lunar", color: DEFAULT_COLORS[0] },
-  { name: "Solar", color: DEFAULT_COLORS[1] },
-  { name: "Principal", color: DEFAULT_COLORS[2] },
-  { name: "Alternativo", color: DEFAULT_COLORS[3] },
-  { name: "Teste", color: DEFAULT_COLORS[4] },
-  { name: "Outro", color: DEFAULT_COLORS[5] },
-];
+// IMPORTANTE: não pré-criar servidores. Cada dono cadastra os seus.
+// Mantemos a lista de cores apenas para sugerir no formulário.
+export const SUGGESTED_SERVER_COLORS = DEFAULT_COLORS;
 
 function nowIso() {
   return new Date().toISOString();
@@ -45,10 +40,24 @@ export function newServerId(): string {
   return `srv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+// Chave por empresa: cada dono tem seu próprio catálogo, sem vazamento.
+function activeStorageKey(): string {
+  if (typeof window === "undefined") return STORAGE_KEY_LEGACY;
+  try {
+    const cid = window.localStorage.getItem("cobranca_ia_active_company_id");
+    if (cid && cid !== "null" && cid !== "undefined") {
+      return `cobranca_ia_server_catalog_v2__${cid}`;
+    }
+  } catch {
+    /* noop */
+  }
+  return STORAGE_KEY_LEGACY;
+}
+
 function readRaw(): ServerEntry[] | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(activeStorageKey());
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return null;
@@ -61,7 +70,7 @@ function readRaw(): ServerEntry[] | null {
 function writeRaw(list: ServerEntry[]): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    window.localStorage.setItem(activeStorageKey(), JSON.stringify(list));
     window.dispatchEvent(new CustomEvent(SERVER_CATALOG_EVENT));
   } catch {
     /* noop */
@@ -79,24 +88,16 @@ function isValid(s: unknown): s is ServerEntry {
   );
 }
 
+// Sem defaults — começa vazio. Cada dono cadastra os seus servidores.
 function buildDefaults(): ServerEntry[] {
-  const t = nowIso();
-  return DEFAULTS.map((d) => ({
-    id: newServerId(),
-    name: d.name,
-    color: d.color,
-    status: "ativo" as const,
-    created_at: t,
-    updated_at: t,
-  }));
+  return [];
 }
 
 export function listServers(): ServerEntry[] {
   const cur = readRaw();
   if (cur) return cur;
-  const defaults = buildDefaults();
-  writeRaw(defaults);
-  return defaults;
+  // Não grava nada por padrão: lista vazia até o dono cadastrar.
+  return [];
 }
 
 export function listActiveServers(): ServerEntry[] {
@@ -138,26 +139,8 @@ export function deleteServer(id: string): void {
 }
 
 export function restoreDefaultServers(): void {
-  const cur = listServers();
-  const byName = new Map(cur.map((s) => [s.name.toLowerCase(), s]));
-  const t = nowIso();
-  for (const d of DEFAULTS) {
-    const exist = byName.get(d.name.toLowerCase());
-    if (!exist) {
-      cur.push({
-        id: newServerId(),
-        name: d.name,
-        color: d.color,
-        status: "ativo",
-        created_at: t,
-        updated_at: t,
-      });
-    } else if (exist.status === "inativo") {
-      exist.status = "ativo";
-      exist.updated_at = t;
-    }
-  }
-  writeRaw(cur);
+  // Função desativada: não há mais defaults globais.
+  // Cada dono cadastra os próprios servidores.
 }
 
 export type ServerBackupFile = {

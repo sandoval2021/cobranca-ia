@@ -1543,6 +1543,54 @@ export type Database = {
           },
         ]
       }
+      saas_checkout_sessions: {
+        Row: {
+          amount_cents: number
+          company_id: string
+          created_at: string
+          external_reference: string
+          id: string
+          init_point: string | null
+          mp_payment_id: string | null
+          paid_at: string | null
+          plan_id: string
+          preference_id: string | null
+          raw_response: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents?: number
+          company_id: string
+          created_at?: string
+          external_reference: string
+          id?: string
+          init_point?: string | null
+          mp_payment_id?: string | null
+          paid_at?: string | null
+          plan_id: string
+          preference_id?: string | null
+          raw_response?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          company_id?: string
+          created_at?: string
+          external_reference?: string
+          id?: string
+          init_point?: string | null
+          mp_payment_id?: string | null
+          paid_at?: string | null
+          plan_id?: string
+          preference_id?: string | null
+          raw_response?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       saas_extra_packs: {
         Row: {
           ai_extra_responses: number
@@ -2101,6 +2149,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_saas_subscription: {
+        Args: { _company_id: string; _period_days?: number; _plan_id: string }
+        Returns: undefined
+      }
       archive_customer_admin: {
         Args: { p_customer_id: string }
         Returns: undefined

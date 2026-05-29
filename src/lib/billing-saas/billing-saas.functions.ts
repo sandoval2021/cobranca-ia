@@ -199,3 +199,74 @@ export const adminAssignPlan = createServerFn({ method: "POST" })
       .gte("cycle_end", new Date().toISOString());
     return { ok: true };
   });
+
+// ============================================================
+// Checkout do plano SaaS via Mercado Pago da plataforma
+// ============================================================
+export const createSaasCheckout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ companyId: z.string().uuid(), planId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // valida acesso à empresa
+    const { data: hasAccess, error: accErr } = await supabase.rpc("has_company_access", {
+      _company_id: data.companyId,
+    });
+    if (accErr || !hasAccess) throw new Error("forbidden");
+
+    // busca plano
+    const { data: plan, error: planErr } = await supabaseAdmin
+      .from("saas_plans")
+      .select("*")
+      .eq("id", data.planId)
+      .maybeSingle();
+    if (planErr || !plan) throw new Error("plan_not_found");
+    if (!plan.is_active) throw new Error("plan_inactive");
+    if (plan.price_cents <= 0) throw new Error("plan_not_payable");
+
+    // pega email do usuário
+    const { data: u } = await supabaseAdmin.auth.admin.getUserById(userId as string);
+    const payerEmail = u?.user?.email ?? undefined;
+
+    // cria sessão pending
+    const externalReference = `saas_${data.companyId}_${data.planId}_${Date.now()}`;
+    const { data: session, error: sessErr } = await supabaseAdmin
+      .from("saas_checkout_sessions")
+      .insert({
+        company_id: data.companyId,
+        plan_id: data.planId,
+        external_reference: externalReference,
+        amount_cents: plan.price_cents,
+        status: "pending",
+      })
+      .select()
+      .single();
+    if (sessErr) throw new Error(sessErr.message);
+
+    // cria preference no MP
+    const { createSaasPreference } = await import("./saas-checkout.server");
+    const pref = await createSaasPreference({
+      externalReference,
+      planName: `CobraEasy — Plano ${plan.name}`,
+      amountBRL: plan.price_cents / 100,
+      payerEmail,
+    });
+
+    await supabaseAdmin
+      .from("saas_checkout_sessions")
+      .update({
+        preference_id: pref.id,
+        init_point: pref.init_point ?? pref.sandbox_init_point ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", (session as any).id);
+
+    return {
+      ok: true,
+      init_point: pref.init_point ?? pref.sandbox_init_point ?? null,
+      preference_id: pref.id,
+    };
+  });

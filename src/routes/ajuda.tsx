@@ -15,6 +15,7 @@ import { SectionHeader } from "@/components/ui-premium/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useLocalAuth } from "@/lib/use-local-auth";
 import {
   HELP_ARTICLES,
   HELP_CATEGORY_LABEL,
@@ -39,9 +40,13 @@ export const Route = createFileRoute("/ajuda")({
   }),
 });
 
+// Categorias que só fazem sentido para super_admin — escondidas do Dono.
+const ADMIN_ONLY_CATEGORIES: HelpCategory[] = ["dns_rotas", "backend_futuro"];
+
 type ChipKey = "todos" | HelpCategory;
 
-const CHIPS: { key: ChipKey; label: string }[] = [
+
+const ALL_CHIPS: { key: ChipKey; label: string }[] = [
   { key: "todos", label: "Todos" },
   ...(Object.keys(HELP_CATEGORY_LABEL) as HelpCategory[]).map((k) => ({
     key: k as ChipKey,
@@ -93,16 +98,37 @@ function ArticleCard({ a }: { a: HelpArticle }) {
 function AjudaPage() {
   const [query, setQuery] = useState("");
   const [chip, setChip] = useState<ChipKey>("todos");
+  const { isSuperAdmin } = useLocalAuth();
+
+  const visibleArticles = useMemo(
+    () =>
+      isSuperAdmin
+        ? HELP_ARTICLES
+        : HELP_ARTICLES.filter((a) => !ADMIN_ONLY_CATEGORIES.includes(a.categoria)),
+    [isSuperAdmin],
+  );
+
+  const CHIPS = useMemo(
+    () =>
+      isSuperAdmin
+        ? ALL_CHIPS
+        : ALL_CHIPS.filter(
+            (c) => c.key === "todos" || !ADMIN_ONLY_CATEGORIES.includes(c.key as HelpCategory),
+          ),
+    [isSuperAdmin],
+  );
 
   const articles = useMemo(() => {
-    const base = searchHelpArticles(query);
+    const base = searchHelpArticles(query).filter((a) =>
+      visibleArticles.some((v) => v.id === a.id),
+    );
     if (chip === "todos") return base;
     return base.filter((a) => a.categoria === chip);
-  }, [query, chip]);
+  }, [query, chip, visibleArticles]);
 
-  const starters = HELP_ARTICLES.filter(
-    (a) => a.categoria === "primeiros_passos" || a.prioridade === "alta",
-  ).slice(0, 4);
+  const starters = visibleArticles
+    .filter((a) => a.categoria === "primeiros_passos" || a.prioridade === "alta")
+    .slice(0, 4);
 
   return (
     <PageContainer>
