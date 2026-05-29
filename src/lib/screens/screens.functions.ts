@@ -21,7 +21,7 @@ export type ScreenDto = {
   expires_at: string | null;
   plan_days: number | null;
   notes: string | null;
-  extras: Record<string, unknown>;
+  extras: string; // JSON serializado para passar pelo limite de serialização do TanStack
   created_at: string;
   updated_at: string;
 };
