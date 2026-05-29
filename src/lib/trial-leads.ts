@@ -230,8 +230,19 @@ export function saveTrialLead(
   list.unshift(lead);
   write(STORAGE_KEY, list);
   const fups = listFollowUps();
-  fups.push(...buildTrialFollowUpSchedule(lead));
+  const newFups = buildTrialFollowUpSchedule(lead);
+  fups.push(...newFups);
   saveAllFollowUps(fups);
+  mirror((companyId) => upsertTrialLeadDb({ data: { companyId, ...leadToDb(lead) } }));
+  mirror((companyId) => bulkUpsertTrialFollowupsDb({
+    data: {
+      companyId,
+      items: newFups.map((f) => ({
+        id: f.id, lead_id: f.lead_id, tipo: f.type,
+        data_planejada: f.data_planejada, status: f.status, atualizado_em: f.atualizado_em,
+      })),
+    },
+  }));
   return lead;
 }
 
@@ -248,6 +259,7 @@ export function updateTrialLead(id: string, patch: Partial<TrialLead>): TrialLea
   };
   list[idx] = updated;
   write(STORAGE_KEY, list);
+  mirror((companyId) => upsertTrialLeadDb({ data: { companyId, ...leadToDb(updated) } }));
   return updated;
 }
 
