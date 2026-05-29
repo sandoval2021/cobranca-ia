@@ -103,8 +103,8 @@ export function LandingPage() {
           </nav>
 
           <div className="hidden lg:block">
-            <Button onClick={goToApp} size="lg" className="rounded-full px-5 shadow-sm">
-              Acessar plataforma
+            <Button asChild size="lg" className="rounded-full px-5 shadow-sm">
+              <Link to="/login">Acessar plataforma</Link>
             </Button>
           </div>
 
