@@ -211,7 +211,7 @@ export function PublicCTA({
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button asChild size="lg" className="h-12 rounded-xl px-7 text-base">
-            <Link to="/login?mode=signup">
+            <Link to="/login" search={{ mode: "signup" }}>
               Criar conta grátis
               <ArrowRight className="ml-1 h-4 w-4" />
             </Link>

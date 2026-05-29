@@ -72,7 +72,7 @@ export function TrialGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (blocked && !isAllowedPath(pathname)) {
-      navigate({ to: "/minha-assinatura" });
+      navigate({ to: "/minha-assinatura", search: { saas: undefined } });
     }
   }, [blocked, pathname, navigate]);
 

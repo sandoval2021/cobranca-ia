@@ -98,7 +98,8 @@ function BlogPage() {
                 {p.excerpt}
               </p>
               <Link
-                to="/login?mode=signup"
+                to="/login"
+                search={{ mode: "signup" }}
                 className="mt-4 inline-flex items-center text-sm font-semibold text-primary hover:underline"
               >
                 Comece grátis para ver na prática

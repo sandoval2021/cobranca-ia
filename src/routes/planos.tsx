@@ -138,7 +138,7 @@ function PlanosPublicPage() {
                   variant={p.highlight ? "default" : "outline"}
                   className="mt-6 h-12 w-full rounded-xl text-base"
                 >
-                  <Link to={`/login?mode=signup&plan=${p.slug}`}>
+                  <Link to="/login" search={{ mode: "signup", plan: p.slug }}>
                     Começar grátis
                     <ArrowRight className="ml-1 h-4 w-4" />
                   </Link>
