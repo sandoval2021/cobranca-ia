@@ -60,7 +60,7 @@ export const Route = createFileRoute("/api/public/mp/saas-webhook")({
             mp_payment_id: String(payment.id),
             status: payment.status,
             paid_at: payment.status === "approved" ? new Date().toISOString() : null,
-            raw_response: payment as unknown as Record<string, unknown>,
+            raw_response: payment as any,
             updated_at: new Date().toISOString(),
           })
           .eq("id", (sess as { id: string }).id);
