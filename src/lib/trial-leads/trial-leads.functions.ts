@@ -153,20 +153,20 @@ export const bulkUpsertTrialLeadsDb = createServerFn({ method: "POST" })
     z
       .object({
         companyId: UUID,
-        leads: z.array(LeadInput.omit({ companyId: true })).max(2000),
+        items: z.array(LeadInput.omit({ companyId: true })).max(2000),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    if (data.leads.length === 0) return { upserted: 0 };
-    const payload = data.leads.map((l) =>
+    if (data.items.length === 0) return { upserted: 0 };
+    const payload = data.items.map((l) =>
       leadInputToRow({ ...l, companyId: data.companyId }),
     );
     const { error, count } = await context.supabase
       .from("trial_leads")
       .upsert(payload, { onConflict: "id", count: "exact" });
     if (error) throw new Error(error.message);
-    return { upserted: count ?? data.leads.length };
+    return { upserted: count ?? data.items.length };
   });
 
 export const deleteTrialLeadDb = createServerFn({ method: "POST" })
