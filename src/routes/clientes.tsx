@@ -2906,6 +2906,12 @@ function NewCustomerSheet({
       }
     }
 
+    if (customerId && planId !== "__none__") {
+      try { setCustomerPlan(customerId, planId); } catch (err) { console.warn("[customer-create] plan link", err); }
+    }
+
+
+
     setBusy(false);
     toast.success(
       filledScreens.length > 0
