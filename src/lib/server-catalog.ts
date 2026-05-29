@@ -139,26 +139,8 @@ export function deleteServer(id: string): void {
 }
 
 export function restoreDefaultServers(): void {
-  const cur = listServers();
-  const byName = new Map(cur.map((s) => [s.name.toLowerCase(), s]));
-  const t = nowIso();
-  for (const d of DEFAULTS) {
-    const exist = byName.get(d.name.toLowerCase());
-    if (!exist) {
-      cur.push({
-        id: newServerId(),
-        name: d.name,
-        color: d.color,
-        status: "ativo",
-        created_at: t,
-        updated_at: t,
-      });
-    } else if (exist.status === "inativo") {
-      exist.status = "ativo";
-      exist.updated_at = t;
-    }
-  }
-  writeRaw(cur);
+  // Função desativada: não há mais defaults globais.
+  // Cada dono cadastra os próprios servidores.
 }
 
 export type ServerBackupFile = {
