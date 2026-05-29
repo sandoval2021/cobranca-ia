@@ -239,6 +239,7 @@ export function saveFinanceEntry(e: Omit<FinanceEntry, "id" | "created_at" | "up
   if (entry.goal_id && entry.reserve > 0) {
     addGoalReserve(entry.goal_id, entry.reserve);
   }
+  mirror((companyId) => upsertFinanceEntryDb({ data: { companyId, ...entryToDb(entry) } }));
   return entry;
 }
 
@@ -247,13 +248,16 @@ export function updateFinanceEntry(id: string, patch: Partial<FinanceEntry>): vo
   const idx = list.findIndex((e) => e.id === id);
   if (idx < 0) return;
   const prev = list[idx];
-  list[idx] = { ...prev, ...patch, company_id: patch.company_id ?? prev.company_id, updated_at: nowIso() };
+  const next = { ...prev, ...patch, company_id: patch.company_id ?? prev.company_id, updated_at: nowIso() };
+  list[idx] = next;
   writeJson(ENTRIES_KEY, list);
+  mirror((companyId) => upsertFinanceEntryDb({ data: { companyId, ...entryToDb(next) } }));
 }
 
 export function deleteFinanceEntry(id: string): void {
   const list = listAllFinanceEntriesRaw().filter((e) => e.id !== id);
   writeJson(ENTRIES_KEY, list);
+  mirror((companyId) => deleteFinanceEntryDb({ data: { companyId, id } }));
 }
 
 // ---------- Goals ----------
@@ -281,6 +285,7 @@ export function saveFinanceGoal(g: Omit<FinanceGoal, "id" | "created_at" | "upda
   } as FinanceGoal;
   list.unshift(goal);
   writeJson(GOALS_KEY, list);
+  mirror((companyId) => upsertFinanceGoalDb({ data: { companyId, ...goalToDb(goal) } }));
   return goal;
 }
 
@@ -288,13 +293,16 @@ export function updateFinanceGoal(id: string, patch: Partial<FinanceGoal>): void
   const list = listAllFinanceGoalsRaw();
   const idx = list.findIndex((g) => g.id === id);
   if (idx < 0) return;
-  list[idx] = { ...list[idx], ...patch, company_id: patch.company_id ?? list[idx].company_id, updated_at: nowIso() };
+  const next = { ...list[idx], ...patch, company_id: patch.company_id ?? list[idx].company_id, updated_at: nowIso() };
+  list[idx] = next;
   writeJson(GOALS_KEY, list);
+  mirror((companyId) => upsertFinanceGoalDb({ data: { companyId, ...goalToDb(next) } }));
 }
 
 export function deleteFinanceGoal(id: string): void {
   const list = listAllFinanceGoalsRaw().filter((g) => g.id !== id);
   writeJson(GOALS_KEY, list);
+  mirror((companyId) => deleteFinanceGoalDb({ data: { companyId, id } }));
 }
 
 function addGoalReserve(goalId: string, amount: number): void {
