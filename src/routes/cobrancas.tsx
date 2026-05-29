@@ -433,19 +433,9 @@ function CobrancasPage() {
         title="Cobranças"
         subtitle="Gerencie suas cobranças com segurança"
         hint="Crie, edite, marque como paga, vencida ou cancele cobranças via RPC."
-        action={
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setShowRenew(true)} className="gap-1">
-              <RefreshCw className="h-3.5 w-3.5" /> Renovar
-            </Button>
-            <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1">
-              <Plus className="h-3.5 w-3.5" /> Nova
-            </Button>
-          </div>
-        }
       />
 
-      {/* Busca */}
+      {/* Busca — fica no topo, junto com a lista */}
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -466,6 +456,30 @@ function CobrancasPage() {
           </button>
         )}
       </div>
+
+      {/* Ações rápidas — 4 botões coloridos */}
+      <div className="mb-3 grid grid-cols-4 gap-2">
+        <QuickActionButton
+          icon={UserPlus}
+          label="Cadastrar"
+          onClick={() => setShowCreate(true)}
+          colorClass="bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_14px_-4px_color-mix(in_oklab,var(--primary)_60%,transparent)]"
+        />
+        <QuickActionButton
+          icon={RefreshCw}
+          label="Renovar"
+          onClick={() => setShowRenew(true)}
+          colorClass="bg-emerald-600 text-white hover:bg-emerald-700 shadow-[0_4px_14px_-4px_rgba(5,150,105,0.55)]"
+        />
+        <QuickActionButton
+          icon={Send}
+          label="Cobrar"
+          onClick={() => setShowCobrar(true)}
+          colorClass="bg-amber-500 text-white hover:bg-amber-600 shadow-[0_4px_14px_-4px_rgba(245,158,11,0.6)]"
+        />
+        <QuickActionMore />
+      </div>
+
 
       {/* Filtros */}
       <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
