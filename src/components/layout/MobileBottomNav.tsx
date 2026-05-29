@@ -72,24 +72,25 @@ export function MobileBottomNav() {
               const Icon = item.icon;
               return (
                 <li key={item.to}>
-                  {/* anchor simples: evita preload especulativo do TanStack que
-                      pode disparar loader de rota quebrada e cair no
-                      errorComponent global ("Não foi possível carregar"). */}
+                  {/* Navegação SPA via router. Anchor mantém href para
+                      acessibilidade e cmd+click, mas o onClick faz pushState
+                      sem reload — evita ChunkLoadError vindo de cache PWA
+                      antigo e a falsa tela de "Acesso restrito"/erro. */}
                   <a
                     href={item.to}
                     onClick={(e) => {
+                      // Permite cmd/ctrl-click abrir nova aba normalmente
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
                       e.preventDefault();
                       setOpenMore(false);
-                      // pequeno delay para o sheet fechar antes de navegar
-                      setTimeout(() => {
-                        window.location.assign(item.to);
-                      }, 50);
+                      void navigate({ to: item.to });
                     }}
                     className="flex h-20 flex-col items-center justify-center gap-1 rounded-xl border border-border bg-card p-2 text-center text-[11px] font-medium leading-tight text-foreground active:scale-[0.98]"
                   >
                     <Icon className="h-5 w-5 text-primary" />
                     <span className="line-clamp-2">{item.label}</span>
                   </a>
+
                 </li>
               );
             })}
