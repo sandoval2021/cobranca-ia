@@ -161,6 +161,8 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
                   sent_at: new Date().toISOString(),
                   provider_msg_id: res.provider_msg_id ?? null,
                   last_error: null,
+                  locked_at: null,
+                  locked_by: null,
                 })
                 .eq("id", c.id);
               await supabaseAdmin
@@ -176,13 +178,17 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
               const attempts = (c.attempts ?? 0) + 1;
               const willRetry = attempts < (c.max_attempts ?? 5);
               const backoff = Math.min(60 * 60_000, 30_000 * 2 ** attempts);
+              const nowIso = new Date().toISOString();
               await supabaseAdmin
                 .from("whatsapp_message_queue")
                 .update({
                   status: willRetry ? "queued" : "failed",
                   attempts,
                   next_attempt_at: new Date(Date.now() + backoff).toISOString(),
-                  last_error: res.error ?? "send_failed",
+                  last_error: (res.error ?? "send_failed").slice(0, 500),
+                  locked_at: null,
+                  locked_by: null,
+                  failed_at: willRetry ? null : nowIso,
                 })
                 .eq("id", c.id);
               if (!willRetry) failed++;
@@ -191,6 +197,7 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
             const attempts = (c.attempts ?? 0) + 1;
             const willRetry = attempts < (c.max_attempts ?? 5);
             const backoff = Math.min(60 * 60_000, 30_000 * 2 ** attempts);
+            const nowIso = new Date().toISOString();
             await supabaseAdmin
               .from("whatsapp_message_queue")
               .update({
@@ -198,13 +205,16 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
                 attempts,
                 next_attempt_at: new Date(Date.now() + backoff).toISOString(),
                 last_error: String(err?.message ?? err).slice(0, 500),
+                locked_at: null,
+                locked_by: null,
+                failed_at: willRetry ? null : nowIso,
               })
               .eq("id", c.id);
             if (!willRetry) failed++;
           }
         }
 
-        return Response.json({ ok: true, processed, failed });
+        return Response.json({ ok: true, processed, failed, worker: workerId });
       },
     },
   },
