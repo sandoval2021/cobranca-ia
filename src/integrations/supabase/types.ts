@@ -311,6 +311,48 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_templates: {
+        Row: {
+          ativo: boolean
+          body: string | null
+          categoria: string
+          channels: Json | null
+          company_id: string
+          created_at: string
+          extra: Json | null
+          id: string
+          template_id: string
+          time_window: Json | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          body?: string | null
+          categoria: string
+          channels?: Json | null
+          company_id: string
+          created_at?: string
+          extra?: Json | null
+          id?: string
+          template_id: string
+          time_window?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          body?: string | null
+          categoria?: string
+          channels?: Json | null
+          company_id?: string
+          created_at?: string
+          extra?: Json | null
+          id?: string
+          template_id?: string
+          time_window?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           created_at: string
@@ -739,6 +781,42 @@ export type Database = {
           id?: string
           note?: string | null
           source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_extras: {
+        Row: {
+          birthday: string | null
+          company_id: string
+          created_at: string
+          customer_id: string
+          due_date: string | null
+          email: string | null
+          extra: Json | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          birthday?: string | null
+          company_id: string
+          created_at?: string
+          customer_id: string
+          due_date?: string | null
+          email?: string | null
+          extra?: Json | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          birthday?: string | null
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          due_date?: string | null
+          email?: string | null
+          extra?: Json | null
+          id?: string
           updated_at?: string
         }
         Relationships: []
@@ -1287,6 +1365,93 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      finance_entries: {
+        Row: {
+          categoria: string | null
+          cliente_id: string | null
+          company_id: string
+          created_at: string
+          data: string
+          descricao: string | null
+          extra: Json | null
+          id: string
+          metodo_pagamento: string | null
+          observacoes: string | null
+          servico_id: string | null
+          tipo: string
+          updated_at: string
+          valor_cents: number
+        }
+        Insert: {
+          categoria?: string | null
+          cliente_id?: string | null
+          company_id: string
+          created_at?: string
+          data: string
+          descricao?: string | null
+          extra?: Json | null
+          id?: string
+          metodo_pagamento?: string | null
+          observacoes?: string | null
+          servico_id?: string | null
+          tipo: string
+          updated_at?: string
+          valor_cents?: number
+        }
+        Update: {
+          categoria?: string | null
+          cliente_id?: string | null
+          company_id?: string
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          extra?: Json | null
+          id?: string
+          metodo_pagamento?: string | null
+          observacoes?: string | null
+          servico_id?: string | null
+          tipo?: string
+          updated_at?: string
+          valor_cents?: number
+        }
+        Relationships: []
+      }
+      finance_goals: {
+        Row: {
+          categoria: string | null
+          company_id: string
+          created_at: string
+          extra: Json | null
+          id: string
+          mes: string
+          observacoes: string | null
+          updated_at: string
+          valor_cents: number
+        }
+        Insert: {
+          categoria?: string | null
+          company_id: string
+          created_at?: string
+          extra?: Json | null
+          id?: string
+          mes: string
+          observacoes?: string | null
+          updated_at?: string
+          valor_cents?: number
+        }
+        Update: {
+          categoria?: string | null
+          company_id?: string
+          created_at?: string
+          extra?: Json | null
+          id?: string
+          mes?: string
+          observacoes?: string | null
+          updated_at?: string
+          valor_cents?: number
         }
         Relationships: []
       }
@@ -1909,6 +2074,30 @@ export type Database = {
           },
         ]
       }
+      revenda_settings: {
+        Row: {
+          company_id: string
+          created_at: string
+          data: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       saas_checkout_sessions: {
         Row: {
           amount_cents: number
@@ -2235,6 +2424,122 @@ export type Database = {
           id?: string
           metadata?: Json | null
           reason?: string
+        }
+        Relationships: []
+      }
+      trial_followups: {
+        Row: {
+          atualizado_em: string
+          company_id: string
+          created_at: string
+          data_planejada: string
+          id: string
+          lead_id: string
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          atualizado_em?: string
+          company_id: string
+          created_at?: string
+          data_planejada: string
+          id?: string
+          lead_id: string
+          status: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          atualizado_em?: string
+          company_id?: string
+          created_at?: string
+          data_planejada?: string
+          id?: string
+          lead_id?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_followups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "trial_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trial_leads: {
+        Row: {
+          app: string | null
+          company_id: string
+          created_at: string
+          data_contato: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          extra: Json | null
+          horas_teste: number | null
+          id: string
+          interesse: string | null
+          nome: string | null
+          observacoes: string | null
+          origem: string | null
+          senha: string | null
+          servidor: string | null
+          servidor_adicional: string | null
+          status: string | null
+          updated_at: string
+          usuario: string | null
+          valor_cents: number | null
+          whatsapp: string
+        }
+        Insert: {
+          app?: string | null
+          company_id: string
+          created_at?: string
+          data_contato?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          extra?: Json | null
+          horas_teste?: number | null
+          id?: string
+          interesse?: string | null
+          nome?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          senha?: string | null
+          servidor?: string | null
+          servidor_adicional?: string | null
+          status?: string | null
+          updated_at?: string
+          usuario?: string | null
+          valor_cents?: number | null
+          whatsapp: string
+        }
+        Update: {
+          app?: string | null
+          company_id?: string
+          created_at?: string
+          data_contato?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          extra?: Json | null
+          horas_teste?: number | null
+          id?: string
+          interesse?: string | null
+          nome?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          senha?: string | null
+          servidor?: string | null
+          servidor_adicional?: string | null
+          status?: string | null
+          updated_at?: string
+          usuario?: string | null
+          valor_cents?: number | null
+          whatsapp?: string
         }
         Relationships: []
       }
