@@ -212,6 +212,30 @@ export function TrialAutomationPanel() {
                 />
               </div>
 
+              {/* Vincular serviço/plano usado em {servico} e {valor} */}
+              <div className="mt-2 flex items-center gap-1 text-[11px]">
+                <Package className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <Select
+                  value={t.scope ?? "__none"}
+                  onValueChange={(v) => {
+                    upsertTemplate({ ...t, scope: v === "__none" ? undefined : v });
+                    refresh();
+                  }}
+                >
+                  <SelectTrigger className="h-7 flex-1 min-w-0 px-1.5 text-[11px]">
+                    <SelectValue placeholder="Vincular serviço" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">Sem serviço vinculado</SelectItem>
+                    {services.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nome} — R$ {brl(s.preco_cents)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <Button
                 size="sm"
                 variant="outline"
