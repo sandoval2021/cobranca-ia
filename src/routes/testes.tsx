@@ -348,12 +348,7 @@ function TestesPage() {
         }
       />
 
-      <Card className="mb-4 border-warning/40 bg-warning/5 p-3 text-sm">
-        <div className="flex items-start gap-2">
-          <Info className="mt-0.5 h-4 w-4 text-warning" />
-          <span>Modo manual: nenhuma mensagem será enviada automaticamente.</span>
-        </div>
-      </Card>
+      <TrialAutomationPanel />
 
       <div className="mb-3 text-[11px] text-muted-foreground">
         Mensagens usando dados de Minha Revenda.{" "}
