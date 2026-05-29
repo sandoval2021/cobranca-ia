@@ -33,6 +33,7 @@ const EntryInput = z.object({
   servico_id: UUID.nullable().optional(),
   observacoes: z.string().max(2000).nullable().optional(),
   extraJson: z.string().max(20000).nullable().optional(),
+  idempotencyKey: z.string().min(8).max(128).nullable().optional(),
 });
 
 const GoalInput = z.object({
