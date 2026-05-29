@@ -21,6 +21,7 @@ import { initPwaUpdater } from "@/lib/pwa-updater";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 import { useServersSync } from "@/lib/servers/useServersSync";
 import { useScreensSync } from "@/lib/screens/useScreensSync";
+import { useServicesSync } from "@/lib/services/useServicesSync";
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
