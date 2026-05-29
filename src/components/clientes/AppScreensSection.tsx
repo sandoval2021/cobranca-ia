@@ -310,42 +310,14 @@ export function AppScreensSection({
 
   return (
     <div className="space-y-3">
-      {pendingLocal > 0 && !cloudBannerDismissed && (
-        <div className="rounded-xl border border-primary/40 bg-primary/5 p-3">
-          <div className="flex items-start gap-2">
-            <CloudUpload className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold text-foreground">
-                Encontramos telas salvas apenas neste aparelho.
-              </div>
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                Envie esses dados para sua conta para acessar em qualquer celular, computador ou PWA.
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleUploadLocal}
-                  disabled={uploadingLocal}
-                  className="h-9"
-                >
-                  {uploadingLocal ? (
-                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Enviando…</>
-                  ) : (
-                    <><CloudUpload className="mr-1.5 h-3.5 w-3.5" /> Enviar para minha conta</>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={dismissCloudBanner}
-                  disabled={uploadingLocal}
-                  className="h-9"
-                >
-                  Agora não
-                </Button>
-              </div>
-            </div>
-          </div>
+      {/* Banner removido: app-screens faz auto-upload silencioso. */}
+      {false && pendingLocal > 0 && !cloudBannerDismissed && (
+        <div className="hidden">
+          <CloudUpload />
+          <Button onClick={handleUploadLocal} disabled={uploadingLocal}>
+            {uploadingLocal ? <Loader2 /> : null}
+          </Button>
+          <Button onClick={dismissCloudBanner} />
         </div>
       )}
       <PlanLimitNotice moduleKey="telas" compact />
