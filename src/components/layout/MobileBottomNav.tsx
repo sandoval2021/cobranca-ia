@@ -10,9 +10,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { role } = useLocalAuth();
+  const navigate = useNavigate();
   const items = filterNavByRole(ownerBottomNav, role);
   const more = filterNavByRole(ownerMoreNav, role);
   const [openMore, setOpenMore] = useState(false);
+
 
   // 5 atalhos + 1 botão "Mais"
   const cols = items.length + 1;
