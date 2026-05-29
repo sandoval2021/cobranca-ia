@@ -2755,7 +2755,8 @@ function NewCustomerSheet({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const servers = useMemo(() => listActiveServers(), [open]);
+  const servers = useMemo(() => listActiveServices(), [open]);
+  const plans = useMemo<ServiceItem[]>(() => (open ? listActiveServices() : []), [open]);
 
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -2764,17 +2765,29 @@ function NewCustomerSheet({
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [planId, setPlanId] = useState<string>("__none__");
   const [screens, setScreens] = useState<ScreenDraft[]>([makeScreenDraft(1)]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (open) {
       setName(""); setWhatsapp(""); setCountryCode("BR"); setCustomDdi("");
-      setAmount(""); setDueDate(""); setNotes("");
+      setAmount(""); setDueDate(""); setNotes(""); setPlanId("__none__");
       setScreens([makeScreenDraft(1)]);
       setBusy(false);
     }
   }, [open]);
+
+  const onPickPlan = (id: string) => {
+    setPlanId(id);
+    if (id !== "__none__") {
+      const p = plans.find((x) => x.id === id);
+      if (p) {
+        const reais = (p.preco_cents / 100).toFixed(2).replace(".", ",");
+        setAmount(reais);
+      }
+    }
+  };
 
   const updateScreen = (uid: string, patch: Partial<ScreenDraft>) => {
     setScreens((prev) => prev.map((s) => (s.uid === uid ? { ...s, ...patch } : s)));
