@@ -81,7 +81,12 @@ function notifyUpdateAvailable() {
 async function checkServerVersion() {
   if (updateNotified) return;
   try {
-    const res = await fetch("/?__v=" + Date.now(), {
+    // Busca a MESMA rota atual (não "/") — em SSR, cada rota tem seus
+    // próprios modulepreload/scripts com hash. Comparar com "/" sempre
+    // dá sigs diferentes e o banner fica preso em loop.
+    const path = window.location.pathname + window.location.search;
+    const sep = path.includes("?") ? "&" : "?";
+    const res = await fetch(path + sep + "__v=" + Date.now(), {
       cache: "no-store",
       credentials: "same-origin",
       headers: { Accept: "text/html" },
