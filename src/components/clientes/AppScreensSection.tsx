@@ -28,7 +28,13 @@ import {
   daysUntil, urgencyFromDays, urgencyClass, urgencyLabel, mask, appDueDays,
   buildBackup, parseBackup, mergeAll, replaceAll, clearCustomerScreens,
   formatScreenAsText, formatCustomerScreensAsText,
+  uploadLocalScreensToDb, hydrateScreensFromDb, getScreensSyncState,
+  SCREENS_SYNC_EVENT,
 } from "@/lib/app-screens";
+import { listScreensDb, type ScreenDto } from "@/lib/screens/screens.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { getActiveCompanyId } from "@/lib/company-scope";
+import { CloudUpload } from "lucide-react";
 import {
   listActiveServers, serverBadgeStyle, SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
@@ -243,8 +249,105 @@ export function AppScreensSection({
     onConfirm: () => { clearCustomerScreens(customerId); setConfirmClear(false); toast.success("Telas locais deste cliente removidas."); },
   });
 
+  // --- banner: enviar telas locais para a nuvem ---
+  const CLOUD_BANNER_DISMISS_KEY = "cobranca_ia_app_screens_cloud_banner_dismissed_v1";
+  const [pendingLocal, setPendingLocal] = useState<number>(() =>
+    typeof window === "undefined" ? 0 : getScreensSyncState().pendingLocal,
+  );
+  const [cloudBannerDismissed, setCloudBannerDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(CLOUD_BANNER_DISMISS_KEY) === "1";
+  });
+  const [uploadingLocal, setUploadingLocal] = useState(false);
+  const listScreensFn = useServerFn(listScreensDb);
+
+  useEffect(() => {
+    const onSync = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { pendingLocal?: number } | undefined;
+      if (detail && typeof detail.pendingLocal === "number") {
+        setPendingLocal(detail.pendingLocal);
+      } else {
+        setPendingLocal(getScreensSyncState().pendingLocal);
+      }
+    };
+    window.addEventListener(SCREENS_SYNC_EVENT, onSync);
+    return () => window.removeEventListener(SCREENS_SYNC_EVENT, onSync);
+  }, []);
+
+  const handleUploadLocal = async () => {
+    if (uploadingLocal) return;
+    setUploadingLocal(true);
+    try {
+      const res = await uploadLocalScreensToDb();
+      const total = (res?.inserted ?? 0) + (res?.updated ?? 0);
+      // re-hidrata do banco para evitar duplicidade e refletir tudo
+      const companyId = getActiveCompanyId();
+      if (companyId) {
+        try {
+          const rows = await listScreensFn({ data: { companyId } });
+          hydrateScreensFromDb(companyId, rows as ScreenDto[]);
+        } catch {
+          /* hidratação falhou — useScreensSync vai tentar novamente */
+        }
+      }
+      refresh();
+      toast.success(
+        total > 0
+          ? "Telas enviadas para sua conta com sucesso."
+          : "Telas já estavam sincronizadas.",
+      );
+    } catch {
+      toast.error("Não foi possível enviar agora. Verifique sua conexão e tente novamente.");
+    } finally {
+      setUploadingLocal(false);
+    }
+  };
+
+  const dismissCloudBanner = () => {
+    setCloudBannerDismissed(true);
+    try { window.localStorage.setItem(CLOUD_BANNER_DISMISS_KEY, "1"); } catch { /* noop */ }
+  };
+
   return (
     <div className="space-y-3">
+      {pendingLocal > 0 && !cloudBannerDismissed && (
+        <div className="rounded-xl border border-primary/40 bg-primary/5 p-3">
+          <div className="flex items-start gap-2">
+            <CloudUpload className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold text-foreground">
+                Encontramos telas salvas apenas neste aparelho.
+              </div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                Envie esses dados para sua conta para acessar em qualquer celular, computador ou PWA.
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleUploadLocal}
+                  disabled={uploadingLocal}
+                  className="h-9"
+                >
+                  {uploadingLocal ? (
+                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Enviando…</>
+                  ) : (
+                    <><CloudUpload className="mr-1.5 h-3.5 w-3.5" /> Enviar para minha conta</>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={dismissCloudBanner}
+                  disabled={uploadingLocal}
+                  className="h-9"
+                >
+                  Agora não
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <PlanLimitNotice moduleKey="telas" compact />
       <div className="flex items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
