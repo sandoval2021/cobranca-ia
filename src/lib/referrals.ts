@@ -300,3 +300,85 @@ export function bonusDescription(rules: ReferralRules) {
       return rules.descricao || "Bonificação";
   }
 }
+
+// ------------------- DB sync helpers (Phase 2E) -------------------
+import { getActiveCompanyId } from "@/lib/company-scope";
+import {
+  bulkUpsertReferralsDb,
+  type ReferralDto,
+} from "@/lib/referrals/referrals.functions";
+
+export const REFERRALS_SYNC_EVENT = "cobranca_ia_referrals_sync:changed";
+type RefSyncState = { loaded: boolean; lastError: string | null; pendingLocal: number };
+const referralsSyncState: RefSyncState = { loaded: false, lastError: null, pendingLocal: 0 };
+
+function emitRefSync() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(REFERRALS_SYNC_EVENT, { detail: { ...referralsSyncState } }));
+}
+
+export function getReferralsSyncState(): RefSyncState {
+  return { ...referralsSyncState };
+}
+
+export function markReferralsSyncError(message: string) {
+  referralsSyncState.lastError = message;
+  emitRefSync();
+}
+
+export function hydrateReferralsFromDb(companyId: string, rows: ReferralDto[]) {
+  if (typeof window === "undefined") return;
+  const all = read<Referral[]>(STORAGE_KEY, []);
+  const others = all.filter((r) => r.company_id && r.company_id !== companyId);
+  const localForCompany = all.filter((r) => r.company_id === companyId);
+
+  if (rows.length === 0 && localForCompany.length > 0) {
+    referralsSyncState.loaded = true;
+    referralsSyncState.lastError = null;
+    referralsSyncState.pendingLocal = localForCompany.length;
+    emitRefSync();
+    return;
+  }
+
+  const mapped: Referral[] = rows.map((r) => ({
+    id: r.id,
+    company_id: r.company_id,
+    indicador_cliente_id: r.referrer_customer_id ?? undefined,
+    indicador_nome: r.referrer_name ?? "",
+    indicador_whatsapp: r.referrer_phone ?? "",
+    indicado_nome: r.referred_name ?? "",
+    indicado_whatsapp: r.referred_phone ?? "",
+    status: (r.status as ReferralStatus) ?? "Em teste",
+    data_indicacao: r.created_at,
+    data_fechamento: r.closed_at ?? undefined,
+    observacao: r.note ?? undefined,
+    bonificacao_aplicada_em: r.reward_applied_at ?? undefined,
+  }));
+
+  write(STORAGE_KEY, [...others, ...mapped]);
+  referralsSyncState.loaded = true;
+  referralsSyncState.lastError = null;
+  referralsSyncState.pendingLocal = 0;
+  emitRefSync();
+}
+
+export async function uploadLocalReferralsToDb(): Promise<{ inserted: number; updated: number }> {
+  const companyId = getActiveCompanyId();
+  if (!companyId) return { inserted: 0, updated: 0 };
+  const list = listAllReferralsRaw().filter((r) => !r.company_id || r.company_id === companyId);
+  if (list.length === 0) return { inserted: 0, updated: 0 };
+  const payload = list.map((r) => ({
+    referrer_name: r.indicador_nome || null,
+    referrer_phone: r.indicador_whatsapp || null,
+    referrer_customer_id: r.indicador_cliente_id || null,
+    referred_name: r.indicado_nome || null,
+    referred_phone: r.indicado_whatsapp || null,
+    status: r.status,
+    reward_status: r.status === "Bonificação aplicada" ? "applied" : "none",
+    closed_at: r.data_fechamento ?? null,
+    reward_applied_at: r.bonificacao_aplicada_em ?? null,
+    note: r.observacao ?? null,
+    payload: {},
+  }));
+  return bulkUpsertReferralsDb({ data: { companyId, referrals: payload } });
+}
