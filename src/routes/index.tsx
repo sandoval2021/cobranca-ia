@@ -133,10 +133,12 @@ function HeaderChips() {
   if (!showPlanChip && !showPwaChip) return null;
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-1.5">
-      <span className="text-base font-bold tracking-tight text-foreground">
+    <div className="mb-3 flex flex-col items-start gap-1.5">
+      <span className="text-base font-bold tracking-tight text-foreground leading-tight">
         Início
       </span>
+      <div className="flex flex-wrap items-center gap-1.5">
+
       {showPlanChip && planLabel && (
         <Link
           to="/minha-assinatura"
