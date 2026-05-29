@@ -345,32 +345,7 @@ export function AppScreensSection({
         </div>
       </div>
 
-      {/* Aviso de persistência local */}
-      {!alertDismissed ? (
-        <div className="rounded-md border border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <div className="min-w-0 flex-1">
-              Salvo apenas neste navegador por enquanto. Faça backup se for cadastrar dados reais.
-            </div>
-            <button
-              type="button"
-              onClick={dismissAlert}
-              className="shrink-0 rounded border border-warning/40 px-2 py-0.5 text-[10px] font-medium hover:bg-warning/10"
-            >
-              Entendi
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAlertDismissed(false)}
-          className="flex w-full items-center gap-1.5 rounded-md border border-warning/30 bg-warning-soft/20 px-2 py-1 text-left text-[10px] text-warning hover:bg-warning-soft/40"
-        >
-          <AlertCircle className="h-3 w-3" /> Salvo só neste navegador. Tocar para ver detalhes.
-        </button>
-      )}
+      {/* Aviso de "apenas neste navegador" removido — agora há sync DB-first. */}
 
       {/* Bloco backup */}
       <div className="rounded-xl border border-border bg-card">
