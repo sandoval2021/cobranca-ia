@@ -68,7 +68,7 @@ export function TrialGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [companyId, isSuperAdmin, pathname, fetchQuota]);
+  }, [companyId, isSuperAdmin, roleResolved, pathname, fetchQuota]);
 
   useEffect(() => {
     if (blocked && !isAllowedPath(pathname)) {
