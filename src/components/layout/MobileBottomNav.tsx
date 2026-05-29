@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { ownerBottomNav, ownerMoreNav, filterNavByRole, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useLocalAuth } from "@/lib/use-local-auth";
@@ -12,6 +12,25 @@ import {
   getCompanyForUser,
   getCurrentCompany,
 } from "@/lib/companies";
+
+// Grupos do menu "Mais" — layout compacto em cards.
+// Cada slot referencia a `to` de um item existente em `ownerMoreNav` (com
+// fallback para `ownerNav`/`ownerBottomNav` quando aplicável). Mantém os
+// mesmos labels/ícones/hints definidos na navegação principal.
+const MORE_GROUPS: { title: string; routes: string[] }[] = [
+  {
+    title: "Minha conta",
+    routes: ["/meus-dados", "/minha-assinatura", "/whatsapp", "/campanhas-manuais"],
+  },
+  {
+    title: "Operação",
+    routes: ["/clientes", "/cadastros-servicos", "/operacao-dia", "/renovacoes-paineis"],
+  },
+  {
+    title: "Negócio",
+    routes: ["/configuracoes-revenda", "/apps-portal", "/ia-config", "/configuracoes"],
+  },
+];
 
 export function MobileBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -35,17 +54,27 @@ export function MobileBottomNav() {
 
   const items = useMemo(() => filterNavByRole(ownerBottomNav, role), [role]);
 
-  const moreItems = useMemo<NavItem[]>(() => {
-    let list = filterNavByRole(ownerMoreNav, role);
-    if (isOwner && company) {
-      list = list.filter((item) => {
-        const mod = ROUTE_TO_MODULE[item.to];
-        if (!mod) return true;
-        return canCompanyUseModule(company, mod);
-      });
-    }
-    return list;
+  // Indexa todos os itens disponíveis (com filtro de papel + plano) para que
+  // os grupos consigam resolver `to` -> NavItem.
+  const itemByRoute = useMemo<Record<string, NavItem>>(() => {
+    const list = filterNavByRole(ownerMoreNav, role).filter((item) => {
+      if (!isOwner) return true;
+      if (!company) return true;
+      const mod = ROUTE_TO_MODULE[item.to];
+      if (!mod) return true;
+      return canCompanyUseModule(company, mod);
+    });
+    const idx: Record<string, NavItem> = {};
+    for (const it of list) idx[it.to] = it;
+    return idx;
   }, [role, isOwner, company]);
+
+  const groups = useMemo(() => {
+    return MORE_GROUPS.map((g) => ({
+      title: g.title,
+      items: g.routes.map((to) => itemByRoute[to]).filter(Boolean) as NavItem[],
+    })).filter((g) => g.items.length > 0);
+  }, [itemByRoute]);
 
   // 5 atalhos + 1 botão "Mais"
   const cols = items.length + 1;
@@ -98,53 +127,47 @@ export function MobileBottomNav() {
           side="bottom"
           className="max-h-[85vh] overflow-y-auto rounded-t-2xl p-0"
         >
-          <div className="px-4 pt-4 pb-2">
+          <div className="px-4 pt-4 pb-3">
             <SheetHeader className="text-left">
               <SheetTitle className="text-lg">Mais opções</SheetTitle>
             </SheetHeader>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Acesse todas as funções do CobraEasy organizadas para você.
-            </p>
           </div>
 
-          <ul className="divide-y divide-border px-2 pb-6">
-            {moreItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <li key={item.to}>
-                  {/* Navegação SPA via router. Anchor mantém href para
-                      acessibilidade e cmd+click, mas o onClick faz pushState
-                      sem reload — evita ChunkLoadError vindo de cache PWA
-                      antigo e a falsa tela de "Acesso restrito"/erro. */}
-                  <a
-                    href={item.to}
-                    onClick={(e) => {
-                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-                      e.preventDefault();
-                      setOpenMore(false);
-                      void navigate({ to: item.to as string });
-                    }}
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-left active:bg-surface-muted"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-foreground">
-                        {item.label}
-                      </span>
-                      {item.hint ? (
-                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                          {item.hint}
-                        </span>
-                      ) : null}
-                    </span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="space-y-5 px-3 pb-6">
+            {groups.map((group) => (
+              <section key={group.title}>
+                <h3 className="px-1 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group.title}
+                </h3>
+                <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <li key={item.to}>
+                        <a
+                          href={item.to}
+                          onClick={(e) => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                            e.preventDefault();
+                            setOpenMore(false);
+                            void navigate({ to: item.to as string });
+                          }}
+                          className="flex h-full flex-col items-center gap-2 rounded-2xl border border-border bg-surface px-2 py-3 text-center transition-colors active:bg-surface-muted"
+                        >
+                          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                            <Icon className="h-5 w-5" />
+                          </span>
+                          <span className="line-clamp-2 text-[12px] font-semibold leading-tight text-foreground">
+                            {item.label}
+                          </span>
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
+          </div>
         </SheetContent>
       </Sheet>
     </>
