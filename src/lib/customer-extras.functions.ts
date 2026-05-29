@@ -79,6 +79,7 @@ export const upsertCustomerExtraDb = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => ExtraInput.parse(input))
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { data: row, error } = await context.supabase
       .from("customer_extras")
       .upsert(inputToRow(data), { onConflict: "company_id,customer_id" })
