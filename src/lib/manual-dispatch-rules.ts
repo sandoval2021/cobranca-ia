@@ -290,3 +290,109 @@ export function pickRule(daysUntilDue: number, rules: ManualDispatchRule[]): Man
   }
   return chosen ?? active[0];
 }
+
+// ============================================================
+// Sincronização com o banco (manual_dispatch_rules) — Fase 2E
+// ============================================================
+
+import { getActiveCompanyId } from "@/lib/company-scope";
+import {
+  bulkUpsertManualDispatchRulesDb,
+  type ManualDispatchRuleDto,
+} from "@/lib/manual-dispatch-rules/manual-dispatch-rules.functions";
+
+export const MANUAL_RULES_SYNC_EVENT = "cobranca_ia_manual_rules:sync";
+
+type RulesSyncState = { loaded: boolean; lastError: string | null; pendingLocal: number };
+const rulesSyncState: RulesSyncState = { loaded: false, lastError: null, pendingLocal: 0 };
+
+function emitRulesSync() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(MANUAL_RULES_SYNC_EVENT, { detail: { ...rulesSyncState } }));
+}
+
+export function getManualDispatchRulesSyncState(): RulesSyncState {
+  return { ...rulesSyncState };
+}
+
+export function markManualDispatchRulesSyncError(message: string) {
+  rulesSyncState.lastError = message;
+  emitRulesSync();
+}
+
+function _isUuid(v: string | null | undefined): v is string {
+  return !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+}
+
+function _hasLocalRulesData(): boolean {
+  const raw = safeRead<ManualDispatchRule[]>(RULES_KEY);
+  return Array.isArray(raw) && raw.length > 0;
+}
+
+export function hydrateManualDispatchRulesFromDb(companyId: string, rows: ManualDispatchRuleDto[]): void {
+  if (typeof window === "undefined") return;
+  if (!_isUuid(companyId)) return;
+  if (rows.length === 0) {
+    if (_hasLocalRulesData()) {
+      rulesSyncState.loaded = true;
+      rulesSyncState.lastError = null;
+      rulesSyncState.pendingLocal = (safeRead<ManualDispatchRule[]>(RULES_KEY) ?? []).length;
+      emitRulesSync();
+    } else {
+      rulesSyncState.loaded = true;
+      rulesSyncState.lastError = null;
+      rulesSyncState.pendingLocal = 0;
+      emitRulesSync();
+    }
+    return;
+  }
+  const mapped: ManualDispatchRule[] = rows.map((r) => {
+    let settings: Record<string, unknown> = {};
+    try { settings = JSON.parse(r.settings ?? "{}"); } catch { settings = {}; }
+    return {
+      id: r.rule_key || r.id,
+      name: r.name,
+      daysOffset: r.days_offset ?? 0,
+      type: (r.rule_type as RuleType) ?? "lembrete",
+      priority: (r.priority as RulePriority) ?? "media",
+      tone: (r.tone as RuleTone) ?? "amigavel",
+      template: r.template ?? "",
+      active: !!r.is_active,
+      blockNoWhatsapp: settings.blockNoWhatsapp !== false,
+      blockNoDue: settings.blockNoDue !== false,
+      blockDuplicate: settings.blockDuplicate !== false,
+      recoveryOverApp: settings.recoveryOverApp !== false,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    };
+  });
+  saveRules(mapped);
+  rulesSyncState.loaded = true;
+  rulesSyncState.lastError = null;
+  rulesSyncState.pendingLocal = 0;
+  emitRulesSync();
+}
+
+export async function uploadLocalManualDispatchRulesToDb(): Promise<{ count: number }> {
+  const companyId = getActiveCompanyId();
+  if (!companyId) return { count: 0 };
+  const list = listRules();
+  if (list.length === 0) return { count: 0 };
+  const rules = list.map((r) => ({
+    rule_key: r.id,
+    name: r.name,
+    days_offset: r.daysOffset,
+    rule_type: r.type,
+    priority: r.priority,
+    tone: r.tone,
+    template: r.template,
+    is_active: r.active,
+    settings: {
+      blockNoWhatsapp: r.blockNoWhatsapp,
+      blockNoDue: r.blockNoDue,
+      blockDuplicate: r.blockDuplicate,
+      recoveryOverApp: r.recoveryOverApp,
+    },
+  }));
+  return bulkUpsertManualDispatchRulesDb({ data: { companyId, rules } });
+}

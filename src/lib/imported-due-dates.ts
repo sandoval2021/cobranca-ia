@@ -81,3 +81,82 @@ export function clearImportedDueByWhatsapp(wa: string) {
   delete s[wa];
   write(s);
 }
+
+// ============================================================
+// Sincronização com o banco (imported_customer_due_dates) — Fase 2E
+// ============================================================
+
+import { getActiveCompanyId } from "@/lib/company-scope";
+import {
+  bulkUpsertImportedDueDb,
+  type ImportedDueDto,
+} from "@/lib/imports/imports.functions";
+
+export const IMPORTED_DUE_SYNC_EVENT = "cobranca_ia_imported_due:sync";
+
+type ImportedDueSyncState = { loaded: boolean; lastError: string | null; pendingLocal: number };
+const importedDueSyncState: ImportedDueSyncState = { loaded: false, lastError: null, pendingLocal: 0 };
+
+function emitImportedDueSync() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(IMPORTED_DUE_SYNC_EVENT, { detail: { ...importedDueSyncState } }),
+  );
+}
+
+export function getImportedDueDatesSyncState(): ImportedDueSyncState {
+  return { ...importedDueSyncState };
+}
+
+export function markImportedDueDatesSyncError(message: string) {
+  importedDueSyncState.lastError = message;
+  emitImportedDueSync();
+}
+
+function _isUuid2(v: string | null | undefined): v is string {
+  return !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+}
+
+export function hydrateImportedDueDatesFromDb(companyId: string, rows: ImportedDueDto[]): void {
+  if (typeof window === "undefined") return;
+  if (!_isUuid2(companyId)) return;
+  const local = read();
+  const localKeys = Object.keys(local);
+  if (rows.length === 0 && localKeys.length > 0) {
+    importedDueSyncState.loaded = true;
+    importedDueSyncState.lastError = null;
+    importedDueSyncState.pendingLocal = localKeys.length;
+    emitImportedDueSync();
+    return;
+  }
+  const next: Store = {};
+  for (const r of rows) {
+    if (r.phone && r.due_date) next[r.phone] = r.due_date;
+  }
+  // Preserve local-only keys that DB doesn't know yet, to avoid data loss.
+  let pending = 0;
+  for (const k of localKeys) {
+    if (!(k in next)) {
+      next[k] = local[k];
+      pending++;
+    }
+  }
+  write(next);
+  importedDueSyncState.loaded = true;
+  importedDueSyncState.lastError = null;
+  importedDueSyncState.pendingLocal = pending;
+  emitImportedDueSync();
+}
+
+export async function uploadLocalImportedDueDatesToDb(): Promise<{ count: number }> {
+  const companyId = getActiveCompanyId();
+  if (!companyId) return { count: 0 };
+  const local = read();
+  const items: Array<{ phone: string; due_date: string; raw_row: Record<string, unknown> }> = [];
+  for (const [phone, date] of Object.entries(local)) {
+    if (!phone || !date) continue;
+    items.push({ phone, due_date: date, raw_row: { source: "local-cache" } });
+  }
+  if (items.length === 0) return { count: 0 };
+  return bulkUpsertImportedDueDb({ data: { companyId, items } });
+}

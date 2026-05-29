@@ -393,3 +393,90 @@ export function mergeEntries(incoming: KBEntry[]): void {
   for (const e of incoming) byId.set(e.id, e);
   writeAll(Array.from(byId.values()));
 }
+
+// ============================================================
+// Sincronização com o banco (ai_knowledge_entries) — Fase 2E
+// ============================================================
+
+import { getActiveCompanyId } from "@/lib/company-scope";
+import {
+  bulkUpsertKbEntriesDb,
+  type KbEntryDto,
+} from "@/lib/knowledge-base/kb.functions";
+
+export const KB_SYNC_EVENT = "cobranca_ia_kb:sync";
+
+type KbSyncState = { loaded: boolean; lastError: string | null; pendingLocal: number };
+const kbSyncState: KbSyncState = { loaded: false, lastError: null, pendingLocal: 0 };
+
+function emitKbSync() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(KB_SYNC_EVENT, { detail: { ...kbSyncState } }));
+}
+
+export function getKnowledgeBaseSyncState(): KbSyncState {
+  return { ...kbSyncState };
+}
+
+export function markKnowledgeBaseSyncError(message: string) {
+  kbSyncState.lastError = message;
+  emitKbSync();
+}
+
+function isUuid(v: string | null | undefined): v is string {
+  return !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+}
+
+export function hydrateKnowledgeBaseFromDb(companyId: string, rows: KbEntryDto[]): void {
+  if (typeof window === "undefined") return;
+  if (!isUuid(companyId)) return;
+  const local = readAll();
+  if (rows.length === 0 && local.length > 0) {
+    kbSyncState.loaded = true;
+    kbSyncState.lastError = null;
+    kbSyncState.pendingLocal = local.length;
+    emitKbSync();
+    return;
+  }
+  const mapped: KBEntry[] = rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    category: (r.category as KBCategory) ?? "regra",
+    app: r.app ?? undefined,
+    keywords: Array.isArray(r.keywords) ? r.keywords : [],
+    short: r.short_text ?? "",
+    full: r.full_text ?? "",
+    when_to_use: r.when_to_use ?? undefined,
+    when_not_to_use: r.when_not_to_use ?? undefined,
+    needs_human: !!r.needs_human,
+    active: !!r.active,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  }));
+  writeAll(mapped);
+  kbSyncState.loaded = true;
+  kbSyncState.lastError = null;
+  kbSyncState.pendingLocal = 0;
+  emitKbSync();
+}
+
+export async function uploadLocalKnowledgeBaseToDb(): Promise<{ inserted: number; updated: number }> {
+  const companyId = getActiveCompanyId();
+  if (!companyId) return { inserted: 0, updated: 0 };
+  const list = readAll();
+  if (list.length === 0) return { inserted: 0, updated: 0 };
+  const entries = list.map((e) => ({
+    id: isUuid(e.id) ? e.id : undefined,
+    title: e.title || "Sem título",
+    category: e.category,
+    app: e.app ?? null,
+    keywords: e.keywords ?? [],
+    short_text: e.short ?? "",
+    full_text: e.full ?? "",
+    when_to_use: e.when_to_use ?? null,
+    when_not_to_use: e.when_not_to_use ?? null,
+    needs_human: !!e.needs_human,
+    active: e.active !== false,
+  }));
+  return bulkUpsertKbEntriesDb({ data: { companyId, entries } });
+}
