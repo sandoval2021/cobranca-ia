@@ -47,16 +47,46 @@ const GROUPS: Group[] = [
     id: "cadastros",
     label: "Cadastros",
     icon: Users,
-    routes: ["/clientes", "/cadastros-servicos", "/gestao-servicos", "/catalogo-servidores", "/testes", "/mensagens", "/importar-clientes", "/agenda-disparo"],
+    routes: [
+      "/clientes",
+      "/cadastros-servicos",
+      "/gestao-servicos",
+      "/catalogo-servidores",
+      "/testes",
+      "/importar-clientes",
+      "/apps-portal",
+      "/renovacoes-paineis",
+    ],
   },
   {
     id: "operacao",
     label: "Operação",
     icon: Activity,
-    routes: ["/operacao-dia", "/pendencias", "/cobrancas", "/campanhas-manuais", "/fila-simulada"],
+    routes: [
+      "/operacao-dia",
+      "/pendencias",
+      "/cobrancas",
+      "/campanhas-manuais",
+      "/mensagens",
+      "/agenda-disparo",
+      "/fila-simulada",
+      "/pagamentos/mercado-pago",
+      "/pagamentos/historico",
+      "/admin/marketplace",
+    ],
   },
-
-  { id: "ia", label: "IA", icon: Bot, routes: ["/ia", "/base-conhecimento"] },
+  {
+    id: "ia",
+    label: "IA",
+    icon: Bot,
+    routes: [
+      "/ia",
+      "/ia-config",
+      "/treinar-ia",
+      "/base-conhecimento",
+      "/ajuda-ia",
+    ],
+  },
   {
     id: "relatorios",
     label: "Relatórios",
@@ -70,6 +100,9 @@ const GROUPS: Group[] = [
     routes: [
       "/configuracao-inicial",
       "/empresas",
+      "/meus-dados",
+      "/minha-assinatura",
+      "/saas-planos",
       "/configuracoes-revenda",
       "/configuracoes",
       "/regras-disparo",
@@ -91,6 +124,7 @@ const GROUPS: Group[] = [
     ],
   },
 ];
+
 
 const GROUPED = new Set(GROUPS.flatMap((g) => g.routes).concat(["/"]));
 
