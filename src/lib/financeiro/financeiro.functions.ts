@@ -138,18 +138,36 @@ function goalInputToRow(d: z.infer<typeof GoalInput>) {
   };
 }
 
+// Fase C — paginação segura.
+// `limit` default = 1000 (igual ao limite implícito do PostgREST); cap em 5000
+// para evitar payload gigante. `offset` opcional. Callers existentes que
+// não passam limit/offset continuam funcionando.
 export const listFinanceEntriesDb = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { companyId: string }) =>
-    z.object({ companyId: UUID }).parse(input),
+  .inputValidator((input: {
+    companyId: string;
+    limit?: number;
+    offset?: number;
+  }) =>
+    z
+      .object({
+        companyId: UUID,
+        limit: z.number().int().min(1).max(5000).optional(),
+        offset: z.number().int().min(0).max(1_000_000).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertCompanyAccess(context.supabase, data.companyId);
+    const limit = data.limit ?? 1000;
+    const offset = data.offset ?? 0;
     const { data: rows, error } = await context.supabase
       .from("finance_entries")
       .select("*")
       .eq("company_id", data.companyId)
-      .order("data", { ascending: false });
+      .order("data", { ascending: false })
+      .order("id", { ascending: false })
+      .range(offset, offset + limit - 1);
     if (error) throw new Error(error.message);
     return (rows ?? []).map((r) => rowToEntry(r as Record<string, unknown>));
   });
