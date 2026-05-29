@@ -198,9 +198,19 @@ function AdminDnsRotasPage() {
 
   const performImport = (mode: "merge" | "replace") => {
     if (!importPreview || !importPreview.parsed.ok) return;
-    const run = () => {
+    const run = async () => {
       const data = (importPreview.parsed as Extract<typeof importPreview.parsed, { ok: true }>).data;
       const res = importDnsRoutes(data, mode);
+      // Push imported records to DB (source of truth)
+      if (companyId) {
+        for (const d of listDomains(true)) {
+          try { await persistDomain(d); } catch {/* noop */}
+        }
+        for (const r of listDnsRoutes(true)) {
+          try { await persistRoute(r); } catch {/* noop */}
+        }
+        try { await hydrateDnsFromDb(companyId); } catch {/* noop */}
+      }
       toast.success(`Importado: ${res.domains} domínios, ${res.routes} rotas.`);
       setImportPreview(null);
       refresh();
@@ -277,7 +287,11 @@ function AdminDnsRotasPage() {
                     <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
                   </Button>
                   {!d.archived && d.status !== "pausado" && (
-                    <Button size="sm" variant="ghost" onClick={() => { updateDomain(d.id, { status: "pausado" }); refresh(); }}>
+                    <Button size="sm" variant="ghost" onClick={async () => {
+                      const updated = updateDomain(d.id, { status: "pausado" });
+                      if (updated) await persistDomain(updated);
+                      refresh();
+                    }}>
                       Pausar
                     </Button>
                   )}
@@ -288,7 +302,13 @@ function AdminDnsRotasPage() {
                         kind: "delete",
                         title: "Arquivar domínio",
                         actionLabel: "Arquivar",
-                        onConfirm: () => { archiveDomain(d.id); refresh(); toast.success("Domínio arquivado."); },
+                        onConfirm: async () => {
+                          archiveDomain(d.id);
+                          const updated = updateDomain(d.id, {});
+                          if (updated) await persistDomain(updated);
+                          refresh();
+                          toast.success("Domínio arquivado.");
+                        },
                       })}
                     >
                       <Archive className="h-3.5 w-3.5 mr-1" /> Arquivar
@@ -368,7 +388,13 @@ function AdminDnsRotasPage() {
                           kind: "delete",
                           title: "Arquivar rota",
                           actionLabel: "Arquivar",
-                          onConfirm: () => { archiveDnsRoute(r.id); refresh(); toast.success("Rota arquivada."); },
+                          onConfirm: async () => {
+                            archiveDnsRoute(r.id);
+                            const updated = listDnsRoutes(true).find((x) => x.id === r.id);
+                            if (updated) await persistRoute(updated);
+                            refresh();
+                            toast.success("Rota arquivada.");
+                          },
                         })}
                       >
                         <Archive className="h-3.5 w-3.5 mr-1" /> Arquivar
@@ -382,11 +408,17 @@ function AdminDnsRotasPage() {
                         title: "Excluir rota definitivamente",
                         description: `Esta ação não pode ser desfeita. A rota ${r.host || ""} será removida permanentemente.`,
                         actionLabel: "Excluir",
-                        onConfirm: () => { deleteDnsRoute(r.id); refresh(); toast.success("Rota excluída."); },
+                        onConfirm: async () => {
+                          await removeRouteDb(r.id);
+                          deleteDnsRoute(r.id);
+                          refresh();
+                          toast.success("Rota excluída.");
+                        },
                       })}
                     >
                       <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir
                     </Button>
+
 
                   </div>
                 </div>
@@ -559,7 +591,12 @@ function AdminDnsRotasPage() {
         open={domainSheet.open}
         data={domainSheet.data ?? null}
         onClose={() => setDomainSheet({ open: false })}
-        onSaved={() => { setDomainSheet({ open: false }); refresh(); }}
+        onSaved={async (d) => {
+          setDomainSheet({ open: false });
+          await persistDomain(d);
+          if (companyId) { try { await hydrateDnsFromDb(companyId); } catch {/* noop */} }
+          refresh();
+        }}
       />
 
       <RouteSheet
@@ -569,7 +606,13 @@ function AdminDnsRotasPage() {
         domains={activeDomains}
         servers={servers}
         onClose={() => setRouteSheet({ open: false })}
-        onSaved={() => { setRouteSheet({ open: false }); refresh(); }}
+        onSaved={async (r, replaced) => {
+          setRouteSheet({ open: false });
+          await persistRoute(r);
+          if (replaced) { try { await persistRoute(replaced); } catch {/* noop */} }
+          if (companyId) { try { await hydrateDnsFromDb(companyId); } catch {/* noop */} }
+          refresh();
+        }}
         onPrimaryConflict={(existing, doSave) => setPrimaryConflict({ open: true, existing, pendingSave: doSave })}
       />
 
@@ -646,7 +689,7 @@ function DomainSheet({
   open, data, onClose, onSaved,
 }: {
   open: boolean; data: DnsDomain | null;
-  onClose: () => void; onSaved: () => void;
+  onClose: () => void; onSaved: (d: DnsDomain) => void;
 }) {
   const [domain, setDomain] = useState("");
   const [provider, setProvider] = useState<DnsProvider>("outro");
@@ -665,9 +708,9 @@ function DomainSheet({
   const handleSave = () => {
     const d = domain.trim();
     if (!d) { toast.error("Informe o domínio."); return; }
-    saveDomain({ id: data?.id, domain: d, provider, status, notes });
+    const saved = saveDomain({ id: data?.id, domain: d, provider, status, notes });
     toast.success(data ? "Domínio atualizado." : "Domínio cadastrado.");
-    onSaved();
+    onSaved(saved);
   };
 
   return (
@@ -724,7 +767,7 @@ function RouteSheet({
   domains: DnsDomain[];
   servers: ServerEntry[];
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (r: DnsRoute, replacedPrimary?: DnsRoute) => void;
   onPrimaryConflict: (existing: DnsRoute | null, doSave: () => void) => void;
 }) {
   const [domainId, setDomainId] = useState<string>("");
@@ -790,7 +833,7 @@ function RouteSheet({
         toast.success(`Rota principal substituída: ${replacedPrimary.host}.`);
       }
       toast.success(data ? "Rota atualizada." : `Rota ${route.host} cadastrada.`);
-      onSaved();
+      onSaved(route, replacedPrimary);
     };
 
     if (isPrimary && serverId) {
