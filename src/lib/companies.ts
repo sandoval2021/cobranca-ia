@@ -1,5 +1,7 @@
 // Empresas, planos e membros — cache local da UI.
 
+import { relinkScopedLocalStorageData } from "./relink-scoped-data";
+
 export type CompanyStatus = "teste" | "ativa" | "vencida" | "suspensa" | "cancelada";
 export type MemberRole = "owner" | "atendente" | "financeiro" | "suporte";
 export type MemberStatus = "ativo" | "pendente" | "bloqueado";
