@@ -85,6 +85,12 @@ function CadastrosServicosPage() {
   });
   const [pendingDelete, setPendingDelete] = useState<ServiceItem | null>(null);
   const [editor, setEditor] = useState<{ planId: string; offsetDays: number } | null>(null);
+  const [recipientsDlg, setRecipientsDlg] = useState<{
+    open: boolean; planMessageIds: string[] | null; title: string; subtitle?: string;
+  }>({ open: false, planMessageIds: null, title: "" });
+  const [eligibilityCounts, setEligibilityCounts] = useState<Map<string, MessageEligibilityCount>>(new Map());
+  const getCountsFn = useServerFn(getServiceDispatchCountsDb);
+
 
   // --- banner: enviar planos/mensagens locais para a nuvem ---
   const CLOUD_BANNER_DISMISS_KEY = "cobranca_ia_services_cloud_banner_dismissed_v1";
