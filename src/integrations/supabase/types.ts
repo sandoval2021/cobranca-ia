@@ -2018,6 +2018,36 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_rules: {
+        Row: {
+          company_id: string
+          created_at: string
+          descricao: string
+          id: string
+          meta: number
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          meta?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          meta?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       renewal_tasks: {
         Row: {
           assigned_to: string | null

@@ -25,6 +25,7 @@ import { useServicesSync } from "@/lib/services/useServicesSync";
 import { useManualRenewalsSync } from "@/lib/manual-renewals/useManualRenewalsSync";
 import { useCustomerDueOverridesSync } from "@/lib/customer-due-overrides/useCustomerDueOverridesSync";
 import { useReferralsSync } from "@/lib/referrals/useReferralsSync";
+import { useReferralRulesSync } from "@/lib/referrals/useReferralRulesSync";
 import { useKnowledgeBaseSync } from "@/lib/knowledge-base/useKnowledgeBaseSync";
 import { useManualDispatchRulesSync } from "@/lib/manual-dispatch-rules/useManualDispatchRulesSync";
 import { useImportedDueDatesSync } from "@/lib/imports/useImportedDueDatesSync";
@@ -82,6 +83,7 @@ function AuthedApp() {
   useManualRenewalsSync();
   useCustomerDueOverridesSync();
   useReferralsSync();
+  useReferralRulesSync();
   useKnowledgeBaseSync();
   useManualDispatchRulesSync();
   useImportedDueDatesSync();
