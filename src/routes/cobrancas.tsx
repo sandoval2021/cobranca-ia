@@ -1461,15 +1461,22 @@ function RenewCustomerDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Renovar cliente</DialogTitle>
-          <DialogDescription>Gera cobranças mensais com segurança via RPC.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto border-2 border-emerald-500/30 p-0">
+        <div className="rounded-t-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-4 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <RefreshCw className="h-5 w-5" />
+              Renovar cliente
+            </DialogTitle>
+            <DialogDescription className="text-emerald-50/90">
+              Busque o cliente pelo telefone ou nome e gere cobranças mensais.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="space-y-3 px-5 pt-4">
           <div>
             <Label className="mb-1 flex items-center gap-1.5 text-xs">
-              Cliente <HelpTip text="Selecione na lista." />
+              Cliente <HelpTip text="Busque pelo número de telefone ou nome." />
             </Label>
             <CustomerCombobox customers={customers} value={customerId} onChange={setCustomerId} />
           </div>
@@ -1486,9 +1493,13 @@ function RenewCustomerDialog({
             <Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="0,00" />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-5 pb-5 pt-2">
           <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
-          <Button onClick={submit} disabled={busy} className="gap-1.5">
+          <Button
+            onClick={submit}
+            disabled={busy}
+            className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700"
+          >
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Renovar
           </Button>
@@ -1497,3 +1508,170 @@ function RenewCustomerDialog({
     </Dialog>
   );
 }
+
+// ---------- cobrar dialog ----------
+function CobrarDialog({
+  open,
+  onClose,
+  customers,
+  charges,
+}: {
+  open: boolean;
+  onClose: () => void;
+  customers: CustomerLite[];
+  charges: Charge[];
+}) {
+  const [customerId, setCustomerId] = useState("");
+  const [mode, setMode] = useState<"manual" | "automatica">("manual");
+  const [message, setMessage] = useState("");
+
+  const selected = customers.find((c) => c.id === customerId);
+  const lastCharge = useMemo(() => {
+    if (!customerId) return null;
+    const list = charges.filter((c) => c.customer_id === customerId);
+    if (list.length === 0) return null;
+    // mais recente por vencimento
+    return [...list].sort((a, b) => {
+      const da = a.due_date ? +new Date(a.due_date) : 0;
+      const db = b.due_date ? +new Date(b.due_date) : 0;
+      return db - da;
+    })[0];
+  }, [charges, customerId]);
+
+  useEffect(() => {
+    if (open) {
+      setCustomerId("");
+      setMode("manual");
+      setMessage("");
+    }
+  }, [open]);
+
+  // Auto-preenche template ao escolher cliente ou trocar de modo
+  useEffect(() => {
+    if (!selected) return;
+    const nome = selected.name;
+    const valor = lastCharge?.amount_cents != null ? fmtBRL(lastCharge.amount_cents) : "R$ 0,00";
+    const venc = lastCharge?.due_date ? new Date(lastCharge.due_date).toLocaleDateString("pt-BR") : "—";
+    if (mode === "automatica") {
+      setMessage(
+        `Olá ${nome}! Identificamos uma cobrança em aberto no valor de ${valor}, com vencimento em ${venc}. ` +
+        `Para regularizar, basta efetuar o pagamento. Qualquer dúvida estamos à disposição.`,
+      );
+    } else {
+      setMessage(
+        `Olá ${nome}, tudo bem? Passando para lembrar da sua mensalidade no valor de ${valor} (vencimento ${venc}). ` +
+        `Posso te ajudar com alguma coisa?`,
+      );
+    }
+  }, [selected, mode, lastCharge]);
+
+  const enviar = () => {
+    if (!selected) {
+      toast.error("Selecione um cliente.");
+      return;
+    }
+    if (!selected.whatsapp) {
+      toast.error("Cliente sem WhatsApp cadastrado.");
+      return;
+    }
+    if (!message.trim()) {
+      toast.error("Escreva uma mensagem.");
+      return;
+    }
+    const phone = onlyDigits(selected.whatsapp);
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener");
+    toast.success("WhatsApp aberto com a mensagem.");
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto border-2 border-amber-500/30 p-0">
+        <div className="rounded-t-lg bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <Send className="h-5 w-5" />
+              Cobrar cliente
+            </DialogTitle>
+            <DialogDescription className="text-amber-50/90">
+              Busque o cliente pelo telefone e envie uma mensagem manual ou automática.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="space-y-3 px-5 pt-4">
+          <div>
+            <Label className="mb-1 flex items-center gap-1.5 text-xs">
+              Cliente <HelpTip text="Busque pelo número de telefone ou nome." />
+            </Label>
+            <CustomerCombobox customers={customers} value={customerId} onChange={setCustomerId} />
+            {selected?.whatsapp && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                WhatsApp: <span className="font-medium text-foreground">{prettyPhone(selected.whatsapp)}</span>
+              </p>
+            )}
+            {selected && !selected.whatsapp && (
+              <p className="mt-1 text-[11px] text-destructive">Este cliente não tem WhatsApp cadastrado.</p>
+            )}
+          </div>
+
+          <div>
+            <Label className="mb-1 text-xs">Tipo de mensagem</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMode("manual")}
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                  mode === "manual"
+                    ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted",
+                )}
+              >
+                Manual (amigável)
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("automatica")}
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                  mode === "automatica"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted",
+                )}
+              >
+                Automática (cobrança)
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <Label className="mb-1 text-xs">Mensagem</Label>
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={6}
+              placeholder="Escreva ou edite a mensagem..."
+              className="resize-none"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              O WhatsApp abrirá com esta mensagem pronta para envio.
+            </p>
+          </div>
+        </div>
+        <DialogFooter className="px-5 pb-5 pt-2">
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button
+            onClick={enviar}
+            disabled={!selected?.whatsapp || !message.trim()}
+            className="gap-1.5 bg-amber-500 text-white hover:bg-amber-600"
+          >
+            <Send className="h-3.5 w-3.5" />
+            Abrir WhatsApp
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
