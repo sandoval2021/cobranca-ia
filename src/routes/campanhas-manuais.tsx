@@ -542,6 +542,8 @@ function CampanhasManuaisPage() {
   const [audience, setAudience] = useState<Audience>("hoje");
   const [serverFilter, setServerFilter] = useState<string>("__all__");
   const [query, setQuery] = useState("");
+  const [showAllFilters, setShowAllFilters] = useState(false);
+  const [showServerRow, setShowServerRow] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [templateKey, setTemplateKey] = useState<TemplateKey>("lembrete");
   const [customBody, setCustomBody] = useState<string>(
