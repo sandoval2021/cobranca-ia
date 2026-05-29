@@ -226,7 +226,7 @@ async function processCompany(companyId: string, today: string): Promise<Process
               error: "phone_invalid",
             },
             {
-              onConflict: "customer_id,service_plan_message_id,cycle_key",
+              onConflict: "company_id,customer_id,service_plan_message_id,cycle_key",
               ignoreDuplicates: true,
             },
           );
@@ -251,7 +251,7 @@ async function processCompany(companyId: string, today: string): Promise<Process
               error: "whatsapp_disconnected",
             },
             {
-              onConflict: "customer_id,service_plan_message_id,cycle_key",
+              onConflict: "company_id,customer_id,service_plan_message_id,cycle_key",
               ignoreDuplicates: true,
             },
           );
@@ -288,7 +288,7 @@ async function processCompany(companyId: string, today: string): Promise<Process
               error: `enqueue_failed:${qErr?.message ?? "unknown"}`.slice(0, 2000),
             },
             {
-              onConflict: "customer_id,service_plan_message_id,cycle_key",
+              onConflict: "company_id,customer_id,service_plan_message_id,cycle_key",
               ignoreDuplicates: true,
             },
           );
@@ -311,7 +311,7 @@ async function processCompany(companyId: string, today: string): Promise<Process
             queue_id: (queueRow as any).id,
           } as any,
           {
-            onConflict: "customer_id,service_plan_message_id,cycle_key",
+            onConflict: "company_id,customer_id,service_plan_message_id,cycle_key",
             ignoreDuplicates: true,
           },
         );
