@@ -43,10 +43,22 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
           return Response.json({ ok: true, skipped: "night_window" });
         }
 
-        // Claim atômico via RPC com FOR UPDATE SKIP LOCKED.
+        // Recupera jobs travados em 'sending' (worker anterior crashou/timeout).
+        // Best-effort: nunca falha o run.
+        try {
+          await supabaseAdmin.rpc("requeue_stuck_whatsapp_messages" as any, {
+            p_stale_minutes: 10,
+          });
+        } catch (e) {
+          console.warn("[wa-dispatch] requeue_stuck failed", (e as any)?.message);
+        }
+
+        const workerId = `wa-dispatch:${Math.random().toString(36).slice(2, 10)}`;
+
+        // Claim atômico via RPC com FOR UPDATE SKIP LOCKED + locked_at/locked_by.
         const { data: candidates, error } = await supabaseAdmin.rpc(
           "claim_whatsapp_queue_batch" as any,
-          { p_limit: 50 },
+          { p_limit: 50, p_worker: workerId },
         );
 
         if (error) {
@@ -83,6 +95,8 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
                 status: "queued",
                 next_attempt_at: new Date(Date.now() + 60_000).toISOString(),
                 last_error: `instance_not_ready:${inst?.status ?? "missing"}`,
+                locked_at: null,
+                locked_by: null,
               })
               .eq("id", c.id);
             continue;
@@ -94,6 +108,8 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
                 status: "queued",
                 next_attempt_at: new Date(Date.now() + 30 * 60_000).toISOString(),
                 last_error: "daily_limit_reached",
+                locked_at: null,
+                locked_by: null,
               })
               .eq("id", c.id);
             continue;
@@ -119,6 +135,8 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
                 status: "queued",
                 next_attempt_at: new Date(Date.now() + 60_000).toISOString(),
                 last_error: "rate_limited",
+                locked_at: null,
+                locked_by: null,
               })
               .eq("id", c.id);
             continue;
@@ -133,7 +151,13 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
           if (!ref) {
             await supabaseAdmin
               .from("whatsapp_message_queue")
-              .update({ status: "failed", last_error: "ref_missing" })
+              .update({
+                status: "failed",
+                last_error: "ref_missing",
+                locked_at: null,
+                locked_by: null,
+                failed_at: new Date().toISOString(),
+              })
               .eq("id", c.id);
             failed++;
             continue;
@@ -149,6 +173,8 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
                   sent_at: new Date().toISOString(),
                   provider_msg_id: res.provider_msg_id ?? null,
                   last_error: null,
+                  locked_at: null,
+                  locked_by: null,
                 })
                 .eq("id", c.id);
               await supabaseAdmin
@@ -164,13 +190,17 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
               const attempts = (c.attempts ?? 0) + 1;
               const willRetry = attempts < (c.max_attempts ?? 5);
               const backoff = Math.min(60 * 60_000, 30_000 * 2 ** attempts);
+              const nowIso = new Date().toISOString();
               await supabaseAdmin
                 .from("whatsapp_message_queue")
                 .update({
                   status: willRetry ? "queued" : "failed",
                   attempts,
                   next_attempt_at: new Date(Date.now() + backoff).toISOString(),
-                  last_error: res.error ?? "send_failed",
+                  last_error: (res.error ?? "send_failed").slice(0, 500),
+                  locked_at: null,
+                  locked_by: null,
+                  failed_at: willRetry ? null : nowIso,
                 })
                 .eq("id", c.id);
               if (!willRetry) failed++;
@@ -179,6 +209,7 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
             const attempts = (c.attempts ?? 0) + 1;
             const willRetry = attempts < (c.max_attempts ?? 5);
             const backoff = Math.min(60 * 60_000, 30_000 * 2 ** attempts);
+            const nowIso = new Date().toISOString();
             await supabaseAdmin
               .from("whatsapp_message_queue")
               .update({
@@ -186,13 +217,16 @@ export const Route = createFileRoute("/api/public/hooks/wa-dispatch")({
                 attempts,
                 next_attempt_at: new Date(Date.now() + backoff).toISOString(),
                 last_error: String(err?.message ?? err).slice(0, 500),
+                locked_at: null,
+                locked_by: null,
+                failed_at: willRetry ? null : nowIso,
               })
               .eq("id", c.id);
             if (!willRetry) failed++;
           }
         }
 
-        return Response.json({ ok: true, processed, failed });
+        return Response.json({ ok: true, processed, failed, worker: workerId });
       },
     },
   },
