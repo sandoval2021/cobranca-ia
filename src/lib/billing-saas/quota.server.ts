@@ -68,6 +68,28 @@ export async function incrementAiUsage(companyId: string): Promise<AiCycleRow | 
   return (data as AiCycleRow) ?? null;
 }
 
+/**
+ * Versão idempotente: chame com uma chave estável (ex.: id da mensagem
+ * inbound). Retries com a mesma chave NÃO incrementam o ciclo novamente.
+ * Multi-tenant: a chave é escopada por empresa no banco.
+ */
+export async function incrementAiUsageIdempotent(
+  companyId: string,
+  idempotencyKey: string,
+): Promise<AiCycleRow | null> {
+  if (!companyId) return null;
+  if (!idempotencyKey) return incrementAiUsage(companyId);
+  const { data, error } = await supabaseAdmin.rpc("increment_ai_usage_idempotent", {
+    _company_id: companyId,
+    _idempotency_key: idempotencyKey,
+  });
+  if (error) {
+    console.error("[ai-quota] increment_idempotent failed", error.message);
+    return null;
+  }
+  return (data as AiCycleRow) ?? null;
+}
+
 /** Marca a assinatura como pausada por limite e registra timestamp do bloqueio. */
 export async function markPausedByLimit(companyId: string, cycleId?: string): Promise<void> {
   const now = new Date().toISOString();

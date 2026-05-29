@@ -9,7 +9,7 @@ import { openaiChat } from "@/lib/openai.server";
 import { logWhatsAppAutomation } from "./automation-log.server";
 import { buildAiContext, buildPromptFromContext, type ConvoMemory } from "./ai-context.server";
 import { isLowSignal } from "./intent";
-import { ensureAiQuota, incrementAiUsage, markPausedByLimit } from "@/lib/billing-saas/quota.server";
+import { ensureAiQuota, incrementAiUsageIdempotent, markPausedByLimit } from "@/lib/billing-saas/quota.server";
 import type { WAInstanceRef } from "./provider";
 import {
   detectPaymentRequest,
@@ -641,8 +641,9 @@ export async function handleInboundForAiReply(
       })
       .eq("id", inst.id);
 
-    // Incrementa contador de quota IA do mês (fonte da verdade do plano SaaS)
-    await incrementAiUsage(inst.company_id);
+    // Incrementa contador de quota IA do mês (fonte da verdade do plano SaaS).
+    // Idempotente por mensagem inbound: retry/timeout/reprocesso não duplica.
+    await incrementAiUsageIdempotent(inst.company_id, `wa_inbound:${inboundId}`);
 
 
     // Atualiza memória curta + flags + limites
