@@ -346,7 +346,73 @@ function RootComponent() {
 
   useEffect(() => {
     initPwaUpdater();
+    // App carregou com sucesso — limpa flag de recovery de bundle obsoleto.
+    try {
+      sessionStorage.removeItem("cobraeasy:stale-reload");
+    } catch {
+      // ignore
+    }
   }, []);
+
+  // Captura ChunkLoadError fora de boundary do router (ex.: dynamic import
+  // disparado por evento). Limpa caches e recarrega uma única vez.
+  useEffect(() => {
+    function isStaleChunk(reason: unknown): boolean {
+      const msg =
+        reason instanceof Error
+          ? `${reason.message} ${reason.stack ?? ""}`
+          : typeof reason === "string"
+            ? reason
+            : "";
+      return /ChunkLoadError|Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(
+        msg,
+      );
+    }
+    let recovering = false;
+    async function recoverStale() {
+      if (recovering) return;
+      recovering = true;
+      const flag = "cobraeasy:stale-reload";
+      if (sessionStorage.getItem(flag) === "1") return;
+      sessionStorage.setItem(flag, "1");
+      try {
+        if ("caches" in window) {
+          const names = await caches.keys();
+          await Promise.all(names.map((n) => caches.delete(n)));
+        }
+      } catch {
+        // ignore
+      }
+      try {
+        if ("serviceWorker" in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+      } catch {
+        // ignore
+      }
+      window.location.reload();
+    }
+    const onRej = (e: PromiseRejectionEvent) => {
+      if (isStaleChunk(e.reason)) {
+        e.preventDefault();
+        void recoverStale();
+      }
+    };
+    const onErr = (e: ErrorEvent) => {
+      if (isStaleChunk(e.error ?? e.message)) {
+        e.preventDefault();
+        void recoverStale();
+      }
+    };
+    window.addEventListener("unhandledrejection", onRej);
+    window.addEventListener("error", onErr);
+    return () => {
+      window.removeEventListener("unhandledrejection", onRej);
+      window.removeEventListener("error", onErr);
+    };
+  }, []);
+
 
   return (
     <QueryClientProvider client={queryClient}>
