@@ -480,9 +480,14 @@ function QuickAction({
   icon: React.ComponentType<{ className?: string }>;
   tone?: Tone;
 }) {
+  const [path, qs] = to.split("?");
+  const search = qs
+    ? Object.fromEntries(new URLSearchParams(qs).entries())
+    : undefined;
   return (
     <Link
-      to={to}
+      to={path}
+      search={search as never}
       className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-3 text-center shadow-card transition-all hover:-translate-y-0.5 hover:shadow-pop"
     >
       <div
@@ -621,10 +626,10 @@ function Dashboard() {
       <section className="mb-6">
         <SectionTitle title="O que você quer fazer?" />
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <QuickAction to="/clientes" label="Novo cliente" icon={UserPlus} tone="primary" />
-          <QuickAction to="/operacao-dia" label="Cobrar" icon={Receipt} tone="success" />
-          <QuickAction to="/gestao-servicos" label="Renovar" icon={RefreshCcw} tone="info" />
-          <QuickAction to="/campanhas-manuais" label="Enviar mensagem" icon={MessageCircle} tone="warning" />
+          <QuickAction to="/cobrancas?action=create" label="Novo cliente" icon={UserPlus} tone="primary" />
+          <QuickAction to="/cobrancas?action=charge" label="Cobrar" icon={Receipt} tone="success" />
+          <QuickAction to="/cobrancas?action=renew" label="Renovar" icon={RefreshCcw} tone="info" />
+          <QuickAction to="/cobrancas?action=message" label="Enviar mensagem" icon={MessageCircle} tone="warning" />
         </div>
       </section>
 
