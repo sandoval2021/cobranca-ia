@@ -5,6 +5,7 @@ import {
   getMercadoPagoConfigStatus,
   sanitizeWebhookPayload,
 } from "@/lib/mercado-pago.server";
+import { verifyMpSignature } from "@/lib/payments/marketplace.server";
 
 type AnyDB = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 function admin(): AnyDB {
