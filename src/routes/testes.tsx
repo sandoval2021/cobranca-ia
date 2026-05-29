@@ -46,6 +46,7 @@ import { supabase } from "@/integrations/supabase/compat";
 import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 import { validateWhatsapp, maskBR, maskIntl, onlyDigits } from "@/lib/whatsapp-validation";
 import { listActiveServices, formatBRL, type ServiceItem } from "@/lib/services-catalog";
+import { TrialAutomationPanel } from "@/components/testes/TrialAutomationPanel";
 
 
 export const Route = createFileRoute("/testes")({
