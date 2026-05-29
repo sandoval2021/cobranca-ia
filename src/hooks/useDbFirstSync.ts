@@ -73,11 +73,12 @@ export function useDbFirstSync(opts: {
     }
   }, [table, hydrate, uploadLegacy]);
 
-  // mount + intervalo + foco + troca de empresa
+  // mount + intervalo + foco + troca de empresa + volta de offline
   useEffect(() => {
     let cancelled = false;
     void run();
     const onFocus = () => { if (!cancelled) void run(); };
+    const onOnline = () => { if (!cancelled) void run(); };
     const onCompany = () => {
       const next = getCurrentCompanyId();
       if (next !== hydratedCompanyRef.current && !cancelled) {
@@ -88,11 +89,13 @@ export function useDbFirstSync(opts: {
       }
     };
     window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onOnline);
     window.addEventListener("cobranca_ia_companies:changed", onCompany);
     const id = window.setInterval(() => { if (!cancelled) void run(); }, FIVE_MIN);
     return () => {
       cancelled = true;
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onOnline);
       window.removeEventListener("cobranca_ia_companies:changed", onCompany);
       window.clearInterval(id);
     };
