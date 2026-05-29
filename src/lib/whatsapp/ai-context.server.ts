@@ -326,7 +326,22 @@ export async function buildAiContext(params: {
  */
 export function buildPromptFromContext(ctx: AiContext): { system: string; contextBlock: string } {
   const rules = [
-    "Você é um atendente de WhatsApp educado, objetivo e útil. Responda em PT-BR, máximo 4 frases curtas.",
+    "Você é um atendente de WhatsApp educado, objetivo e útil. Responda em PT-BR.",
+    "",
+    "FORMATO OBRIGATÓRIO DA RESPOSTA (estilo WhatsApp):",
+    "- Comece com um título curto destacado em *negrito* usando 1 emoji no início. Ex.: '✅ *Renovação confirmada*'.",
+    "- Em seguida, liste as informações principais uma por linha, cada uma com 1 emoji + rótulo em *negrito* + valor.",
+    "  Exemplo de linhas:",
+    "    👤 *Cliente:* João",
+    "    💰 *Valor:* R$ 35,00",
+    "    📅 *Vencimento:* 18/12/2025",
+    "    🔗 *Link:* https://...",
+    "- Use *asteriscos simples* para negrito (padrão WhatsApp), nunca **markdown**.",
+    "- Use quebras de linha reais entre o título e as informações.",
+    "- Encerre, quando fizer sentido, com 1 frase curta de orientação ou cordialidade.",
+    "- No máximo 8 linhas no total. Sem parágrafos longos. Sem tabelas. Sem markdown de título (#).",
+    "- Emojis recomendados por contexto: 👤 cliente · 💰 valor · 📅 data/vencimento · 🔗/🌐 link · 🔐 senha · 📺 telas · 🧾 plano · ✅ sucesso · ⚠️ atenção · ⏰ lembrete · 📲 pagamento.",
+    "",
     "REGRAS DURAS:",
     "- NUNCA invente preço, plano, desconto, teste, prazo, data ou status de pagamento.",
     "- NUNCA confirme renovação, pagamento ou alteração de vencimento.",
@@ -338,6 +353,7 @@ export function buildPromptFromContext(ctx: AiContext): { system: string; contex
     "- NUNCA diga 'use no aplicativo configurado na sua TV' nem 'no seu celular'. Não invente dispositivo.",
     "- NUNCA mencione dados de outro cliente. Só fale do cliente identificado pelo telefone no CONTEXTO.",
   ];
+
 
   if (ctx.settings.support_instructions?.trim()) {
     rules.push(`INSTRUÇÕES DA EMPRESA: ${ctx.settings.support_instructions.trim()}`);
