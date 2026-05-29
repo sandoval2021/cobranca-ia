@@ -83,6 +83,69 @@ function CadastrosServicosPage() {
   const [pendingDelete, setPendingDelete] = useState<ServiceItem | null>(null);
   const [editor, setEditor] = useState<{ planId: string; offsetDays: number } | null>(null);
 
+  // --- banner: enviar planos/mensagens locais para a nuvem ---
+  const CLOUD_BANNER_DISMISS_KEY = "cobranca_ia_services_cloud_banner_dismissed_v1";
+  const [pendingLocal, setPendingLocal] = useState<number>(() =>
+    typeof window === "undefined" ? 0 : getServicesSyncState().pendingLocal,
+  );
+  const [cloudBannerDismissed, setCloudBannerDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(CLOUD_BANNER_DISMISS_KEY) === "1";
+  });
+  const [uploadingLocal, setUploadingLocal] = useState(false);
+  const listPlansFn = useServerFn(listServicePlansDb);
+
+  useEffect(() => {
+    const onSync = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { pendingLocal?: number } | undefined;
+      if (detail && typeof detail.pendingLocal === "number") {
+        setPendingLocal(detail.pendingLocal);
+      } else {
+        setPendingLocal(getServicesSyncState().pendingLocal);
+      }
+    };
+    window.addEventListener(SERVICES_SYNC_EVENT, onSync);
+    return () => window.removeEventListener(SERVICES_SYNC_EVENT, onSync);
+  }, []);
+
+  const handleUploadLocal = async () => {
+    if (uploadingLocal) return;
+    setUploadingLocal(true);
+    try {
+      const [resPlans, resLinks] = await Promise.all([
+        uploadLocalServicesToDb(),
+        uploadLocalCustomerPlansToDb(),
+      ]);
+      const totalPlans = (resPlans?.inserted ?? 0) + (resPlans?.updated ?? 0);
+      const totalLinks = resLinks?.upserted ?? 0;
+      // re-hidrata do banco para evitar duplicidade e refletir tudo
+      const companyId = getActiveCompanyId();
+      if (companyId) {
+        try {
+          const rows = await listPlansFn({ data: { companyId } });
+          hydrateServicesFromDb(companyId, rows as ServicePlanDto[]);
+        } catch {
+          /* hidratação falhou — useServicesSync vai tentar novamente */
+        }
+      }
+      reload();
+      toast.success(
+        totalPlans > 0 || totalLinks > 0
+          ? "Planos enviados para sua conta com sucesso."
+          : "Planos já estavam sincronizados.",
+      );
+    } catch {
+      toast.error("Não foi possível enviar agora. Verifique sua conexão e tente novamente.");
+    } finally {
+      setUploadingLocal(false);
+    }
+  };
+
+  const dismissCloudBanner = () => {
+    setCloudBannerDismissed(true);
+    try { window.localStorage.setItem(CLOUD_BANNER_DISMISS_KEY, "1"); } catch { /* noop */ }
+  };
+
   const reload = () => setItems(listServices());
 
   useEffect(() => {
