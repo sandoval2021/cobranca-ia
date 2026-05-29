@@ -1,5 +1,40 @@
-// Módulo financeiro local (preview-only, localStorage).
-// Nenhuma chamada externa. Nenhum pagamento real. Nenhum Supabase.
+// Módulo financeiro DB-first. Cache local + espelhamento síncrono no banco.
+// Escrita: localStorage primeiro (UX instantânea) + mirror fire-and-forget no banco.
+// Leitura: cache local hidratado pelo useFinanceSync (banco é a fonte oficial).
+import { mirror } from "./sync/mirror";
+import {
+  upsertFinanceEntryDb,
+  deleteFinanceEntryDb,
+  upsertFinanceGoalDb,
+  deleteFinanceGoalDb,
+} from "./financeiro/financeiro.functions";
+
+function entryToDb(e: FinanceEntry) {
+  return {
+    id: e.id,
+    tipo: e.type,
+    categoria: null,
+    descricao: e.note ?? null,
+    valor_cents: Math.round((e.amount_received ?? 0) * 100),
+    data: e.date,
+    metodo_pagamento: e.method ?? null,
+    cliente_id: null,
+    servico_id: null,
+    observacoes: null,
+    extraJson: JSON.stringify(e),
+  };
+}
+
+function goalToDb(g: FinanceGoal) {
+  return {
+    id: g.id,
+    mes: g.deadline ?? g.name,
+    categoria: null,
+    valor_cents: Math.round((g.target ?? 0) * 100),
+    observacoes: g.description ?? null,
+    extraJson: JSON.stringify(g),
+  };
+}
 
 export type PaymentMethod = "pix" | "dinheiro" | "cartao" | "outro";
 export type EntryType =
