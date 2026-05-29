@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Plus, Search, Copy, Check, X, Archive, MessageCircle, ExternalLink,
-  Download, Upload, Pencil, Info, Eye, EyeOff,
+  Download, Upload, Pencil, Eye, EyeOff,
 } from "lucide-react";
 import { listActiveServers } from "@/lib/server-catalog";
 
@@ -46,6 +46,7 @@ import { supabase } from "@/integrations/supabase/compat";
 import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 import { validateWhatsapp, maskBR, maskIntl, onlyDigits } from "@/lib/whatsapp-validation";
 import { listActiveServices, formatBRL, type ServiceItem } from "@/lib/services-catalog";
+import { TrialAutomationPanel } from "@/components/testes/TrialAutomationPanel";
 
 
 export const Route = createFileRoute("/testes")({
@@ -348,12 +349,7 @@ function TestesPage() {
         }
       />
 
-      <Card className="mb-4 border-warning/40 bg-warning/5 p-3 text-sm">
-        <div className="flex items-start gap-2">
-          <Info className="mt-0.5 h-4 w-4 text-warning" />
-          <span>Modo manual: nenhuma mensagem será enviada automaticamente.</span>
-        </div>
-      </Card>
+      <TrialAutomationPanel />
 
       <div className="mb-3 text-[11px] text-muted-foreground">
         Mensagens usando dados de Minha Revenda.{" "}
