@@ -166,19 +166,21 @@ export function initPwaUpdater() {
 
   void registerServiceWorker();
 
-  // Verifica nova versão ao abrir, ao voltar foco, ao ficar online e a cada 3 min.
-  void checkServerVersion();
-  window.addEventListener("focus", () => void checkServerVersion());
-  window.addEventListener("online", () => void checkServerVersion());
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") void checkServerVersion();
-  });
-  setInterval(() => void checkServerVersion(), CHECK_INTERVAL_MS);
-
-  // Também pede ao SW para checar update do próprio /sw.js periodicamente.
+  // NÃO usamos mais polling de HTML para detectar nova versão — em SSR
+  // os modulepreload/scripts variam por render e isso gerava o falso
+  // "Nova versão disponível" preso em loop. Confiamos apenas no evento
+  // nativo updatefound do Service Worker.
   setInterval(() => {
     registration?.update().catch(() => {});
   }, CHECK_INTERVAL_MS);
+  window.addEventListener("focus", () => {
+    registration?.update().catch(() => {});
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      registration?.update().catch(() => {});
+    }
+  });
 }
 
 /** Chamado pelo botão "Atualizar agora" do UpdatePrompt. */
