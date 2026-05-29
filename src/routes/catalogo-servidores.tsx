@@ -167,12 +167,35 @@ function CatalogoServidoresPage() {
       <PlanLimitNotice moduleKey="servidores" />
 
 
-      <div className="mb-3 rounded-md border border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">
+      <div className="mb-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-[11px] text-emerald-700 dark:text-emerald-300">
         <div className="flex items-start gap-2">
-          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>Salvo apenas neste navegador. Nenhum painel será acessado automaticamente.</span>
+          <Server className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>Salvo na sua conta. Disponível em qualquer dispositivo.</span>
         </div>
       </div>
+
+      {pendingLocal > 0 && (
+        <div className="mb-3 rounded-md border border-warning/40 bg-warning-soft/40 p-2 text-[11px] text-warning">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium">
+                Encontramos {pendingLocal} servidor(es) salvos apenas neste navegador.
+              </p>
+              <p>Envie para sua conta para acessar de qualquer dispositivo.</p>
+              <Button
+                size="sm"
+                className="mt-2 gap-1.5"
+                onClick={handleUploadLocal}
+                disabled={uploading}
+              >
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                Enviar para minha conta
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-3 flex flex-wrap gap-2">
         <Button size="sm" onClick={openNew} className="gap-1.5">
