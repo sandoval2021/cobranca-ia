@@ -1056,9 +1056,12 @@ function ClientesPage() {
 
       <NewCustomerSheet
         open={openNew}
-        onClose={() => setOpenNew(false)}
-        onCreated={reload}
+        onClose={closeNew}
+        onCreated={() => {
+          reload();
+        }}
       />
+
     </PageContainer>
   );
 }
