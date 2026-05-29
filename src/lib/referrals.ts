@@ -208,26 +208,7 @@ export function updateReferralByLead(leadId: string, patch: Partial<Referral>) {
   }
 }
 
-export function updateReferral(id: string, patch: Partial<Referral>): Referral | null {
-  const list = listAllReferralsRaw();
-  const idx = list.findIndex((r) => r.id === id);
-  if (idx < 0) return null;
-  list[idx] = { ...list[idx], ...patch, company_id: patch.company_id ?? list[idx].company_id };
-  write(STORAGE_KEY, list);
-  return list[idx];
-}
-
-export function updateReferralByLead(leadId: string, patch: Partial<Referral>) {
-  const list = listAllReferralsRaw();
-  let changed = false;
-  for (let i = 0; i < list.length; i++) {
-    if (list[i].lead_id === leadId) {
-      list[i] = { ...list[i], ...patch };
-      changed = true;
-    }
-  }
-  if (changed) write(STORAGE_KEY, list);
-}
+// (duplicatas removidas — implementação canônica acima)
 
 /**
  * Lista (mais antigos primeiro) os referrals de um indicador que já fecharam e
