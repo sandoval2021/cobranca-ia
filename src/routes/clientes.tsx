@@ -3154,6 +3154,30 @@ function NewCustomerSheet({
           {/* Cobrança consolidada */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
             <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Cobrança</h3>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs">Plano de serviço</Label>
+                <HelpTip text="Escolha um plano cadastrado para preencher o valor automaticamente. Você pode editar depois." />
+              </div>
+              <Select value={planId} onValueChange={onPickPlan}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder={plans.length ? "Selecionar plano" : "Nenhum plano cadastrado"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem plano</SelectItem>
+                  {plans.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome} — {p.meses}m · {formatBRL(p.preco_cents)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {plans.length === 0 && (
+                <p className="text-[10px] text-muted-foreground">
+                  Cadastre planos em Serviços para reutilizar valores aqui.
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">Valor mensal total</Label>
@@ -3168,6 +3192,7 @@ function NewCustomerSheet({
               </div>
             </div>
           </section>
+
 
           {/* Observações */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
