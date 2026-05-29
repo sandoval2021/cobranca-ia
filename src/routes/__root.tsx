@@ -21,12 +21,20 @@ import { supabase } from "@/integrations/supabase/client";
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
 const PUBLIC_ROUTES = new Set<string>(["/reset-password"]);
 
+import { LandingPage } from "@/components/landing/LandingPage";
+
 function AuthGateApp() {
   const { loading, user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   if (PUBLIC_ROUTES.has(pathname)) return <Outlet />;
   if (loading) return <SessionLoading />;
-  if (!user) return <LoginPage />;
+  if (!user) {
+    // Landing pública apenas em "/" quando não há intenção explícita de login.
+    const wantsLogin = pathname !== "/" || search?.login === "1" || search?.auth === "expired";
+    if (!wantsLogin) return <LandingPage />;
+    return <LoginPage />;
+  }
   return <AppShell />;
 }
 
