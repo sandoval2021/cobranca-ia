@@ -28,7 +28,13 @@ import {
   daysUntil, urgencyFromDays, urgencyClass, urgencyLabel, mask, appDueDays,
   buildBackup, parseBackup, mergeAll, replaceAll, clearCustomerScreens,
   formatScreenAsText, formatCustomerScreensAsText,
+  uploadLocalScreensToDb, hydrateScreensFromDb, getScreensSyncState,
+  SCREENS_SYNC_EVENT,
 } from "@/lib/app-screens";
+import { listScreensDb, type ScreenDto } from "@/lib/screens/screens.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { getActiveCompanyId } from "@/lib/company-scope";
+import { CloudUpload } from "lucide-react";
 import {
   listActiveServers, serverBadgeStyle, SERVER_CATALOG_EVENT,
 } from "@/lib/server-catalog";
