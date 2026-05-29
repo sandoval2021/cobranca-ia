@@ -121,6 +121,7 @@ export const ownerMoreNav: NavItem[] = [
   { to: "/whatsapp", label: "WhatsApp", icon: Smartphone, hint: "Conecte seu WhatsApp" },
   { to: "/campanhas-manuais", label: "Mensagens", icon: MessageCircle, hint: "Monte listas e copie mensagens" },
   { to: "/agenda-disparo", label: "Agenda de disparo", icon: Send, hint: "Programe envios automáticos" },
+  { to: "/templates-automaticos", label: "Templates automáticos", icon: MessageCircle, hint: "Cobrança, renovação, apps e testes — tudo em um só lugar" },
 
   // IA
   { to: "/ia-config", label: "Configurar IA", icon: Bot, hint: "Preços, indicação e instruções da IA" },
