@@ -431,55 +431,82 @@ function SignupOtpForm({
     return v.replace(/\D/g, "").slice(0, OTP_LENGTH);
   }
 
+  function mapOtpError(raw: string): string {
+    const m = (raw || "").toLowerCase();
+    if (m.includes("expirad")) return "Este código expirou. Clique em reenviar código.";
+    if (m.includes("incorret") || m.includes("inválido") || m.includes("invalido"))
+      return "O código informado não confere. Verifique o e-mail e tente novamente.";
+    if (m.includes("muitas tentativas") || m.includes("bloquead"))
+      return "Muitas tentativas. Aguarde alguns minutos ou solicite um novo código.";
+    if (m.includes("network") || m.includes("fetch") || m.includes("conexão"))
+      return "Não conseguimos confirmar agora. Verifique sua internet e tente novamente.";
+    return raw || "Não foi possível confirmar agora. Tente novamente.";
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     if (!supabase) return setError("Conexão não configurada.");
     if (code.length !== OTP_LENGTH) return setError(`Digite os ${OTP_LENGTH} dígitos do código.`);
+    if (submitting) return;
 
     setSubmitting(true);
+    // Timeout duro de 15s — nunca deixa o botão preso em "Confirmando…".
+    const timeout = new Promise<{ __timeout: true }>((resolve) =>
+      window.setTimeout(() => resolve({ __timeout: true }), 15_000),
+    );
     try {
-      const r = await verifyFn({
-        data: { email: ctx.email, code, password: ctx.password },
-      });
+      const result = await Promise.race([
+        verifyFn({ data: { email: ctx.email, code, password: ctx.password } }),
+        timeout,
+      ]);
+      if ((result as { __timeout?: boolean }).__timeout) {
+        setError("Não foi possível confirmar agora. Tente novamente ou reenviar o código.");
+        return;
+      }
+      const r = result as Awaited<ReturnType<typeof verifyFn>>;
       if (!r.ok) {
-        setSubmitting(false);
-        setError(r.error);
+        setError(mapOtpError(r.error));
         return;
       }
       // Cria sessão no browser com a senha original
-      const { error: signErr } = await supabase.auth.signInWithPassword({
+      const signinPromise = supabase.auth.signInWithPassword({
         email: ctx.email,
         password: ctx.password,
       });
+      const signinResult = await Promise.race([signinPromise, timeout]);
+      if ((signinResult as { __timeout?: boolean }).__timeout) {
+        setError("Cadastro concluído, mas não conseguimos entrar agora. Volte e faça login.");
+        return;
+      }
+      const { error: signErr } = signinResult as Awaited<typeof signinPromise>;
       if (signErr) {
-        setSubmitting(false);
         setError(friendlyAuthError(signErr.message));
         return;
       }
-      try {
-        await syncDefaultCompanyForUser({
-          email: ctx.email,
-          nome: ctx.nome,
-          whatsapp: ctx.whatsapp,
-        });
-      } catch {
-        /* silencioso */
-      }
+      // Não bloqueia o redirecionamento — roda em background.
+      // Se falhar, o painel ainda carrega; o usuário pode tentar novamente.
+      void syncDefaultCompanyForUser({
+        email: ctx.email,
+        nome: ctx.nome,
+        whatsapp: ctx.whatsapp,
+      }).catch((e) => console.warn("[signup] syncDefaultCompanyForUser:", e));
       toast.success("Cadastro confirmado!");
-    } catch {
+      // AuthGate troca para AppShell automaticamente ao detectar a sessão.
+    } catch (e) {
+      console.error("[signup] verify otp failed", e);
+      setError("Não conseguimos confirmar agora. Verifique sua internet e tente novamente.");
+    } finally {
       setSubmitting(false);
-      setError("Falha de conexão. Tente novamente.");
     }
   }
 
   async function handleResend() {
-    if (cooldown > 0) return;
+    if (cooldown > 0 || resending) return;
     setError(null);
     setResending(true);
     try {
       const r = await resendFn({ data: { email: ctx.email, purpose: "signup" } });
-      setResending(false);
       if (!r.ok) {
         setError(r.error);
         return;
@@ -487,10 +514,12 @@ function SignupOtpForm({
       setCooldown(60);
       toast.success("Novo código enviado.");
     } catch {
-      setResending(false);
       setError("Falha de conexão. Tente novamente.");
+    } finally {
+      setResending(false);
     }
   }
+
 
 
   return (
