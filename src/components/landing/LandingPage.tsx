@@ -189,12 +189,14 @@ export function LandingPage() {
 
             <div className="mx-auto mt-8 flex max-w-md flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row">
               <Button
-                onClick={goToApp}
+                asChild
                 size="lg"
                 className="h-12 rounded-xl px-7 text-base shadow-lg shadow-primary/30"
               >
-                Começar grátis
-                <ArrowRight className="ml-1 h-4 w-4" />
+                <Link to="/login?mode=signup">
+                  Começar grátis
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
               </Button>
               <Button
                 onClick={() => scrollToId("recursos")}
@@ -495,12 +497,12 @@ export function LandingPage() {
                 </ul>
 
                 <Button
-                  onClick={goToApp}
+                  asChild
                   size="lg"
                   variant={p.highlight ? "default" : "outline"}
                   className="mt-6 h-12 w-full rounded-xl text-base"
                 >
-                  Começar grátis
+                  <Link to={`/login?mode=signup&plan=${p.planSlug}`}>Começar grátis</Link>
                 </Button>
               </div>
             ))}
@@ -637,12 +639,14 @@ export function LandingPage() {
             Teste grátis por 5 dias. Sem cartão de crédito. Cancele quando quiser.
           </p>
           <Button
-            onClick={goToApp}
+            asChild
             size="lg"
             className="mt-7 h-12 rounded-xl px-8 text-base shadow-lg shadow-black/30"
           >
-            Começar grátis agora
-            <ArrowRight className="ml-1 h-4 w-4" />
+            <Link to="/login?mode=signup">
+              Começar grátis agora
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </section>
