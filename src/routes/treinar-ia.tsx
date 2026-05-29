@@ -411,8 +411,6 @@ function RulesTab({ companyId }: { companyId: string }) {
 
   const toggles: Array<[keyof typeof state, string, string]> = [
     ["allow_after_hours", "Responder fora do horário", "Se desativado, fora do horário a IA pede para aguardar."],
-    ["accepts_audio", "Aceita áudio", "Se desativado, a IA pede mensagem de texto."],
-    ["auto_offer_trial", "Oferecer teste automaticamente", "A IA pode oferecer teste sem o cliente pedir."],
     ["human_on_complaint", "Encaminhar humano em reclamações", "Reclamações vão direto para atendente humano."],
     ["human_when_unsure", "Chamar humano quando não souber", "Se a IA não souber com segurança, chama humano."],
     ["allow_paid_apps_info", "Falar sobre aplicativos pagos", "A IA pode citar apps pagos e seus valores."],

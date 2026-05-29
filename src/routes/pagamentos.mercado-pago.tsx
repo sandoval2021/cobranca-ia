@@ -169,19 +169,6 @@ function MercadoPagoPage() {
         </CardContent>
       </Card>
 
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="text-base">URL do webhook</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <p className="text-muted-foreground">
-            Configure no Mercado Pago esta URL de webhook (Notificações IPN/Webhooks):
-          </p>
-          <code className="block break-all rounded bg-muted/40 p-2 text-xs">
-            https://cobranca-ia.lovable.app/api/public/mp/marketplace-webhook
-          </code>
-        </CardContent>
-      </Card>
     </PageContainer>
   );
 }

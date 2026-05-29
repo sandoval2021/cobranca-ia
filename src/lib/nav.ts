@@ -46,7 +46,7 @@ export type NavItem = {
 
 export const ownerNav: NavItem[] = [
   { to: "/", label: "Início", icon: LayoutDashboard, hint: "Visão geral do ambiente" },
-  { to: "/configuracao-inicial", label: "Configuração Inicial", icon: Wand2, hint: "Configure os passos essenciais antes de usar o sistema" },
+  { to: "/configuracao-inicial", label: "Configuração Inicial", icon: Wand2, hint: "Configure os passos essenciais antes de usar o sistema", superAdminOnly: true },
   { to: "/empresas", label: "Contas de donos", icon: Building2, hint: "Gestão SaaS de contas (super admin)", superAdminOnly: true },
   { to: "/meus-dados", label: "Meus dados", icon: UserCog, hint: "Dados da sua conta — editáveis a qualquer momento" },
   { to: "/minha-assinatura", label: "Minha assinatura", icon: Wallet, hint: "Plano CobraEasy, uso de IA e pacotes extras" },
@@ -77,7 +77,7 @@ export const ownerNav: NavItem[] = [
   { to: "/indicacoes", label: "Indicações", icon: Gift, hint: "Indicações e bonificações" },
   { to: "/financeiro", label: "Financeiro", icon: Wallet, hint: "Receitas, custos, lucro e objetivos" },
   { to: "/regras-disparo", label: "Regras de disparo", icon: SlidersHorizontal, hint: "Quando sugerir mensagens manuais", superAdminOnly: true },
-  { to: "/backup-geral", label: "Backup Geral", icon: HardDrive, hint: "Exportar/importar backup local de tudo" },
+  { to: "/backup-geral", label: "Backup Geral", icon: HardDrive, hint: "Exportar/importar backup local de tudo", superAdminOnly: true },
   { to: "/configuracoes-revenda", label: "Minha Revenda", icon: Store, hint: "Dados, planos e regras da sua revenda" },
   { to: "/seguranca-local", label: "Segurança", icon: ShieldCheck, hint: "PIN e modo protegido (apenas neste navegador)", superAdminOnly: true },
   { to: "/admin-dns-rotas", label: "DNS e Rotas", icon: Network, hint: "Super Admin: domínios, subdomínios e rotas dos servidores", superAdminOnly: true },
