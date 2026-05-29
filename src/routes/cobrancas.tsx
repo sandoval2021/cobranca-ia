@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Receipt,
@@ -15,6 +15,13 @@ import {
   Save,
   Sparkles,
   Brain,
+  UserPlus,
+  Send,
+  MoreHorizontal,
+  Settings,
+  FileText,
+  MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 import {
   GenerateMessageDialog,
