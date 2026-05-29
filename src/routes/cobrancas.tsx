@@ -550,9 +550,95 @@ function CobrancasPage() {
         customers={customerList}
         onDone={reload}
       />
+
+      <CobrarDialog
+        open={showCobrar}
+        onClose={() => setShowCobrar(false)}
+        customers={customerList}
+        charges={items ?? []}
+      />
     </PageContainer>
   );
 }
+
+// ---------- quick action buttons ----------
+function QuickActionButton({
+  icon: Icon,
+  label,
+  onClick,
+  colorClass,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+  colorClass: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-transparent px-2 text-xs font-semibold transition-all active:scale-[0.97]",
+        colorClass,
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function QuickActionMore() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 text-xs font-semibold text-foreground transition-all hover:bg-muted active:scale-[0.97] shadow-sm"
+        >
+          <MoreHorizontal className="h-5 w-5 text-primary" />
+          <span>Mais</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Mais ações</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/templates-automaticos" className="gap-2 cursor-pointer">
+            <FileText className="h-4 w-4 text-primary" />
+            Templates de mensagens
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/cobranca-automatica" className="gap-2 cursor-pointer">
+            <RefreshCw className="h-4 w-4 text-emerald-600" />
+            Cobrança automática
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/regras-disparo" className="gap-2 cursor-pointer">
+            <Settings className="h-4 w-4 text-amber-500" />
+            Regras de disparo
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/mensagens" className="gap-2 cursor-pointer">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            Histórico de mensagens
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/relatorio" className="gap-2 cursor-pointer">
+            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+            Relatório
+          </Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 
 function FilterPill({
   active,
