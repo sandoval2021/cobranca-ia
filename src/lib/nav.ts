@@ -99,19 +99,62 @@ export const ownerBottomNav: NavItem[] = [
   { to: "/operacao-dia", label: "Cobranças", icon: Receipt },
 ];
 
-// Itens que aparecem dentro do drawer "Mais" do bottom nav (apenas o que o Dono deve ver).
+// Itens que aparecem dentro do drawer "Mais" do bottom nav.
+// Concentra TODAS as funções extras antes acessadas pelo menu lateral
+// no mobile (que foi removido do header). Cada item tem um `hint` curto que
+// é mostrado como descrição. Filtro por papel e por módulo do plano é
+// aplicado no componente que renderiza a sheet.
 export const ownerMoreNav: NavItem[] = [
-  { to: "/whatsapp", label: "WhatsApp", icon: Smartphone },
-  { to: "/importar-clientes", label: "Importar clientes", icon: Upload },
-  { to: "/campanhas-manuais", label: "Mensagens", icon: MessageCircle },
-  { to: "/financeiro", label: "Financeiro", icon: Wallet },
-  { to: "/catalogo-servidores", label: "Meus servidores", icon: Server },
-  { to: "/agenda-disparo", label: "Disparo", icon: Send },
-  { to: "/testes", label: "Indicações", icon: Gift },
-  { to: "/meus-dados", label: "Minha conta", icon: UserCog },
-  { to: "/configuracoes-revenda", label: "Minha revenda", icon: Store },
-  { to: "/backup", label: "Backup", icon: HardDrive },
-  { to: "/ajuda", label: "Ajuda", icon: LifeBuoy },
+  // Conta e revenda
+  { to: "/meus-dados", label: "Minha conta", icon: UserCog, hint: "Seus dados pessoais e contato" },
+  { to: "/minha-assinatura", label: "Minha assinatura", icon: Wallet, hint: "Plano, uso de IA e pacotes" },
+  { to: "/configuracoes-revenda", label: "Minha revenda", icon: Store, hint: "Dados e regras da sua revenda" },
+
+  // Operação do dia a dia
+  { to: "/operacao-dia", label: "Operação do dia", icon: CalendarClock, hint: "Quem precisa de atenção hoje" },
+  { to: "/pendencias", label: "Pendências", icon: AlertCircle, hint: "Tudo que precisa de atenção" },
+  { to: "/gestao-servicos", label: "Gestão de serviços", icon: Tv, hint: "Renove, edite e acompanhe serviços" },
+  { to: "/renovacoes-paineis", label: "Renovações de painéis", icon: RefreshCcw, hint: "Fila de renovações IPTV" },
+  { to: "/apps-portal", label: "Aplicativos pagos", icon: Smartphone, hint: "Apps que seus clientes usam" },
+
+  // Comunicação
+  { to: "/whatsapp", label: "WhatsApp", icon: Smartphone, hint: "Conecte seu WhatsApp" },
+  { to: "/campanhas-manuais", label: "Mensagens", icon: MessageCircle, hint: "Monte listas e copie mensagens" },
+  { to: "/agenda-disparo", label: "Agenda de disparo", icon: Send, hint: "Programe envios automáticos" },
+
+  // IA
+  { to: "/ia-config", label: "Configurar IA", icon: Bot, hint: "Preços, indicação e instruções da IA" },
+  { to: "/treinar-ia", label: "Treinar IA", icon: Sparkles, hint: "Ensine sua IA com conhecimento e regras" },
+  { to: "/ajuda-ia", label: "Ajuda com IA", icon: Sparkles, hint: "Tire dúvidas com a IA" },
+
+  // Dados e dinheiro
+  { to: "/importar-clientes", label: "Importar clientes", icon: Upload, hint: "Importar de PDF ou planilha" },
+  { to: "/catalogo-servidores", label: "Meus servidores", icon: Server, hint: "Servidores vinculados aos clientes" },
+  { to: "/financeiro", label: "Financeiro", icon: Wallet, hint: "Receitas, custos e lucro" },
+  { to: "/indicacoes", label: "Indicações", icon: Gift, hint: "Indicações e bonificações" },
+  { to: "/pagamentos/mercado-pago", label: "Pagamentos", icon: Wallet, hint: "Receba via Pix ou cartão" },
+  { to: "/pagamentos/historico", label: "Histórico de pagamentos", icon: Receipt, hint: "Cobranças online e status" },
+
+  // Sistema
+  { to: "/backup", label: "Backup", icon: HardDrive, hint: "Cópia de segurança dos seus dados" },
+  { to: "/ajuda", label: "Ajuda", icon: LifeBuoy, hint: "Aprenda como usar cada parte" },
+
+  // Apenas super admin
+  { to: "/configuracao-inicial", label: "Configuração inicial", icon: Wand2, hint: "Passos essenciais do sistema", superAdminOnly: true },
+  { to: "/empresas", label: "Contas de donos", icon: Building2, hint: "Gestão de contas", superAdminOnly: true },
+  { to: "/saas-planos", label: "Planos SaaS", icon: Sparkles, hint: "Catálogo de planos", superAdminOnly: true },
+  { to: "/admin/marketplace", label: "Marketplace", icon: Store, hint: "Visão do marketplace", superAdminOnly: true },
+  { to: "/regras-disparo", label: "Regras de disparo", icon: SlidersHorizontal, hint: "Quando enviar mensagens", superAdminOnly: true },
+  { to: "/base-conhecimento", label: "Base da IA", icon: BookOpen, hint: "Respostas e regras", superAdminOnly: true },
+  { to: "/fila-simulada", label: "Fila simulada", icon: ListChecks, hint: "Cobranças planejadas", superAdminOnly: true },
+  { to: "/relatorio", label: "Relatório", icon: BarChart3, hint: "Relatório da simulação", superAdminOnly: true },
+  { to: "/backup-geral", label: "Backup geral", icon: HardDrive, hint: "Exportar/importar tudo", superAdminOnly: true },
+  { to: "/seguranca-local", label: "Segurança", icon: ShieldCheck, hint: "PIN e modo protegido", superAdminOnly: true },
+  { to: "/admin-dns-rotas", label: "DNS e rotas", icon: Network, hint: "Domínios e rotas", superAdminOnly: true },
+  { to: "/configuracoes", label: "Configurações", icon: Settings, hint: "Ajustes do ambiente", superAdminOnly: true },
+  { to: "/diagnostico", label: "Diagnóstico", icon: Activity, hint: "Saúde do sistema", superAdminOnly: true },
+  { to: "/preparacao-backend", label: "Preparação backend", icon: Database, hint: "Preparar migração", superAdminOnly: true },
+  { to: "/migracao-empresa", label: "Migração empresa", icon: Database, hint: "Vincular dados antigos", superAdminOnly: true },
 ];
 
 
