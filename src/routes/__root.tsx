@@ -67,8 +67,11 @@ function AuthedApp() {
   useServersSync();
   useScreensSync();
   useServicesSync();
+  useManualRenewalsSync();
+  useCustomerDueOverridesSync();
   return <AppShell />;
 }
+
 
 
 
