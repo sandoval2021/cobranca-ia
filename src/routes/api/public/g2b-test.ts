@@ -1,7 +1,7 @@
 // TEMP — G2B validation only. Delete after use.
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/api/public/_g2b-test")({
+export const Route = createFileRoute("/api/public/g2b-test")({
   server: {
     handlers: {
       GET: async ({ request }) => {
