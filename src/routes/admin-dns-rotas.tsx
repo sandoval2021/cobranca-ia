@@ -559,7 +559,12 @@ function AdminDnsRotasPage() {
         open={domainSheet.open}
         data={domainSheet.data ?? null}
         onClose={() => setDomainSheet({ open: false })}
-        onSaved={() => { setDomainSheet({ open: false }); refresh(); }}
+        onSaved={async (d) => {
+          setDomainSheet({ open: false });
+          await persistDomain(d);
+          if (companyId) { try { await hydrateDnsFromDb(companyId); } catch {/* noop */} }
+          refresh();
+        }}
       />
 
       <RouteSheet
@@ -569,7 +574,13 @@ function AdminDnsRotasPage() {
         domains={activeDomains}
         servers={servers}
         onClose={() => setRouteSheet({ open: false })}
-        onSaved={() => { setRouteSheet({ open: false }); refresh(); }}
+        onSaved={async (r, replaced) => {
+          setRouteSheet({ open: false });
+          await persistRoute(r);
+          if (replaced) { try { await persistRoute(replaced); } catch {/* noop */} }
+          if (companyId) { try { await hydrateDnsFromDb(companyId); } catch {/* noop */} }
+          refresh();
+        }}
         onPrimaryConflict={(existing, doSave) => setPrimaryConflict({ open: true, existing, pendingSave: doSave })}
       />
 
