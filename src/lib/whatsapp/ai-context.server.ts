@@ -399,6 +399,53 @@ export function buildPromptFromContext(ctx: AiContext): { system: string; contex
     compact.contato_humano = ctx.settings.human_handoff_number;
   }
 
+  // ===== Treinamento da empresa (camada 2) =====
+  const ct = ctx.companyTraining;
+  if (ct) {
+    if (ct.knowledge_text?.trim()) {
+      compact.conhecimento_empresa = ct.knowledge_text.slice(0, 8000);
+      rules.push("- Use 'conhecimento_empresa' como base preferencial, mas REGRAS DURAS prevalecem.");
+    }
+    if (ct.faqs?.length) {
+      compact.faqs_empresa = ct.faqs.slice(0, 30);
+      rules.push("- Se a pergunta casar com 'faqs_empresa.question', prefira a resposta correspondente.");
+    }
+    if (ct.apps?.length && (ctx.intent === "app_issue" || ctx.intent === "other" || ctx.intent === "greeting" || ctx.intent === "price")) {
+      compact.apps_empresa = ct.apps;
+    }
+    compact.pagamento_empresa = {
+      mercado_pago_conectado: ct.mercadoPagoConnected,
+      pix_manual: ct.payment?.manual_pix_key
+        ? {
+            chave: ct.payment.manual_pix_key,
+            titular: ct.payment.manual_pix_holder,
+            banco: ct.payment.manual_pix_bank,
+            observacao: ct.payment.payment_note,
+          }
+        : null,
+    };
+    if (!ct.mercadoPagoConnected && ct.payment?.manual_pix_key && ct.use_manual_pix_fallback) {
+      rules.push("- Para pagamento, envie o Pix manual em 'pagamento_empresa.pix_manual'.");
+    } else if (!ct.mercadoPagoConnected && !ct.payment?.manual_pix_key) {
+      rules.push("- Sem Mercado Pago e sem Pix manual: encaminhe a humano para tratar pagamento.");
+    } else if (ct.mercadoPagoConnected) {
+      rules.push("- Para pagamento, prefira o link/Pix gerado pelo Mercado Pago da empresa.");
+    }
+    compact.preferencias = {
+      tom: ct.tone,
+      tamanho: ct.answer_length,
+      fora_horario: ct.allow_after_hours,
+      aceita_audio: ct.accepts_audio,
+      oferece_teste: ct.auto_offer_trial,
+      humano_em_reclamacao: ct.human_on_complaint,
+      humano_quando_nao_sabe: ct.human_when_unsure,
+      falar_apps_pagos: ct.allow_paid_apps_info,
+    };
+    if (ct.human_when_unsure) rules.push("- Quando não souber responder com segurança, encaminhe a humano.");
+    if (!ct.allow_paid_apps_info) rules.push("- NÃO ofereça aplicativos pagos.");
+    if (!ct.accepts_audio) rules.push("- Peça mensagem de texto; não trate áudios.");
+  }
+
   return {
     system: rules.join("\n"),
     contextBlock: "CONTEXTO:\n" + JSON.stringify(compact, null, 2),
