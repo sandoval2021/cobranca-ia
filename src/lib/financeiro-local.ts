@@ -87,8 +87,9 @@ export const FINANCE_DRAFT_EVENT = "cobranca_ia_finance_draft:changed";
 
 function nowIso() { return new Date().toISOString(); }
 function todayIso() { return new Date().toISOString().slice(0, 10); }
-export function newFinanceId(prefix = "fin"): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+export function newFinanceId(_prefix = "fin"): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return "00000000-0000-4000-8000-" + Math.random().toString(16).slice(2, 14).padEnd(12, "0");
 }
 
 export function formatBRL(n: number): string {
