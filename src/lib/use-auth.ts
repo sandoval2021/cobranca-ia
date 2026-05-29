@@ -5,18 +5,16 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 export const AUTH_REFRESH_EVENT = "cobranca-auth-refresh";
 
 function isInvalidAuthToken(message: string): boolean {
-  return /invalid.*token|invalid.*jwt|bad_jwt|jwt.*invalid|unauthorized/i.test(message);
+  return /invalid.*token|invalid.*jwt|bad_jwt|jwt.*invalid/i.test(message);
 }
 
-async function clearStaleSession() {
+// Desloga APENAS a sessão Supabase quando o token é comprovadamente inválido.
+// NUNCA limpa localStorage/sessionStorage geral — fazer isso apaga dados
+// offline do app (templates, leads, cache de empresas) e força re-login
+// indevido em PWA/mobile quando a rede está lenta.
+async function signOutInvalidSession() {
   try {
     await supabase!.auth.signOut();
-  } catch {
-    // ignore
-  }
-  try {
-    localStorage.clear();
-    sessionStorage.clear();
   } catch {
     // ignore
   }
