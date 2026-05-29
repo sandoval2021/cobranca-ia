@@ -1,8 +1,15 @@
-// Registro local de uso da IA (sem SQL).
-// Quando a tabela ai_usage_log for criada, migramos.
+// Contador VISUAL local de uso da IA (cache para o painel "consumo hoje").
+// NÃO é fonte da verdade: limites, plano, cobrança e custo vivem no banco:
+//   - ai_usage_log          (eventos auditáveis, escrito via supabaseAdmin
+//                            em src/lib/ai-usage-log.server.ts)
+//   - company_ai_usage_cycle (ciclo + base/extra/used; incrementado pela
+//                            RPC increment_ai_usage, em quota.server.ts)
+// Esta chave (cobraeasy_ai_usage_v1) só serve para mostrar contagem do dia
+// no painel sem hit no banco. Pode ser limpa sem impacto financeiro.
 
 const KEY = "cobraeasy_ai_usage_v1";
 const MAX_ENTRIES = 500;
+
 
 export type AiUsageEntry = {
   at: string;
