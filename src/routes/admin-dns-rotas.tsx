@@ -288,6 +288,30 @@ function AdminDnsRotasPage() {
         </p>
       </div>
 
+      {pendingLocal && (
+        <div className="rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-900 p-3 text-sm mb-4">
+          <div className="flex gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5 text-orange-600 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium">Encontramos rotas salvas neste navegador que ainda não estão no banco.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {pendingLocal.localDomains} domínio(s) e {pendingLocal.localRoutes} rota(s) em cache local. O banco está vazio para esta empresa.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <Button size="sm" onClick={handleRecoverLocal} disabled={recovering}>
+                  <Upload className="h-4 w-4 mr-1" />
+                  {recovering ? "Enviando..." : "Enviar rotas locais para o banco"}
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleDiscardLocal} disabled={recovering}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Descartar dados locais
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* ============================== DOMÍNIOS ============================ */}
       <Card className="p-4 mb-4 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
