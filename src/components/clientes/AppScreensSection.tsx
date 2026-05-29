@@ -100,10 +100,9 @@ export function AppScreensSection({
   const [renewInitialScreenId, setRenewInitialScreenId] = useState<string | null>(null);
   const { guard, dialog: securityDialog } = useSecurityGuard();
 
-  const [alertDismissed, setAlertDismissed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(ALERT_DISMISS_KEY) === "1";
-  });
+  // Estado do antigo banner local — mantido como noop para preservar imports.
+  const [, setAlertDismissed] = useState<boolean>(false);
+  void setAlertDismissed;
   const [backupOpen, setBackupOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(BACKUP_OPEN_KEY) === "1";
@@ -111,10 +110,6 @@ export function AppScreensSection({
   const persistBackupOpen = (v: boolean) => {
     setBackupOpen(v);
     try { window.localStorage.setItem(BACKUP_OPEN_KEY, v ? "1" : "0"); } catch { /* noop */ }
-  };
-  const dismissAlert = () => {
-    setAlertDismissed(true);
-    try { window.localStorage.setItem(ALERT_DISMISS_KEY, "1"); } catch { /* noop */ }
   };
 
   const refresh = () => setScreens(listScreens(customerId));
