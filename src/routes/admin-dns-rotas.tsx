@@ -134,11 +134,6 @@ function AdminDnsRotasPage() {
   const removeDomainDb = async (id: string) => { if (companyId) await removeDomainFromDb(companyId, id).catch(() => {}); };
   const removeRouteDb  = async (id: string) => { if (companyId) await removeRouteFromDb(companyId, id).catch(() => {}); };
 
-    return () => {
-      window.removeEventListener(DNS_ROUTES_EVENT, refresh);
-      window.removeEventListener("storage", refresh);
-    };
-  }, []);
 
   const activeDomains = domains.filter((d) => !d.archived);
   const activeRoutes = routes.filter((r) => !r.archived);
