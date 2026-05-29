@@ -23,6 +23,7 @@ import { Route as RegrasDisparoRouteImport } from './routes/regras-disparo'
 import { Route as PreparacaoBackendRouteImport } from './routes/preparacao-backend'
 import { Route as PlanosRouteImport } from './routes/planos'
 import { Route as PendenciasRouteImport } from './routes/pendencias'
+import { Route as OperacaoFilasRouteImport } from './routes/operacao-filas'
 import { Route as OperacaoDiaRouteImport } from './routes/operacao-dia'
 import { Route as MinhaAssinaturaRouteImport } from './routes/minha-assinatura'
 import { Route as MigracaoEmpresaRouteImport } from './routes/migracao-empresa'
@@ -150,6 +151,11 @@ const PlanosRoute = PlanosRouteImport.update({
 const PendenciasRoute = PendenciasRouteImport.update({
   id: '/pendencias',
   path: '/pendencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperacaoFilasRoute = OperacaoFilasRouteImport.update({
+  id: '/operacao-filas',
+  path: '/operacao-filas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OperacaoDiaRoute = OperacaoDiaRouteImport.update({
@@ -493,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
+  '/operacao-filas': typeof OperacaoFilasRoute
   '/pendencias': typeof PendenciasRoute
   '/planos': typeof PlanosRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
@@ -567,6 +574,7 @@ export interface FileRoutesByTo {
   '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
+  '/operacao-filas': typeof OperacaoFilasRoute
   '/pendencias': typeof PendenciasRoute
   '/planos': typeof PlanosRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
@@ -642,6 +650,7 @@ export interface FileRoutesById {
   '/migracao-empresa': typeof MigracaoEmpresaRoute
   '/minha-assinatura': typeof MinhaAssinaturaRoute
   '/operacao-dia': typeof OperacaoDiaRoute
+  '/operacao-filas': typeof OperacaoFilasRoute
   '/pendencias': typeof PendenciasRoute
   '/planos': typeof PlanosRoute
   '/preparacao-backend': typeof PreparacaoBackendRoute
@@ -718,6 +727,7 @@ export interface FileRouteTypes {
     | '/migracao-empresa'
     | '/minha-assinatura'
     | '/operacao-dia'
+    | '/operacao-filas'
     | '/pendencias'
     | '/planos'
     | '/preparacao-backend'
@@ -792,6 +802,7 @@ export interface FileRouteTypes {
     | '/migracao-empresa'
     | '/minha-assinatura'
     | '/operacao-dia'
+    | '/operacao-filas'
     | '/pendencias'
     | '/planos'
     | '/preparacao-backend'
@@ -866,6 +877,7 @@ export interface FileRouteTypes {
     | '/migracao-empresa'
     | '/minha-assinatura'
     | '/operacao-dia'
+    | '/operacao-filas'
     | '/pendencias'
     | '/planos'
     | '/preparacao-backend'
@@ -941,6 +953,7 @@ export interface RootRouteChildren {
   MigracaoEmpresaRoute: typeof MigracaoEmpresaRoute
   MinhaAssinaturaRoute: typeof MinhaAssinaturaRoute
   OperacaoDiaRoute: typeof OperacaoDiaRoute
+  OperacaoFilasRoute: typeof OperacaoFilasRoute
   PendenciasRoute: typeof PendenciasRoute
   PlanosRoute: typeof PlanosRoute
   PreparacaoBackendRoute: typeof PreparacaoBackendRoute
@@ -1072,6 +1085,13 @@ declare module '@tanstack/react-router' {
       path: '/pendencias'
       fullPath: '/pendencias'
       preLoaderRoute: typeof PendenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operacao-filas': {
+      id: '/operacao-filas'
+      path: '/operacao-filas'
+      fullPath: '/operacao-filas'
+      preLoaderRoute: typeof OperacaoFilasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/operacao-dia': {
@@ -1539,6 +1559,7 @@ const rootRouteChildren: RootRouteChildren = {
   MigracaoEmpresaRoute: MigracaoEmpresaRoute,
   MinhaAssinaturaRoute: MinhaAssinaturaRoute,
   OperacaoDiaRoute: OperacaoDiaRoute,
+  OperacaoFilasRoute: OperacaoFilasRoute,
   PendenciasRoute: PendenciasRoute,
   PlanosRoute: PlanosRoute,
   PreparacaoBackendRoute: PreparacaoBackendRoute,
