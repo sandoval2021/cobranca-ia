@@ -1,6 +1,7 @@
 import { Menu, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthStatus } from "@/components/auth/AuthStatus";
+import { UpdateButton } from "@/components/pwa/UpdateButton";
 
 type Props = {
   title: string;
@@ -10,27 +11,33 @@ type Props = {
 
 export function AppHeader({ title, onMenu, action }: Props) {
   return (
-    <header className="sticky top-0 z-30 flex h-[var(--header-height)] items-center gap-2 border-b border-border bg-surface/85 px-3 backdrop-blur safe-top md:px-6">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="md:hidden"
-        onClick={onMenu}
-        aria-label="Abrir menu"
-      >
-        <Menu className="h-5 w-5" />
-      </Button>
-      <h1 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight md:text-lg">
-        {title}
-      </h1>
-      <div className="flex items-center gap-1">
-        {action}
-        <div className="md:hidden">
-          <AuthStatus compact />
-        </div>
-        <Button variant="ghost" size="icon" aria-label="Notificações" className="hidden sm:inline-flex">
-          <Bell className="h-5 w-5" />
+    // Wrapper externo carrega o safe-area-inset-top como padding e o
+    // border-b fica embaixo do conjunto inteiro — assim a linha nunca
+    // atravessa o título no notch do iPhone (PWA standalone).
+    <header className="sticky top-0 z-30 border-b border-border bg-surface/85 backdrop-blur safe-top">
+      <div className="flex min-h-[var(--header-height)] items-center gap-2 px-3 md:px-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          onClick={onMenu}
+          aria-label="Abrir menu"
+        >
+          <Menu className="h-5 w-5" />
         </Button>
+        <h1 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight md:text-lg">
+          {title}
+        </h1>
+        <div className="flex items-center gap-1">
+          <UpdateButton />
+          {action}
+          <div className="md:hidden">
+            <AuthStatus compact />
+          </div>
+          <Button variant="ghost" size="icon" aria-label="Notificações" className="hidden sm:inline-flex">
+            <Bell className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
     </header>
   );
