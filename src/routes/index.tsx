@@ -72,8 +72,8 @@ export const Route = createFileRoute("/")({ component: Dashboard });
 
 // Chips compactos: status do plano (owner) + dica de instalar PWA.
 function HeaderChips() {
-  const { isOwner, user } = useLocalAuth();
-  const company = isOwner ? getCompanyForUser(user?.email) : null;
+  const { isOwner, user, roleResolved } = useLocalAuth();
+  const company = roleResolved && isOwner ? getCompanyForUser(user?.email) : null;
   const plan = company ? getPlanById(company.plano_id) : null;
   const status = company ? getCompanyStatus(company) : null;
   const days = company ? daysUntilDue(company) : null;
