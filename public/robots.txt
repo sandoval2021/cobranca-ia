@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /pagar/
+Disallow: /atendimento-ia/
+Disallow: /api/
+
+Sitemap: https://cobraeasy.com.br/sitemap.xml
