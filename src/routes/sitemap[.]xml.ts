@@ -14,11 +14,18 @@ export const Route = createFileRoute("/sitemap.xml")({
     handlers: {
       GET: async () => {
         const today = new Date().toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10);
         const entries: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
+          { path: "/planos", changefreq: "weekly", priority: "0.9" },
+          { path: "/funcionalidades", changefreq: "weekly", priority: "0.9" },
+          { path: "/ia-atendente", changefreq: "weekly", priority: "0.8" },
+          { path: "/cobranca-automatica", changefreq: "weekly", priority: "0.8" },
+          { path: "/whatsapp", changefreq: "weekly", priority: "0.8" },
+          { path: "/faq", changefreq: "monthly", priority: "0.6" },
+          { path: "/blog", changefreq: "weekly", priority: "0.7" },
         ];
 
-        const urls = entries.map((e) =>
           [
             `  <url>`,
             `    <loc>${BASE_URL}${e.path}</loc>`,
