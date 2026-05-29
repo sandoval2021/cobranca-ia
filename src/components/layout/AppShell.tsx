@@ -106,7 +106,7 @@ export function AppShell() {
         <div className="flex min-w-0 flex-1 flex-col">
           <AppHeader title={title} onMenu={() => setOpenSheet(true)} />
           <main className="min-w-0 flex-1">
-            {isOwner && <AccountStatusBanner company={company} />}
+            {roleResolved && isOwner && <AccountStatusBanner company={company} />}
             {denial ? <RestrictedView reason={denial} /> : <Outlet />}
           </main>
         </div>
