@@ -75,7 +75,12 @@ export function AppShell() {
   const { user, isOwner, roleResolved } = useLocalAuth();
   const { isAuthenticated } = useAuth();
   const company = useActiveCompany();
-  const denial = isOwner ? ownerRouteDenial(pathname, company) : null;
+  // Só calcula denial quando role foi resolvido E a empresa já foi
+  // carregada/criada. Sem isso, dava falso "Acesso restrito — Sua conta
+  // ainda não está vinculada a uma empresa" no primeiro render de cada
+  // rota (especialmente após navegação via menu mobile).
+  const denial =
+    roleResolved && isOwner && company ? ownerRouteDenial(pathname, company) : null;
 
   // Garante base real (UUID Supabase) automaticamente após login.
   useEffect(() => {
