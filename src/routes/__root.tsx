@@ -60,8 +60,9 @@ function AuthGateApp() {
 }
 
 function AuthedApp() {
-  // Sincroniza catálogo de servidores com o banco em todo dispositivo logado.
+  // Sincroniza catálogos com o banco em todo dispositivo logado.
   useServersSync();
+  useScreensSync();
   return <AppShell />;
 }
 
