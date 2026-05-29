@@ -198,9 +198,19 @@ function AdminDnsRotasPage() {
 
   const performImport = (mode: "merge" | "replace") => {
     if (!importPreview || !importPreview.parsed.ok) return;
-    const run = () => {
+    const run = async () => {
       const data = (importPreview.parsed as Extract<typeof importPreview.parsed, { ok: true }>).data;
       const res = importDnsRoutes(data, mode);
+      // Push imported records to DB (source of truth)
+      if (companyId) {
+        for (const d of listDomains(true)) {
+          try { await persistDomain(d); } catch {/* noop */}
+        }
+        for (const r of listDnsRoutes(true)) {
+          try { await persistRoute(r); } catch {/* noop */}
+        }
+        try { await hydrateDnsFromDb(companyId); } catch {/* noop */}
+      }
       toast.success(`Importado: ${res.domains} domínios, ${res.routes} rotas.`);
       setImportPreview(null);
       refresh();
