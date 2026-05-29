@@ -53,15 +53,112 @@ function dbRouteToLocal(r: DbRoute): DnsRoute {
   };
 }
 
-/** Pulls DB into the local cache. Call on admin page mount. */
-export async function hydrateDnsFromDb(companyId: string): Promise<void> {
+export type HydrateResult = {
+  status: "ok" | "pending_local";
+  dbDomains: number;
+  dbRoutes: number;
+  localDomains: number;
+  localRoutes: number;
+};
+
+function readLocal<T>(key: string): T[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T[]) : [];
+  } catch { return []; }
+}
+
+/**
+ * Pulls DB into the local cache.
+ * Non-destructive: when DB is empty but localStorage has data, returns
+ * status "pending_local" WITHOUT overwriting the cache. UI must offer
+ * recovery (push local → DB) or explicit discard.
+ */
+export async function hydrateDnsFromDb(companyId: string): Promise<HydrateResult> {
   const [domains, routes] = await Promise.all([
     listDnsDomainsServer({ data: { company_id: companyId } }),
     listDnsRoutesServer({ data: { company_id: companyId } }),
   ]);
-  writeCache(DNS_DOMAINS_KEY, (domains as DbDomain[]).map(dbDomainToLocal));
-  writeCache(DNS_ROUTES_KEY, (routes as DbRoute[]).map(dbRouteToLocal));
+  const dbD = (domains as DbDomain[]).map(dbDomainToLocal);
+  const dbR = (routes as DbRoute[]).map(dbRouteToLocal);
+  const localD = readLocal<DnsDomain>(DNS_DOMAINS_KEY);
+  const localR = readLocal<DnsRoute>(DNS_ROUTES_KEY);
+
+  // Anti-destructive guard
+  if (dbD.length === 0 && dbR.length === 0 && (localD.length > 0 || localR.length > 0)) {
+    return {
+      status: "pending_local",
+      dbDomains: 0, dbRoutes: 0,
+      localDomains: localD.length, localRoutes: localR.length,
+    };
+  }
+
+  writeCache(DNS_DOMAINS_KEY, dbD);
+  writeCache(DNS_ROUTES_KEY, dbR);
+  return {
+    status: "ok",
+    dbDomains: dbD.length, dbRoutes: dbR.length,
+    localDomains: localD.length, localRoutes: localR.length,
+  };
 }
+
+/** Clears local cache. Used by the explicit "Descartar dados locais" action. */
+export function discardLocalDnsCache(): void {
+  writeCache(DNS_DOMAINS_KEY, []);
+  writeCache(DNS_ROUTES_KEY, []);
+}
+
+/**
+ * Uploads everything currently in localStorage to the DB for the given
+ * company. Skips routes without domain_id or company_id, validates that
+ * referenced domains exist, then re-hydrates from the DB.
+ */
+export async function pushLocalDnsToDb(
+  companyId: string,
+): Promise<{ domains: number; routes: number; skippedRoutes: number; errors: string[] }> {
+  if (!companyId) throw new Error("company_id obrigatório");
+  const localD = readLocal<DnsDomain>(DNS_DOMAINS_KEY);
+  const localR = readLocal<DnsRoute>(DNS_ROUTES_KEY);
+  const errors: string[] = [];
+
+  // map old-id → new-id so routes still link to the right domain after upsert
+  const domainIdMap = new Map<string, string>();
+  let domainsSaved = 0;
+  for (const d of localD) {
+    try {
+      const saved = await pushDomainToDb(companyId, d);
+      domainIdMap.set(d.id, saved.id);
+      domainsSaved++;
+    } catch (e: unknown) {
+      errors.push(`Domínio "${d.domain}": ${(e as Error)?.message ?? String(e)}`);
+    }
+  }
+
+  let routesSaved = 0;
+  let skippedRoutes = 0;
+  for (const r of localR) {
+    if (!r.domain_id) { skippedRoutes++; continue; }
+    const newDomainId = domainIdMap.get(r.domain_id) ?? r.domain_id;
+    // ensure target domain exists either by mapping or was already a uuid present
+    if (!domainIdMap.has(r.domain_id) && !/^[0-9a-f-]{36}$/i.test(r.domain_id)) {
+      skippedRoutes++;
+      continue;
+    }
+    try {
+      await pushRouteToDb(companyId, { ...r, domain_id: newDomainId });
+      routesSaved++;
+    } catch (e: unknown) {
+      errors.push(`Rota "${r.host || r.subdomain}": ${(e as Error)?.message ?? String(e)}`);
+    }
+  }
+
+  // Re-hydrate now that DB has data
+  await hydrateDnsFromDb(companyId);
+
+  return { domains: domainsSaved, routes: routesSaved, skippedRoutes, errors };
+}
+
 
 export async function pushDomainToDb(companyId: string, d: DnsDomain): Promise<DnsDomain> {
   const isUuid = /^[0-9a-f-]{36}$/i.test(d.id);
