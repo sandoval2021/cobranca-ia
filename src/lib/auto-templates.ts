@@ -1,5 +1,11 @@
-// Central de Templates Automáticos — armazenamento local (igual padrão de regras-disparo).
-// Cobre 4 categorias: cobranca, renovacao, app_cobranca, app_renovacao, teste.
+// Central de Templates Automáticos — DB-first com cache local.
+// Escrita: local + mirror fire-and-forget no banco (auto_templates).
+import { mirror } from "./sync/mirror";
+import {
+  upsertAutoTemplateDb,
+  deleteAutoTemplateDb,
+  bulkUpsertAutoTemplatesDb,
+} from "./auto-templates.functions";
 
 const STORAGE_KEY = "cobraeasy.auto-templates.v1";
 
