@@ -378,7 +378,13 @@ function AdminDnsRotasPage() {
                           kind: "delete",
                           title: "Arquivar rota",
                           actionLabel: "Arquivar",
-                          onConfirm: () => { archiveDnsRoute(r.id); refresh(); toast.success("Rota arquivada."); },
+                          onConfirm: async () => {
+                            archiveDnsRoute(r.id);
+                            const updated = listDnsRoutes(true).find((x) => x.id === r.id);
+                            if (updated) await persistRoute(updated);
+                            refresh();
+                            toast.success("Rota arquivada.");
+                          },
                         })}
                       >
                         <Archive className="h-3.5 w-3.5 mr-1" /> Arquivar
@@ -392,11 +398,17 @@ function AdminDnsRotasPage() {
                         title: "Excluir rota definitivamente",
                         description: `Esta ação não pode ser desfeita. A rota ${r.host || ""} será removida permanentemente.`,
                         actionLabel: "Excluir",
-                        onConfirm: () => { deleteDnsRoute(r.id); refresh(); toast.success("Rota excluída."); },
+                        onConfirm: async () => {
+                          await removeRouteDb(r.id);
+                          deleteDnsRoute(r.id);
+                          refresh();
+                          toast.success("Rota excluída.");
+                        },
                       })}
                     >
                       <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir
                     </Button>
+
 
                   </div>
                 </div>
