@@ -22,6 +22,8 @@ import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 import { useServersSync } from "@/lib/servers/useServersSync";
 import { useScreensSync } from "@/lib/screens/useScreensSync";
 import { useServicesSync } from "@/lib/services/useServicesSync";
+import { useManualRenewalsSync } from "@/lib/manual-renewals/useManualRenewalsSync";
+import { useCustomerDueOverridesSync } from "@/lib/customer-due-overrides/useCustomerDueOverridesSync";
 
 
 // Rotas públicas (não exigem login). Renderizam direto via <Outlet/>.
