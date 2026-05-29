@@ -59,6 +59,15 @@ export const Route = createFileRoute("/api/public/mp/marketplace-webhook")({
         const signature = request.headers.get("x-signature");
         const signatureValid = verifyMpSignature(signature, requestId, dataId);
 
+        // Fase A — Segurança: webhook só é processado com assinatura válida.
+        if (!signatureValid) {
+          console.warn("[mp marketplace webhook] invalid signature; rejecting");
+          return new Response(JSON.stringify({ ok: false }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
         const mpEventId =
           (body.id ? String(body.id) : null) ||
           (requestId ? `req_${requestId}_${dataId || ""}` : `evt_${Date.now()}_${Math.random()}`);

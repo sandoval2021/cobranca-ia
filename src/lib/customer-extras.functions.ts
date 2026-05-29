@@ -5,6 +5,21 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const UUID = z.string().uuid();
 
+// Fase A — validação explícita de acesso à empresa (não confiar só no RLS
+// quando o client envia companyId). Reusa o RPC `has_company_access` já
+// usado por outros módulos (due-overrides, kb, referrals, whatsapp).
+async function assertCompanyAccess(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  companyId: string,
+) {
+  const { data, error } = await supabase.rpc("has_company_access", {
+    _company_id: companyId,
+  });
+  if (error) throw new Error("forbidden");
+  if (!data) throw new Error("forbidden");
+}
+
 const ExtraInput = z.object({
   companyId: UUID,
   customer_id: UUID,
@@ -51,6 +66,7 @@ export const listCustomerExtrasDb = createServerFn({ method: "GET" })
     z.object({ companyId: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { data: rows, error } = await context.supabase
       .from("customer_extras")
       .select("*")
@@ -63,6 +79,7 @@ export const upsertCustomerExtraDb = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => ExtraInput.parse(input))
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { data: row, error } = await context.supabase
       .from("customer_extras")
       .upsert(inputToRow(data), { onConflict: "company_id,customer_id" })
@@ -81,6 +98,7 @@ export const bulkUpsertCustomerExtrasDb = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     if (data.items.length === 0) return { upserted: 0 };
     const payload = data.items.map((i) =>
       inputToRow({ ...i, companyId: data.companyId }),
@@ -98,6 +116,7 @@ export const deleteCustomerExtraDb = createServerFn({ method: "POST" })
     z.object({ companyId: UUID, customer_id: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { error } = await context.supabase
       .from("customer_extras")
       .delete()

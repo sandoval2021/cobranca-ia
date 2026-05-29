@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { fetchSaasPayment } from "@/lib/billing-saas/saas-checkout.server";
+import { verifyMpSignature } from "@/lib/payments/marketplace.server";
 
 /**
  * Webhook do Mercado Pago para pagamentos de plano SaaS (CobraEasy → cliente final dono).
- * O MP envia notificações de payment. Buscamos o pagamento, validamos via external_reference
- * que aponta para uma linha em saas_checkout_sessions, e ativamos a assinatura.
+ * O MP envia notificações de payment. Validamos a assinatura, buscamos o pagamento e
+ * confirmamos via external_reference que aponta para uma linha em saas_checkout_sessions.
+ *
+ * Fase A — Segurança: rejeita 401 se assinatura ausente/ inválida. Nenhuma ativação
+ * de assinatura SaaS pode acontecer sem assinatura válida.
  */
 export const Route = createFileRoute("/api/public/mp/saas-webhook")({
   server: {
@@ -32,6 +36,15 @@ export const Route = createFileRoute("/api/public/mp/saas-webhook")({
         const idFromQuery = url.searchParams.get("id") || url.searchParams.get("data.id");
         const dataObj = (payload as { data?: { id?: string | number } }).data;
         const paymentId = String(idFromQuery ?? dataObj?.id ?? "");
+
+        // Fase A — Validação obrigatória da assinatura do Mercado Pago.
+        const requestId = request.headers.get("x-request-id");
+        const signature = request.headers.get("x-signature");
+        const signatureValid = verifyMpSignature(signature, requestId, paymentId || null);
+        if (!signatureValid) {
+          console.warn("[mp saas webhook] invalid signature; rejecting");
+          return new Response("unauthorized", { status: 401 });
+        }
 
         if (!paymentId || !/payment/i.test(topic)) {
           return new Response("ignored", { status: 200 });

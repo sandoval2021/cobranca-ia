@@ -5,6 +5,21 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const UUID = z.string().uuid();
 
+// Fase A — validação explícita de acesso à empresa antes de operar finance_*.
+// Mesmo com RLS ativo, validamos no servidor para impedir que payload com
+// companyId de outra empresa seja aceito.
+async function assertCompanyAccess(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  companyId: string,
+) {
+  const { data, error } = await supabase.rpc("has_company_access", {
+    _company_id: companyId,
+  });
+  if (error) throw new Error("forbidden");
+  if (!data) throw new Error("forbidden");
+}
+
 const EntryInput = z.object({
   id: z.string().uuid().optional(),
   companyId: UUID,
@@ -127,6 +142,7 @@ export const listFinanceEntriesDb = createServerFn({ method: "GET" })
     z.object({ companyId: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { data: rows, error } = await context.supabase
       .from("finance_entries")
       .select("*")
@@ -140,6 +156,7 @@ export const upsertFinanceEntryDb = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => EntryInput.parse(input))
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { data: row, error } = await context.supabase
       .from("finance_entries")
       .upsert(entryInputToRow(data), { onConflict: "id" })
@@ -160,6 +177,7 @@ export const bulkUpsertFinanceEntriesDb = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     if (data.items.length === 0) return { upserted: 0 };
     const payload = data.items.map((i) =>
       entryInputToRow({ ...i, companyId: data.companyId }),
@@ -177,6 +195,7 @@ export const deleteFinanceEntryDb = createServerFn({ method: "POST" })
     z.object({ companyId: UUID, id: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { error } = await context.supabase
       .from("finance_entries")
       .delete()
@@ -193,6 +212,7 @@ export const listFinanceGoalsDb = createServerFn({ method: "GET" })
     z.object({ companyId: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { data: rows, error } = await context.supabase
       .from("finance_goals")
       .select("*")
@@ -205,6 +225,7 @@ export const upsertFinanceGoalDb = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => GoalInput.parse(input))
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { data: row, error } = await context.supabase
       .from("finance_goals")
       .upsert(goalInputToRow(data), { onConflict: "id" })
@@ -225,6 +246,7 @@ export const bulkUpsertFinanceGoalsDb = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     if (data.items.length === 0) return { upserted: 0 };
     const payload = data.items.map((i) =>
       goalInputToRow({ ...i, companyId: data.companyId }),
@@ -242,6 +264,7 @@ export const deleteFinanceGoalDb = createServerFn({ method: "POST" })
     z.object({ companyId: UUID, id: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, data.companyId);
     const { error } = await context.supabase
       .from("finance_goals")
       .delete()
