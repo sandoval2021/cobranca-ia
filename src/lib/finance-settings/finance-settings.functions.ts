@@ -4,37 +4,36 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const SettingsInput = z.object({
-  companyId: z.string().uuid(),
-  settings: z.record(z.string(), z.unknown()),
-});
+type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
+
+const JsonSchema: z.ZodType<Json> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(JsonSchema),
+    z.record(z.string(), JsonSchema),
+  ]),
+);
+
+const SettingsObject = z.record(z.string(), JsonSchema);
 
 export type FinanceSettingsRow = {
   id: string;
   company_id: string;
-  settings: Record<string, unknown>;
+  settings: Record<string, Json>;
   created_at: string;
   updated_at: string;
 };
-
-function assertCompanyAccess(ctx: { userId: string; supabase: import("@supabase/supabase-js").SupabaseClient }, companyId: string) {
-  // RLS já valida; chamada extra é defensiva contra companyId passado fora do escopo.
-  return ctx.supabase
-    .from("company_members")
-    .select("company_id", { count: "exact", head: true })
-    .eq("company_id", companyId)
-    .eq("user_id", ctx.userId);
-}
 
 export const getFinanceSettingsDb = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { companyId: string }) =>
     z.object({ companyId: z.string().uuid() }).parse(i),
   )
-  .handler(async ({ data, context }): Promise<FinanceSettingsRow | null> => {
-    const { supabase, userId } = context;
-    // defesa em profundidade: super_admin é permitido via RLS, membros via has_company_access
-    void assertCompanyAccess({ userId, supabase }, data.companyId);
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
     const { data: row, error } = await supabase
       .from("finance_settings")
       .select("*")
@@ -46,14 +45,14 @@ export const getFinanceSettingsDb = createServerFn({ method: "GET" })
 
 export const upsertFinanceSettingsDb = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: { companyId: string; settings: Record<string, unknown> }) =>
-    SettingsInput.parse(i),
+  .inputValidator((i: { companyId: string; settings: Record<string, Json> }) =>
+    z.object({ companyId: z.string().uuid(), settings: SettingsObject }).parse(i),
   )
-  .handler(async ({ data, context }): Promise<FinanceSettingsRow> => {
+  .handler(async ({ data, context }) => {
     const { supabase } = context;
     const payload = {
       company_id: data.companyId,
-      settings: data.settings,
+      settings: data.settings as unknown as Json,
       updated_at: new Date().toISOString(),
     };
     const { data: row, error } = await supabase
