@@ -1,10 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Receipt,
   Search,
   X,
-  Plus,
   Eye,
   Pencil,
   Check,
@@ -15,6 +14,13 @@ import {
   Save,
   Sparkles,
   Brain,
+  UserPlus,
+  Send,
+  MoreHorizontal,
+  Settings,
+  FileText,
+  MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 import {
   GenerateMessageDialog,
@@ -75,6 +81,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { useAuth } from "@/lib/use-auth";
@@ -256,6 +272,7 @@ function CobrancasPage() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showRenew, setShowRenew] = useState(false);
+  const [showCobrar, setShowCobrar] = useState(false);
   const [reloadBump, setReloadBump] = useState(0);
 
   const reload = () => setReloadBump((n) => n + 1);
@@ -415,19 +432,9 @@ function CobrancasPage() {
         title="Cobranças"
         subtitle="Gerencie suas cobranças com segurança"
         hint="Crie, edite, marque como paga, vencida ou cancele cobranças via RPC."
-        action={
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setShowRenew(true)} className="gap-1">
-              <RefreshCw className="h-3.5 w-3.5" /> Renovar
-            </Button>
-            <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1">
-              <Plus className="h-3.5 w-3.5" /> Nova
-            </Button>
-          </div>
-        }
       />
 
-      {/* Busca */}
+      {/* Busca — fica no topo, junto com a lista */}
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -448,6 +455,30 @@ function CobrancasPage() {
           </button>
         )}
       </div>
+
+      {/* Ações rápidas — 4 botões coloridos */}
+      <div className="mb-3 grid grid-cols-4 gap-2">
+        <QuickActionButton
+          icon={UserPlus}
+          label="Cadastrar"
+          onClick={() => setShowCreate(true)}
+          colorClass="bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_14px_-4px_color-mix(in_oklab,var(--primary)_60%,transparent)]"
+        />
+        <QuickActionButton
+          icon={RefreshCw}
+          label="Renovar"
+          onClick={() => setShowRenew(true)}
+          colorClass="bg-emerald-600 text-white hover:bg-emerald-700 shadow-[0_4px_14px_-4px_rgba(5,150,105,0.55)]"
+        />
+        <QuickActionButton
+          icon={Send}
+          label="Cobrar"
+          onClick={() => setShowCobrar(true)}
+          colorClass="bg-amber-500 text-white hover:bg-amber-600 shadow-[0_4px_14px_-4px_rgba(245,158,11,0.6)]"
+        />
+        <QuickActionMore />
+      </div>
+
 
       {/* Filtros */}
       <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
@@ -518,9 +549,95 @@ function CobrancasPage() {
         customers={customerList}
         onDone={reload}
       />
+
+      <CobrarDialog
+        open={showCobrar}
+        onClose={() => setShowCobrar(false)}
+        customers={customerList}
+        charges={items ?? []}
+      />
     </PageContainer>
   );
 }
+
+// ---------- quick action buttons ----------
+function QuickActionButton({
+  icon: Icon,
+  label,
+  onClick,
+  colorClass,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+  colorClass: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-transparent px-2 text-xs font-semibold transition-all active:scale-[0.97]",
+        colorClass,
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function QuickActionMore() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 text-xs font-semibold text-foreground transition-all hover:bg-muted active:scale-[0.97] shadow-sm"
+        >
+          <MoreHorizontal className="h-5 w-5 text-primary" />
+          <span>Mais</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Mais ações</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/templates-automaticos" className="gap-2 cursor-pointer">
+            <FileText className="h-4 w-4 text-primary" />
+            Templates de mensagens
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/cobranca-automatica" className="gap-2 cursor-pointer">
+            <RefreshCw className="h-4 w-4 text-emerald-600" />
+            Cobrança automática
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/regras-disparo" className="gap-2 cursor-pointer">
+            <Settings className="h-4 w-4 text-amber-500" />
+            Regras de disparo
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/mensagens" className="gap-2 cursor-pointer">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            Histórico de mensagens
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/relatorio" className="gap-2 cursor-pointer">
+            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+            Relatório
+          </Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 
 function FilterPill({
   active,
@@ -1126,6 +1243,7 @@ function CreateChargeDialog({
   const [status, setStatus] = useState("pendente");
   const [ref, setRef] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sendProof, setSendProof] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -1134,8 +1252,11 @@ function CreateChargeDialog({
       setDue("");
       setStatus("pendente");
       setRef("");
+      setSendProof(false);
     }
   }, [open]);
+
+  const selectedCustomer = customers.find((c) => c.id === customerId);
 
   const submit = async () => {
     if (!supabase) return;
@@ -1174,23 +1295,50 @@ function CreateChargeDialog({
       return;
     }
     toast.success("Cobrança criada com sucesso.");
+
+    // Comprovante opcional: abre WhatsApp com mensagem pronta + data de validade
+    if (sendProof && selectedCustomer?.whatsapp) {
+      const phone = onlyDigits(selectedCustomer.whatsapp);
+      const valor = fmtBRL(cents);
+      const vencimento = new Date(due).toLocaleDateString("pt-BR");
+      const msg =
+        `Olá ${selectedCustomer.name}! Sua renovação foi registrada com sucesso. ` +
+        `Valor: ${valor}. Validade até ${vencimento}. Obrigado!`;
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+      window.open(url, "_blank", "noopener");
+    } else if (sendProof && !selectedCustomer?.whatsapp) {
+      toast.warning("Cliente sem WhatsApp cadastrado — comprovante não enviado.");
+    }
+
     onCreated();
     onClose();
   };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Nova cobrança</DialogTitle>
-          <DialogDescription>Cliente é selecionado por lista. Sem UUID manual.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto border-2 border-primary/20 p-0">
+        <div className="rounded-t-lg bg-gradient-to-r from-primary to-primary/70 px-5 py-4 text-primary-foreground">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary-foreground">
+              <UserPlus className="h-5 w-5" />
+              Cadastrar cobrança
+            </DialogTitle>
+            <DialogDescription className="text-primary-foreground/85">
+              Selecione o cliente e configure os dados da cobrança.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="space-y-3 px-5 pt-4">
           <div>
             <Label className="mb-1 flex items-center gap-1.5 text-xs">
-              Cliente <HelpTip text="Busque pelo nome ou WhatsApp." />
+              Cliente <HelpTip text="Busque pelo nome ou número de telefone." />
             </Label>
             <CustomerCombobox customers={customers} value={customerId} onChange={setCustomerId} />
+            {selectedCustomer?.whatsapp && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                WhatsApp: {prettyPhone(selectedCustomer.whatsapp)}
+              </p>
+            )}
           </div>
           <div>
             <Label className="mb-1 flex items-center gap-1.5 text-xs">
@@ -1223,8 +1371,23 @@ function CreateChargeDialog({
             <Label className="mb-1 text-xs">Referência externa (opcional)</Label>
             <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="ID externo, número etc." />
           </div>
+
+          {/* Checkbox: enviar comprovante de renovação */}
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 transition-colors hover:bg-emerald-500/10">
+            <Checkbox
+              checked={sendProof}
+              onCheckedChange={(v) => setSendProof(v === true)}
+              className="mt-0.5 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+            />
+            <div className="flex-1 text-xs leading-snug">
+              <p className="font-medium text-foreground">Enviar comprovante de renovação</p>
+              <p className="text-muted-foreground">
+                Abre o WhatsApp com a mensagem pronta contendo o valor e a data de validade.
+              </p>
+            </div>
+          </label>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-5 pb-5 pt-2">
           <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
           <Button onClick={submit} disabled={busy} className="gap-1.5">
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -1232,6 +1395,7 @@ function CreateChargeDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
     </Dialog>
   );
 }
@@ -1296,15 +1460,22 @@ function RenewCustomerDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Renovar cliente</DialogTitle>
-          <DialogDescription>Gera cobranças mensais com segurança via RPC.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto border-2 border-emerald-500/30 p-0">
+        <div className="rounded-t-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-4 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <RefreshCw className="h-5 w-5" />
+              Renovar cliente
+            </DialogTitle>
+            <DialogDescription className="text-emerald-50/90">
+              Busque o cliente pelo telefone ou nome e gere cobranças mensais.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="space-y-3 px-5 pt-4">
           <div>
             <Label className="mb-1 flex items-center gap-1.5 text-xs">
-              Cliente <HelpTip text="Selecione na lista." />
+              Cliente <HelpTip text="Busque pelo número de telefone ou nome." />
             </Label>
             <CustomerCombobox customers={customers} value={customerId} onChange={setCustomerId} />
           </div>
@@ -1321,9 +1492,13 @@ function RenewCustomerDialog({
             <Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="0,00" />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-5 pb-5 pt-2">
           <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
-          <Button onClick={submit} disabled={busy} className="gap-1.5">
+          <Button
+            onClick={submit}
+            disabled={busy}
+            className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700"
+          >
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Renovar
           </Button>
@@ -1332,3 +1507,170 @@ function RenewCustomerDialog({
     </Dialog>
   );
 }
+
+// ---------- cobrar dialog ----------
+function CobrarDialog({
+  open,
+  onClose,
+  customers,
+  charges,
+}: {
+  open: boolean;
+  onClose: () => void;
+  customers: CustomerLite[];
+  charges: Charge[];
+}) {
+  const [customerId, setCustomerId] = useState("");
+  const [mode, setMode] = useState<"manual" | "automatica">("manual");
+  const [message, setMessage] = useState("");
+
+  const selected = customers.find((c) => c.id === customerId);
+  const lastCharge = useMemo(() => {
+    if (!customerId) return null;
+    const list = charges.filter((c) => c.customer_id === customerId);
+    if (list.length === 0) return null;
+    // mais recente por vencimento
+    return [...list].sort((a, b) => {
+      const da = a.due_date ? +new Date(a.due_date) : 0;
+      const db = b.due_date ? +new Date(b.due_date) : 0;
+      return db - da;
+    })[0];
+  }, [charges, customerId]);
+
+  useEffect(() => {
+    if (open) {
+      setCustomerId("");
+      setMode("manual");
+      setMessage("");
+    }
+  }, [open]);
+
+  // Auto-preenche template ao escolher cliente ou trocar de modo
+  useEffect(() => {
+    if (!selected) return;
+    const nome = selected.name;
+    const valor = lastCharge?.amount_cents != null ? fmtBRL(lastCharge.amount_cents) : "R$ 0,00";
+    const venc = lastCharge?.due_date ? new Date(lastCharge.due_date).toLocaleDateString("pt-BR") : "—";
+    if (mode === "automatica") {
+      setMessage(
+        `Olá ${nome}! Identificamos uma cobrança em aberto no valor de ${valor}, com vencimento em ${venc}. ` +
+        `Para regularizar, basta efetuar o pagamento. Qualquer dúvida estamos à disposição.`,
+      );
+    } else {
+      setMessage(
+        `Olá ${nome}, tudo bem? Passando para lembrar da sua mensalidade no valor de ${valor} (vencimento ${venc}). ` +
+        `Posso te ajudar com alguma coisa?`,
+      );
+    }
+  }, [selected, mode, lastCharge]);
+
+  const enviar = () => {
+    if (!selected) {
+      toast.error("Selecione um cliente.");
+      return;
+    }
+    if (!selected.whatsapp) {
+      toast.error("Cliente sem WhatsApp cadastrado.");
+      return;
+    }
+    if (!message.trim()) {
+      toast.error("Escreva uma mensagem.");
+      return;
+    }
+    const phone = onlyDigits(selected.whatsapp);
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener");
+    toast.success("WhatsApp aberto com a mensagem.");
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto border-2 border-amber-500/30 p-0">
+        <div className="rounded-t-lg bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <Send className="h-5 w-5" />
+              Cobrar cliente
+            </DialogTitle>
+            <DialogDescription className="text-amber-50/90">
+              Busque o cliente pelo telefone e envie uma mensagem manual ou automática.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="space-y-3 px-5 pt-4">
+          <div>
+            <Label className="mb-1 flex items-center gap-1.5 text-xs">
+              Cliente <HelpTip text="Busque pelo número de telefone ou nome." />
+            </Label>
+            <CustomerCombobox customers={customers} value={customerId} onChange={setCustomerId} />
+            {selected?.whatsapp && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                WhatsApp: <span className="font-medium text-foreground">{prettyPhone(selected.whatsapp)}</span>
+              </p>
+            )}
+            {selected && !selected.whatsapp && (
+              <p className="mt-1 text-[11px] text-destructive">Este cliente não tem WhatsApp cadastrado.</p>
+            )}
+          </div>
+
+          <div>
+            <Label className="mb-1 text-xs">Tipo de mensagem</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMode("manual")}
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                  mode === "manual"
+                    ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted",
+                )}
+              >
+                Manual (amigável)
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("automatica")}
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                  mode === "automatica"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted",
+                )}
+              >
+                Automática (cobrança)
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <Label className="mb-1 text-xs">Mensagem</Label>
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={6}
+              placeholder="Escreva ou edite a mensagem..."
+              className="resize-none"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              O WhatsApp abrirá com esta mensagem pronta para envio.
+            </p>
+          </div>
+        </div>
+        <DialogFooter className="px-5 pb-5 pt-2">
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button
+            onClick={enviar}
+            disabled={!selected?.whatsapp || !message.trim()}
+            className="gap-1.5 bg-amber-500 text-white hover:bg-amber-600"
+          >
+            <Send className="h-3.5 w-3.5" />
+            Abrir WhatsApp
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
