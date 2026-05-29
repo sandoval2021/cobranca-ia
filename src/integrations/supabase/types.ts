@@ -1766,6 +1766,7 @@ export type Database = {
           error: string | null
           id: string
           message_body: string | null
+          queue_id: string | null
           sent_at: string | null
           service_plan_id: string
           service_plan_message_id: string
@@ -1781,6 +1782,7 @@ export type Database = {
           error?: string | null
           id?: string
           message_body?: string | null
+          queue_id?: string | null
           sent_at?: string | null
           service_plan_id: string
           service_plan_message_id: string
@@ -1796,6 +1798,7 @@ export type Database = {
           error?: string | null
           id?: string
           message_body?: string | null
+          queue_id?: string | null
           sent_at?: string | null
           service_plan_id?: string
           service_plan_message_id?: string
