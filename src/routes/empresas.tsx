@@ -135,6 +135,7 @@ function EmpresasContent() {
     if (filter !== "todas") list = list.filter((c) => (getCompanyStatus(c) as CompanyStatus) === filter);
     if (query.trim()) {
       const q = query.trim().toLowerCase();
+      const qDigits = q.replace(/\D/g, "");
       list = list.filter(
         (c) =>
           c.nome.toLowerCase().includes(q) ||
@@ -142,7 +143,8 @@ function EmpresasContent() {
           c.dono_email.toLowerCase().includes(q) ||
           c.dono_whatsapp.toLowerCase().includes(q) ||
           c.slug.toLowerCase().includes(q) ||
-          (getPlanById(c.plano_id)?.nome.toLowerCase() ?? "").includes(q),
+          (getPlanById(c.plano_id)?.nome.toLowerCase() ?? "").includes(q) ||
+          (qDigits.length > 0 && getCompanySupportId(c).includes(qDigits)),
       );
     }
     return list;
