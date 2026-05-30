@@ -66,11 +66,36 @@ export async function chunkedOrderedUpsert<T extends Record<string, unknown>>(
   let total = 0;
   for (let i = 0; i < sorted.length; i += chunkSize) {
     const slice = sorted.slice(i, i + chunkSize);
-    const { error, count } = await supabase
-      .from(table)
-      .upsert(slice, { onConflict: opts.onConflict, count: "exact" });
-    if (error) throw new Error(error.message);
-    total += count ?? slice.length;
+    // Retry em caso de deadlock (Postgres 40P01) ou erros transitórios
+    // de concorrência. Upserts concorrentes do MESMO conjunto de linhas
+    // podem deadlockar mesmo com ordenação determinística porque o
+    // ON CONFLICT adquire locks adicionais durante a fase de update.
+    let attempt = 0;
+    const maxAttempts = 4;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { error, count } = await supabase
+        .from(table)
+        .upsert(slice, { onConflict: opts.onConflict, count: "exact" });
+      if (!error) {
+        total += count ?? slice.length;
+        break;
+      }
+      const msg = String(error.message ?? "");
+      const code = (error as { code?: string }).code ?? "";
+      const transient =
+        code === "40P01" ||
+        code === "40001" ||
+        /deadlock detected/i.test(msg) ||
+        /could not serialize/i.test(msg);
+      if (!transient || attempt >= maxAttempts - 1) {
+        throw new Error(error.message);
+      }
+      attempt++;
+      // backoff exponencial com jitter: 50ms, 100ms, 200ms (+ até 50ms)
+      const delay = 50 * 2 ** (attempt - 1) + Math.floor(Math.random() * 50);
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
   return total;
 }
