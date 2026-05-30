@@ -97,7 +97,6 @@ import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
 import {
   getActiveAccountId,
-  getCurrentCompanyAdmin,
   listChargesAdmin,
   listCustomersAdmin,
   toastRpcError as _toastRpcError,
@@ -143,6 +142,15 @@ const toISODate = (s: string | null | undefined) => {
   const d = new Date(s);
   if (isNaN(+d)) return "";
   return d.toISOString().slice(0, 10);
+};
+const addMonthsISO = (base: string | null | undefined, months: number) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const parsed = base ? new Date(`${base}T00:00:00`) : null;
+  const start = parsed && !isNaN(+parsed) && parsed > today ? parsed : today;
+  const next = new Date(start);
+  next.setMonth(next.getMonth() + months);
+  return next.toISOString().slice(0, 10);
 };
 const onlyDigits = (s: string) => s.replace(/\D+/g, "");
 const prettyPhone = (s: string | null | undefined) => {
@@ -256,7 +264,7 @@ const normalizeCharge = (r: Row): Charge => {
   };
 };
 
-type CustomerLite = { id: string; name: string; whatsapp: string | null };
+type CustomerLite = { id: string; name: string; whatsapp: string | null; due_date?: string | null };
 
 type Filter = "todos" | "pendente" | "paga" | "vencida" | "cancelada";
 
