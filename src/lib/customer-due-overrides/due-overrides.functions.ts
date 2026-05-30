@@ -4,6 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { chunkedOrderedUpsert } from "@/lib/sync/chunked-upsert";
 
 export type CustomerDueOverrideDto = {
   id: string;
@@ -105,9 +106,13 @@ export const bulkUpsertCustomerDueOverridesDb = createServerFn({ method: "POST" 
       created_by: context.userId,
       updated_at: new Date().toISOString(),
     }));
-    const { error } = await supabaseAdmin
-      .from("customer_due_overrides")
-      .upsert(rows as any, { onConflict: "company_id,customer_id" });
-    if (error) throw new Error(error.message);
-    return { upserted: rows.length };
+    // chunked + ordered por customer_id evita deadlock entre dispositivos
+    // sincronizando overrides do mesmo conjunto de clientes.
+    const upserted = await chunkedOrderedUpsert(
+      supabaseAdmin,
+      "customer_due_overrides",
+      rows as Array<Record<string, unknown>>,
+      { onConflict: "company_id,customer_id", sortKeys: ["customer_id"] },
+    );
+    return { upserted };
   });

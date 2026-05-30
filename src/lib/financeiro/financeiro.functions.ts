@@ -312,11 +312,13 @@ export const bulkUpsertFinanceGoalsDb = createServerFn({ method: "POST" })
     const payload = data.items.map((i) =>
       goalInputToRow({ ...i, companyId: data.companyId }),
     );
-    const { error, count } = await context.supabase
-      .from("finance_goals")
-      .upsert(payload, { onConflict: "id", count: "exact" });
-    if (error) throw new Error(error.message);
-    return { upserted: count ?? data.items.length };
+    const upserted = await chunkedOrderedUpsert(
+      context.supabase,
+      "finance_goals",
+      payload as unknown as Array<Record<string, unknown>>,
+      { onConflict: "id", sortKeys: ["id"] },
+    );
+    return { upserted };
   });
 
 export const deleteFinanceGoalDb = createServerFn({ method: "POST" })
