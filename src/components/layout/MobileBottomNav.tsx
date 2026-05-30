@@ -137,28 +137,32 @@ export function MobileBottomNav() {
 
   const items = useMemo(() => filterNavByRole(ownerBottomNav, role), [role]);
 
-  // Filtro de papel + plano para definir quais rotas estão acessíveis.
-  const allowedRoutes = useMemo<Set<string>>(() => {
-    const list = filterNavByRole(ownerMoreNav, role).filter((item) => {
-      if (!isOwner) return true;
-      if (!company) return true;
-      const mod = ROUTE_TO_MODULE[item.to];
+  // Conjunto de rotas marcadas como super_admin (vindas de ownerNav + ownerMoreNav).
+  const superAdminRoutes = useMemo<Set<string>>(() => {
+    const set = new Set<string>();
+    for (const it of ownerMoreNav) if (it.superAdminOnly) set.add(it.to);
+    return set;
+  }, []);
+
+  // Filtro de papel + plano para cada item do MORE_GROUPS. Avalia diretamente
+  // a rota em vez de exigir presença em ownerMoreNav.
+  const isRouteAllowed = useCallback(
+    (to: string) => {
+      if (role !== "super_admin" && superAdminRoutes.has(to)) return false;
+      if (!isOwner || !company) return true;
+      const mod = ROUTE_TO_MODULE[to];
       if (!mod) return true;
       return canCompanyUseModule(company, mod);
-    });
-    const set = new Set<string>(list.map((it) => it.to));
-    // Rotas adicionadas só no menu Mais (atalhos), não precisam estar em ownerMoreNav.
-    set.add("/operacao-filas");
-    set.add("/testes");
-    return set;
-  }, [role, isOwner, company]);
+    },
+    [role, isOwner, company, superAdminRoutes],
+  );
 
   const groups = useMemo(() => {
     return MORE_GROUPS.map((g) => ({
       title: g.title,
-      items: g.items.filter((it) => allowedRoutes.has(it.to)),
+      items: g.items.filter((it) => isRouteAllowed(it.to)),
     })).filter((g) => g.items.length > 0);
-  }, [allowedRoutes]);
+  }, [isRouteAllowed]);
 
   const preloadRoute = useCallback(
     (to: string) => {
