@@ -1569,7 +1569,7 @@ function CustomerSheet({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-0 border-2 border-border shadow-2xl rounded-xl">
-        <DialogHeader className="border-b border-border px-4 py-3 text-left">
+        <DialogHeader className="shrink-0 border-b border-border bg-background px-4 py-3 text-left">
           <DialogTitle className="text-sm">{merged.name}</DialogTitle>
           <DialogDescription className="text-[11px]">
             {prettyPhone(merged.whatsapp) ?? "Sem WhatsApp cadastrado"}
@@ -2383,7 +2383,7 @@ function EditForm({
           className="h-9"
         />
       </Field>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Field label="Valor (R$)">
           <Input
             value={amount}
@@ -2475,12 +2475,14 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-1">
-        <Label className="text-xs">{label}</Label>
+    <div className="min-w-0 space-y-1.5">
+      <div className="flex items-center gap-1 min-w-0">
+        <Label className="text-xs truncate">{label}</Label>
         {hint && <HelpTip text={hint} />}
       </div>
-      {children}
+      <div className="min-w-0 [&_input]:min-w-0 [&_input]:w-full [&_select]:min-w-0 [&_select]:w-full">
+        {children}
+      </div>
     </div>
   );
 }
