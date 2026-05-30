@@ -81,9 +81,8 @@ export function MobileBottomNav() {
 
   const items = useMemo(() => filterNavByRole(ownerBottomNav, role), [role]);
 
-  // Indexa todos os itens disponíveis (com filtro de papel + plano) para que
-  // os grupos consigam resolver `to` -> NavItem.
-  const itemByRoute = useMemo<Record<string, NavItem>>(() => {
+  // Filtro de papel + plano para definir quais rotas estão acessíveis.
+  const allowedRoutes = useMemo<Set<string>>(() => {
     const list = filterNavByRole(ownerMoreNav, role).filter((item) => {
       if (!isOwner) return true;
       if (!company) return true;
@@ -91,17 +90,19 @@ export function MobileBottomNav() {
       if (!mod) return true;
       return canCompanyUseModule(company, mod);
     });
-    const idx: Record<string, NavItem> = {};
-    for (const it of list) idx[it.to] = it;
-    return idx;
+    const set = new Set<string>(list.map((it) => it.to));
+    // Rotas adicionadas só no menu Mais (atalhos), não precisam estar em ownerMoreNav.
+    set.add("/operacao-filas");
+    set.add("/testes");
+    return set;
   }, [role, isOwner, company]);
 
   const groups = useMemo(() => {
     return MORE_GROUPS.map((g) => ({
       title: g.title,
-      items: g.routes.map((to) => itemByRoute[to]).filter(Boolean) as NavItem[],
+      items: g.items.filter((it) => allowedRoutes.has(it.to)),
     })).filter((g) => g.items.length > 0);
-  }, [itemByRoute]);
+  }, [allowedRoutes]);
 
   const preloadRoute = useCallback(
     (to: string) => {
