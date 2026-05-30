@@ -41,7 +41,7 @@ const sheetVariants = cva(
         left: "inset-y-0 left-0 h-full w-3/4 border-r p-6 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
         // "right" agora renderiza como modal central compacto, com moldura arredondada e visível
         right:
-          "left-1/2 top-[calc((100dvh-var(--bottomnav-height,0px))/2)] -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-1rem)] max-w-md max-h-[calc(100dvh-var(--bottomnav-height,0px)-1.5rem)] md:top-1/2 md:max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-border p-3.5 text-sm data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "left-1/2 top-[calc((100dvh-var(--bottomnav-height,0px))/2)] -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-1rem)] max-w-md max-h-[calc(100dvh-var(--bottomnav-height,0px)-1.5rem)] md:top-1/2 md:max-h-[calc(100dvh-2rem)] overflow-y-auto overflow-x-hidden rounded-2xl border border-border p-3.5 pr-10 text-sm data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
       },
     },
     defaultVariants: {
@@ -62,7 +62,7 @@ const SheetContent = React.forwardRef<
   <SheetPortal>
     <SheetOverlay />
     <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+      <SheetPrimitive.Close className="absolute right-3 top-3 z-10 rounded-sm opacity-70 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </SheetPrimitive.Close>
