@@ -34,7 +34,13 @@ function isUuid(s: string): boolean {
 
 export function useCustomerExtrasSync() {
   const hydrate = useCallback(async (companyId: string) => {
-    const rows = await listCustomerExtrasDb({ data: { companyId } });
+    // Timeout de 8s: se o backend trava, NÃO bloqueia /clientes nem segura
+    // o pool de conexões. Cache local existente é preservado intacto.
+    const rows = await withTimeout(
+      listCustomerExtrasDb({ data: { companyId } }),
+      8000,
+      "listCustomerExtrasDb",
+    );
     if (!rows || rows.length === 0) return;
     const map: Record<string, CustomerExtras> = {};
     for (const r of rows) {
