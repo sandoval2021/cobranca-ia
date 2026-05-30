@@ -149,9 +149,18 @@ export function useTrialLeadsSync() {
 
     const fups = readArr<FollowUp>(FOLLOWUP_KEY);
     if (fups.length > 0) {
-      const leadIds = new Set(remapped.map((l) => l.id));
+      // Após upsert, releitura do DB para obter o conjunto REAL de lead_ids
+      // persistidos. Evita FK violation em trial_followups_lead_id_fkey quando
+      // followup local aponta para lead que foi removido remotamente ou cujo
+      // upsert acima falhou silenciosamente.
+      let dbLeadIds = new Set<string>(remapped.map((l) => l.id));
+      try {
+        const dbLeads = await listTrialLeadsDb({ data: { companyId } });
+        dbLeadIds = new Set((dbLeads ?? []).map((l) => l.id));
+      } catch { /* noop — usa fallback otimista */ }
+
       const fupItems = fups
-        .filter((f) => leadIds.has(f.lead_id))
+        .filter((f) => isUuid(f.lead_id) && dbLeadIds.has(f.lead_id))
         .map((f) => ({
           id: isUuid(f.id) ? f.id : newId(),
           lead_id: f.lead_id,
@@ -162,7 +171,7 @@ export function useTrialLeadsSync() {
         }));
       if (fupItems.length > 0) {
         try { await bulkUpsertTrialFollowupsDb({ data: { companyId, items: fupItems } }); }
-        catch { /* noop */ }
+        catch (e) { console.warn("[trial-leads:sync] followups upload failed", e); }
       }
     }
   }, []);
