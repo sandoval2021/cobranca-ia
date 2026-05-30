@@ -1035,27 +1035,92 @@ function ClosedDialog({
       toast.error("WhatsApp inválido neste teste.");
       return;
     }
+    const dueDateIso = `${vencimento.getFullYear()}-${String(vencimento.getMonth() + 1).padStart(2, "0")}-${String(vencimento.getDate()).padStart(2, "0")}`;
+    const todayIsoStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     const payload = {
       p_company_id: companyId,
       p_name: (currentLead.nome || "").trim() || "Cliente",
       p_whatsapp_e164: e164,
       p_amount_cents: valorCents,
       p_due_day: vencimento.getDate(),
+      p_due_date: dueDateIso,
       p_notes: `Convertido do teste em ${fmtBR(today)} — ${effectiveMonths} mês(es). Vencimento ${fmtBR(vencimento)}.`,
     };
-    const { error } = await supabase.rpc("create_customer_admin", payload);
-    if (error) {
-      setBusy(false);
-      const e = error as { code?: string; message?: string };
-      const msg = (e.message ?? "").toLowerCase();
-      if (e.code === "23505" || msg.includes("duplicate") || msg.includes("unique")) {
-        toast.error("Este WhatsApp já está cadastrado em Clientes.");
-      } else {
+    const { data: rpcData, error } = await supabase.rpc("create_customer_admin", payload);
+
+    // Resolve customer_id mesmo quando cliente já existia (23505) — necessário
+    // para vincular o lançamento financeiro e permitir retomada idempotente.
+    let customerId: string | null = null;
+    if (!error) {
+      const d = rpcData as { customer_id?: string } | null;
+      customerId = d?.customer_id ?? null;
+    }
+    if (!customerId) {
+      const isDup =
+        !!error &&
+        ((error as { code?: string }).code === "23505" ||
+          ((error as { message?: string }).message ?? "").toLowerCase().includes("duplicate") ||
+          ((error as { message?: string }).message ?? "").toLowerCase().includes("unique"));
+      if (error && !isDup) {
+        setBusy(false);
+        const e = error as { code?: string; message?: string };
         toast.error("Não foi possível converter o teste. Tente novamente.");
+        console.warn("[fechou] error", { code: e.code, message: e.message });
+        return;
       }
-      console.warn("[fechou] error", { code: e.code, message: e.message });
+      try {
+        const { data: existing } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("company_id", companyId)
+          .eq("whatsapp_e164", e164)
+          .maybeSingle();
+        customerId = (existing as { id?: string } | null)?.id ?? null;
+      } catch (e) {
+        console.warn("[fechou] lookup-customer-failed", e);
+      }
+    }
+
+    // Lançamento financeiro idempotente. Só cria se houver valor real (>0).
+    // idempotencyKey = trial_close:<lead.id> garante que repetir Fechou ou
+    // retomar conversão de cliente já existente não duplique o lançamento.
+    let financeError: unknown = null;
+    if (valorCents > 0 && customerId) {
+      try {
+        await upsertFinanceEntryDb({
+          data: {
+            companyId,
+            tipo: "teste_convertido",
+            descricao: `Teste convertido em cliente — ${(currentLead.nome || "").trim() || "Cliente"}`,
+            valor_cents: valorCents,
+            data: todayIsoStr,
+            metodo_pagamento: null,
+            cliente_id: customerId,
+            extraJson: JSON.stringify({
+              source: "trial_close",
+              lead_id: currentLead.id,
+              customer_name: (currentLead.nome || "").trim() || "Cliente",
+              customer_whatsapp: e164,
+              type: "teste_convertido",
+              amount_received: valorCents / 100,
+              method: "outro",
+              date: todayIsoStr,
+            }),
+            idempotencyKey: `trial_close:${currentLead.id}`,
+          },
+        });
+      } catch (e) {
+        financeError = e;
+        console.warn("[fechou] finance-entry-failed", e);
+      }
+    }
+
+    if (financeError) {
+      setBusy(false);
+      toast.error("Cliente registrado, mas não foi possível lançar o financeiro. Tente novamente.");
       return;
     }
+
     const finalMsg = buildClosedMessage({
       vencimento,
       app: currentLead.app,
@@ -1067,7 +1132,13 @@ function ClosedDialog({
     const waHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(finalMsg)}`;
     setBusy(false);
     setDone({ msg: finalMsg, waLink: waHref });
-    toast.success("Cliente convertido com sucesso.");
+    if (valorCents > 0 && !customerId) {
+      toast.warning("Cliente convertido, mas não foi possível localizar para lançar o financeiro.");
+    } else if (valorCents <= 0) {
+      toast.success("Cliente convertido. Sem valor para lançar no financeiro.");
+    } else {
+      toast.success("Cliente convertido e financeiro lançado.");
+    }
     onConverted(currentLead);
   }
 
