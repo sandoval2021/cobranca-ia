@@ -505,19 +505,40 @@ function QuickAction({
       neutral:
         "bg-card text-foreground border border-border shadow-card",
     };
+    const boldClass = cn(
+      "flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 text-center transition-all hover:-translate-y-0.5 active:scale-[0.98]",
+      boldSurface[tone],
+    );
+    if (onClick) {
+      return (
+        <button type="button" onClick={onClick} className={boldClass}>
+          <Icon className="h-5 w-5" />
+          <span className="text-xs font-bold leading-tight">{label}</span>
+        </button>
+      );
+    }
     return (
-      <Link
-        to={path}
-        search={search as never}
-        preload="render"
-        className={cn(
-          "flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 text-center transition-all hover:-translate-y-0.5 active:scale-[0.98]",
-          boldSurface[tone],
-        )}
-      >
+      <Link to={path} search={search as never} preload="render" className={boldClass}>
         <Icon className="h-5 w-5" />
         <span className="text-xs font-bold leading-tight">{label}</span>
       </Link>
+    );
+  }
+
+  const softClass = "flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-3 text-center shadow-card transition-all hover:-translate-y-0.5 hover:shadow-pop";
+  const softInner = (
+    <>
+      <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", toneSurface[tone])}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <span className="text-xs font-semibold leading-tight text-foreground">{label}</span>
+    </>
+  );
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={softClass}>
+        {softInner}
+      </button>
     );
   }
 
