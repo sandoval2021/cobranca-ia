@@ -608,8 +608,8 @@ function CompanySheet({
           <Button variant="outline" onClick={onClose} className="flex-1">
             Cancelar
           </Button>
-          <Button onClick={handleSave} className="flex-1">
-            Salvar
+          <Button onClick={handleSave} disabled={saving} className="flex-1">
+            {saving ? "Salvando..." : "Salvar"}
           </Button>
         </SheetFooter>
       </SheetContent>
