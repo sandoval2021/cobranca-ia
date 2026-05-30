@@ -45,11 +45,16 @@ export function useDbFirstSync(opts: {
   // a hidratação acionem mirror imediato
   const hydratingRef = useRef(false);
   const suppressUntilRef = useRef(0);
+  // single-flight: bloqueia re-entrada em run() (focus/online/realtime/timer
+  // disparando concorrentemente saturam o pool de conexões do banco).
+  const runningRef = useRef(false);
   // ref estável para mirror (não rebuilda run() a cada render)
   const mirrorRef = useRef(mirror);
   mirrorRef.current = mirror;
 
   const run = useCallback(async () => {
+    if (runningRef.current) return;
+    runningRef.current = true;
     const companyId = getCurrentCompanyId();
     if (!isUuid(companyId)) return;
     hydratingRef.current = true;
