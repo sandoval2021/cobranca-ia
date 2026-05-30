@@ -344,7 +344,7 @@ function CobrancasPage() {
       const charges = ((chargesRes.data ?? []) as Row[]).map(normalizeCharge);
       setItems(charges);
 
-      const custRes = await listCustomersForSelectAdmin({
+      const custRes = await listCustomersAdmin({
         p_company_id: companyId,
         p_search: null,
         p_limit: 500,
@@ -353,7 +353,12 @@ function CobrancasPage() {
       const map: Record<string, CustomerLite> = {};
       const list: CustomerLite[] = [];
       if (!custRes.error) {
-        const customersData = (custRes.data ?? []) as Row[];
+        const raw = custRes.data as unknown;
+        const customersData: Row[] = Array.isArray(raw)
+          ? (raw as Row[])
+          : Array.isArray((raw as { customers?: unknown[] } | null)?.customers)
+            ? ((raw as { customers: Row[] }).customers)
+            : [];
         for (const c of customersData) {
           const id = String(c.id ?? c.customer_id ?? "");
           if (!id) continue;
@@ -368,7 +373,7 @@ function CobrancasPage() {
       } else {
         toastRpcError(
           "Não foi possível carregar a lista de clientes agora.",
-          "list_customers_for_select_admin",
+          "list_customers_admin",
           custRes.payload,
           custRes.error,
         );
