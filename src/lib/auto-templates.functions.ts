@@ -2,6 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { chunkedOrderedUpsert } from "@/lib/sync/chunked-upsert";
 
 const UUID = z.string().uuid();
 
@@ -104,11 +105,13 @@ export const bulkUpsertAutoTemplatesDb = createServerFn({ method: "POST" })
     const payload = data.items.map((i) =>
       inputToRow({ ...i, companyId: data.companyId }),
     );
-    const { error, count } = await context.supabase
-      .from("auto_templates")
-      .upsert(payload, { onConflict: "company_id,template_id", count: "exact" });
-    if (error) throw new Error(error.message);
-    return { upserted: count ?? data.items.length };
+    const upserted = await chunkedOrderedUpsert(
+      context.supabase,
+      "auto_templates",
+      payload,
+      { onConflict: "company_id,template_id", sortKeys: ["company_id", "template_id"] },
+    );
+    return { upserted };
   });
 
 export const deleteAutoTemplateDb = createServerFn({ method: "POST" })
