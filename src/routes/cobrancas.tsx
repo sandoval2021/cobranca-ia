@@ -402,6 +402,7 @@ function CobrancasPage() {
             (r.whatsapp as string) ??
             (r.phone as string) ??
             null,
+          due_date: str(r, ["due_date", "vencimento", "due_at", "expires_at"]),
         };
         map[cid] = lite;
         list.push(lite);
