@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { chunkedOrderedUpsert } from "@/lib/sync/chunked-upsert";
 
 export type ImportJobDto = {
   id: string;
@@ -162,9 +163,15 @@ export const bulkUpsertImportedDueDb = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertCompanyAccess(context.supabase, data.companyId);
-    let count = 0;
+    if (data.items.length === 0) return { count: 0 };
+    // Separa linhas com phone (upsert ordenado por phone, dedup por
+    // company_id+phone) das sem phone (insert direto). Loop por linha era a
+    // causa principal dos deadlocks: dois dispositivos sincronizando o mesmo
+    // lote em ordens diferentes pegavam locks fora de ordem.
+    const withPhone: Array<Record<string, unknown>> = [];
+    const withoutPhone: Array<Record<string, unknown>> = [];
     for (const it of data.items) {
-      const base: any = {
+      const base = {
         company_id: data.companyId,
         customer_id: it.customer_id ?? null,
         phone: it.phone ?? null,
@@ -173,16 +180,37 @@ export const bulkUpsertImportedDueDb = createServerFn({ method: "POST" })
         source_job_id: it.source_job_id ?? null,
         raw_row: it.raw_row,
       };
-      if (it.phone) {
+      if (it.phone) withPhone.push(base);
+      else withoutPhone.push(base);
+    }
+    let count = 0;
+    if (withPhone.length > 0) {
+      count += await chunkedOrderedUpsert(
+        supabaseAdmin,
+        "imported_customer_due_dates",
+        withPhone,
+        { onConflict: "company_id,phone", sortKeys: ["phone"] },
+      );
+    }
+    if (withoutPhone.length > 0) {
+      // sem chave única → INSERT em chunks; ordenar por due_date+customer_name
+      // mantém ordem determinística entre callers concorrentes.
+      const sorted = [...withoutPhone].sort((a, b) => {
+        const ad = String(a.due_date ?? "");
+        const bd = String(b.due_date ?? "");
+        if (ad !== bd) return ad < bd ? -1 : 1;
+        const an = String(a.customer_name ?? "");
+        const bn = String(b.customer_name ?? "");
+        return an < bn ? -1 : an > bn ? 1 : 0;
+      });
+      for (let i = 0; i < sorted.length; i += 200) {
+        const slice = sorted.slice(i, i + 200);
         const { error } = await supabaseAdmin
           .from("imported_customer_due_dates")
-          .upsert(base, { onConflict: "company_id,phone" });
+          .insert(slice as never);
         if (error) throw new Error(error.message);
-      } else {
-        const { error } = await supabaseAdmin.from("imported_customer_due_dates").insert(base);
-        if (error) throw new Error(error.message);
+        count += slice.length;
       }
-      count++;
     }
     return { count };
   });
