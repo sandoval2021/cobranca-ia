@@ -222,64 +222,116 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#2563EB" },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "CobraEasy" },
-      { title: "CobraEasy — Cobrança inteligente para o seu negócio" },
-      { name: "description", content: "CobraEasy: gestão de clientes, cobranças automáticas e mensagens inteligentes em um só painel." },
-      { property: "og:site_name", content: "CobraEasy" },
-      { property: "og:title", content: "CobraEasy — Cobrança inteligente para o seu negócio" },
-      { property: "og:description", content: "CobraEasy: gestão de clientes, cobranças automáticas e mensagens inteligentes em um só painel." },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://cobraeasy.com.br" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "CobraEasy — Cobrança inteligente para o seu negócio" },
-      { name: "twitter:description", content: "CobraEasy: gestão de clientes, cobranças automáticas e mensagens inteligentes em um só painel." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/3996efa0-2943-48bb-b34c-8e562c2e8d30" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/3996efa0-2943-48bb-b34c-8e562c2e8d30" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "manifest", href: "/manifest.json" },
-      { rel: "icon", href: "/favicon.ico", sizes: "any" },
-      { rel: "icon", href: "/favicon-32.png", type: "image/png", sizes: "32x32" },
-      { rel: "icon", href: "/favicon-16.png", type: "image/png", sizes: "16x16" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&display=swap" },
-      { rel: "canonical", href: "https://cobraeasy.com.br" },
-    ],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          name: "CobraEasy",
-          url: "https://cobraeasy.com.br",
-          logo: "https://cobraeasy.com.br/apple-touch-icon.png",
-          description: "Plataforma brasileira de cobrança inteligente com WhatsApp, IA e Mercado Pago.",
-        }),
-      },
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: "CobraEasy",
-          url: "https://cobraeasy.com.br",
-        }),
-      },
-    ],
-
-
-  }),
+  head: () => {
+    const TITLE = "CobraEasy: Cobrança Automática no WhatsApp com Pix e IA";
+    const DESCRIPTION =
+      "Sistema de cobrança automática no WhatsApp para revendas, provedores e prestadores de serviço. Pix Mercado Pago, IA atendente, lembretes e renovação. Teste grátis 5 dias.";
+    const KEYWORDS =
+      "cobrança automática, cobrança no whatsapp, sistema de cobrança, cobrança recorrente, pix automático, mercado pago, gestão de clientes, software para revenda, ia atendente whatsapp, plataforma de cobrança, lembrete de pagamento, renovação automática, cobraeasy";
+    const LOGO = "https://cobraeasy.com.br/icon-512.png";
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+        { name: "theme-color", content: "#2563EB" },
+        { name: "apple-mobile-web-app-capable", content: "yes" },
+        { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+        { name: "apple-mobile-web-app-title", content: "CobraEasy" },
+        { name: "application-name", content: "CobraEasy" },
+        { title: TITLE },
+        { name: "description", content: DESCRIPTION },
+        { name: "keywords", content: KEYWORDS },
+        { name: "author", content: "CobraEasy" },
+        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1" },
+        { name: "googlebot", content: "index, follow, max-image-preview:large, max-snippet:-1" },
+        { httpEquiv: "content-language", content: "pt-BR" },
+        { property: "og:site_name", content: "CobraEasy" },
+        { property: "og:locale", content: "pt_BR" },
+        { property: "og:title", content: TITLE },
+        { property: "og:description", content: DESCRIPTION },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: "https://cobraeasy.com.br" },
+        { property: "og:image", content: LOGO },
+        { property: "og:image:width", content: "512" },
+        { property: "og:image:height", content: "512" },
+        { property: "og:image:alt", content: "Logo CobraEasy — Cobrança automática no WhatsApp" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: TITLE },
+        { name: "twitter:description", content: DESCRIPTION },
+        { name: "twitter:image", content: LOGO },
+        { name: "twitter:image:alt", content: "Logo CobraEasy" },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "manifest", href: "/manifest.json" },
+        { rel: "icon", href: "/favicon.ico?v=2", sizes: "any" },
+        { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
+        { rel: "icon", href: "/favicon-32.png?v=2", type: "image/png", sizes: "32x32" },
+        { rel: "icon", href: "/favicon-16.png?v=2", type: "image/png", sizes: "16x16" },
+        { rel: "icon", href: "/icon-192.png", type: "image/png", sizes: "192x192" },
+        { rel: "icon", href: "/icon-512.png", type: "image/png", sizes: "512x512" },
+        { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+        { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&display=swap" },
+        { rel: "canonical", href: "https://cobraeasy.com.br" },
+      ],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "CobraEasy",
+            alternateName: "Cobra Easy",
+            url: "https://cobraeasy.com.br",
+            logo: {
+              "@type": "ImageObject",
+              url: LOGO,
+              width: 512,
+              height: 512,
+            },
+            image: LOGO,
+            description: DESCRIPTION,
+            sameAs: ["https://cobraeasy.com.br"],
+          }),
+        },
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "CobraEasy",
+            url: "https://cobraeasy.com.br",
+            inLanguage: "pt-BR",
+            potentialAction: {
+              "@type": "SearchAction",
+              target: "https://cobraeasy.com.br/?q={search_term_string}",
+              "query-input": "required name=search_term_string",
+            },
+          }),
+        },
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "CobraEasy",
+            applicationCategory: "BusinessApplication",
+            operatingSystem: "Web, iOS, Android",
+            offers: {
+              "@type": "Offer",
+              price: "49.90",
+              priceCurrency: "BRL",
+            },
+            description: DESCRIPTION,
+            image: LOGO,
+            url: "https://cobraeasy.com.br",
+          }),
+        },
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
