@@ -36,8 +36,11 @@ import {
   getQueueCounts,
   reprocessWhatsAppMessage,
   reprocessRenewalTask,
+  getRenewalTaskDetails,
+  confirmManualSigmaRenewal,
 } from "@/lib/queue-ops/queue-ops.functions";
 import { ensureMyCompany } from "@/lib/whatsapp/whatsapp.functions";
+import { Copy, CheckCheck } from "lucide-react";
 
 export const Route = createFileRoute("/operacao-filas")({
   component: OperacaoFilasPage,
