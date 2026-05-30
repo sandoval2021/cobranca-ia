@@ -23,6 +23,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { pickProviderForServer } from "@/lib/iptv/providers/sigma.server";
 
 const WORKER_NAME = "renewal-worker";
 const COMPANIES_PER_RUN = 50;
