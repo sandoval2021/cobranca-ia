@@ -508,18 +508,29 @@ export const confirmManualSigmaRenewal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertCompanyAccess(context.supabase, context.userId, data.company_id);
 
+    const lockedBy = `manual:${String(context.userId).slice(0, 8)}`;
+
     // 1) Lê task (filtra por company).
     const { data: task, error: readErr } = await supabaseAdmin
       .from("renewal_tasks")
       .select(
-        "id, company_id, customer_id, status, credential_id, plan_days",
+        "id, company_id, customer_id, status, credential_id, plan_days, locked_by",
       )
       .eq("id", data.id)
       .eq("company_id", data.company_id)
       .maybeSingle();
     if (readErr || !task) throw new Error("Tarefa não encontrada.");
 
-    // 2) Idempotência: já existe manual_renewals para esta task?
+    // 2) Se já renewed → idempotente puro.
+    if (task.status === "renewed") {
+      return {
+        ok: true,
+        idempotent: true,
+        new_due_date: data.new_due_date,
+      };
+    }
+
+    // 3) Verifica histórico já existente (falha parcial anterior).
     const { data: existing } = await supabaseAdmin
       .from("manual_renewals")
       .select("id, new_due_date")
@@ -528,43 +539,48 @@ export const confirmManualSigmaRenewal = createServerFn({ method: "POST" })
       .filter("payload->>renewal_task_id", "eq", task.id)
       .maybeSingle();
 
-    if (task.status === "renewed" || existing) {
-      // Já confirmado — resposta idempotente.
-      return {
-        ok: true,
-        idempotent: true,
-        new_due_date: (existing?.new_due_date as string | null) ?? data.new_due_date,
-      };
-    }
+    const hadExistingHistory = !!existing;
+    const effectiveNewDueDate =
+      (existing?.new_due_date as string | null) ?? data.new_due_date;
 
-    if (task.status !== "needs_human") {
+    // 4) Claim seguro.
+    //    - needs_human → trying (claim novo)
+    //    - trying com lock deste operador → resume
+    //    - trying por outro → bloqueia
+    //    - qualquer outro → erro de estado
+    if (task.status === "needs_human") {
+      const { data: claimed, error: claimErr } = await supabaseAdmin
+        .from("renewal_tasks")
+        .update({
+          status: "trying",
+          locked_at: new Date().toISOString(),
+          locked_by: lockedBy,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", task.id)
+        .eq("company_id", data.company_id)
+        .eq("status", "needs_human")
+        .select("id")
+        .maybeSingle();
+      if (claimErr || !claimed) {
+        throw new Error(
+          "Essa tarefa foi atualizada por outro usuário. Recarregue a página.",
+        );
+      }
+    } else if (task.status === "trying") {
+      if (task.locked_by && task.locked_by !== lockedBy) {
+        throw new Error(
+          "Essa tarefa está sendo processada por outro operador.",
+        );
+      }
+      // mesmo operador (ou lock vazio) — segue retomando.
+    } else {
       throw new Error(
         "Esta tarefa não está aguardando confirmação manual no momento.",
       );
     }
 
-    // 3) Claim condicional needs_human → trying.
-    const { data: claimed, error: claimErr } = await supabaseAdmin
-      .from("renewal_tasks")
-      .update({
-        status: "trying",
-        locked_at: new Date().toISOString(),
-        locked_by: `manual:${String(context.userId).slice(0, 8)}`,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", task.id)
-      .eq("company_id", data.company_id)
-      .eq("status", "needs_human")
-      .select("id")
-      .maybeSingle();
-    if (claimErr || !claimed) {
-      // Outro operador pegou a task ou status mudou.
-      throw new Error(
-        "Essa tarefa foi atualizada por outro usuário. Recarregue a página.",
-      );
-    }
-
-    // 4) Lê cliente atual para old_due_date e plano.
+    // 5) Lê cliente para old_due_date e plano (necessários para histórico).
     const { data: customer } = await supabaseAdmin
       .from("customers")
       .select("id, due_date")
@@ -579,70 +595,82 @@ export const confirmManualSigmaRenewal = createServerFn({ method: "POST" })
       .eq("customer_id", task.customer_id)
       .eq("company_id", data.company_id)
       .maybeSingle();
-    const servicePlanId =
-      (planRow as any)?.service_plan_id ?? null;
+    const servicePlanId = (planRow as any)?.service_plan_id ?? null;
     const months = (planRow as any)?.service_plans?.meses ?? null;
 
-    // 5) Histórico antes da atualização (registro confirma a intenção).
-    const { error: histErr } = await supabaseAdmin
-      .from("manual_renewals")
-      .insert({
-        company_id: data.company_id,
-        customer_id: task.customer_id,
-        service_plan_id: servicePlanId,
-        old_due_date: oldDueDate,
-        new_due_date: data.new_due_date,
-        months_added: months,
-        amount_cents: null,
-        payment_method: null,
-        note: data.note ?? "Confirmação manual via painel de filas.",
-        payload: {
-          renewal_task_id: task.id,
-          provider: "sigma",
-        },
-        created_by: context.userId,
-      });
-    if (histErr) {
-      // Reverte claim para needs_human para permitir nova tentativa.
-      await supabaseAdmin
-        .from("renewal_tasks")
-        .update({
-          status: "needs_human",
-          locked_at: null,
-          locked_by: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", task.id)
-        .eq("company_id", data.company_id);
-      throw new Error("Não foi possível registrar o histórico. Tente novamente.");
+    // 6) Histórico: cria só se não existir. Nunca duplica.
+    if (!hadExistingHistory) {
+      const { error: histErr } = await supabaseAdmin
+        .from("manual_renewals")
+        .insert({
+          company_id: data.company_id,
+          customer_id: task.customer_id,
+          service_plan_id: servicePlanId,
+          old_due_date: oldDueDate,
+          new_due_date: effectiveNewDueDate,
+          months_added: months,
+          amount_cents: null,
+          payment_method: null,
+          note: data.note ?? "Confirmação manual via painel de filas.",
+          payload: {
+            renewal_task_id: task.id,
+            provider: "sigma",
+          },
+          created_by: context.userId,
+        });
+      if (histErr) {
+        // Reverte claim para needs_human para nova tentativa.
+        await supabaseAdmin
+          .from("renewal_tasks")
+          .update({
+            status: "needs_human",
+            locked_at: null,
+            locked_by: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", task.id)
+          .eq("company_id", data.company_id);
+        throw new Error("Não foi possível registrar o histórico. Tente novamente.");
+      }
     }
 
-    // 6) Atualiza vencimento do cliente (somente após histórico salvo).
-    const newDay = Number(data.new_due_date.slice(8, 10));
-    await supabaseAdmin
-      .from("customers")
-      .update({
-        due_date: data.new_due_date,
-        due_day: newDay,
-        status: "em_dia",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", task.customer_id)
-      .eq("company_id", data.company_id);
+    // 7) Atualiza vencimento do cliente — idempotente (só se ainda não bate).
+    if (oldDueDate !== effectiveNewDueDate) {
+      const newDay = Number(effectiveNewDueDate.slice(8, 10));
+      await supabaseAdmin
+        .from("customers")
+        .update({
+          due_date: effectiveNewDueDate,
+          due_day: newDay,
+          status: "em_dia",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", task.customer_id)
+        .eq("company_id", data.company_id);
+    }
 
-    // 7) Atualiza expires_at da credencial, se houver.
+    // 8) Atualiza expires_at da credencial, se houver — idempotente por valor.
     if (task.credential_id) {
-      await supabaseAdmin
+      const targetExpires = effectiveNewDueDate + "T23:59:59Z";
+      const { data: cred } = await supabaseAdmin
         .from("customer_iptv_credentials")
-        .update({
-          expires_at: data.new_due_date + "T23:59:59Z",
-          updated_at: new Date().toISOString(),
-        })
+        .select("id, expires_at")
         .eq("id", task.credential_id)
-        .eq("company_id", data.company_id);
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      if (cred && (cred as any).expires_at !== targetExpires) {
+        await supabaseAdmin
+          .from("customer_iptv_credentials")
+          .update({
+            expires_at: targetExpires,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", task.credential_id)
+          .eq("company_id", data.company_id);
+      }
     }
 
-    // 8) Marca task renewed e limpa lock.
+    // 9) Finaliza task: renewed + limpa lock + completed_at.
     await supabaseAdmin
       .from("renewal_tasks")
       .update({
@@ -656,5 +684,10 @@ export const confirmManualSigmaRenewal = createServerFn({ method: "POST" })
       .eq("id", task.id)
       .eq("company_id", data.company_id);
 
-    return { ok: true, idempotent: false, new_due_date: data.new_due_date };
+    return {
+      ok: true,
+      idempotent: hadExistingHistory,
+      resumed: hadExistingHistory,
+      new_due_date: effectiveNewDueDate,
+    };
   });
