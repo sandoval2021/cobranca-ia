@@ -1271,32 +1271,41 @@ function ClientCard({
             )
           }
         />
-        {(() => {
-          const srvId = primaryScreen?.primary_server_id || primaryScreen?.server_ids?.[0];
+        {primaryScreen && (() => {
+          const srvId = primaryScreen.primary_server_id || primaryScreen.server_ids?.[0];
           const srv = srvId ? getServerById(srvId) : null;
-          if (!srv) return null;
           return (
             <Row
               label="Servidor"
               value={
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (srv.panel_url) {
-                      window.open(srv.panel_url, "_blank", "noopener,noreferrer");
-                    } else {
-                      toast.info("Este servidor não tem painel cadastrado.");
-                    }
-                  }}
-                  style={{ backgroundColor: `${srv.color}22`, color: srv.color, borderColor: `${srv.color}55` }}
-                  className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium hover:opacity-80"
-                  title={srv.panel_url ? `Abrir painel ${srv.name}` : srv.name}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: srv.color }} aria-hidden />
-                  {srv.name}
-                  {srv.panel_url && <ExternalLink className="h-2.5 w-2.5" />}
-                </button>
+                srv ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (srv.panel_url) {
+                        window.open(srv.panel_url, "_blank", "noopener,noreferrer");
+                      } else {
+                        toast.info("Este servidor não tem painel cadastrado. Edite o servidor para adicionar.");
+                      }
+                    }}
+                    style={{ backgroundColor: `${srv.color}22`, color: srv.color, borderColor: `${srv.color}55` }}
+                    className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium hover:opacity-80"
+                    title={srv.panel_url ? `Abrir painel ${srv.name}` : srv.name}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: srv.color }} aria-hidden />
+                    {srv.name}
+                    {srv.panel_url && <ExternalLink className="h-2.5 w-2.5" />}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onApps(); }}
+                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-muted"
+                  >
+                    + Vincular servidor
+                  </button>
+                )
               }
             />
           );
