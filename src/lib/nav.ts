@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
+import type { LocalRole } from "@/lib/local-auth";
 
 export type NavItem = {
   to: string;
