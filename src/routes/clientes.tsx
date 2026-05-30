@@ -1710,7 +1710,7 @@ function DetailView({
 
   return (
     <Tabs defaultValue="dados" className="w-full">
-      <TabsList className="grid w-full grid-cols-7">
+      <TabsList className="grid h-auto w-full grid-cols-4 gap-1 sm:grid-cols-7">
         <TabsTrigger value="dados" className="text-[10px] sm:text-xs">Dados</TabsTrigger>
         <TabsTrigger value="telas" className="text-[10px] sm:text-xs gap-1">
           <Tv className="h-3 w-3" /> Telas
@@ -1731,7 +1731,7 @@ function DetailView({
       </TabsContent>
 
       <TabsContent value="dados" className="mt-4 space-y-5">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
           <DetailField label="Nome" value={customer.name} />
           <DetailField
             label="WhatsApp"
@@ -1789,7 +1789,7 @@ function DetailView({
         ) : (
           <ul className="space-y-1.5">
             {charges.slice(0, 10).map((c, i) => (
-              <li key={i} className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-xs">
+              <li key={i} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs">
                 <div className="min-w-0">
                   <p className="truncate font-medium">
                     {fmtDate(str(c, ["due_date", "vencimento", "due_at", "created_at"]))}
@@ -1798,7 +1798,7 @@ function DetailView({
                     {str(c, ["status", "situacao"]) ?? "—"}
                   </p>
                 </div>
-                <span className="shrink-0 font-semibold">
+                <span className="font-semibold break-words">
                   {(() => {
                     const a = num(c, ["amount_cents"]);
                     if (a != null) return fmtBRL(a);
@@ -1824,11 +1824,11 @@ function DetailView({
           <ul className="space-y-1.5">
             {messages.slice(0, 10).map((m, i) => (
               <li key={i} className="rounded-lg border border-border bg-card px-3 py-2 text-xs">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium break-words">
                     {str(m, ["direction", "tipo"]) ?? "Mensagem"}
                   </span>
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground break-words">
                     {fmtDate(str(m, ["sent_at", "created_at", "data"]))}
                   </span>
                 </div>
