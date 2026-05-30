@@ -3397,8 +3397,8 @@ function AppsDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-base">Aplicativos · {customer.name}</DialogTitle>
+        <DialogHeader className="pr-8">
+          <DialogTitle className="text-base leading-snug break-words [overflow-wrap:anywhere]">Aplicativos · {customer.name}</DialogTitle>
           <DialogDescription className="text-xs">
             {active.length === 0
               ? "Selecione o app, preencha os dados e salve."
@@ -3415,9 +3415,9 @@ function AppsDialog({
             const dUrg = urgencyFromDays(dDays);
             return (
               <div key={s.id} className="rounded-lg border border-border bg-card p-2.5">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{s.name}</p>
+                    <p className="text-sm font-semibold break-words [overflow-wrap:anywhere]">{s.name}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       {site ? (
                         <a
@@ -3425,7 +3425,7 @@ function AppsDialog({
                           target="_blank"
                           rel="noopener noreferrer"
                           className={cn(
-                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium hover:opacity-80",
+                            "inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium leading-tight whitespace-normal break-words hover:opacity-80",
                             app.badgeClass,
                           )}
                         >
@@ -3483,7 +3483,7 @@ function AppsDialog({
 
           {draft && (
             <div className="rounded-lg border-2 border-primary/40 bg-primary/5 p-2.5 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-semibold">
                   {editingId ? "Editando tela" : "Nova tela"}
                 </p>
@@ -3492,7 +3492,7 @@ function AppsDialog({
                 </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
                 <label className="space-y-1">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Nome da tela</span>
                   <Input
@@ -3517,7 +3517,7 @@ function AppsDialog({
               </div>
 
               {APP_CATALOG[draft.app].access === "user_pass" ? (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
                   <label className="space-y-1">
                     <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Usuário</span>
                     <Input value={draft.username} onChange={(e) => setDraft({ ...draft, username: e.target.value })} className="h-8 text-xs font-mono" />
@@ -3528,7 +3528,7 @@ function AppsDialog({
                   </label>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
                   <label className="space-y-1">
                     <span className="text-[10px] uppercase tracking-wide text-muted-foreground">MAC</span>
                     <Input
@@ -3562,7 +3562,7 @@ function AppsDialog({
                 />
               </label>
 
-              <div className="flex gap-2">
+              <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
                 <Button size="sm" onClick={saveDraft} className="flex-1 h-8 gap-1.5 text-xs">
                   <Save className="h-3.5 w-3.5" /> Salvar
                 </Button>
