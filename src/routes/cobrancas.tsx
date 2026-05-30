@@ -1486,10 +1486,26 @@ export function RenewCustomerDialog({
       const plans = rows
         .flatMap((r) => (Array.isArray(r.service_plans) ? r.service_plans : r.service_plans ? [r.service_plans] : []))
         .filter((p): p is { id: string; nome: string; preco_cents: number; telas: number; meses: number } => !!p);
-      setPlanOptions(plans);
-      if (plans.length > 0) {
-        // Seleciona o plano com mais telas (mais informações/recursos) por padrão
-        const best = [...plans].sort((a, b) => (b.telas - a.telas) || (b.preco_cents - a.preco_cents))[0];
+      let finalPlans = plans;
+      if (finalPlans.length === 0) {
+        // Fallback: cache local (localStorage) caso o vínculo ainda não tenha sincronizado com o banco
+        try {
+          const { getCustomerPlan } = await import("@/lib/customer-plans");
+          const local = getCustomerPlan(customerId) as any;
+          if (local && local.id) {
+            finalPlans = [{
+              id: String(local.id),
+              nome: local.nome ?? "Plano",
+              preco_cents: Number(local.preco_cents ?? 0),
+              telas: Number(local.telas ?? 1),
+              meses: Number(local.meses ?? 1),
+            }];
+          }
+        } catch { /* noop */ }
+      }
+      setPlanOptions(finalPlans);
+      if (finalPlans.length > 0) {
+        const best = [...finalPlans].sort((a, b) => (b.telas - a.telas) || (b.preco_cents - a.preco_cents))[0];
         setSelectedPlanId(best.id);
       } else {
         setSelectedPlanId("");
