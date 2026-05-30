@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, ListChecks, Beaker } from "lucide-react";
 import { ownerBottomNav, ownerMoreNav, filterNavByRole, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useLocalAuth } from "@/lib/use-local-auth";
@@ -13,22 +13,48 @@ import {
   getCurrentCompany,
 } from "@/lib/companies";
 
+// Item extra para o drawer "Mais" — pode sobrescrever label/hint/icon e
+// adicionar `search` (query string aplicada no Link), permitindo atalhos
+// como "Cadastrar teste" -> /testes?action=create sem criar rota nova.
+type MoreItem = {
+  key: string;
+  to: string;
+  label: string;
+  hint?: string;
+  icon: NavItem["icon"];
+  search?: Record<string, string>;
+};
+
 // Grupos do menu "Mais" — layout compacto em cards.
-// Cada slot referencia a `to` de um item existente em `ownerMoreNav` (com
-// fallback para `ownerNav`/`ownerBottomNav` quando aplicável). Mantém os
-// mesmos labels/ícones/hints definidos na navegação principal.
-const MORE_GROUPS: { title: string; routes: string[] }[] = [
+const MORE_GROUPS: { title: string; items: MoreItem[] }[] = [
   {
     title: "Minha conta",
-    routes: ["/meus-dados", "/minha-assinatura", "/whatsapp", "/campanhas-manuais"],
+    items: [
+      { key: "/meus-dados", to: "/meus-dados", label: "Minha conta", hint: "Seus dados pessoais e contato", icon: ownerMoreNav.find((i) => i.to === "/meus-dados")!.icon },
+      { key: "/minha-assinatura", to: "/minha-assinatura", label: "Minha assinatura", hint: "Plano, uso de IA e pacotes", icon: ownerMoreNav.find((i) => i.to === "/minha-assinatura")!.icon },
+      { key: "/whatsapp", to: "/whatsapp", label: "WhatsApp", hint: "Conecte seu WhatsApp", icon: ownerMoreNav.find((i) => i.to === "/whatsapp")!.icon },
+      { key: "/campanhas-manuais", to: "/campanhas-manuais", label: "Mensagens", hint: "Monte listas e copie mensagens", icon: ownerMoreNav.find((i) => i.to === "/campanhas-manuais")!.icon },
+    ],
   },
   {
     title: "Operação",
-    routes: ["/clientes", "/cadastros-servicos", "/operacao-dia", "/renovacoes-paineis"],
+    items: [
+      { key: "/clientes", to: "/clientes", label: "Clientes", hint: "Sua base de clientes", icon: ownerBottomNav.find((i) => i.to === "/clientes")!.icon },
+      { key: "/cadastros-servicos", to: "/cadastros-servicos", label: "Cadastros · Serviços", hint: "Planos e valores", icon: ownerBottomNav.find((i) => i.to === "/cadastros-servicos")!.icon },
+      { key: "/operacao-dia", to: "/operacao-dia", label: "Operação do dia", hint: "Quem precisa de atenção hoje", icon: ownerMoreNav.find((i) => i.to === "/operacao-dia")!.icon },
+      { key: "/operacao-filas", to: "/operacao-filas", label: "Operação · Filas", hint: "Envios, falhas e renovações manuais", icon: ListChecks },
+      { key: "/renovacoes-paineis", to: "/renovacoes-paineis", label: "Renovações de painéis", hint: "Fila de renovações IPTV", icon: ownerMoreNav.find((i) => i.to === "/renovacoes-paineis")!.icon },
+      { key: "/testes?action=create", to: "/testes", search: { action: "create" }, label: "Cadastrar teste", hint: "Novo teste para cliente interessado", icon: Beaker },
+    ],
   },
   {
     title: "Negócio",
-    routes: ["/configuracoes-revenda", "/apps-portal", "/ia-config", "/configuracoes"],
+    items: [
+      { key: "/configuracoes-revenda", to: "/configuracoes-revenda", label: "Minha revenda", hint: "Dados e regras da sua revenda", icon: ownerMoreNav.find((i) => i.to === "/configuracoes-revenda")!.icon },
+      { key: "/apps-portal", to: "/apps-portal", label: "Aplicativos pagos", hint: "Apps que seus clientes usam", icon: ownerMoreNav.find((i) => i.to === "/apps-portal")!.icon },
+      { key: "/ia-config", to: "/ia-config", label: "Configurar IA", hint: "Preços e instruções da IA", icon: ownerMoreNav.find((i) => i.to === "/ia-config")!.icon },
+      { key: "/configuracoes", to: "/configuracoes", label: "Configurações", hint: "Ajustes do ambiente", icon: ownerMoreNav.find((i) => i.to === "/configuracoes")!.icon },
+    ],
   },
 ];
 
