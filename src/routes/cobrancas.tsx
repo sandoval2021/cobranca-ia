@@ -1444,6 +1444,7 @@ function RenewCustomerDialog({
   const [months, setMonths] = useState("1");
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
+  const selected = customers.find((c) => c.id === customerId);
 
   useEffect(() => {
     if (open) {
@@ -1470,10 +1471,12 @@ function RenewCustomerDialog({
       return;
     }
     setBusy(true);
+    const dueDate = addMonthsISO(selected?.due_date, m);
     const payload = {
       p_customer_id: customerId,
-      p_months: m,
+      p_due_date: dueDate,
       p_amount_cents: cents,
+      p_notes: `Renovado por ${m} mês${m > 1 ? "es" : ""} em ${new Date().toLocaleDateString("pt-BR")}.`,
     };
     const { error } = await supabase.rpc("renew_customer_admin", payload);
     setBusy(false);
