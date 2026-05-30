@@ -73,7 +73,7 @@ const STATUS_LABEL: Record<CompanyStatus, string> = {
 // STATUS_TONE removido — UI agora usa apenas "Base ativa" / "Base de teste local".
 
 function useCompaniesData() {
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
   useEffect(() => {
     const r = () => setTick((n) => n + 1);
     window.addEventListener(COMPANIES_EVENT, r);
@@ -87,7 +87,7 @@ function useCompaniesData() {
     companies: listCompanies(),
     plans: listCompanyPlans(),
     currentId: getCurrentCompanyId(),
-  }), []);
+  }), [tick]);
 }
 
 function EmpresasPage() {
@@ -468,29 +468,48 @@ function CompanySheet({
     observacao: company?.observacao ?? "",
   });
 
+  const [saving, setSaving] = useState(false);
+
   function handleSave() {
-    if (!form.nome.trim()) return toast.error("Nome obrigatório.");
-    if (!form.dono_email.trim()) return toast.error("E-mail do dono obrigatório.");
-    const saved = saveCompany({
-      ...(company ?? {}),
-      ...form,
-      slug: form.slug.trim() || slugify(form.nome),
-    });
-    // Cria/atualiza membro owner
-    const existing = getCompanyMembers(saved.id).find(
-      (m) => m.email.toLowerCase() === form.dono_email.toLowerCase() && m.role === "owner",
-    );
-    saveCompanyMember({
-      id: existing?.id,
-      company_id: saved.id,
-      nome: form.dono_nome,
-      email: form.dono_email,
-      whatsapp: form.dono_whatsapp,
-      role: "owner",
-      status: "ativo",
-    });
-    toast.success(isEdit ? "Empresa atualizada." : "Empresa criada.");
-    onClose();
+    if (saving) return;
+    if (!form.nome.trim()) {
+      toast.error("Preencha o nome da empresa para continuar.");
+      return;
+    }
+    if (!form.dono_email.trim()) {
+      toast.error("Preencha o e-mail do dono para continuar.");
+      return;
+    }
+    if (!form.plano_id) {
+      toast.error("Selecione um plano para continuar.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const saved = saveCompany({
+        ...(company ?? {}),
+        ...form,
+        slug: form.slug.trim() || slugify(form.nome),
+      });
+      const existing = getCompanyMembers(saved.id).find(
+        (m) => m.email.toLowerCase() === form.dono_email.toLowerCase() && m.role === "owner",
+      );
+      saveCompanyMember({
+        id: existing?.id,
+        company_id: saved.id,
+        nome: form.dono_nome,
+        email: form.dono_email,
+        whatsapp: form.dono_whatsapp,
+        role: "owner",
+        status: "ativo",
+      });
+      toast.success(isEdit ? "Empresa atualizada." : "Empresa criada.");
+      onClose();
+    } catch (err) {
+      console.error("[empresas] save failed", err);
+      toast.error("Não foi possível salvar a empresa. Tente novamente.");
+      setSaving(false);
+    }
   }
 
   return (
@@ -589,8 +608,8 @@ function CompanySheet({
           <Button variant="outline" onClick={onClose} className="flex-1">
             Cancelar
           </Button>
-          <Button onClick={handleSave} className="flex-1">
-            Salvar
+          <Button onClick={handleSave} disabled={saving} className="flex-1">
+            {saving ? "Salvando..." : "Salvar"}
           </Button>
         </SheetFooter>
       </SheetContent>
