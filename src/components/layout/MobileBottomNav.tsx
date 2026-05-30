@@ -202,9 +202,10 @@ export function MobileBottomNav() {
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     return (
-                      <li key={item.to}>
+                      <li key={item.key}>
                         <Link
-                          to={item.to}
+                          to={item.to as never}
+                          search={(item.search ?? undefined) as never}
                           preload="intent"
                           onPointerDown={() => preloadRoute(item.to)}
                           onClick={(e) => {
