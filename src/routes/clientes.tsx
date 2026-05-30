@@ -1569,7 +1569,7 @@ function CustomerSheet({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-0 border-2 border-border shadow-2xl rounded-xl">
-        <DialogHeader className="border-b border-border px-4 py-3 text-left">
+        <DialogHeader className="shrink-0 border-b border-border bg-background px-4 py-3 text-left">
           <DialogTitle className="text-sm">{merged.name}</DialogTitle>
           <DialogDescription className="text-[11px]">
             {prettyPhone(merged.whatsapp) ?? "Sem WhatsApp cadastrado"}
