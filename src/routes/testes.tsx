@@ -89,6 +89,20 @@ function TestesPage() {
   const [closedLead, setClosedLead] = useState<TrialLead | null>(null);
   const { guard, dialog: securityDialog } = useSecurityGuard();
 
+  // Abrir cadastro de teste automaticamente quando vier de ?action=create
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("action") === "create") {
+      setOpenNew(true);
+      sp.delete("action");
+      const qs = sp.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    }
+  }, []);
+
+
+
 
   const reload = () => {
     setLeads(listTrialLeads());

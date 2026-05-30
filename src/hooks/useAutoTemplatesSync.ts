@@ -6,6 +6,7 @@ import {
   bulkUpsertAutoTemplatesDb,
 } from "@/lib/auto-templates.functions";
 import type { AutoTemplate } from "@/lib/auto-templates";
+import { withTimeout } from "@/lib/sync/with-timeout";
 
 const STORAGE_KEY = "cobraeasy.auto-templates.v1";
 const EVENT = "cobraeasy:auto-templates-changed";
@@ -76,7 +77,13 @@ function localToDb(t: AutoTemplate) {
 
 export function useAutoTemplatesSync() {
   const hydrate = useCallback(async (companyId: string) => {
-    const rows = await listAutoTemplatesDb({ data: { companyId } });
+    // Timeout de 8s: hidratação não pode travar a UI nem o pool de conexões.
+    // Em falha/timeout o cache local é PRESERVADO (writeLocal não é chamado).
+    const rows = await withTimeout(
+      listAutoTemplatesDb({ data: { companyId } }),
+      8000,
+      "listAutoTemplatesDb",
+    );
     if (!rows || rows.length === 0) return; // preserva cache local se DB vier vazio
     writeLocal(rows.map(dtoToLocal));
   }, []);

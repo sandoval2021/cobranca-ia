@@ -141,9 +141,10 @@ export function MobileBottomNav() {
                 : pathname === item.to || pathname.startsWith(item.to + "/");
             const Icon = item.icon;
             return (
-              <li key={item.to}>
+              <li key={item.to + (item.search ? "?" + new URLSearchParams(item.search).toString() : "")}>
                 <Link
                   to={item.to}
+                  search={(item.search ?? undefined) as never}
                   preload="render"
                   className={cn(
                     "flex h-[var(--bottomnav-height)] flex-col items-center justify-center gap-1 px-1 text-[11px] transition-colors",
