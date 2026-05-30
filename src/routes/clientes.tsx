@@ -2383,7 +2383,7 @@ function EditForm({
           className="h-9"
         />
       </Field>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Field label="Valor (R$)">
           <Input
             value={amount}
