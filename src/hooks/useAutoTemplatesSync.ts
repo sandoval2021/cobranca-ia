@@ -76,7 +76,13 @@ function localToDb(t: AutoTemplate) {
 
 export function useAutoTemplatesSync() {
   const hydrate = useCallback(async (companyId: string) => {
-    const rows = await listAutoTemplatesDb({ data: { companyId } });
+    // Timeout de 8s: hidratação não pode travar a UI nem o pool de conexões.
+    // Em falha/timeout o cache local é PRESERVADO (writeLocal não é chamado).
+    const rows = await withTimeout(
+      listAutoTemplatesDb({ data: { companyId } }),
+      8000,
+      "listAutoTemplatesDb",
+    );
     if (!rows || rows.length === 0) return; // preserva cache local se DB vier vazio
     writeLocal(rows.map(dtoToLocal));
   }, []);
