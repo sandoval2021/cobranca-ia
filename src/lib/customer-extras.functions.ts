@@ -9,16 +9,25 @@ const UUID = z.string().uuid();
 // Fase A — validação explícita de acesso à empresa (não confiar só no RLS
 // quando o client envia companyId). Reusa o RPC `has_company_access` já
 // usado por outros módulos (due-overrides, kb, referrals, whatsapp).
+async function hasCompanyAccess(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  companyId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("has_company_access", {
+    _company_id: companyId,
+  });
+  if (error) return false;
+  return Boolean(data);
+}
+
 async function assertCompanyAccess(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   companyId: string,
 ) {
-  const { data, error } = await supabase.rpc("has_company_access", {
-    _company_id: companyId,
-  });
-  if (error) throw new Error("forbidden");
-  if (!data) throw new Error("forbidden");
+  const ok = await hasCompanyAccess(supabase, companyId);
+  if (!ok) throw new Error("forbidden");
 }
 
 const ExtraInput = z.object({
