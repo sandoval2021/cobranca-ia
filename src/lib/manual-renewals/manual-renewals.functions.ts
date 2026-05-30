@@ -5,6 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { chunkedOrderedUpsert } from "@/lib/sync/chunked-upsert";
 
 export type ManualRenewalDto = {
   id: string;
@@ -130,8 +131,12 @@ export const bulkUpsertManualRenewalsDb = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertCompanyAccess(context.supabase, data.companyId);
-    let inserted = 0;
-    let updated = 0;
+    if (data.renewals.length === 0) return { inserted: 0, updated: 0 };
+    // Separa renovações com id (upsert ordenado por id) e sem id (insert).
+    // Loop com await por linha + ordem aleatória entre devices era o gatilho
+    // clássico de deadlock + saturação de pool.
+    const withId: Array<Record<string, unknown>> = [];
+    const withoutId: Array<Record<string, unknown>> = [];
     for (const r of data.renewals) {
       const base = {
         company_id: data.companyId,
@@ -145,17 +150,37 @@ export const bulkUpsertManualRenewalsDb = createServerFn({ method: "POST" })
         note: r.note ?? null,
         payload: r.payload ?? {},
         created_by: context.userId,
-      } as any;
-      if (r.id) {
+      } as Record<string, unknown>;
+      if (r.id) withId.push({ ...base, id: r.id });
+      else withoutId.push(base);
+    }
+    let updated = 0;
+    let inserted = 0;
+    if (withId.length > 0) {
+      updated = await chunkedOrderedUpsert(
+        supabaseAdmin,
+        "manual_renewals",
+        withId,
+        { onConflict: "id", sortKeys: ["id"] },
+      );
+    }
+    if (withoutId.length > 0) {
+      // INSERT determinístico por (customer_id, new_due_date) em chunks.
+      const sorted = [...withoutId].sort((a, b) => {
+        const ac = String(a.customer_id ?? "");
+        const bc = String(b.customer_id ?? "");
+        if (ac !== bc) return ac < bc ? -1 : 1;
+        const ad = String(a.new_due_date ?? "");
+        const bd = String(b.new_due_date ?? "");
+        return ad < bd ? -1 : ad > bd ? 1 : 0;
+      });
+      for (let i = 0; i < sorted.length; i += 200) {
+        const slice = sorted.slice(i, i + 200);
         const { error } = await supabaseAdmin
           .from("manual_renewals")
-          .upsert({ ...base, id: r.id });
+          .insert(slice as never);
         if (error) throw new Error(error.message);
-        updated++;
-      } else {
-        const { error } = await supabaseAdmin.from("manual_renewals").insert(base);
-        if (error) throw new Error(error.message);
-        inserted++;
+        inserted += slice.length;
       }
     }
     return { inserted, updated };

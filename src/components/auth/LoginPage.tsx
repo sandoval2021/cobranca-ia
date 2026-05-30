@@ -1132,6 +1132,14 @@ function ConfirmEmailForm({
 }
 
 export function SessionLoading() {
+  // Após 6s sem resolver, oferece ação amigável (recarregar / ir ao login).
+  // Evita o estado de "spinner infinito" se getSession ficar preso por
+  // qualquer motivo (rede lenta, deadlock no backend, cache PWA velho).
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setSlow(true), 6_000);
+    return () => window.clearTimeout(id);
+  }, []);
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-primary-soft/40 via-background to-background px-4">
       <div className="flex flex-col items-center gap-3 rounded-3xl border border-border/70 bg-card/80 px-8 py-7 shadow-pop backdrop-blur-xl">
@@ -1140,6 +1148,23 @@ export function SessionLoading() {
           <p className="text-sm font-semibold text-foreground">Carregando sua sessão…</p>
           <p className="mt-0.5 text-xs text-muted-foreground">Aguarde um momento.</p>
         </div>
+        {slow && (
+          <div className="mt-2 flex flex-col items-stretch gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            >
+              Tentar novamente
+            </button>
+            <a
+              href="/login"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-background px-4 text-xs font-semibold text-foreground transition-colors hover:bg-accent"
+            >
+              Ir para login
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -33,12 +33,13 @@ export function useAuth() {
     let settled = false;
     // Failsafe NÃO destrutivo: só destrava a UI se o getSession() travar.
     // NÃO mexe na sessão nem limpa storage — assim PWA/mobile não perde login
-    // por rede lenta na abertura.
+    // por rede lenta na abertura. 6s é suficiente: getSession() local é
+    // síncrono ao storage; valores acima só atrasam a UI quando rede falha.
     const failSafe = window.setTimeout(() => {
       if (!alive || settled) return;
       settled = true;
       setLoading(false);
-    }, 12_000);
+    }, 6_000);
 
     const finishLoading = (nextSession: Session | null) => {
       if (!alive) return;
