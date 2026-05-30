@@ -63,6 +63,8 @@ import {
 import { getLocalDataHealth, getModuleSummaries } from "@/lib/backup-geral";
 import { getSetupProgress, getNextRecommendation, SETUP_WIZARD_EVENT } from "@/lib/setup-wizard";
 import { isProtectedModeActive, LOCAL_SECURITY_EVENT } from "@/lib/local-security";
+import { RenewCustomerDialog, type CustomerLite as RenewCustomerLite } from "@/routes/cobrancas";
+import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
 
@@ -472,18 +474,20 @@ function MoneyCard({
 
 function QuickAction({
   to,
+  onClick,
   label,
   icon: Icon,
   tone = "primary",
   bold = false,
 }: {
-  to: string;
+  to?: string;
+  onClick?: () => void;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   tone?: Tone;
   bold?: boolean;
 }) {
-  const [path, qs] = to.split("?");
+  const [path, qs] = (to ?? "").split("?");
   const search = qs
     ? Object.fromEntries(new URLSearchParams(qs).entries())
     : undefined;
@@ -503,40 +507,46 @@ function QuickAction({
       neutral:
         "bg-card text-foreground border border-border shadow-card",
     };
+    const boldClass = cn(
+      "flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 text-center transition-all hover:-translate-y-0.5 active:scale-[0.98]",
+      boldSurface[tone],
+    );
+    if (onClick) {
+      return (
+        <button type="button" onClick={onClick} className={boldClass}>
+          <Icon className="h-5 w-5" />
+          <span className="text-xs font-bold leading-tight">{label}</span>
+        </button>
+      );
+    }
     return (
-      <Link
-        to={path}
-        search={search as never}
-        preload="render"
-        className={cn(
-          "flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 text-center transition-all hover:-translate-y-0.5 active:scale-[0.98]",
-          boldSurface[tone],
-        )}
-      >
+      <Link to={path} search={search as never} preload="render" className={boldClass}>
         <Icon className="h-5 w-5" />
         <span className="text-xs font-bold leading-tight">{label}</span>
       </Link>
     );
   }
 
-  return (
-    <Link
-      to={path}
-      search={search as never}
-      preload="render"
-      className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-3 text-center shadow-card transition-all hover:-translate-y-0.5 hover:shadow-pop"
-    >
-      <div
-        className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-2xl",
-          toneSurface[tone],
-        )}
-      >
+  const softClass = "flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-3 text-center shadow-card transition-all hover:-translate-y-0.5 hover:shadow-pop";
+  const softInner = (
+    <>
+      <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", toneSurface[tone])}>
         <Icon className="h-5 w-5" />
       </div>
-      <span className="text-xs font-semibold leading-tight text-foreground">
-        {label}
-      </span>
+      <span className="text-xs font-semibold leading-tight text-foreground">{label}</span>
+    </>
+  );
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={softClass}>
+        {softInner}
+      </button>
+    );
+  }
+
+  return (
+    <Link to={path} search={search as never} preload="render" className={softClass}>
+      {softInner}
     </Link>
   );
 }
@@ -576,6 +586,45 @@ function Dashboard() {
   const [protectedMode, setProtectedMode] = useState(false);
   const [setup, setSetup] = useState(() => getSetupProgress());
   const [setupRec, setSetupRec] = useState(() => getNextRecommendation());
+  const [renewOpen, setRenewOpen] = useState(false);
+  const [renewCustomers, setRenewCustomers] = useState<RenewCustomerLite[]>([]);
+
+  const openRenewDialog = async () => {
+    setRenewOpen(true);
+    try {
+      const { accountId: companyId } = await getActiveAccountId();
+      if (!companyId) return;
+      const res = await listCustomersAdmin({
+        p_company_id: companyId,
+        p_search: null,
+        p_limit: 500,
+      });
+      if (res.error) return;
+      const raw = res.data as unknown;
+      const rows = Array.isArray(raw)
+        ? (raw as Array<Record<string, unknown>>)
+        : Array.isArray((raw as { customers?: unknown[] } | null)?.customers)
+          ? ((raw as { customers: Array<Record<string, unknown>> }).customers)
+          : [];
+      const list: RenewCustomerLite[] = [];
+      const seen = new Set<string>();
+      for (const c of rows) {
+        const id = String(c.id ?? c.customer_id ?? "");
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        list.push({
+          id,
+          name: (c.name as string) ?? (c.nome as string) ?? (c.full_name as string) ?? "Cliente",
+          whatsapp: (c.whatsapp_e164 as string) ?? (c.whatsapp as string) ?? (c.phone as string) ?? null,
+          due_date: (c.due_date as string) ?? (c.vencimento as string) ?? null,
+        });
+      }
+      list.sort((a, b) => a.name.localeCompare(b.name));
+      setRenewCustomers(list);
+    } catch {
+      /* silencioso */
+    }
+  };
 
   useEffect(() => {
     const refresh = () => {
@@ -664,7 +713,7 @@ function Dashboard() {
         <SectionTitle title="O que você quer fazer?" />
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <QuickAction to="/clientes?action=create" label="Novo cliente" icon={UserPlus} tone="primary" bold />
-          <QuickAction to="/cobrancas?action=renew" label="Renovar" icon={RefreshCcw} tone="warning" bold />
+          <QuickAction onClick={openRenewDialog} label="Renovar" icon={RefreshCcw} tone="warning" bold />
           <QuickAction to="/testes?action=create" label="Cadastrar teste" icon={Beaker} tone="info" bold />
           <QuickAction to="/ia-config" label="Configurar IA" icon={Bot} tone="success" bold />
         </div>
@@ -831,6 +880,13 @@ function Dashboard() {
           </div>
         )}
       </section>
+
+      <RenewCustomerDialog
+        open={renewOpen}
+        onClose={() => setRenewOpen(false)}
+        customers={renewCustomers}
+        onDone={() => { /* permanece no início */ }}
+      />
     </PageContainer>
   );
 }

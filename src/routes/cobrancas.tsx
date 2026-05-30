@@ -264,7 +264,7 @@ const normalizeCharge = (r: Row): Charge => {
   };
 };
 
-type CustomerLite = { id: string; name: string; whatsapp: string | null; due_date?: string | null };
+export type CustomerLite = { id: string; name: string; whatsapp: string | null; due_date?: string | null };
 
 type Filter = "todos" | "pendente" | "paga" | "vencida" | "cancelada";
 
@@ -1423,7 +1423,7 @@ function CreateChargeDialog({
 }
 
 // ---------- renew dialog ----------
-function RenewCustomerDialog({
+export function RenewCustomerDialog({
   open,
   onClose,
   customers,
