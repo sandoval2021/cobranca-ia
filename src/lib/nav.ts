@@ -94,13 +94,13 @@ export const ownerNav: NavItem[] = [
   { to: "/ajuda", label: "Ajuda", icon: LifeBuoy, hint: "Aprenda como usar cada parte do sistema" },
 ];
 
-// Bottom nav do Dono — 5 atalhos principais + botão "Mais" (renderizado pelo MobileBottomNav).
+// Bottom nav do Dono — 4 atalhos de ação principais + botão "Mais".
+// WhatsApp NÃO entra aqui (acessível via "Mais → Minha conta → WhatsApp").
 export const ownerBottomNav: NavItem[] = [
-  { to: "/", label: "Início", icon: LayoutDashboard },
-  { to: "/clientes", label: "Clientes", icon: Users },
-  { to: "/testes", label: "Testes", icon: Beaker },
-  { to: "/cadastros-servicos", label: "Serviços", icon: Tv },
-  { to: "/operacao-dia", label: "Cobranças", icon: Receipt },
+  { to: "/clientes", label: "Novo cliente", icon: Users, search: { action: "create" } },
+  { to: "/renovacoes-paineis", label: "Renovar", icon: RefreshCcw },
+  { to: "/testes", label: "Cadastrar teste", icon: Beaker, search: { action: "create" } },
+  { to: "/ia-config", label: "Configurar IA", icon: Bot },
 ];
 
 // Itens que aparecem dentro do drawer "Mais" do bottom nav.
