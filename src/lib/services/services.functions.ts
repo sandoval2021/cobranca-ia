@@ -106,13 +106,19 @@ export const upsertServicePlanDb = createServerFn({ method: "POST" })
 
     let planId: string;
     if (id) {
-      const { error } = await supabaseAdmin
+      // Upsert por PK: insere se não existir, atualiza se existir.
+      // Evita FK violation em service_plan_messages quando o id veio do cliente
+      // (UUID local) e o plano ainda não estava persistido.
+      const { data: row, error } = await supabaseAdmin
         .from("service_plans")
-        .update({ ...planRow, updated_at: new Date().toISOString() } as any)
-        .eq("id", id)
-        .eq("company_id", companyId);
+        .upsert(
+          { ...planRow, id, company_id: companyId, updated_at: new Date().toISOString() } as any,
+          { onConflict: "id" },
+        )
+        .select("id")
+        .single();
       if (error) throw new Error(error.message);
-      planId = id;
+      planId = (row?.id as string) ?? id;
     } else {
       const { data: row, error } = await supabaseAdmin
         .from("service_plans")
