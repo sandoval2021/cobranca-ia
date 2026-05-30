@@ -375,14 +375,8 @@ function CobrancasPage() {
       });
       if (!alive) return;
       const chargeRows = chargesRes.error ? [] : ((chargesRes.data ?? []) as Row[]);
-      if (chargesRes.error) {
-        toastRpcError(
-          "Não foi possível carregar as cobranças agora.",
-          "list_charges_admin",
-          chargesRes.payload,
-          chargesRes.error,
-        );
-      }
+      // RPC list_charges_admin pode não existir no backend ainda; nesse caso seguimos sem cobranças
+      // em vez de exibir um toast de erro confuso para o usuário.
       setItems(chargeRows.map(normalizeCharge));
       // Fallback de nome a partir das próprias cobranças (campos podem vir agregados na RPC de cobranças)
       for (const r of chargeRows) {
