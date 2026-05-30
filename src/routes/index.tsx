@@ -713,7 +713,7 @@ function Dashboard() {
         <SectionTitle title="O que você quer fazer?" />
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <QuickAction to="/clientes?action=create" label="Novo cliente" icon={UserPlus} tone="primary" bold />
-          <QuickAction to="/cobrancas?action=renew" label="Renovar" icon={RefreshCcw} tone="warning" bold />
+          <QuickAction onClick={openRenewDialog} label="Renovar" icon={RefreshCcw} tone="warning" bold />
           <QuickAction to="/testes?action=create" label="Cadastrar teste" icon={Beaker} tone="info" bold />
           <QuickAction to="/ia-config" label="Configurar IA" icon={Bot} tone="success" bold />
         </div>
