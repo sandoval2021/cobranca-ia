@@ -1,6 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
-import { MoreHorizontal, ListChecks, Beaker } from "lucide-react";
+import {
+  MoreHorizontal,
+  ListChecks,
+  Beaker,
+  UserCog,
+  Wallet,
+  Smartphone,
+  MessageCircle,
+  Users,
+  Tv,
+  CalendarClock,
+  RefreshCcw,
+  Store,
+  Bot,
+  Settings,
+  HelpCircle,
+} from "lucide-react";
 import { ownerBottomNav, ownerMoreNav, filterNavByRole, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useLocalAuth } from "@/lib/use-local-auth";
