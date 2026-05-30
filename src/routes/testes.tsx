@@ -1043,17 +1043,17 @@ function ClosedDialog({
       p_whatsapp_e164: e164,
       p_amount_cents: valorCents,
       p_due_day: vencimento.getDate(),
-      p_due_date: dueDateIso,
       p_notes: `Convertido do teste em ${fmtBR(today)} — ${effectiveMonths} mês(es). Vencimento ${fmtBR(vencimento)}.`,
     };
     const { data: rpcData, error } = await supabase.rpc("create_customer_admin", payload);
 
-    // Resolve customer_id mesmo quando cliente já existia (23505) — necessário
-    // para vincular o lançamento financeiro e permitir retomada idempotente.
+    // RPC create_customer_admin retorna o UUID do cliente criado (escalar).
+    // Quando o cliente já existia (unique violation), buscamos por
+    // company_id + phone (coluna real no schema atual) para permitir retomar
+    // a conversão e completar o lançamento financeiro sem duplicar nada.
     let customerId: string | null = null;
-    if (!error) {
-      const d = rpcData as { customer_id?: string } | null;
-      customerId = d?.customer_id ?? null;
+    if (!error && typeof rpcData === "string") {
+      customerId = rpcData;
     }
     if (!customerId) {
       const isDup =
@@ -1073,11 +1073,26 @@ function ClosedDialog({
           .from("customers")
           .select("id")
           .eq("company_id", companyId)
-          .eq("whatsapp_e164", e164)
+          .eq("phone", e164)
           .maybeSingle();
         customerId = (existing as { id?: string } | null)?.id ?? null;
       } catch (e) {
         console.warn("[fechou] lookup-customer-failed", e);
+      }
+    }
+
+    // Preenche customers.due_date com o vencimento calculado. A RPC só seta
+    // due_day, e due_date NULL quebra cobranças automáticas e filtros de
+    // vencimento em /clientes. Update direto respeita RLS (members update).
+    if (customerId) {
+      try {
+        await supabase
+          .from("customers")
+          .update({ due_date: dueDateIso, due_day: vencimento.getDate() })
+          .eq("company_id", companyId)
+          .eq("id", customerId);
+      } catch (e) {
+        console.warn("[fechou] due-date-update-failed", e);
       }
     }
 
