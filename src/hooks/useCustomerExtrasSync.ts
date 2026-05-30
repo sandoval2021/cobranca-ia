@@ -7,6 +7,7 @@ import {
   bulkUpsertCustomerExtrasDb,
 } from "@/lib/customer-extras.functions";
 import { CUSTOMER_EXTRAS_EVENT, type CustomerExtras } from "@/lib/customer-extras";
+import { withTimeout } from "@/lib/sync/with-timeout";
 
 const KEY = "cobranca_ia_customer_extras_v1";
 const UPLOADED_FLAG = "cobraeasy.customer_extras.synced";
