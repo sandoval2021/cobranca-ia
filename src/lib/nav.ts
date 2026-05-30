@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
+import type { LocalRole } from "@/lib/local-auth";
 
 export type NavItem = {
   to: string;
@@ -163,7 +164,7 @@ export const ownerMoreNav: NavItem[] = [
 
 export const adminNav: NavItem[] = ownerNav;
 
-export function filterNavByRole(items: NavItem[], role: "super_admin" | "owner"): NavItem[] {
+export function filterNavByRole(items: NavItem[], role: LocalRole): NavItem[] {
   if (role === "super_admin") return items;
   return items.filter((i) => !i.superAdminOnly);
 }
