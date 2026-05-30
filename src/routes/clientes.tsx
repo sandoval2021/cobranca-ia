@@ -1203,9 +1203,9 @@ function ClientCard({
   };
 
   const Row = ({ label, value, valueClass }: { label: string; value: React.ReactNode; valueClass?: string }) => (
-    <div className="flex items-center justify-between gap-3 py-0.5">
-      <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
-      <span className={cn("text-[11px] text-right break-words min-w-0", valueClass)}>{value}</span>
+    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 py-1">
+      <span className="shrink-0 text-[11px] leading-5 text-muted-foreground">{label}</span>
+      <span className={cn("flex min-w-0 flex-wrap justify-end gap-1 text-right text-[11px] leading-5 break-words [overflow-wrap:anywhere]", valueClass)}>{value}</span>
     </div>
   );
 
@@ -1248,7 +1248,7 @@ function ClientCard({
                   else onOpen();
                 }}
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                  "inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-left text-[10px] font-medium leading-tight whitespace-normal break-words",
                   primaryApp.badgeClass,
                 )}
                 title={
@@ -1264,7 +1264,7 @@ function ClientCard({
               <button
                 type="button"
                 onClick={onApps}
-                className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-950/40 dark:text-blue-300"
+                    className="inline-flex max-w-full items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium leading-tight text-blue-700 hover:bg-blue-200 dark:bg-blue-950/40 dark:text-blue-300"
               >
                 <Tv className="h-3 w-3" /> + Aplicativo
               </button>
@@ -1290,7 +1290,7 @@ function ClientCard({
                       }
                     }}
                     style={{ backgroundColor: `${srv.color}22`, color: srv.color, borderColor: `${srv.color}55` }}
-                    className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium hover:opacity-80"
+                    className="inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium leading-tight whitespace-normal break-words hover:opacity-80"
                     title={srv.panel_url ? `Abrir painel ${srv.name}` : srv.name}
                   >
                     <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: srv.color }} aria-hidden />
@@ -1301,7 +1301,7 @@ function ClientCard({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onApps(); }}
-                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-muted"
+                    className="inline-flex max-w-full items-center gap-1 rounded-full border border-dashed border-border bg-muted/40 px-2 py-0.5 text-[10px] font-medium leading-tight text-muted-foreground hover:bg-muted"
                   >
                     + Vincular servidor
                   </button>
@@ -1421,7 +1421,7 @@ function ClientCard({
         </div>
       )}
 
-      <div className="mt-2 grid grid-cols-4 gap-1">
+      <div className="mt-2 grid grid-cols-4 gap-1 [grid-auto-rows:minmax(2rem,auto)]">
         <button
           type="button"
           onClick={onRenew}
@@ -1569,8 +1569,8 @@ function CustomerSheet({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-0 border-2 border-border shadow-2xl rounded-xl">
-        <DialogHeader className="shrink-0 border-b border-border bg-background px-4 py-3 text-left">
-          <DialogTitle className="text-sm">{merged.name}</DialogTitle>
+        <DialogHeader className="shrink-0 border-b border-border bg-background px-4 py-3 pr-11 text-left">
+          <DialogTitle className="text-sm leading-snug break-words [overflow-wrap:anywhere]">{merged.name}</DialogTitle>
           <DialogDescription className="text-[11px]">
             {prettyPhone(merged.whatsapp) ?? "Sem WhatsApp cadastrado"}
           </DialogDescription>
@@ -1710,7 +1710,7 @@ function DetailView({
 
   return (
     <Tabs defaultValue="dados" className="w-full">
-      <TabsList className="grid w-full grid-cols-7">
+      <TabsList className="grid h-auto w-full grid-cols-4 gap-1 sm:grid-cols-7">
         <TabsTrigger value="dados" className="text-[10px] sm:text-xs">Dados</TabsTrigger>
         <TabsTrigger value="telas" className="text-[10px] sm:text-xs gap-1">
           <Tv className="h-3 w-3" /> Telas
@@ -1731,7 +1731,7 @@ function DetailView({
       </TabsContent>
 
       <TabsContent value="dados" className="mt-4 space-y-5">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
           <DetailField label="Nome" value={customer.name} />
           <DetailField
             label="WhatsApp"
@@ -1789,7 +1789,7 @@ function DetailView({
         ) : (
           <ul className="space-y-1.5">
             {charges.slice(0, 10).map((c, i) => (
-              <li key={i} className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-xs">
+              <li key={i} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs">
                 <div className="min-w-0">
                   <p className="truncate font-medium">
                     {fmtDate(str(c, ["due_date", "vencimento", "due_at", "created_at"]))}
@@ -1798,7 +1798,7 @@ function DetailView({
                     {str(c, ["status", "situacao"]) ?? "—"}
                   </p>
                 </div>
-                <span className="shrink-0 font-semibold">
+                <span className="font-semibold break-words">
                   {(() => {
                     const a = num(c, ["amount_cents"]);
                     if (a != null) return fmtBRL(a);
@@ -1824,11 +1824,11 @@ function DetailView({
           <ul className="space-y-1.5">
             {messages.slice(0, 10).map((m, i) => (
               <li key={i} className="rounded-lg border border-border bg-card px-3 py-2 text-xs">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium break-words">
                     {str(m, ["direction", "tipo"]) ?? "Mensagem"}
                   </span>
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground break-words">
                     {fmtDate(str(m, ["sent_at", "created_at", "data"]))}
                   </span>
                 </div>
@@ -1999,8 +1999,8 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
 
   return (
     <div className="space-y-2 rounded-xl border border-border bg-primary-soft/30 p-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
           <Tv className="h-3 w-3" />
           Telas e servidores
           <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
@@ -2046,13 +2046,13 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                 <span className="shrink-0 rounded-full bg-muted px-1.5 text-[10px] font-bold text-muted-foreground">
                   T{i + 1}
                 </span>
-                <span className="truncate font-medium text-foreground">{s.name}</span>
-                <span className={cn("shrink-0 rounded-full px-1.5 text-[10px] font-medium", appBadge)}>
+                <span className="min-w-0 break-words font-medium text-foreground [overflow-wrap:anywhere]">{s.name}</span>
+                <span className={cn("rounded-full px-1.5 text-[10px] font-medium leading-tight break-words", appBadge)}>
                   {appLabel}
                 </span>
                 <span className="shrink-0 text-muted-foreground">·</span>
-                <span className="truncate text-muted-foreground" title={srvName}>{srvName}</span>
-                <span className="ml-auto shrink-0 rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                <span className="min-w-0 break-words text-muted-foreground [overflow-wrap:anywhere]" title={srvName}>{srvName}</span>
+                <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground">
                   {due}
                 </span>
                 <button
@@ -2104,7 +2104,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
 
       {adding && (
         <div className="space-y-1.5 rounded-md border border-border bg-card p-2">
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-1 gap-1.5 min-[390px]:grid-cols-2">
             <Field label="Vencimento (opcional)">
               <Input
                 type="date"
@@ -2123,7 +2123,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-1 gap-1.5 min-[390px]:grid-cols-2">
             <Field label="Aplicativo">
               <select
                 value={app}
@@ -2175,7 +2175,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Credenciais do servidor (opcional)
               </div>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-1 gap-1.5 min-[390px]:grid-cols-2">
                 <Field label="Usuário do servidor">
                   <Input
                     value={usernameInput}
@@ -2205,7 +2205,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                 App pago — informe MAC, Key e vencimento do app
               </div>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-1 gap-1.5 min-[390px]:grid-cols-2">
                 <Field label="MAC *">
                   <Input
                     value={macInput}
@@ -2383,7 +2383,7 @@ function EditForm({
           className="h-9"
         />
       </Field>
-      <div className="grid w-full max-w-full grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid w-full max-w-full grid-cols-1 gap-2 min-[390px]:grid-cols-2 sm:grid-cols-3">
         <Field label="Valor (R$)">
           <Input
             value={amount}
@@ -2413,7 +2413,7 @@ function EditForm({
         </Field>
 
       </div>
-      <div className="grid w-full max-w-full grid-cols-2 gap-2">
+      <div className="grid w-full max-w-full grid-cols-1 gap-2 min-[390px]:grid-cols-2">
         <Field label="E-mail">
           <Input
             type="email"
@@ -2446,12 +2446,12 @@ function EditForm({
       <InlineScreensManager customerId={customer.id} />
 
 
-      <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
-        <span>Cadastro: <span className="font-medium text-foreground">{createdAt ? fmtDate(createdAt) : "—"}</span></span>
+      <div className="flex flex-wrap items-center justify-between gap-1 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+        <span className="min-w-0 break-words">Cadastro: <span className="font-medium text-foreground">{createdAt ? fmtDate(createdAt) : "—"}</span></span>
       </div>
 
 
-      <div className="flex gap-2 pt-1">
+      <div className="grid grid-cols-1 gap-2 pt-1 min-[360px]:grid-cols-2">
         <Button type="button" size="sm" variant="outline" onClick={onCancel} disabled={busy} className="flex-1">
           Cancelar
         </Button>
@@ -2972,11 +2972,11 @@ function NewCustomerSheet({
             Preencha os dados essenciais e adicione quantas telas precisar.
           </SheetDescription>
         </SheetHeader>
-        <form onSubmit={submit} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
+        <form onSubmit={submit} className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-3 py-3">
           {/* Dados do cliente */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
             <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Dados do cliente</h3>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
               <div className="space-y-1 col-span-2">
                 <Label className="text-xs">Nome</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="Nome do cliente" />
@@ -2986,7 +2986,7 @@ function NewCustomerSheet({
                   <Label className="text-xs">WhatsApp *</Label>
                   <HelpTip text="Escolha o país e informe o número do cliente. Para Brasil, use DDD + número." />
                 </div>
-                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-2">
+                <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
                   <Select value={countryCode} onValueChange={setCountryCode}>
                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -3033,7 +3033,7 @@ function NewCustomerSheet({
 
           {/* Telas */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Telas ({screens.length})
               </h3>
@@ -3073,7 +3073,7 @@ function NewCustomerSheet({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
                     <div className="space-y-1">
                       <Label className="text-[11px]">Servidor</Label>
                       <Select value={s.serverId} onValueChange={(v) => updateScreen(s.uid, { serverId: v })}>
@@ -3225,7 +3225,7 @@ function NewCustomerSheet({
                 </p>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
               <div className="space-y-1">
                 <Label className="text-xs">Valor mensal total</Label>
                 <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" inputMode="decimal" />
@@ -3247,7 +3247,7 @@ function NewCustomerSheet({
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={1000} placeholder="Notas internas." />
           </section>
 
-          <div className="flex gap-2 pt-1">
+          <div className="grid grid-cols-1 gap-2 pt-1 min-[360px]:grid-cols-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={busy} className="flex-1">Cancelar</Button>
             <Button type="submit" disabled={busy} className="flex-1 gap-1.5">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
@@ -3397,8 +3397,8 @@ function AppsDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-base">Aplicativos · {customer.name}</DialogTitle>
+        <DialogHeader className="pr-8">
+          <DialogTitle className="text-base leading-snug break-words [overflow-wrap:anywhere]">Aplicativos · {customer.name}</DialogTitle>
           <DialogDescription className="text-xs">
             {active.length === 0
               ? "Selecione o app, preencha os dados e salve."
@@ -3415,9 +3415,9 @@ function AppsDialog({
             const dUrg = urgencyFromDays(dDays);
             return (
               <div key={s.id} className="rounded-lg border border-border bg-card p-2.5">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{s.name}</p>
+                    <p className="text-sm font-semibold break-words [overflow-wrap:anywhere]">{s.name}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       {site ? (
                         <a
@@ -3425,7 +3425,7 @@ function AppsDialog({
                           target="_blank"
                           rel="noopener noreferrer"
                           className={cn(
-                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium hover:opacity-80",
+                            "inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium leading-tight whitespace-normal break-words hover:opacity-80",
                             app.badgeClass,
                           )}
                         >
@@ -3483,7 +3483,7 @@ function AppsDialog({
 
           {draft && (
             <div className="rounded-lg border-2 border-primary/40 bg-primary/5 p-2.5 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-semibold">
                   {editingId ? "Editando tela" : "Nova tela"}
                 </p>
@@ -3492,7 +3492,7 @@ function AppsDialog({
                 </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
                 <label className="space-y-1">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Nome da tela</span>
                   <Input
@@ -3517,7 +3517,7 @@ function AppsDialog({
               </div>
 
               {APP_CATALOG[draft.app].access === "user_pass" ? (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
                   <label className="space-y-1">
                     <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Usuário</span>
                     <Input value={draft.username} onChange={(e) => setDraft({ ...draft, username: e.target.value })} className="h-8 text-xs font-mono" />
@@ -3528,7 +3528,7 @@ function AppsDialog({
                   </label>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
                   <label className="space-y-1">
                     <span className="text-[10px] uppercase tracking-wide text-muted-foreground">MAC</span>
                     <Input
@@ -3562,7 +3562,7 @@ function AppsDialog({
                 />
               </label>
 
-              <div className="flex gap-2">
+              <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
                 <Button size="sm" onClick={saveDraft} className="flex-1 h-8 gap-1.5 text-xs">
                   <Save className="h-3.5 w-3.5" /> Salvar
                 </Button>
@@ -3595,10 +3595,10 @@ function CredRow({
   label, value, onCopy, copied,
 }: { label: string; value: string; onCopy: () => void; copied: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
       <div className="min-w-0">
         <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="truncate font-mono text-xs">{value}</p>
+        <p className="font-mono text-xs break-all">{value}</p>
       </div>
       <Button size="sm" variant="ghost" onClick={onCopy} className="h-7 shrink-0 gap-1 px-2 text-[10px]">
         {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}

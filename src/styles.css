@@ -171,7 +171,27 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border-color: var(--color-border);
+    min-width: 0;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
+  }
 
   html, body {
     overflow-x: hidden;
