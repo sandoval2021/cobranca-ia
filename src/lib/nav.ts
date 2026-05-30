@@ -43,6 +43,8 @@ export type NavItem = {
   icon: LucideIcon;
   hint?: string;
   superAdminOnly?: boolean;
+  /** Query string opcional para abrir uma ação ao navegar (ex.: { action: "create" }). */
+  search?: Record<string, string>;
 };
 
 export const ownerNav: NavItem[] = [
