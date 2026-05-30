@@ -783,6 +783,29 @@ function ScreenSheet({
   }, []);
   const activeServers = useMemo(() => listActiveServers(), [serverCatalogVersion, open]);
 
+  // Carrega aplicativos cadastrados em "Aplicativos pagos" para limitar o dropdown
+  const fetchPortalApps = useServerFn(listPortalApps);
+  const [registeredAppKeys, setRegisteredAppKeys] = useState<AppKey[] | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const cid = getActiveCompanyId();
+    if (!cid || !UUID_RE_APP.test(cid)) { setRegisteredAppKeys([]); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await fetchPortalApps({ data: { companyId: cid } });
+        const registered = new Set(rows.filter((r) => r.is_active).map((r) => normalizeAppName(r.app_name)));
+        const keys = APP_OPTIONS.filter((k) => k !== "outro" && registered.has(normalizeAppName(APP_CATALOG[k].label)));
+        if (!cancelled) setRegisteredAppKeys([...keys, "outro" as AppKey]);
+      } catch {
+        if (!cancelled) setRegisteredAppKeys(["outro" as AppKey]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, fetchPortalApps]);
+
+  const appChoices = registeredAppKeys ?? APP_OPTIONS;
+
   useEffect(() => {
     if (!open) return;
     if (initial) {
