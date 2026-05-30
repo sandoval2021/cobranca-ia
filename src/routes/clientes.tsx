@@ -3595,10 +3595,10 @@ function CredRow({
   label, value, onCopy, copied,
 }: { label: string; value: string; onCopy: () => void; copied: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1">
       <div className="min-w-0">
         <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="truncate font-mono text-xs">{value}</p>
+        <p className="font-mono text-xs break-all">{value}</p>
       </div>
       <Button size="sm" variant="ghost" onClick={onCopy} className="h-7 shrink-0 gap-1 px-2 text-[10px]">
         {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
