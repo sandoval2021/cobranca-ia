@@ -97,7 +97,6 @@ import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
 import {
   getActiveAccountId,
-  getCurrentCompanyAdmin,
   listChargesAdmin,
   listCustomersAdmin,
   toastRpcError as _toastRpcError,
@@ -143,6 +142,15 @@ const toISODate = (s: string | null | undefined) => {
   const d = new Date(s);
   if (isNaN(+d)) return "";
   return d.toISOString().slice(0, 10);
+};
+const addMonthsISO = (base: string | null | undefined, months: number) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const parsed = base ? new Date(`${base}T00:00:00`) : null;
+  const start = parsed && !isNaN(+parsed) && parsed > today ? parsed : today;
+  const next = new Date(start);
+  next.setMonth(next.getMonth() + months);
+  return next.toISOString().slice(0, 10);
 };
 const onlyDigits = (s: string) => s.replace(/\D+/g, "");
 const prettyPhone = (s: string | null | undefined) => {
@@ -256,7 +264,7 @@ const normalizeCharge = (r: Row): Charge => {
   };
 };
 
-type CustomerLite = { id: string; name: string; whatsapp: string | null };
+type CustomerLite = { id: string; name: string; whatsapp: string | null; due_date?: string | null };
 
 type Filter = "todos" | "pendente" | "paga" | "vencida" | "cancelada";
 
@@ -322,29 +330,6 @@ function CobrancasPage() {
         return;
       }
 
-      const chargesRes = await listChargesAdmin({
-        p_company_id: companyId,
-        p_status: null,
-        p_search: null,
-        p_limit: 200,
-        p_offset: 0,
-      });
-      if (!alive) return;
-      if (chargesRes.error) {
-        setErrorMsg(friendlyRpcError(chargesRes.error.message ?? ""));
-        toastRpcError(
-          friendlyRpcError(chargesRes.error.message ?? ""),
-          "list_charges_admin",
-          chargesRes.payload,
-          chargesRes.error,
-        );
-        setItems(null);
-        setLoading(false);
-        return;
-      }
-      const charges = ((chargesRes.data ?? []) as Row[]).map(normalizeCharge);
-      setItems(charges);
-
       const custRes = await listCustomersAdmin({
         p_company_id: companyId,
         p_search: null,
@@ -367,6 +352,7 @@ function CobrancasPage() {
             id,
             name: str(c, ["name", "nome", "full_name", "customer_name"]) ?? "Cliente",
             whatsapp: str(c, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) ?? null,
+            due_date: str(c, ["due_date", "vencimento", "due_at", "expires_at"]),
           };
           if (!map[id]) list.push(lite);
           map[id] = lite;
@@ -379,8 +365,27 @@ function CobrancasPage() {
           custRes.error,
         );
       }
+
+      const chargesRes = await listChargesAdmin({
+        p_company_id: companyId,
+        p_status: null,
+        p_search: null,
+        p_limit: 200,
+        p_offset: 0,
+      });
+      if (!alive) return;
+      const chargeRows = chargesRes.error ? [] : ((chargesRes.data ?? []) as Row[]);
+      if (chargesRes.error) {
+        toastRpcError(
+          "Não foi possível carregar as cobranças agora.",
+          "list_charges_admin",
+          chargesRes.payload,
+          chargesRes.error,
+        );
+      }
+      setItems(chargeRows.map(normalizeCharge));
       // Fallback de nome a partir das próprias cobranças (campos podem vir agregados na RPC de cobranças)
-      for (const r of (chargesRes.data ?? []) as Row[]) {
+      for (const r of chargeRows) {
         const cid = String(r.customer_id ?? "");
         if (!cid || map[cid]) continue;
         const name =
@@ -397,6 +402,7 @@ function CobrancasPage() {
             (r.whatsapp as string) ??
             (r.phone as string) ??
             null,
+          due_date: str(r, ["due_date", "vencimento", "due_at", "expires_at"]),
         };
         map[cid] = lite;
         list.push(lite);
@@ -1438,6 +1444,7 @@ function RenewCustomerDialog({
   const [months, setMonths] = useState("1");
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
+  const selected = customers.find((c) => c.id === customerId);
 
   useEffect(() => {
     if (open) {
@@ -1464,10 +1471,12 @@ function RenewCustomerDialog({
       return;
     }
     setBusy(true);
+    const dueDate = addMonthsISO(selected?.due_date, m);
     const payload = {
       p_customer_id: customerId,
-      p_months: m,
+      p_due_date: dueDate,
       p_amount_cents: cents,
+      p_notes: `Renovado por ${m} mês${m > 1 ? "es" : ""} em ${new Date().toLocaleDateString("pt-BR")}.`,
     };
     const { error } = await supabase.rpc("renew_customer_admin", payload);
     setBusy(false);
