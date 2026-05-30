@@ -584,6 +584,45 @@ function Dashboard() {
   const [protectedMode, setProtectedMode] = useState(false);
   const [setup, setSetup] = useState(() => getSetupProgress());
   const [setupRec, setSetupRec] = useState(() => getNextRecommendation());
+  const [renewOpen, setRenewOpen] = useState(false);
+  const [renewCustomers, setRenewCustomers] = useState<RenewCustomerLite[]>([]);
+
+  const openRenewDialog = async () => {
+    setRenewOpen(true);
+    try {
+      const { accountId: companyId } = await getActiveAccountId();
+      if (!companyId) return;
+      const res = await listCustomersAdmin({
+        p_company_id: companyId,
+        p_search: null,
+        p_limit: 500,
+      });
+      if (res.error) return;
+      const raw = res.data as unknown;
+      const rows = Array.isArray(raw)
+        ? (raw as Array<Record<string, unknown>>)
+        : Array.isArray((raw as { customers?: unknown[] } | null)?.customers)
+          ? ((raw as { customers: Array<Record<string, unknown>> }).customers)
+          : [];
+      const list: RenewCustomerLite[] = [];
+      const seen = new Set<string>();
+      for (const c of rows) {
+        const id = String(c.id ?? c.customer_id ?? "");
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        list.push({
+          id,
+          name: (c.name as string) ?? (c.nome as string) ?? (c.full_name as string) ?? "Cliente",
+          whatsapp: (c.whatsapp_e164 as string) ?? (c.whatsapp as string) ?? (c.phone as string) ?? null,
+          due_date: (c.due_date as string) ?? (c.vencimento as string) ?? null,
+        });
+      }
+      list.sort((a, b) => a.name.localeCompare(b.name));
+      setRenewCustomers(list);
+    } catch {
+      /* silencioso */
+    }
+  };
 
   useEffect(() => {
     const refresh = () => {
