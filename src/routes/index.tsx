@@ -543,23 +543,8 @@ function QuickAction({
   }
 
   return (
-    <Link
-      to={path}
-      search={search as never}
-      preload="render"
-      className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-card p-3 text-center shadow-card transition-all hover:-translate-y-0.5 hover:shadow-pop"
-    >
-      <div
-        className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-2xl",
-          toneSurface[tone],
-        )}
-      >
-        <Icon className="h-5 w-5" />
-      </div>
-      <span className="text-xs font-semibold leading-tight text-foreground">
-        {label}
-      </span>
+    <Link to={path} search={search as never} preload="render" className={softClass}>
+      {softInner}
     </Link>
   );
 }
