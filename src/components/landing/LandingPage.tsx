@@ -193,7 +193,7 @@ export function LandingPage() {
                 size="lg"
                 className="h-12 rounded-xl px-7 text-base shadow-lg shadow-primary/30"
               >
-                <Link to="/login?mode=signup">
+                <Link to="/login" search={{ mode: "signup" }}>
                   Começar grátis
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
@@ -505,7 +505,7 @@ export function LandingPage() {
                   variant={p.highlight ? "default" : "outline"}
                   className="mt-6 h-12 w-full rounded-xl text-base"
                 >
-                  <Link to={`/login?mode=signup&plan=${p.planSlug}`}>Começar grátis</Link>
+                  <Link to="/login" search={{ mode: "signup", plan: p.planSlug }}>Começar grátis</Link>
                 </Button>
               </div>
             ))}
@@ -646,7 +646,7 @@ export function LandingPage() {
             size="lg"
             className="mt-7 h-12 rounded-xl px-8 text-base shadow-lg shadow-black/30"
           >
-            <Link to="/login?mode=signup">
+            <Link to="/login" search={{ mode: "signup" }}>
               Começar grátis agora
               <ArrowRight className="ml-1 h-4 w-4" />
             </Link>

@@ -541,7 +541,7 @@ function PaymentTab({ companyId }: { companyId: string }) {
             Se não, ela usará o Pix manual abaixo.
           </p>
           <Button asChild variant="outline" size="sm">
-            <Link to="/pagamentos/mercado-pago">Abrir Pagamentos · Mercado Pago</Link>
+            <Link to="/pagamentos/mercado-pago" search={{ mp: undefined, reason: undefined }}>Abrir Pagamentos · Mercado Pago</Link>
           </Button>
         </CardContent>
       </Card>

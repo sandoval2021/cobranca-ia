@@ -126,10 +126,19 @@ function OperacaoFilasPage() {
   });
 
   const renewalQ = useQuery({
-    queryKey: ["renewal-queue", companyId],
+    queryKey: ["renewal-queue", companyId, "pendente"],
     queryFn: () =>
       listRenewalFn({
         data: { company_id: companyId!, view: "pendente", page: 1, page_size: 10 },
+      }),
+    enabled: Boolean(companyId),
+  });
+
+  const renewalManualQ = useQuery({
+    queryKey: ["renewal-queue", companyId, "falhou"],
+    queryFn: () =>
+      listRenewalFn({
+        data: { company_id: companyId!, view: "falhou", page: 1, page_size: 10 },
       }),
     enabled: Boolean(companyId),
   });
@@ -321,51 +330,21 @@ function OperacaoFilasPage() {
         </div>
       )}
 
-      <div className="mt-8">
-        <SectionHeader
-          title="Renovações pendentes"
-          subtitle="Tarefas de renovação que aguardam processamento"
-        />
-        <div className="space-y-2">
-          {(renewalQ.data?.items ?? []).length === 0 && (
-            <Card className="p-6 text-center text-sm text-muted-foreground">
-              Nenhuma renovação pendente.
-            </Card>
-          )}
-          {(renewalQ.data?.items ?? []).map((t) => (
-            <Card key={t.id} className="p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{t.kind}</Badge>
-                    <span className="text-sm font-medium">
-                      {t.customer_name ?? "Cliente"}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-                    <span>Criada: {fmtDate(t.created_at)}</span>
-                    <span>
-                      Tentativas: {t.attempts}/{t.max_attempts}
-                    </span>
-                  </div>
-                  {t.last_error && (
-                    <p className="mt-1 text-[11px] text-danger">
-                      Último erro: {t.last_error}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => reprocessRenewalMut.mutate(t.id)}
-                >
-                  Reprocessar
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
+      <RenewalSection
+        title="Renovações pendentes"
+        subtitle="Tarefas de renovação que aguardam processamento"
+        emptyMessage="Nenhuma renovação pendente."
+        tasks={renewalQ.data?.items ?? []}
+        onReprocess={(id) => reprocessRenewalMut.mutate(id)}
+      />
+
+      <RenewalSection
+        title="Renovações com ação manual"
+        subtitle="Falhas e tarefas que precisam de análise humana antes de reprocessar"
+        emptyMessage="Nenhuma renovação exige ação manual."
+        tasks={renewalManualQ.data?.items ?? []}
+        onReprocess={(id) => reprocessRenewalMut.mutate(id)}
+      />
 
       <AlertDialog
         open={Boolean(confirmUncertain)}
@@ -396,6 +375,74 @@ function OperacaoFilasPage() {
         </AlertDialogContent>
       </AlertDialog>
     </PageContainer>
+  );
+}
+
+
+type RenewalTask = {
+  id: string;
+  status: string;
+  kind: string;
+  attempts: number;
+  max_attempts: number;
+  created_at: string;
+  last_error: string;
+  customer_name: string | null;
+};
+
+function RenewalSection({
+  title,
+  subtitle,
+  emptyMessage,
+  tasks,
+  onReprocess,
+}: {
+  title: string;
+  subtitle: string;
+  emptyMessage: string;
+  tasks: RenewalTask[];
+  onReprocess: (id: string) => void;
+}) {
+  return (
+    <div className="mt-8">
+      <SectionHeader title={title} subtitle={subtitle} />
+      <div className="space-y-2">
+        {tasks.length === 0 && (
+          <Card className="p-6 text-center text-sm text-muted-foreground">
+            {emptyMessage}
+          </Card>
+        )}
+        {tasks.map((task) => (
+          <Card key={task.id} className="p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{task.kind}</Badge>
+                  <Badge variant="secondary">{task.status}</Badge>
+                  <span className="text-sm font-medium">
+                    {task.customer_name ?? "Cliente"}
+                  </span>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                  <span>Criada: {fmtDate(task.created_at)}</span>
+                  <span>
+                    Tentativas: {task.attempts}/{task.max_attempts}
+                  </span>
+                </div>
+                {task.last_error && (
+                  <p className="mt-1 text-[11px] text-danger">
+                    Último erro: {task.last_error}
+                  </p>
+                )}
+              </div>
+              <Button size="sm" variant="outline" onClick={() => onReprocess(task.id)}>
+                Reprocessar manualmente
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 }
 

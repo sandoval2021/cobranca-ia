@@ -108,10 +108,10 @@ export function AiQuotaCard({ companyId, compact = false }: { companyId: string;
 
         {!compact && (
           <div className="flex flex-wrap gap-2 pt-1">
-            <Link to="/minha-assinatura">
+            <Link to="/minha-assinatura" search={{ saas: undefined }}>
               <Button size="sm" variant="outline">Ver assinatura</Button>
             </Link>
-            <Link to="/minha-assinatura">
+            <Link to="/minha-assinatura" search={{ saas: undefined }}>
               <Button size="sm" variant="secondary">
                 <Plus className="mr-1 h-3.5 w-3.5" /> Pacote extra
               </Button>
