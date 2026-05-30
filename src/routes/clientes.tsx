@@ -1203,9 +1203,9 @@ function ClientCard({
   };
 
   const Row = ({ label, value, valueClass }: { label: string; value: React.ReactNode; valueClass?: string }) => (
-    <div className="flex items-center justify-between gap-3 py-0.5">
-      <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
-      <span className={cn("text-[11px] text-right break-words min-w-0", valueClass)}>{value}</span>
+    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 py-1">
+      <span className="shrink-0 text-[11px] leading-5 text-muted-foreground">{label}</span>
+      <span className={cn("flex min-w-0 flex-wrap justify-end gap-1 text-right text-[11px] leading-5 break-words [overflow-wrap:anywhere]", valueClass)}>{value}</span>
     </div>
   );
 
@@ -1248,7 +1248,7 @@ function ClientCard({
                   else onOpen();
                 }}
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                  "inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-left text-[10px] font-medium leading-tight whitespace-normal break-words",
                   primaryApp.badgeClass,
                 )}
                 title={
@@ -1264,7 +1264,7 @@ function ClientCard({
               <button
                 type="button"
                 onClick={onApps}
-                className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-950/40 dark:text-blue-300"
+                    className="inline-flex max-w-full items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium leading-tight text-blue-700 hover:bg-blue-200 dark:bg-blue-950/40 dark:text-blue-300"
               >
                 <Tv className="h-3 w-3" /> + Aplicativo
               </button>
@@ -1290,7 +1290,7 @@ function ClientCard({
                       }
                     }}
                     style={{ backgroundColor: `${srv.color}22`, color: srv.color, borderColor: `${srv.color}55` }}
-                    className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium hover:opacity-80"
+                    className="inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium leading-tight whitespace-normal break-words hover:opacity-80"
                     title={srv.panel_url ? `Abrir painel ${srv.name}` : srv.name}
                   >
                     <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: srv.color }} aria-hidden />
@@ -1301,7 +1301,7 @@ function ClientCard({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onApps(); }}
-                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-muted"
+                    className="inline-flex max-w-full items-center gap-1 rounded-full border border-dashed border-border bg-muted/40 px-2 py-0.5 text-[10px] font-medium leading-tight text-muted-foreground hover:bg-muted"
                   >
                     + Vincular servidor
                   </button>
