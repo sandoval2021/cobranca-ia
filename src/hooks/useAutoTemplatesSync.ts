@@ -6,6 +6,7 @@ import {
   bulkUpsertAutoTemplatesDb,
 } from "@/lib/auto-templates.functions";
 import type { AutoTemplate } from "@/lib/auto-templates";
+import { withTimeout } from "@/lib/sync/with-timeout";
 
 const STORAGE_KEY = "cobraeasy.auto-templates.v1";
 const EVENT = "cobraeasy:auto-templates-changed";
