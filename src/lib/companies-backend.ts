@@ -112,7 +112,7 @@ export async function updateBackendCompany(
   const { error } = await supabase.rpc("update_company_admin", {
     p_company_id: companyId,
     p_name: name,
-    p_owner_id: null,
+    p_owner_id: null as unknown as string,
   });
   if (error) throw new Error(friendly(error, "Não foi possível salvar a empresa. Tente novamente."));
 }
