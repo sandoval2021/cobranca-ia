@@ -37,6 +37,9 @@ export function useLocalAuth() {
   const [localRole, setLocalRole] = useState<LocalRole>(() => getCurrentRole());
   // null = ainda não respondeu / RPC indisponível; true/false = resposta do backend.
   const [backendSuperAdmin, setBackendSuperAdmin] = useState<boolean | null>(null);
+  // null = ainda não resolvido; "owner"|"admin"|"member"|"none" = decisão do backend.
+  // "none" = não é dono nem membro de nenhuma empresa (usuário órfão).
+  const [membership, setMembership] = useState<"owner" | "admin" | "member" | "none" | null>(null);
 
   useEffect(() => {
     function refresh() {
@@ -52,12 +55,7 @@ export function useLocalAuth() {
     };
   }, []);
 
-  // Consulta autoritativa do backend.
-  // Ordem de tentativa (fail-soft, nunca quebra o login):
-  //   1) RPC public.current_user_is_super_admin()           — preferida
-  //   2) RPC public.is_super_admin(uid|user_id|p_user_id)   — fallback direto
-  //   3) null → cai para allowlist VITE_SUPER_ADMIN_EMAILS  — opcional
-  //   4) sem nada → "owner" (default seguro)
+  // Consulta autoritativa de super_admin no backend (fail-soft).
   useEffect(() => {
     let cancelled = false;
     if (!supaUser?.id || !supabaseConfigured || !supabase) {
@@ -81,7 +79,6 @@ export function useLocalAuth() {
 
     (async () => {
       try {
-        // 1) Tentativa preferida.
         const r1 = await supabase.rpc("current_user_is_super_admin");
         if (cancelled) return;
         if (!r1.error) {
@@ -89,53 +86,67 @@ export function useLocalAuth() {
           return;
         }
         if (!isMissingFnError(r1.error)) {
-          // Erro real (permissão/etc.) — não conseguimos confirmar.
           setBackendSuperAdmin(null);
           return;
         }
-
-        // 2) Fallback: chamar is_super_admin(uuid) diretamente.
-        // PostgREST exige argumento nomeado. Não sabemos o nome exato do
-        // parâmetro declarado no banco — tentamos as convenções mais
-        // comuns na ordem: uid, user_id, p_user_id, _user_id.
         const candidates: Array<Record<string, string>> = [
-          { uid },
-          { user_id: uid },
-          { p_user_id: uid },
-          { _user_id: uid },
+          { uid }, { user_id: uid }, { p_user_id: uid }, { _user_id: uid },
         ];
         for (const args of candidates) {
           const r2 = await supabase.rpc("is_super_admin", args);
           if (cancelled) return;
-          if (!r2.error) {
-            setBackendSuperAdmin(Boolean(r2.data));
-            return;
-          }
-          // Se foi erro de "parâmetro errado", tenta o próximo nome.
-          // Qualquer outro erro real → para e cai para allowlist.
-          if (!isMissingFnError(r2.error)) {
-            setBackendSuperAdmin(null);
-            return;
-          }
-        }
-
-        // Nenhuma das duas RPCs existe no backend.
-        // Fase A — sem allowlist no frontend: tratar como NÃO super admin
-        // (resposta resolvida = false) para liberar a UI sem conceder privilégio.
-        if (import.meta.env.DEV) {
-          // eslint-disable-next-line no-console
-          console.info(
-            "[auth] Super Admin não confirmado pelo backend (nenhuma RPC disponível). Usuário tratado como Dono.",
-          );
+          if (!r2.error) { setBackendSuperAdmin(Boolean(r2.data)); return; }
+          if (!isMissingFnError(r2.error)) { setBackendSuperAdmin(null); return; }
         }
         setBackendSuperAdmin(false);
       } catch {
         if (!cancelled) setBackendSuperAdmin(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
+  }, [supaUser?.id]);
+
+  // Consulta de membership: distingue owner (companies.owner_id) de
+  // admin/member (company_members.role). Não usa localStorage.
+  // Importante: NÃO devolver "owner" como fallback enquanto a query não
+  // termina — isso causava admin/member sendo rotulado como "Dono".
+  useEffect(() => {
+    let cancelled = false;
+    if (!supaUser?.id || !supabaseConfigured || !supabase) {
+      setMembership(null);
+      return;
+    }
+    const uid = supaUser.id;
+    (async () => {
+      try {
+        // 1) É dono de alguma empresa?
+        const own = await supabase
+          .from("companies")
+          .select("id")
+          .eq("owner_id", uid)
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        if (own.data) { setMembership("owner"); return; }
+        // 2) É membro de alguma empresa?
+        const mem = await supabase
+          .from("company_members")
+          .select("role")
+          .eq("user_id", uid)
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        const r = mem.data?.role as string | undefined;
+        if (r === "owner") { setMembership("owner"); return; }
+        if (r === "admin") { setMembership("admin"); return; }
+        if (r === "member") { setMembership("member"); return; }
+        // 3) Sem nada — usuário sem empresa.
+        setMembership("none");
+      } catch {
+        if (!cancelled) setMembership("none");
+      }
+    })();
+    return () => { cancelled = true; };
   }, [supaUser?.id]);
 
   const { user, role } = useMemo(() => {
@@ -150,17 +161,27 @@ export function useLocalAuth() {
         (typeof meta.whatsapp === "string" && meta.whatsapp) || localUser?.whatsapp || "";
 
       // Prioridade da role:
-      // 1) Backend confirmou super_admin → super_admin (autoritativo positivo).
-      // 2) Allowlist de e-mail confirma super_admin → super_admin
-      //    (UX: evita "rebaixar" alguém da allowlist enquanto o backend
-      //     ainda não respondeu ou retorna false em janela transitória).
-      // 3) Caso contrário → owner.
-      const resolvedRole: LocalRole =
-        backendSuperAdmin === true
-          ? "super_admin"
-          : isSuperAdminEmail(supaUser.email)
-            ? "super_admin"
-            : "owner";
+      // 1) Backend confirmou super_admin → super_admin.
+      // 2) Allowlist de e-mail (defensivo enquanto backend não respondeu).
+      // 3) membership do backend (owner | admin | member | none).
+      // 4) Enquanto membership === null, mantém última role local conhecida
+      //    (sem forçar "owner") — UI usa roleResolved para gating.
+      let resolvedRole: LocalRole;
+      if (backendSuperAdmin === true || isSuperAdminEmail(supaUser.email)) {
+        resolvedRole = "super_admin";
+      } else if (membership === "owner" || membership === "none") {
+        // "none" trata como owner (cadastro novo cria owner mais tarde),
+        // mas só depois que sabemos que NÃO é admin/member — assim
+        // admin/member nunca é exibido como Dono.
+        resolvedRole = "owner";
+      } else if (membership === "admin") {
+        resolvedRole = "admin";
+      } else if (membership === "member") {
+        resolvedRole = "member";
+      } else {
+        // membership === null → ainda resolvendo; preserva localRole.
+        resolvedRole = localRole;
+      }
 
       const bridged: LocalUser = {
         id: supaUser.id,
@@ -177,13 +198,8 @@ export function useLocalAuth() {
       return { user: bridged, role: resolvedRole };
     }
     return { user: localUser, role: localRole };
-  }, [supaUser, localUser, localRole, backendSuperAdmin]);
+  }, [supaUser, localUser, localRole, backendSuperAdmin, membership]);
 
-  // Sincroniza cache global para que chamadas estáticas (getCurrentRole/isSuperAdmin)
-  // e helpers como getActiveCompany enxerguem a role bridged.
-  // IMPORTANTE: dentro de useEffect — chamar setBridgedLocalUser durante o
-  // render dispara LOCAL_AUTH_EVENT, que volta como setState nos listeners e
-  // gera "Maximum update depth exceeded" / "Página sem resposta".
   useEffect(() => {
     if (supaUser?.email) {
       setBridgedLocalUser(user);
@@ -193,18 +209,23 @@ export function useLocalAuth() {
   }, [supaUser?.email, user, localUser]);
 
   // roleResolved = sabemos com segurança qual é a role do usuário.
-  // - Sem usuário Supabase: depende apenas do localUser (já resolvido).
-  // - Com usuário Supabase: precisa do backend OU da allowlist confirmar
-  //   antes de assumir "owner" (senão flasha banner de trial para Super Admin).
+  // - Sem usuário Supabase: depende do localUser (já resolvido).
+  // - Com usuário Supabase: precisa de super_admin confirmado OU membership
+  //   resolvida. Sem isso, AppHeader exibe "Verificando função…" em vez
+  //   de assumir "Dono".
   const roleResolved = !supaUser
     ? true
-    : backendSuperAdmin !== null || isSuperAdminEmail(supaUser.email);
+    : backendSuperAdmin === true ||
+      isSuperAdminEmail(supaUser.email) ||
+      membership !== null;
 
   return {
     user,
     role,
     isOwner: role === "owner",
     isSuperAdmin: role === "super_admin",
+    isAdmin: role === "admin" || role === "member",
     roleResolved,
   };
 }
+
