@@ -59,11 +59,17 @@ function useActiveCompany() {
       window.removeEventListener("storage", r);
     };
   }, []);
-  // Para owner: garantir/criar conta padrão automaticamente — usuário não precisa cadastrar empresa.
+  // ensureLocalAccount escreve em localStorage e emite COMPANIES_EVENT —
+  // NÃO pode rodar durante render (gera "setState during render" no listener
+  // de AppSidebar/AppShell). Move para efeito; primeiro paint usa só lookup.
+  useEffect(() => {
+    if (!isOwner || !user?.email) return;
+    const existing = getCompanyForUser(user.email);
+    if (existing) return;
+    ensureLocalAccount(user.email, user.nome, user.whatsapp);
+  }, [isOwner, user?.email, user?.nome, user?.whatsapp]);
   if (isOwner) {
-    const existing = getCompanyForUser(user?.email);
-    if (existing) return existing;
-    return ensureLocalAccount(user?.email, user?.nome, user?.whatsapp);
+    return getCompanyForUser(user?.email);
   }
   return null;
 }
