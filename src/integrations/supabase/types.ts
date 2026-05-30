@@ -379,6 +379,8 @@ export type Database = {
       }
       companies: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           created_at: string
           id: string
           name: string
@@ -386,6 +388,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           id?: string
           name: string
@@ -393,6 +397,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -2311,6 +2317,44 @@ export type Database = {
         }
         Relationships: []
       }
+      saas_plan_entitlements: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          feature_key: string
+          id: string
+          limit_value: number | null
+          plan_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          feature_key: string
+          id?: string
+          limit_value?: number | null
+          plan_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          feature_key?: string
+          id?: string
+          limit_value?: number | null
+          plan_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_plan_entitlements_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "saas_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saas_plans: {
         Row: {
           ai_monthly_limit: number
@@ -2716,6 +2760,35 @@ export type Database = {
           whatsapp?: string
         }
         Relationships: []
+      }
+      user_company_preferences: {
+        Row: {
+          active_company_id: string | null
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_company_id?: string | null
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_company_id?: string | null
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_company_preferences_active_company_id_fkey"
+            columns: ["active_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -3138,6 +3211,10 @@ export type Database = {
         Args: { _company_id: string; _period_days?: number; _plan_id: string }
         Returns: undefined
       }
+      archive_company_admin: {
+        Args: { p_company_id: string }
+        Returns: undefined
+      }
       archive_customer_admin: {
         Args: { p_customer_id: string }
         Returns: undefined
@@ -3170,6 +3247,10 @@ export type Database = {
         }[]
       }
       cleanup_auth_ephemeral: { Args: never; Returns: undefined }
+      create_company_admin: {
+        Args: { p_name: string; p_owner_id: string }
+        Returns: string
+      }
       create_customer_admin: {
         Args: {
           p_amount_cents?: number
@@ -3191,6 +3272,11 @@ export type Database = {
         Returns: number
       }
       ensure_user_default_company: { Args: never; Returns: string }
+      get_active_company: { Args: never; Returns: string }
+      get_company_entitlements: {
+        Args: { p_company_id: string }
+        Returns: Json
+      }
       get_customer_details_admin: {
         Args: { p_customer_id: string }
         Returns: Json
@@ -3276,6 +3362,7 @@ export type Database = {
         }
       }
       is_super_admin: { Args: never; Returns: boolean }
+      list_companies_for_user: { Args: never; Returns: Json }
       list_customers_admin: {
         Args: {
           p_company_id: string
@@ -3324,8 +3411,13 @@ export type Database = {
         Args: { p_stale_minutes?: number }
         Returns: number
       }
+      set_active_company: { Args: { p_company_id: string }; Returns: undefined }
       set_vault_secret: {
         Args: { p_name: string; p_value: string }
+        Returns: undefined
+      }
+      update_company_admin: {
+        Args: { p_company_id: string; p_name: string; p_owner_id: string }
         Returns: undefined
       }
       update_customer_admin: {
