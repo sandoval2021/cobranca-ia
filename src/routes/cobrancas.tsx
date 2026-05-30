@@ -1477,8 +1477,14 @@ function RenewCustomerDialog({
         setSelectedPlanId("");
         return;
       }
-      const plans = ((data ?? []) as Array<{ service_plans: { id: string; nome: string; preco_cents: number; telas: number; meses: number } | null }>)
-        .map((r) => r.service_plans)
+      const rows = (data ?? []) as unknown as Array<{
+        service_plans:
+          | { id: string; nome: string; preco_cents: number; telas: number; meses: number }
+          | Array<{ id: string; nome: string; preco_cents: number; telas: number; meses: number }>
+          | null;
+      }>;
+      const plans = rows
+        .flatMap((r) => (Array.isArray(r.service_plans) ? r.service_plans : r.service_plans ? [r.service_plans] : []))
         .filter((p): p is { id: string; nome: string; preco_cents: number; telas: number; meses: number } => !!p);
       setPlanOptions(plans);
       if (plans.length > 0) {
