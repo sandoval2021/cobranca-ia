@@ -45,6 +45,13 @@ import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge"
 import { canCreateScreen } from "@/lib/plan-limits";
 import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 import { ScreenServerRoutes } from "@/components/clientes/ScreenServerRoutes";
+import { listPortalApps } from "@/lib/iptv/portal-apps.functions";
+
+const UUID_RE_APP = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeAppName(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
   ativa: "Ativa",
