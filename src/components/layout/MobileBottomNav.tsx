@@ -236,7 +236,7 @@ export function MobileBottomNav() {
               )}
             >
               <MoreHorizontal className="h-5 w-5" />
-              <span className="truncate font-medium">Mais</span>
+              <span className="font-medium leading-tight">Mais</span>
             </button>
           </li>
         </ul>
