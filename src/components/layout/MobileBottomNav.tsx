@@ -15,7 +15,7 @@ import {
   Store,
   Bot,
   Settings,
-  HelpCircle,
+  
 } from "lucide-react";
 import { ownerBottomNav, ownerMoreNav, filterNavByRole, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
