@@ -73,7 +73,7 @@ const STATUS_LABEL: Record<CompanyStatus, string> = {
 // STATUS_TONE removido — UI agora usa apenas "Base ativa" / "Base de teste local".
 
 function useCompaniesData() {
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
   useEffect(() => {
     const r = () => setTick((n) => n + 1);
     window.addEventListener(COMPANIES_EVENT, r);
@@ -87,7 +87,7 @@ function useCompaniesData() {
     companies: listCompanies(),
     plans: listCompanyPlans(),
     currentId: getCurrentCompanyId(),
-  }), []);
+  }), [tick]);
 }
 
 function EmpresasPage() {
