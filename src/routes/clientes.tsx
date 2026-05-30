@@ -1576,7 +1576,7 @@ function CustomerSheet({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-3 py-3">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3">
           {details.status === "loading" && (
             <div className="flex items-center justify-center py-10 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -2383,7 +2383,7 @@ function EditForm({
           className="h-9"
         />
       </Field>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid w-full max-w-full grid-cols-2 gap-2 sm:grid-cols-3">
         <Field label="Valor (R$)">
           <Input
             value={amount}
@@ -2413,7 +2413,7 @@ function EditForm({
         </Field>
 
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid w-full max-w-full grid-cols-2 gap-2">
         <Field label="E-mail">
           <Input
             type="email"
@@ -2475,12 +2475,12 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-w-0 space-y-1.5">
+    <div className="min-w-0 max-w-full space-y-1.5 overflow-hidden">
       <div className="flex items-center gap-1 min-w-0">
         <Label className="text-xs truncate">{label}</Label>
         {hint && <HelpTip text={hint} />}
       </div>
-      <div className="min-w-0 [&_input]:min-w-0 [&_input]:w-full [&_select]:min-w-0 [&_select]:w-full">
+      <div className="min-w-0 max-w-full [&_input]:min-w-0 [&_input]:w-full [&_input]:max-w-full [&_input]:box-border [&_select]:min-w-0 [&_select]:w-full [&_select]:max-w-full [&_select]:box-border [&_textarea]:max-w-full [&_textarea]:w-full">
         {children}
       </div>
     </div>
