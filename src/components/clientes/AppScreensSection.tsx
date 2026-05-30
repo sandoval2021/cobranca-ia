@@ -45,6 +45,13 @@ import { ServerBadge, SemServidorBadge } from "@/components/servers/ServerBadge"
 import { canCreateScreen } from "@/lib/plan-limits";
 import { PlanLimitNotice } from "@/components/companies/PlanLimitNotice";
 import { ScreenServerRoutes } from "@/components/clientes/ScreenServerRoutes";
+import { listPortalApps } from "@/lib/iptv/portal-apps.functions";
+
+const UUID_RE_APP = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeAppName(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
 const STATUS_LABEL: Record<ScreenStatus, string> = {
   ativa: "Ativa",
@@ -776,6 +783,29 @@ function ScreenSheet({
   }, []);
   const activeServers = useMemo(() => listActiveServers(), [serverCatalogVersion, open]);
 
+  // Carrega aplicativos cadastrados em "Aplicativos pagos" para limitar o dropdown
+  const fetchPortalApps = useServerFn(listPortalApps);
+  const [registeredAppKeys, setRegisteredAppKeys] = useState<AppKey[] | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const cid = getActiveCompanyId();
+    if (!cid || !UUID_RE_APP.test(cid)) { setRegisteredAppKeys([]); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await fetchPortalApps({ data: { companyId: cid } });
+        const registered = new Set(rows.filter((r) => r.is_active).map((r) => normalizeAppName(r.app_name)));
+        const keys = APP_OPTIONS.filter((k) => k !== "outro" && registered.has(normalizeAppName(APP_CATALOG[k].label)));
+        if (!cancelled) setRegisteredAppKeys([...keys, "outro" as AppKey]);
+      } catch {
+        if (!cancelled) setRegisteredAppKeys(["outro" as AppKey]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, fetchPortalApps]);
+
+  const appChoices = registeredAppKeys ?? APP_OPTIONS;
+
   useEffect(() => {
     if (!open) return;
     if (initial) {
@@ -888,17 +918,23 @@ function ScreenSheet({
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tela 1, TV Sala…" maxLength={60} required />
           </Field>
 
-          <Field label="Aplicativo *" hint="Escolha o app que o cliente usa.">
+          <Field label="Aplicativo *" hint="Lista apenas os apps que você cadastrou em ‘Aplicativos pagos’.">
             <select
               value={app}
               onChange={(e) => setApp(e.target.value as AppKey)}
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
             >
-              {APP_OPTIONS.map((k) => (
+              {appChoices.map((k) => (
                 <option key={k} value={k}>{APP_CATALOG[k].label}</option>
               ))}
             </select>
+            {registeredAppKeys !== null && registeredAppKeys.length <= 1 && (
+              <p className="mt-1 text-[11px] text-amber-600">
+                Nenhum aplicativo cadastrado. Cadastre em <strong>Aplicativos pagos</strong> para aparecer aqui.
+              </p>
+            )}
           </Field>
+
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Tipo do app">
