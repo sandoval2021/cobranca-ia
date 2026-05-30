@@ -330,29 +330,6 @@ function CobrancasPage() {
         return;
       }
 
-      const chargesRes = await listChargesAdmin({
-        p_company_id: companyId,
-        p_status: null,
-        p_search: null,
-        p_limit: 200,
-        p_offset: 0,
-      });
-      if (!alive) return;
-      if (chargesRes.error) {
-        setErrorMsg(friendlyRpcError(chargesRes.error.message ?? ""));
-        toastRpcError(
-          friendlyRpcError(chargesRes.error.message ?? ""),
-          "list_charges_admin",
-          chargesRes.payload,
-          chargesRes.error,
-        );
-        setItems(null);
-        setLoading(false);
-        return;
-      }
-      const charges = ((chargesRes.data ?? []) as Row[]).map(normalizeCharge);
-      setItems(charges);
-
       const custRes = await listCustomersAdmin({
         p_company_id: companyId,
         p_search: null,
@@ -375,6 +352,7 @@ function CobrancasPage() {
             id,
             name: str(c, ["name", "nome", "full_name", "customer_name"]) ?? "Cliente",
             whatsapp: str(c, ["whatsapp_e164", "whatsapp", "phone", "telefone"]) ?? null,
+            due_date: str(c, ["due_date", "vencimento", "due_at", "expires_at"]),
           };
           if (!map[id]) list.push(lite);
           map[id] = lite;
@@ -387,8 +365,27 @@ function CobrancasPage() {
           custRes.error,
         );
       }
+
+      const chargesRes = await listChargesAdmin({
+        p_company_id: companyId,
+        p_status: null,
+        p_search: null,
+        p_limit: 200,
+        p_offset: 0,
+      });
+      if (!alive) return;
+      const chargeRows = chargesRes.error ? [] : ((chargesRes.data ?? []) as Row[]);
+      if (chargesRes.error) {
+        toastRpcError(
+          "Não foi possível carregar as cobranças agora.",
+          "list_charges_admin",
+          chargesRes.payload,
+          chargesRes.error,
+        );
+      }
+      setItems(chargeRows.map(normalizeCharge));
       // Fallback de nome a partir das próprias cobranças (campos podem vir agregados na RPC de cobranças)
-      for (const r of (chargesRes.data ?? []) as Row[]) {
+      for (const r of chargeRows) {
         const cid = String(r.customer_id ?? "");
         if (!cid || map[cid]) continue;
         const name =
