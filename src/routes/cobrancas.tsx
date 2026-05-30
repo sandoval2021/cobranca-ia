@@ -1438,15 +1438,68 @@ function RenewCustomerDialog({
   const [months, setMonths] = useState("1");
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
+  const [planOptions, setPlanOptions] = useState<
+    Array<{ id: string; nome: string; preco_cents: number; telas: number; meses: number }>
+  >([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  const [planLoading, setPlanLoading] = useState(false);
   const selected = customers.find((c) => c.id === customerId);
+  const selectedPlan = planOptions.find((p) => p.id === selectedPlanId) ?? null;
 
   useEffect(() => {
     if (open) {
       setCustomerId("");
       setMonths("1");
       setAmount("");
+      setPlanOptions([]);
+      setSelectedPlanId("");
     }
   }, [open]);
+
+  // Buscar plano(s) do cliente quando selecionado
+  useEffect(() => {
+    if (!customerId || !supabase) {
+      setPlanOptions([]);
+      setSelectedPlanId("");
+      return;
+    }
+    let alive = true;
+    setPlanLoading(true);
+    (async () => {
+      const { data, error } = await supabase
+        .from("customer_service_plan")
+        .select("service_plans(id, nome, preco_cents, telas, meses)")
+        .eq("customer_id", customerId);
+      if (!alive) return;
+      setPlanLoading(false);
+      if (error) {
+        setPlanOptions([]);
+        setSelectedPlanId("");
+        return;
+      }
+      const plans = ((data ?? []) as Array<{ service_plans: { id: string; nome: string; preco_cents: number; telas: number; meses: number } | null }>)
+        .map((r) => r.service_plans)
+        .filter((p): p is { id: string; nome: string; preco_cents: number; telas: number; meses: number } => !!p);
+      setPlanOptions(plans);
+      if (plans.length > 0) {
+        // Seleciona o plano com mais telas (mais informações/recursos) por padrão
+        const best = [...plans].sort((a, b) => (b.telas - a.telas) || (b.preco_cents - a.preco_cents))[0];
+        setSelectedPlanId(best.id);
+      } else {
+        setSelectedPlanId("");
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [customerId]);
+
+  // Auto-preencher valor e meses quando plano é selecionado
+  useEffect(() => {
+    if (!selectedPlan) return;
+    setAmount((selectedPlan.preco_cents / 100).toFixed(2).replace(".", ","));
+    if (selectedPlan.meses >= 1) setMonths(String(selectedPlan.meses));
+  }, [selectedPlanId]);
 
   const submit = async () => {
     if (!supabase) return;
@@ -1470,7 +1523,7 @@ function RenewCustomerDialog({
       p_customer_id: customerId,
       p_due_date: dueDate,
       p_amount_cents: cents,
-      p_notes: `Renovado por ${m} mês${m > 1 ? "es" : ""} em ${new Date().toLocaleDateString("pt-BR")}.`,
+      p_notes: `Renovado por ${m} mês${m > 1 ? "es" : ""} em ${new Date().toLocaleDateString("pt-BR")}.${selectedPlan ? ` Plano: ${selectedPlan.nome}.` : ""}`,
     };
     const { error } = await supabase.rpc("renew_customer_admin", payload);
     setBusy(false);
@@ -1504,6 +1557,55 @@ function RenewCustomerDialog({
             </Label>
             <CustomerCombobox customers={customers} value={customerId} onChange={setCustomerId} />
           </div>
+
+          {customerId && (
+            <div>
+              <Label className="mb-1 flex items-center gap-1.5 text-xs">
+                Serviço / Plano
+                <HelpTip text="Plano contratado pelo cliente. Se houver mais de um, escolha o desejado." />
+              </Label>
+              {planLoading ? (
+                <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando plano…
+                </div>
+              ) : planOptions.length === 0 ? (
+                <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                  Este cliente não possui plano cadastrado. Informe o valor manualmente abaixo.
+                </div>
+              ) : planOptions.length === 1 ? (
+                <div className="rounded-md border bg-emerald-500/5 px-3 py-2 text-xs">
+                  <div className="font-medium text-foreground">{planOptions[0].nome}</div>
+                  <div className="text-muted-foreground">
+                    {fmtBRL(planOptions[0].preco_cents)} · {planOptions[0].telas} tela{planOptions[0].telas > 1 ? "s" : ""} · {planOptions[0].meses} {planOptions[0].meses > 1 ? "meses" : "mês"}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {planOptions.map((p) => {
+                    const active = p.id === selectedPlanId;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setSelectedPlanId(p.id)}
+                        className={`w-full rounded-md border px-3 py-2 text-left text-xs transition-colors ${
+                          active
+                            ? "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/40"
+                            : "border-border bg-background hover:bg-muted/50"
+                        }`}
+                      >
+                        <div className="font-medium text-foreground">{p.nome}</div>
+                        <div className="text-muted-foreground">
+                          {fmtBRL(p.preco_cents)} · {p.telas} tela{p.telas > 1 ? "s" : ""} · {p.meses} {p.meses > 1 ? "meses" : "mês"}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <Label className="mb-1 flex items-center gap-1.5 text-xs">
               Meses <HelpTip text="Quantos meses renovar (1 a 12)." />
