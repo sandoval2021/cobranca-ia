@@ -9,16 +9,25 @@ const UUID = z.string().uuid();
 // Fase A — validação explícita de acesso à empresa (não confiar só no RLS
 // quando o client envia companyId). Reusa o RPC `has_company_access` já
 // usado por outros módulos (due-overrides, kb, referrals, whatsapp).
+async function hasCompanyAccess(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  companyId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("has_company_access", {
+    _company_id: companyId,
+  });
+  if (error) return false;
+  return Boolean(data);
+}
+
 async function assertCompanyAccess(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   companyId: string,
 ) {
-  const { data, error } = await supabase.rpc("has_company_access", {
-    _company_id: companyId,
-  });
-  if (error) throw new Error("forbidden");
-  if (!data) throw new Error("forbidden");
+  const ok = await hasCompanyAccess(supabase, companyId);
+  if (!ok) throw new Error("forbidden");
 }
 
 const ExtraInput = z.object({
@@ -67,7 +76,10 @@ export const listCustomerExtrasDb = createServerFn({ method: "GET" })
     z.object({ companyId: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertCompanyAccess(context.supabase, data.companyId);
+    // Cache de companyId no client pode apontar para empresa de outra
+    // membership após troca/logout — devolver [] em vez de 'forbidden' evita
+    // tela branca; o hook re-hidrata quando companyId for atualizado.
+    if (!(await hasCompanyAccess(context.supabase, data.companyId))) return [];
     const { data: rows, error } = await context.supabase
       .from("customer_extras")
       .select("*")
@@ -99,7 +111,11 @@ export const bulkUpsertCustomerExtrasDb = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertCompanyAccess(context.supabase, data.companyId);
+    // Mesma lógica do list: no-op silencioso quando não há acesso, em vez
+    // de explodir tela. Escrita real só ocorre se tem permissão.
+    if (!(await hasCompanyAccess(context.supabase, data.companyId))) {
+      return { upserted: 0 };
+    }
     if (data.items.length === 0) return { upserted: 0 };
     const payload = data.items.map((i) =>
       inputToRow({ ...i, companyId: data.companyId }),
