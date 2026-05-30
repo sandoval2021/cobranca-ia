@@ -15,7 +15,16 @@ import {
   Store,
   Bot,
   Settings,
-  
+  Sparkles,
+  Server,
+  Upload,
+  BarChart3,
+  Gift,
+  HardDrive,
+  ShieldCheck,
+  Network,
+  Activity,
+  Database,
 } from "lucide-react";
 import { ownerBottomNav, ownerMoreNav, filterNavByRole, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
@@ -41,7 +50,8 @@ type MoreItem = {
   search?: Record<string, string>;
 };
 
-// Grupos do menu "Mais" — layout compacto em cards.
+// Grupos do menu "Mais" — todas as funções disponíveis ao usuário (filtradas
+// por papel + módulo do plano). Layout em cards 2 colunas no mobile.
 const MORE_GROUPS: { title: string; items: MoreItem[] }[] = [
   {
     title: "Minha conta",
@@ -53,23 +63,53 @@ const MORE_GROUPS: { title: string; items: MoreItem[] }[] = [
     ],
   },
   {
-    title: "Operação",
+    title: "Cadastros",
     items: [
       { key: "/clientes", to: "/clientes", label: "Clientes", hint: "Sua base de clientes", icon: Users },
       { key: "/cadastros-servicos", to: "/cadastros-servicos", label: "Cadastros · Serviços", hint: "Planos e valores", icon: Tv },
+      { key: "/gestao-servicos", to: "/gestao-servicos", label: "Gestão de serviços", hint: "Renove e edite serviços", icon: Tv },
+      { key: "/catalogo-servidores", to: "/catalogo-servidores", label: "Meus servidores", hint: "Servidores vinculados", icon: Server },
+      { key: "/testes", to: "/testes", label: "Testes", hint: "Pessoas em teste/leads", icon: Beaker },
+      { key: "/importar-clientes", to: "/importar-clientes", label: "Importar clientes", hint: "Importar de PDF ou planilha", icon: Upload },
+      { key: "/apps-portal", to: "/apps-portal", label: "Aplicativos pagos", hint: "Apps que seus clientes usam", icon: Smartphone },
+    ],
+  },
+  {
+    title: "Operação",
+    items: [
       { key: "/operacao-dia", to: "/operacao-dia", label: "Operação do dia", hint: "Quem precisa de atenção hoje", icon: CalendarClock },
-      { key: "/operacao-filas", to: "/operacao-filas", label: "Operação · Filas", hint: "Envios, falhas e renovações manuais", icon: ListChecks },
+      { key: "/operacao-filas", to: "/operacao-filas", label: "Operação · Filas", hint: "Envios, falhas e renovações", icon: ListChecks },
       { key: "/renovacoes-paineis", to: "/renovacoes-paineis", label: "Renovações de painéis", hint: "Fila de renovações IPTV", icon: RefreshCcw },
       { key: "/testes?action=create", to: "/testes", search: { action: "create" }, label: "Cadastrar teste", hint: "Novo teste para cliente interessado", icon: Beaker },
     ],
   },
   {
-    title: "Negócio",
+    title: "IA",
+    items: [
+      { key: "/ia-config", to: "/ia-config", label: "Configurar IA", hint: "Preços e instruções da IA", icon: Bot },
+      { key: "/treinar-ia", to: "/treinar-ia", label: "Treinar IA", hint: "Ensine sua IA com conhecimento", icon: Sparkles },
+      { key: "/ia", to: "/ia", label: "IA Cobrança", hint: "Mensagens geradas pela IA", icon: Sparkles },
+    ],
+  },
+  {
+    title: "Relatórios",
+    items: [
+      { key: "/relatorio", to: "/relatorio", label: "Relatórios", hint: "Visão geral e simulação", icon: BarChart3 },
+      { key: "/financeiro", to: "/financeiro", label: "Financeiro", hint: "Receitas, custos e lucro", icon: Wallet },
+      { key: "/indicacoes", to: "/indicacoes", label: "Indicações", hint: "Indicações e bonificações", icon: Gift },
+    ],
+  },
+  {
+    title: "Configuração",
     items: [
       { key: "/configuracoes-revenda", to: "/configuracoes-revenda", label: "Minha revenda", hint: "Dados e regras da sua revenda", icon: Store },
-      { key: "/apps-portal", to: "/apps-portal", label: "Aplicativos pagos", hint: "Apps que seus clientes usam", icon: Smartphone },
-      { key: "/ia-config", to: "/ia-config", label: "Configurar IA", hint: "Preços e instruções da IA", icon: Bot },
       { key: "/configuracoes", to: "/configuracoes", label: "Configurações", hint: "Ajustes do ambiente", icon: Settings },
+      { key: "/seguranca-local", to: "/seguranca-local", label: "Segurança", hint: "PIN e modo protegido", icon: ShieldCheck },
+      { key: "/admin-dns-rotas", to: "/admin-dns-rotas", label: "DNS e Rotas", hint: "Domínios e rotas", icon: Network },
+      { key: "/backup-geral", to: "/backup-geral", label: "Backup Geral", hint: "Exportar/importar tudo", icon: HardDrive },
+      { key: "/diagnostico", to: "/diagnostico", label: "Diagnóstico", hint: "Saúde do sistema", icon: Activity },
+      { key: "/preparacao-backend", to: "/preparacao-backend", label: "Preparação Backend", hint: "Preparar migração", icon: Database },
+      { key: "/migracao-empresa", to: "/migracao-empresa", label: "Migração Empresa", hint: "Vincular dados antigos", icon: Database },
     ],
   },
 ];
