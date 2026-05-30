@@ -880,6 +880,13 @@ function Dashboard() {
           </div>
         )}
       </section>
+
+      <RenewCustomerDialog
+        open={renewOpen}
+        onClose={() => setRenewOpen(false)}
+        customers={renewCustomers}
+        onDone={() => { /* permanece no início */ }}
+      />
     </PageContainer>
   );
 }
