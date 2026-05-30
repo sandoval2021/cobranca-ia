@@ -472,18 +472,20 @@ function MoneyCard({
 
 function QuickAction({
   to,
+  onClick,
   label,
   icon: Icon,
   tone = "primary",
   bold = false,
 }: {
-  to: string;
+  to?: string;
+  onClick?: () => void;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   tone?: Tone;
   bold?: boolean;
 }) {
-  const [path, qs] = to.split("?");
+  const [path, qs] = (to ?? "").split("?");
   const search = qs
     ? Object.fromEntries(new URLSearchParams(qs).entries())
     : undefined;
