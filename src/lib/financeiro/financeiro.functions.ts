@@ -2,6 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { chunkedOrderedUpsert } from "@/lib/sync/chunked-upsert";
 
 const UUID = z.string().uuid();
 
@@ -238,11 +239,15 @@ export const bulkUpsertFinanceEntriesDb = createServerFn({ method: "POST" })
     const payload = data.items.map((i) =>
       entryInputToRow({ ...i, companyId: data.companyId }),
     );
-    const { error, count } = await context.supabase
-      .from("finance_entries")
-      .upsert(payload, { onConflict: "id", count: "exact" });
-    if (error) throw new Error(error.message);
-    return { upserted: count ?? data.items.length };
+    // chunked + ordered evita deadlock quando dois dispositivos sincronizam
+    // finance_entries ao mesmo tempo (mirror dispara em todo FINANCE_EVENT).
+    const upserted = await chunkedOrderedUpsert(
+      context.supabase,
+      "finance_entries",
+      payload as unknown as Array<Record<string, unknown>>,
+      { onConflict: "id", sortKeys: ["id"] },
+    );
+    return { upserted };
   });
 
 export const deleteFinanceEntryDb = createServerFn({ method: "POST" })
