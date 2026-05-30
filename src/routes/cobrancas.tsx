@@ -1423,7 +1423,7 @@ function CreateChargeDialog({
 }
 
 // ---------- renew dialog ----------
-function RenewCustomerDialog({
+export function RenewCustomerDialog({
   open,
   onClose,
   customers,
