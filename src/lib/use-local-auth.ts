@@ -43,8 +43,15 @@ export function useLocalAuth() {
 
   useEffect(() => {
     function refresh() {
-      setLocalUser(getCurrentLocalUser());
-      setLocalRole(getCurrentRole());
+      const next = getCurrentLocalUser();
+      const nextRole = getCurrentRole();
+      // Só atualiza state se algo relevante mudou — evita re-renders em
+      // cadeia que disparavam o loop "Maximum update depth exceeded".
+      setLocalUser((prev) => {
+        if (prev?.id === next?.id && prev?.role === next?.role) return prev;
+        return next;
+      });
+      setLocalRole((prev) => (prev === nextRole ? prev : nextRole));
     }
     refresh();
     window.addEventListener(LOCAL_AUTH_EVENT, refresh);
