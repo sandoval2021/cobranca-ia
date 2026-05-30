@@ -2475,12 +2475,14 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-1">
-        <Label className="text-xs">{label}</Label>
+    <div className="min-w-0 space-y-1.5">
+      <div className="flex items-center gap-1 min-w-0">
+        <Label className="text-xs truncate">{label}</Label>
         {hint && <HelpTip text={hint} />}
       </div>
-      {children}
+      <div className="min-w-0 [&_input]:min-w-0 [&_input]:w-full [&_select]:min-w-0 [&_select]:w-full">
+        {children}
+      </div>
     </div>
   );
 }
