@@ -76,7 +76,10 @@ export const listCustomerExtrasDb = createServerFn({ method: "GET" })
     z.object({ companyId: UUID }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertCompanyAccess(context.supabase, data.companyId);
+    // Cache de companyId no client pode apontar para empresa de outra
+    // membership após troca/logout — devolver [] em vez de 'forbidden' evita
+    // tela branca; o hook re-hidrata quando companyId for atualizado.
+    if (!(await hasCompanyAccess(context.supabase, data.companyId))) return [];
     const { data: rows, error } = await context.supabase
       .from("customer_extras")
       .select("*")
