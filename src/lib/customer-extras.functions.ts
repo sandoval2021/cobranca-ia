@@ -111,7 +111,11 @@ export const bulkUpsertCustomerExtrasDb = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertCompanyAccess(context.supabase, data.companyId);
+    // Mesma lógica do list: no-op silencioso quando não há acesso, em vez
+    // de explodir tela. Escrita real só ocorre se tem permissão.
+    if (!(await hasCompanyAccess(context.supabase, data.companyId))) {
+      return { upserted: 0 };
+    }
     if (data.items.length === 0) return { upserted: 0 };
     const payload = data.items.map((i) =>
       inputToRow({ ...i, companyId: data.companyId }),
