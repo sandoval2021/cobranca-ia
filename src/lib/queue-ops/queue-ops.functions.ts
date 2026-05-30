@@ -368,3 +368,293 @@ export const reprocessRenewalTask = createServerFn({ method: "POST" })
     if (error) throw new Error("Não foi possível reprocessar agora.");
     return { ok: true };
   });
+
+// =========================================================================
+// DETALHES da renewal_task para painel manual assistido (sem senha/token).
+// =========================================================================
+export const getRenewalTaskDetails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        id: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, context.userId, data.company_id);
+
+    const { data: task, error } = await supabaseAdmin
+      .from("renewal_tasks")
+      .select(
+        "id, status, kind, attempts, max_attempts, plan_days, last_error, created_at, completed_at, server_id, credential_id, customer_id",
+      )
+      .eq("id", data.id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (error || !task) throw new Error("Tarefa não encontrada.");
+
+    const [customerRes, serverRes, credRes, planRes] = await Promise.all([
+      supabaseAdmin
+        .from("customers")
+        .select("id, name, phone, due_date, due_day")
+        .eq("id", task.customer_id)
+        .eq("company_id", data.company_id)
+        .maybeSingle(),
+      task.server_id
+        ? supabaseAdmin
+            .from("servers")
+            .select("id, name, panel_url, panel_type")
+            .eq("id", task.server_id)
+            .eq("company_id", data.company_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      task.credential_id
+        ? supabaseAdmin
+            .from("customer_iptv_credentials")
+            .select("id, iptv_username, plan_days, expires_at")
+            .eq("id", task.credential_id)
+            .eq("company_id", data.company_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabaseAdmin
+        .from("customer_service_plan")
+        .select("service_plan_id, service_plans(nome, telas, meses)")
+        .eq("customer_id", task.customer_id)
+        .eq("company_id", data.company_id)
+        .maybeSingle(),
+    ]);
+
+    const customer = (customerRes as any)?.data ?? null;
+    const server = (serverRes as any)?.data ?? null;
+    const cred = (credRes as any)?.data ?? null;
+    const planRow = (planRes as any)?.data ?? null;
+    const plan = planRow?.service_plans ?? null;
+
+    // Sugerir nova data: vencimento atual + meses do plano (ou plan_days da task).
+    const baseDate = customer?.due_date
+      ? new Date(customer.due_date + "T12:00:00Z")
+      : new Date();
+    const suggested = new Date(baseDate);
+    if (plan?.meses) {
+      suggested.setMonth(suggested.getMonth() + Number(plan.meses));
+    } else if (task.plan_days) {
+      suggested.setDate(suggested.getDate() + Number(task.plan_days));
+    } else {
+      suggested.setMonth(suggested.getMonth() + 1);
+    }
+    const suggestedIso = suggested.toISOString().slice(0, 10);
+
+    return {
+      id: task.id as string,
+      status: task.status as string,
+      attempts: task.attempts as number,
+      max_attempts: task.max_attempts as number,
+      last_error: sanitizeError(task.last_error),
+      created_at: task.created_at as string,
+      completed_at: (task.completed_at as string | null) ?? null,
+      customer: customer
+        ? {
+            name: customer.name as string,
+            whatsapp: (customer.phone as string | null) ?? null,
+            current_due_date: (customer.due_date as string | null) ?? null,
+          }
+        : null,
+      server: server
+        ? {
+            name: server.name as string,
+            panel_url: (server.panel_url as string | null) ?? null,
+            panel_type: (server.panel_type as string | null) ?? null,
+          }
+        : null,
+      credential: cred
+        ? {
+            iptv_username: (cred.iptv_username as string | null) ?? null,
+            expires_at: (cred.expires_at as string | null) ?? null,
+          }
+        : null,
+      plan: plan
+        ? {
+            name: plan.nome as string,
+            telas: plan.telas as number,
+            meses: plan.meses as number,
+          }
+        : null,
+      suggested_new_due_date: suggestedIso,
+      reason:
+        sanitizeError(task.last_error) ||
+        "Renovação precisa ser confirmada manualmente.",
+    };
+  });
+
+// =========================================================================
+// CONFIRMAÇÃO MANUAL — needs_human → renewed (somente após ação humana).
+// Idempotente por renewal_task_id em manual_renewals.payload.
+// Não cria finance_entries nem payment_transactions.
+// =========================================================================
+export const confirmManualSigmaRenewal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        id: z.string().uuid(),
+        new_due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        note: z.string().max(2000).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertCompanyAccess(context.supabase, context.userId, data.company_id);
+
+    // 1) Lê task (filtra por company).
+    const { data: task, error: readErr } = await supabaseAdmin
+      .from("renewal_tasks")
+      .select(
+        "id, company_id, customer_id, status, credential_id, plan_days",
+      )
+      .eq("id", data.id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (readErr || !task) throw new Error("Tarefa não encontrada.");
+
+    // 2) Idempotência: já existe manual_renewals para esta task?
+    const { data: existing } = await supabaseAdmin
+      .from("manual_renewals")
+      .select("id, new_due_date")
+      .eq("company_id", data.company_id)
+      .eq("customer_id", task.customer_id)
+      .filter("payload->>renewal_task_id", "eq", task.id)
+      .maybeSingle();
+
+    if (task.status === "renewed" || existing) {
+      // Já confirmado — resposta idempotente.
+      return {
+        ok: true,
+        idempotent: true,
+        new_due_date: (existing?.new_due_date as string | null) ?? data.new_due_date,
+      };
+    }
+
+    if (task.status !== "needs_human") {
+      throw new Error(
+        "Esta tarefa não está aguardando confirmação manual no momento.",
+      );
+    }
+
+    // 3) Claim condicional needs_human → trying.
+    const { data: claimed, error: claimErr } = await supabaseAdmin
+      .from("renewal_tasks")
+      .update({
+        status: "trying",
+        locked_at: new Date().toISOString(),
+        locked_by: `manual:${String(context.userId).slice(0, 8)}`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", task.id)
+      .eq("company_id", data.company_id)
+      .eq("status", "needs_human")
+      .select("id")
+      .maybeSingle();
+    if (claimErr || !claimed) {
+      // Outro operador pegou a task ou status mudou.
+      throw new Error(
+        "Essa tarefa foi atualizada por outro usuário. Recarregue a página.",
+      );
+    }
+
+    // 4) Lê cliente atual para old_due_date e plano.
+    const { data: customer } = await supabaseAdmin
+      .from("customers")
+      .select("id, due_date")
+      .eq("id", task.customer_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    const oldDueDate = (customer?.due_date as string | null) ?? null;
+
+    const { data: planRow } = await supabaseAdmin
+      .from("customer_service_plan")
+      .select("service_plan_id, service_plans(meses)")
+      .eq("customer_id", task.customer_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    const servicePlanId =
+      (planRow as any)?.service_plan_id ?? null;
+    const months = (planRow as any)?.service_plans?.meses ?? null;
+
+    // 5) Histórico antes da atualização (registro confirma a intenção).
+    const { error: histErr } = await supabaseAdmin
+      .from("manual_renewals")
+      .insert({
+        company_id: data.company_id,
+        customer_id: task.customer_id,
+        service_plan_id: servicePlanId,
+        old_due_date: oldDueDate,
+        new_due_date: data.new_due_date,
+        months_added: months,
+        amount_cents: null,
+        payment_method: null,
+        note: data.note ?? "Confirmação manual via painel de filas.",
+        payload: {
+          renewal_task_id: task.id,
+          provider: "sigma",
+        },
+        created_by: context.userId,
+      });
+    if (histErr) {
+      // Reverte claim para needs_human para permitir nova tentativa.
+      await supabaseAdmin
+        .from("renewal_tasks")
+        .update({
+          status: "needs_human",
+          locked_at: null,
+          locked_by: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", task.id)
+        .eq("company_id", data.company_id);
+      throw new Error("Não foi possível registrar o histórico. Tente novamente.");
+    }
+
+    // 6) Atualiza vencimento do cliente (somente após histórico salvo).
+    const newDay = Number(data.new_due_date.slice(8, 10));
+    await supabaseAdmin
+      .from("customers")
+      .update({
+        due_date: data.new_due_date,
+        due_day: newDay,
+        status: "em_dia",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", task.customer_id)
+      .eq("company_id", data.company_id);
+
+    // 7) Atualiza expires_at da credencial, se houver.
+    if (task.credential_id) {
+      await supabaseAdmin
+        .from("customer_iptv_credentials")
+        .update({
+          expires_at: data.new_due_date + "T23:59:59Z",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", task.credential_id)
+        .eq("company_id", data.company_id);
+    }
+
+    // 8) Marca task renewed e limpa lock.
+    await supabaseAdmin
+      .from("renewal_tasks")
+      .update({
+        status: "renewed",
+        locked_at: null,
+        locked_by: null,
+        completed_at: new Date().toISOString(),
+        last_error: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", task.id)
+      .eq("company_id", data.company_id);
+
+    return { ok: true, idempotent: false, new_due_date: data.new_due_date };
+  });
