@@ -55,45 +55,41 @@ export function useDbFirstSync(opts: {
   const run = useCallback(async () => {
     if (runningRef.current) return;
     runningRef.current = true;
-    const companyId = getCurrentCompanyId();
-    if (!isUuid(companyId)) return;
-    hydratingRef.current = true;
     try {
-      // legado primeiro (para não sobrescrever uploads pendentes)
-      if (uploadLegacy && !uploadedRef.current.has(companyId)) {
-        uploadedRef.current.add(companyId);
-        try {
-          await uploadLegacy(companyId);
-        } catch (err) {
-          if (import.meta.env.DEV) console.warn(`[db-first:${table}] uploadLegacy falhou`, err);
-          // falhou (provavelmente offline) — destrava retry no próximo run
-          uploadedRef.current.delete(companyId);
-        }
-      }
-      // Em re-runs (focus/online/timer/realtime), faz flush do cache local
-      // ANTES de hidratar. Garante que edição feita offline (ou enquanto o
-      // mirror imediato foi suprimido por falha de rede) suba pro banco antes
-      // que o hydrate substitua o cache. Primeiro run da empresa cai no
-      // uploadLegacy acima; aqui cobrimos os runs subsequentes.
-      if (mirrorRef.current && hydratedCompanyRef.current === companyId) {
-        try {
-          await mirrorRef.current(companyId);
-        } catch (err) {
-          if (import.meta.env.DEV) console.warn(`[db-first:${table}] pre-hydrate mirror falhou`, err);
-          // ainda sem rede confiável: aborta hydrate para preservar cache local
-          return;
-        }
-      }
+      const companyId = getCurrentCompanyId();
+      if (!isUuid(companyId)) return;
+      hydratingRef.current = true;
       try {
-        await hydrate(companyId);
-      } catch (err) {
-        if (import.meta.env.DEV) console.warn(`[db-first:${table}] hydrate falhou`, err);
-        // mantém cache local intocado — sync periódico retenta
+        // legado primeiro (para não sobrescrever uploads pendentes)
+        if (uploadLegacy && !uploadedRef.current.has(companyId)) {
+          uploadedRef.current.add(companyId);
+          try {
+            await uploadLegacy(companyId);
+          } catch (err) {
+            if (import.meta.env.DEV) console.warn(`[db-first:${table}] uploadLegacy falhou`, err);
+            uploadedRef.current.delete(companyId);
+          }
+        }
+        if (mirrorRef.current && hydratedCompanyRef.current === companyId) {
+          try {
+            await mirrorRef.current(companyId);
+          } catch (err) {
+            if (import.meta.env.DEV) console.warn(`[db-first:${table}] pre-hydrate mirror falhou`, err);
+            return;
+          }
+        }
+        try {
+          await hydrate(companyId);
+        } catch (err) {
+          if (import.meta.env.DEV) console.warn(`[db-first:${table}] hydrate falhou`, err);
+        }
+        hydratedCompanyRef.current = companyId;
+      } finally {
+        hydratingRef.current = false;
+        suppressUntilRef.current = Date.now() + POST_HYDRATE_SUPPRESS_MS;
       }
-      hydratedCompanyRef.current = companyId;
     } finally {
-      hydratingRef.current = false;
-      suppressUntilRef.current = Date.now() + POST_HYDRATE_SUPPRESS_MS;
+      runningRef.current = false;
     }
   }, [table, hydrate, uploadLegacy]);
 
