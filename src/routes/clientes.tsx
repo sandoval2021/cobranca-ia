@@ -1569,8 +1569,8 @@ function CustomerSheet({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-0 border-2 border-border shadow-2xl rounded-xl">
-        <DialogHeader className="shrink-0 border-b border-border bg-background px-4 py-3 text-left">
-          <DialogTitle className="text-sm">{merged.name}</DialogTitle>
+        <DialogHeader className="shrink-0 border-b border-border bg-background px-4 py-3 pr-11 text-left">
+          <DialogTitle className="text-sm leading-snug break-words [overflow-wrap:anywhere]">{merged.name}</DialogTitle>
           <DialogDescription className="text-[11px]">
             {prettyPhone(merged.whatsapp) ?? "Sem WhatsApp cadastrado"}
           </DialogDescription>
@@ -2383,7 +2383,7 @@ function EditForm({
           className="h-9"
         />
       </Field>
-      <div className="grid w-full max-w-full grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid w-full max-w-full grid-cols-1 gap-2 min-[390px]:grid-cols-2 sm:grid-cols-3">
         <Field label="Valor (R$)">
           <Input
             value={amount}
@@ -2413,7 +2413,7 @@ function EditForm({
         </Field>
 
       </div>
-      <div className="grid w-full max-w-full grid-cols-2 gap-2">
+      <div className="grid w-full max-w-full grid-cols-1 gap-2 min-[390px]:grid-cols-2">
         <Field label="E-mail">
           <Input
             type="email"
@@ -2446,12 +2446,12 @@ function EditForm({
       <InlineScreensManager customerId={customer.id} />
 
 
-      <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
-        <span>Cadastro: <span className="font-medium text-foreground">{createdAt ? fmtDate(createdAt) : "—"}</span></span>
+      <div className="flex flex-wrap items-center justify-between gap-1 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+        <span className="min-w-0 break-words">Cadastro: <span className="font-medium text-foreground">{createdAt ? fmtDate(createdAt) : "—"}</span></span>
       </div>
 
 
-      <div className="flex gap-2 pt-1">
+      <div className="grid grid-cols-1 gap-2 pt-1 min-[360px]:grid-cols-2">
         <Button type="button" size="sm" variant="outline" onClick={onCancel} disabled={busy} className="flex-1">
           Cancelar
         </Button>
