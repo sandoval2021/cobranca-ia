@@ -36,8 +36,11 @@ import {
   getQueueCounts,
   reprocessWhatsAppMessage,
   reprocessRenewalTask,
+  getRenewalTaskDetails,
+  confirmManualSigmaRenewal,
 } from "@/lib/queue-ops/queue-ops.functions";
 import { ensureMyCompany } from "@/lib/whatsapp/whatsapp.functions";
+import { Copy, CheckCheck } from "lucide-react";
 
 export const Route = createFileRoute("/operacao-filas")({
   component: OperacaoFilasPage,
@@ -338,13 +341,12 @@ function OperacaoFilasPage() {
         onReprocess={(id) => reprocessRenewalMut.mutate(id)}
       />
 
-      <RenewalSection
-        title="Renovações com ação manual"
-        subtitle="Falhas e tarefas que precisam de análise humana antes de reprocessar"
-        emptyMessage="Nenhuma renovação exige ação manual."
+      <ManualAssistSection
+        companyId={companyId}
         tasks={renewalManualQ.data?.items ?? []}
         onReprocess={(id) => reprocessRenewalMut.mutate(id)}
       />
+
 
       <AlertDialog
         open={Boolean(confirmUncertain)}
@@ -486,5 +488,350 @@ function StatusBadge({ view }: { view: WaView }) {
     >
       <Icon className="h-3 w-3" /> {s.label}
     </span>
+  );
+}
+
+// ============================================================================
+// Painel manual assistido (G3A) — needs_human/failed com detalhes do cliente,
+// botões de copiar e confirmação manual da renovação.
+// ============================================================================
+
+function ManualAssistSection({
+  companyId,
+  tasks,
+  onReprocess,
+}: {
+  companyId: string | undefined;
+  tasks: RenewalTask[];
+  onReprocess: (id: string) => void;
+}) {
+  return (
+    <div className="mt-8">
+      <SectionHeader
+        title="Renovações com ação manual"
+        subtitle="Renove primeiro no painel do servidor. Depois confirme aqui."
+      />
+      <div className="space-y-3">
+        {tasks.length === 0 && (
+          <Card className="p-6 text-center text-sm text-muted-foreground">
+            Nenhuma renovação exige ação manual.
+          </Card>
+        )}
+        {tasks.map((task) => (
+          <ManualAssistCard
+            key={task.id}
+            task={task}
+            companyId={companyId}
+            onReprocess={onReprocess}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ManualAssistCard({
+  task,
+  companyId,
+  onReprocess,
+}: {
+  task: RenewalTask;
+  companyId: string | undefined;
+  onReprocess: (id: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const getDetailsFn = useServerFn(getRenewalTaskDetails);
+  const confirmFn = useServerFn(confirmManualSigmaRenewal);
+  const [open, setOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(false);
+
+  const detailsQ = useQuery({
+    queryKey: ["renewal-task-details", companyId, task.id],
+    queryFn: () =>
+      getDetailsFn({ data: { company_id: companyId!, id: task.id } }),
+    enabled: Boolean(companyId) && open,
+  });
+  const d = detailsQ.data;
+
+  const confirmMut = useMutation({
+    mutationFn: () =>
+      confirmFn({
+        data: {
+          company_id: companyId!,
+          id: task.id,
+          new_due_date: d!.suggested_new_due_date,
+        },
+      }),
+    onSuccess: (res: any) => {
+      if (res?.idempotent) {
+        toast.success("Renovação já estava confirmada.");
+      } else {
+        toast.success("Renovação confirmada com sucesso.");
+      }
+      setConfirmDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["renewal-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["queue-counts"] });
+      queryClient.invalidateQueries({
+        queryKey: ["renewal-task-details", companyId, task.id],
+      });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Não foi possível confirmar."),
+  });
+
+  const isNeedsHuman = task.status === "needs_human";
+
+  return (
+    <Card className="p-3">
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={isNeedsHuman ? "default" : "secondary"}>
+              {isNeedsHuman ? "Ação manual" : "Falhou"}
+            </Badge>
+            <span className="text-sm font-medium">
+              {task.customer_name ?? "Cliente"}
+            </span>
+          </div>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+            <span>Criada: {fmtDate(task.created_at)}</span>
+            <span>
+              Tentativas: {task.attempts}/{task.max_attempts}
+            </span>
+          </div>
+          {task.last_error && (
+            <p className="mt-1 text-[11px] text-warning">{task.last_error}</p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2 md:shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? "Ocultar detalhes" : "Ver detalhes"}
+          </Button>
+          {isNeedsHuman && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setOpen(true);
+                setConfirmDialog(true);
+              }}
+            >
+              <CheckCheck className="h-3 w-3 mr-1" />
+              Marcar como renovado manualmente
+            </Button>
+          )}
+          {!isNeedsHuman && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onReprocess(task.id)}
+            >
+              Reprocessar
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {open && (
+        <div className="mt-3 rounded-lg border bg-muted/30 p-3">
+          {detailsQ.isLoading && (
+            <p className="text-xs text-muted-foreground">Carregando...</p>
+          )}
+          {detailsQ.error && (
+            <p className="text-xs text-danger">
+              Não foi possível carregar os detalhes.
+            </p>
+          )}
+          {d && (
+            <ManualAssistDetails
+              d={d}
+              onConfirmClick={() => setConfirmDialog(true)}
+              canConfirm={isNeedsHuman}
+            />
+          )}
+        </div>
+      )}
+
+      <AlertDialog open={confirmDialog} onOpenChange={setConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar renovação manual</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você já renovou este cliente no painel do servidor? Ao confirmar,
+              o vencimento será atualizado para{" "}
+              <b>{d?.suggested_new_due_date ?? "—"}</b> e o histórico será
+              registrado. Esta ação não cria cobrança nem dispara WhatsApp.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (!d) return;
+                confirmMut.mutate();
+              }}
+              disabled={!d || confirmMut.isPending}
+            >
+              {confirmMut.isPending ? "Confirmando..." : "Confirmar renovação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Card>
+  );
+}
+
+type TaskDetails = {
+  customer: { name: string; whatsapp: string | null; current_due_date: string | null } | null;
+  server: { name: string; panel_url: string | null; panel_type: string | null } | null;
+  credential: { iptv_username: string | null; expires_at: string | null } | null;
+  plan: { name: string; telas: number; meses: number } | null;
+  suggested_new_due_date: string;
+  reason: string;
+};
+
+function fmtDay(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  try {
+    return new Date(iso + (iso.length === 10 ? "T12:00:00Z" : "")).toLocaleDateString(
+      "pt-BR",
+    );
+  } catch {
+    return "—";
+  }
+}
+
+async function copyText(label: string, value: string | null | undefined) {
+  if (!value) {
+    toast.error(`Sem ${label} para copiar.`);
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(value);
+    toast.success(`${label} copiado.`);
+  } catch {
+    toast.error("Não foi possível copiar.");
+  }
+}
+
+function ManualAssistDetails({
+  d,
+  onConfirmClick,
+  canConfirm,
+}: {
+  d: TaskDetails;
+  onConfirmClick: () => void;
+  canConfirm: boolean;
+}) {
+  const summary = [
+    `Cliente: ${d.customer?.name ?? "—"}`,
+    d.customer?.whatsapp ? `WhatsApp: ${d.customer.whatsapp}` : null,
+    d.server?.name ? `Servidor: ${d.server.name}` : null,
+    d.credential?.iptv_username
+      ? `Usuário IPTV: ${d.credential.iptv_username}`
+      : null,
+    d.plan?.name ? `Plano: ${d.plan.name} (${d.plan.telas} tela(s))` : null,
+    `Vencimento atual: ${fmtDay(d.customer?.current_due_date)}`,
+    `Nova data sugerida: ${fmtDay(d.suggested_new_due_date)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return (
+    <div className="space-y-3 text-sm">
+      <div className="rounded-md bg-warning-soft p-2 text-xs text-warning">
+        Renove primeiro no painel do servidor. Depois clique em "Marcar como
+        renovado manualmente".
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Field label="Cliente" value={d.customer?.name} />
+        <Field label="WhatsApp" value={d.customer?.whatsapp} />
+        <Field
+          label="Servidor / painel"
+          value={
+            d.server
+              ? `${d.server.name}${
+                  d.server.panel_url ? ` — ${d.server.panel_url}` : ""
+                }`
+              : null
+          }
+        />
+        <Field label="Usuário IPTV" value={d.credential?.iptv_username} />
+        <Field
+          label="Plano"
+          value={
+            d.plan
+              ? `${d.plan.name} · ${d.plan.telas} tela(s) · ${d.plan.meses} mês(es)`
+              : null
+          }
+        />
+        <Field label="Telas" value={d.plan ? String(d.plan.telas) : null} />
+        <Field
+          label="Vencimento atual"
+          value={fmtDay(d.customer?.current_due_date)}
+        />
+        <Field
+          label="Nova data sugerida"
+          value={fmtDay(d.suggested_new_due_date)}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => copyText("Usuário IPTV", d.credential?.iptv_username)}
+        >
+          <Copy className="h-3 w-3 mr-1" /> Copiar usuário/login
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => copyText("WhatsApp", d.customer?.whatsapp)}
+        >
+          <Copy className="h-3 w-3 mr-1" /> Copiar WhatsApp
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => copyText("Resumo", summary)}
+        >
+          <Copy className="h-3 w-3 mr-1" /> Copiar resumo
+        </Button>
+        {canConfirm && (
+          <Button size="sm" onClick={onConfirmClick}>
+            <CheckCheck className="h-3 w-3 mr-1" />
+            Marcar como renovado manualmente
+          </Button>
+        )}
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">
+        Motivo: {d.reason}
+      </p>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null | undefined;
+}) {
+  return (
+    <div className="rounded border bg-background p-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-0.5 text-sm font-medium break-words">
+        {value && value.length ? value : "—"}
+      </div>
+    </div>
   );
 }
