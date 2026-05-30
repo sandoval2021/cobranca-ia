@@ -1,7 +1,7 @@
 // Autenticação local apenas para protótipo. Produção precisa Supabase Auth/backend.
 // Não envia e-mail real, não chama API externa, não substitui RLS.
 
-export type LocalRole = "super_admin" | "owner";
+export type LocalRole = "super_admin" | "owner" | "admin" | "member";
 export type LocalUserStatus = "pendente_confirmacao" | "ativo" | "bloqueado";
 
 export type LocalUser = {
