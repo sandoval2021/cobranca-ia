@@ -2972,11 +2972,11 @@ function NewCustomerSheet({
             Preencha os dados essenciais e adicione quantas telas precisar.
           </SheetDescription>
         </SheetHeader>
-        <form onSubmit={submit} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
+        <form onSubmit={submit} className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-3 py-3">
           {/* Dados do cliente */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
             <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Dados do cliente</h3>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
               <div className="space-y-1 col-span-2">
                 <Label className="text-xs">Nome</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="Nome do cliente" />
@@ -2986,7 +2986,7 @@ function NewCustomerSheet({
                   <Label className="text-xs">WhatsApp *</Label>
                   <HelpTip text="Escolha o país e informe o número do cliente. Para Brasil, use DDD + número." />
                 </div>
-                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-2">
+                <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
                   <Select value={countryCode} onValueChange={setCountryCode}>
                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -3033,7 +3033,7 @@ function NewCustomerSheet({
 
           {/* Telas */}
           <section className="space-y-2 rounded-lg border border-border bg-card/40 p-2.5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Telas ({screens.length})
               </h3>
@@ -3073,7 +3073,7 @@ function NewCustomerSheet({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
                     <div className="space-y-1">
                       <Label className="text-[11px]">Servidor</Label>
                       <Select value={s.serverId} onValueChange={(v) => updateScreen(s.uid, { serverId: v })}>
@@ -3225,7 +3225,7 @@ function NewCustomerSheet({
                 </p>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
               <div className="space-y-1">
                 <Label className="text-xs">Valor mensal total</Label>
                 <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" inputMode="decimal" />
@@ -3247,7 +3247,7 @@ function NewCustomerSheet({
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={1000} placeholder="Notas internas." />
           </section>
 
-          <div className="flex gap-2 pt-1">
+          <div className="grid grid-cols-1 gap-2 pt-1 min-[360px]:grid-cols-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={busy} className="flex-1">Cancelar</Button>
             <Button type="submit" disabled={busy} className="flex-1 gap-1.5">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
