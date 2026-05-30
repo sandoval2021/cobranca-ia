@@ -136,13 +136,33 @@ export const Route = createFileRoute("/api/public/hooks/renewal-dispatch")({
             tasksClaimed += tasks.length;
 
             for (const task of tasks) {
-              // Sem integração real e segura ainda: encaminha para humano.
-              // Quando o adapter existir, este ponto é o único lugar a mudar.
-              await markNeedsHuman(
-                task,
-                "Renovação precisa ser feita manualmente no servidor.",
-              );
-              needsHuman += 1;
+              // Provider fail-safe: por enquanto sempre cai em manual.
+              // Quando um adapter real existir, attemptRenewal pode retornar
+              // { kind: "renewed" } e marcamos a task como renewed; até lá,
+              // qualquer resultado vira needs_human (sem alterar cliente).
+              let panelType: string | null = null;
+              if (task.server_id) {
+                const { data: srv } = await supabaseAdmin
+                  .from("servers")
+                  .select("panel_type")
+                  .eq("id", task.server_id)
+                  .eq("company_id", task.company_id)
+                  .maybeSingle();
+                panelType = (srv?.panel_type as string | null) ?? null;
+              }
+              const provider = pickProviderForServer(panelType);
+              const result = await provider.attemptRenewal({ task });
+              if (result.kind === "renewed") {
+                // Reservado para integração futura — não usado nesta fase.
+                await markNeedsHuman(
+                  task,
+                  "Resultado automático ignorado nesta fase — confirme manualmente.",
+                );
+                needsHuman += 1;
+              } else {
+                await markNeedsHuman(task, result.reason);
+                needsHuman += 1;
+              }
             }
           }
         } catch {
