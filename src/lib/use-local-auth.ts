@@ -43,8 +43,15 @@ export function useLocalAuth() {
 
   useEffect(() => {
     function refresh() {
-      setLocalUser(getCurrentLocalUser());
-      setLocalRole(getCurrentRole());
+      const next = getCurrentLocalUser();
+      const nextRole = getCurrentRole();
+      // Só atualiza state se algo relevante mudou — evita re-renders em
+      // cadeia que disparavam o loop "Maximum update depth exceeded".
+      setLocalUser((prev) => {
+        if (prev?.id === next?.id && prev?.role === next?.role) return prev;
+        return next;
+      });
+      setLocalRole((prev) => (prev === nextRole ? prev : nextRole));
     }
     refresh();
     window.addEventListener(LOCAL_AUTH_EVENT, refresh);
@@ -206,7 +213,17 @@ export function useLocalAuth() {
     } else if (!localUser) {
       setBridgedLocalUser(null);
     }
-  }, [supaUser?.email, user, localUser]);
+    // Deps só nas PRIMITIVAS que importam — `user` como objeto é uma nova
+    // referência a cada recompute do useMemo (mesmo quando id/role/email
+    // não mudaram), o que fazia o efeito disparar a cada render e, quando
+    // role transicionava (owner fallback → super_admin resolvido), o
+    // setBridgedLocalUser emitia LOCAL_AUTH_EVENT durante o commit ciclo
+    // → refresh() chamava setState → "Maximum update depth exceeded".
+    // setBridgedLocalUser já tem guard interno (só emite se id/role
+    // mudaram); aqui só precisamos garantir que o efeito não rode
+    // desnecessariamente.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supaUser?.email, supaUser?.id, user?.id, user?.role, user?.nome, user?.whatsapp, localUser?.id]);
 
   // roleResolved = sabemos com segurança qual é a role do usuário.
   // - Sem usuário Supabase: depende do localUser (já resolvido).
