@@ -341,13 +341,12 @@ function OperacaoFilasPage() {
         onReprocess={(id) => reprocessRenewalMut.mutate(id)}
       />
 
-      <RenewalSection
-        title="Renovações com ação manual"
-        subtitle="Falhas e tarefas que precisam de análise humana antes de reprocessar"
-        emptyMessage="Nenhuma renovação exige ação manual."
+      <ManualAssistSection
+        companyId={companyId}
         tasks={renewalManualQ.data?.items ?? []}
         onReprocess={(id) => reprocessRenewalMut.mutate(id)}
       />
+
 
       <AlertDialog
         open={Boolean(confirmUncertain)}
