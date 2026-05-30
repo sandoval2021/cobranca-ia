@@ -29,6 +29,15 @@ supabase db push   # ou rode os arquivos manualmente via psql
 4. `20260527090300_rpc_staging_import_customers_from_rows.sql`
 5. `20260527090400_rpc_create_customer_admin.sql`
 
+## Exceção — fluxo H1 Lovable Cloud
+
+O arquivo `h1_backend_first_empresas_entitlements_active_company.sql`
+pertence ao fluxo H1 (/empresas backend-first) e tem destino diferente:
+
+- Destino correto: Supabase Lovable Cloud `ajeyimujgtukcbadyash`.
+- Não aplicar contra `pkghjzbvmifmztqvpdeu`.
+- Aplicação controlada via etapa H1.6 (não auto-aplicada).
+
 Todas as migrations são **idempotentes** (`create or replace function`,
 `add column if not exists`) e podem ser reaplicadas sem efeitos colaterais.
 
