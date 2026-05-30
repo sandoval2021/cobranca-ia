@@ -63,6 +63,8 @@ import {
 import { getLocalDataHealth, getModuleSummaries } from "@/lib/backup-geral";
 import { getSetupProgress, getNextRecommendation, SETUP_WIZARD_EVENT } from "@/lib/setup-wizard";
 import { isProtectedModeActive, LOCAL_SECURITY_EVENT } from "@/lib/local-security";
+import { RenewCustomerDialog, type CustomerLite as RenewCustomerLite } from "@/routes/cobrancas";
+import { getActiveAccountId, listCustomersAdmin } from "@/lib/rpc-admin";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
 
