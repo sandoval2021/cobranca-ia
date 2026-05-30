@@ -94,13 +94,14 @@ export const ownerNav: NavItem[] = [
   { to: "/ajuda", label: "Ajuda", icon: LifeBuoy, hint: "Aprenda como usar cada parte do sistema" },
 ];
 
-// Bottom nav do Dono — 4 atalhos de ação principais + botão "Mais".
-// WhatsApp NÃO entra aqui (acessível via "Mais → Minha conta → WhatsApp").
+// Bottom nav do Dono — navegação fixa principal (4 abas + botão "Mais").
+// Os atalhos de ação rápida (Novo cliente, Renovar, Cadastrar teste, Configurar IA)
+// ficam na tela inicial, não aqui. WhatsApp fica em "Mais → Minha conta → WhatsApp".
 export const ownerBottomNav: NavItem[] = [
-  { to: "/clientes", label: "Novo cliente", icon: Users, search: { action: "create" } },
-  { to: "/renovacoes-paineis", label: "Renovar", icon: RefreshCcw },
-  { to: "/testes", label: "Cadastrar teste", icon: Beaker, search: { action: "create" } },
-  { to: "/ia-config", label: "Configurar IA", icon: Bot },
+  { to: "/", label: "Início", icon: LayoutDashboard },
+  { to: "/clientes", label: "Clientes", icon: Users },
+  { to: "/testes", label: "Testes", icon: Beaker },
+  { to: "/cobrancas", label: "Cobranças", icon: Receipt },
 ];
 
 // Itens que aparecem dentro do drawer "Mais" do bottom nav.
