@@ -98,7 +98,7 @@ import { toast } from "sonner";
 import {
   getCurrentCompanyAdmin,
   listChargesAdmin,
-  listCustomersForSelectAdmin,
+  listCustomersAdmin,
   toastRpcError as _toastRpcError,
   type RpcErr,
 } from "@/lib/rpc-admin";
