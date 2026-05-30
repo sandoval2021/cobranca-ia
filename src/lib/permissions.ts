@@ -85,5 +85,13 @@ export function ownerRouteDenial(
 }
 
 export function roleLabel(role: LocalRole): string {
-  return role === "super_admin" ? "Admin do sistema" : "Dono";
+  switch (role) {
+    case "super_admin":
+      return "Admin do sistema";
+    case "owner":
+      return "Dono";
+    case "admin":
+    case "member":
+      return "Admin";
+  }
 }
