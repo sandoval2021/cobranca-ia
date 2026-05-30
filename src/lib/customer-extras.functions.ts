@@ -2,6 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { chunkedOrderedUpsert } from "@/lib/sync/chunked-upsert";
 
 const UUID = z.string().uuid();
 
@@ -103,11 +104,13 @@ export const bulkUpsertCustomerExtrasDb = createServerFn({ method: "POST" })
     const payload = data.items.map((i) =>
       inputToRow({ ...i, companyId: data.companyId }),
     );
-    const { error, count } = await context.supabase
-      .from("customer_extras")
-      .upsert(payload, { onConflict: "company_id,customer_id", count: "exact" });
-    if (error) throw new Error(error.message);
-    return { upserted: count ?? data.items.length };
+    const upserted = await chunkedOrderedUpsert(
+      context.supabase,
+      "customer_extras",
+      payload,
+      { onConflict: "company_id,customer_id", sortKeys: ["company_id", "customer_id"] },
+    );
+    return { upserted };
   });
 
 export const deleteCustomerExtraDb = createServerFn({ method: "POST" })

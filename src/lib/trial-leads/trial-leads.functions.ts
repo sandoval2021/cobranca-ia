@@ -3,6 +3,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { chunkedOrderedUpsert } from "@/lib/sync/chunked-upsert";
 
 const UUID = z.string().uuid();
 
@@ -162,11 +163,13 @@ export const bulkUpsertTrialLeadsDb = createServerFn({ method: "POST" })
     const payload = data.items.map((l) =>
       leadInputToRow({ ...l, companyId: data.companyId }),
     );
-    const { error, count } = await context.supabase
-      .from("trial_leads")
-      .upsert(payload, { onConflict: "id", count: "exact" });
-    if (error) throw new Error(error.message);
-    return { upserted: count ?? data.items.length };
+    const upserted = await chunkedOrderedUpsert(
+      context.supabase,
+      "trial_leads",
+      payload,
+      { onConflict: "id", sortKeys: ["id"] },
+    );
+    return { upserted };
   });
 
 export const deleteTrialLeadDb = createServerFn({ method: "POST" })
@@ -212,11 +215,13 @@ export const bulkUpsertTrialFollowupsDb = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     if (data.items.length === 0) return { upserted: 0 };
     const payload = data.items.map((i) => ({ ...i, company_id: data.companyId }));
-    const { error, count } = await context.supabase
-      .from("trial_followups")
-      .upsert(payload, { onConflict: "id", count: "exact" });
-    if (error) throw new Error(error.message);
-    return { upserted: count ?? data.items.length };
+    const upserted = await chunkedOrderedUpsert(
+      context.supabase,
+      "trial_followups",
+      payload,
+      { onConflict: "id", sortKeys: ["id"] },
+    );
+    return { upserted };
   });
 
 export const deleteTrialFollowupDb = createServerFn({ method: "POST" })
