@@ -1421,7 +1421,7 @@ function ClientCard({
         </div>
       )}
 
-      <div className="mt-2 grid grid-cols-4 gap-1">
+      <div className="mt-2 grid grid-cols-4 gap-1 [grid-auto-rows:minmax(2rem,auto)]">
         <button
           type="button"
           onClick={onRenew}
@@ -1999,8 +1999,8 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
 
   return (
     <div className="space-y-2 rounded-xl border border-border bg-primary-soft/30 p-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
           <Tv className="h-3 w-3" />
           Telas e servidores
           <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
@@ -2046,13 +2046,13 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
                 <span className="shrink-0 rounded-full bg-muted px-1.5 text-[10px] font-bold text-muted-foreground">
                   T{i + 1}
                 </span>
-                <span className="truncate font-medium text-foreground">{s.name}</span>
-                <span className={cn("shrink-0 rounded-full px-1.5 text-[10px] font-medium", appBadge)}>
+                <span className="min-w-0 break-words font-medium text-foreground [overflow-wrap:anywhere]">{s.name}</span>
+                <span className={cn("rounded-full px-1.5 text-[10px] font-medium leading-tight break-words", appBadge)}>
                   {appLabel}
                 </span>
                 <span className="shrink-0 text-muted-foreground">·</span>
-                <span className="truncate text-muted-foreground" title={srvName}>{srvName}</span>
-                <span className="ml-auto shrink-0 rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground">
+                <span className="min-w-0 break-words text-muted-foreground [overflow-wrap:anywhere]" title={srvName}>{srvName}</span>
+                <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground">
                   {due}
                 </span>
                 <button
