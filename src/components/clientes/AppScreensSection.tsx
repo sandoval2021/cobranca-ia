@@ -918,17 +918,23 @@ function ScreenSheet({
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tela 1, TV Sala…" maxLength={60} required />
           </Field>
 
-          <Field label="Aplicativo *" hint="Escolha o app que o cliente usa.">
+          <Field label="Aplicativo *" hint="Lista apenas os apps que você cadastrou em ‘Aplicativos pagos’.">
             <select
               value={app}
               onChange={(e) => setApp(e.target.value as AppKey)}
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
             >
-              {APP_OPTIONS.map((k) => (
+              {appChoices.map((k) => (
                 <option key={k} value={k}>{APP_CATALOG[k].label}</option>
               ))}
             </select>
+            {registeredAppKeys !== null && registeredAppKeys.length <= 1 && (
+              <p className="mt-1 text-[11px] text-amber-600">
+                Nenhum aplicativo cadastrado. Cadastre em <strong>Aplicativos pagos</strong> para aparecer aqui.
+              </p>
+            )}
           </Field>
+
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Tipo do app">
