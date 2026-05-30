@@ -96,6 +96,7 @@ import { supabase, supabaseConfigured } from "@/integrations/supabase/compat";
 import { useAuth } from "@/lib/use-auth";
 import { toast } from "sonner";
 import {
+  getActiveAccountId,
   getCurrentCompanyAdmin,
   listChargesAdmin,
   listCustomersAdmin,
@@ -308,7 +309,7 @@ function CobrancasPage() {
     setLoading(true);
     setErrorMsg(null);
     (async () => {
-      const { companyId, error: companyErr } = await getCurrentCompanyAdmin();
+      const { accountId: companyId, error: companyErr } = await getActiveAccountId();
       if (!alive) return;
       if (companyErr || !companyId) {
         setErrorMsg(
