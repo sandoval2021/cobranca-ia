@@ -2104,7 +2104,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
 
       {adding && (
         <div className="space-y-1.5 rounded-md border border-border bg-card p-2">
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-1 gap-1.5 min-[390px]:grid-cols-2">
             <Field label="Vencimento (opcional)">
               <Input
                 type="date"
@@ -2123,7 +2123,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-1 gap-1.5 min-[390px]:grid-cols-2">
             <Field label="Aplicativo">
               <select
                 value={app}
@@ -2175,7 +2175,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Credenciais do servidor (opcional)
               </div>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-1 gap-1.5 min-[390px]:grid-cols-2">
                 <Field label="Usuário do servidor">
                   <Input
                     value={usernameInput}
@@ -2205,7 +2205,7 @@ function InlineScreensManager({ customerId }: { customerId: string }) {
               <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                 App pago — informe MAC, Key e vencimento do app
               </div>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-1 gap-1.5 min-[390px]:grid-cols-2">
                 <Field label="MAC *">
                   <Input
                     value={macInput}
