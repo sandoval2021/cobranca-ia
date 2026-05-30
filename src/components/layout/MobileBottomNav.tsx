@@ -46,30 +46,30 @@ const MORE_GROUPS: { title: string; items: MoreItem[] }[] = [
   {
     title: "Minha conta",
     items: [
-      { key: "/meus-dados", to: "/meus-dados", label: "Minha conta", hint: "Seus dados pessoais e contato", icon: ownerMoreNav.find((i) => i.to === "/meus-dados")!.icon },
-      { key: "/minha-assinatura", to: "/minha-assinatura", label: "Minha assinatura", hint: "Plano, uso de IA e pacotes", icon: ownerMoreNav.find((i) => i.to === "/minha-assinatura")!.icon },
-      { key: "/whatsapp", to: "/whatsapp", label: "WhatsApp", hint: "Conecte seu WhatsApp", icon: ownerMoreNav.find((i) => i.to === "/whatsapp")!.icon },
-      { key: "/campanhas-manuais", to: "/campanhas-manuais", label: "Mensagens", hint: "Monte listas e copie mensagens", icon: ownerMoreNav.find((i) => i.to === "/campanhas-manuais")!.icon },
+      { key: "/meus-dados", to: "/meus-dados", label: "Minha conta", hint: "Seus dados pessoais e contato", icon: UserCog },
+      { key: "/minha-assinatura", to: "/minha-assinatura", label: "Minha assinatura", hint: "Plano, uso de IA e pacotes", icon: Wallet },
+      { key: "/whatsapp", to: "/whatsapp", label: "WhatsApp", hint: "Conecte seu WhatsApp", icon: Smartphone },
+      { key: "/campanhas-manuais", to: "/campanhas-manuais", label: "Mensagens", hint: "Monte listas e copie mensagens", icon: MessageCircle },
     ],
   },
   {
     title: "Operação",
     items: [
-      { key: "/clientes", to: "/clientes", label: "Clientes", hint: "Sua base de clientes", icon: ownerBottomNav.find((i) => i.to === "/clientes")!.icon },
-      { key: "/cadastros-servicos", to: "/cadastros-servicos", label: "Cadastros · Serviços", hint: "Planos e valores", icon: ownerBottomNav.find((i) => i.to === "/cadastros-servicos")!.icon },
-      { key: "/operacao-dia", to: "/operacao-dia", label: "Operação do dia", hint: "Quem precisa de atenção hoje", icon: ownerMoreNav.find((i) => i.to === "/operacao-dia")!.icon },
+      { key: "/clientes", to: "/clientes", label: "Clientes", hint: "Sua base de clientes", icon: Users },
+      { key: "/cadastros-servicos", to: "/cadastros-servicos", label: "Cadastros · Serviços", hint: "Planos e valores", icon: Tv },
+      { key: "/operacao-dia", to: "/operacao-dia", label: "Operação do dia", hint: "Quem precisa de atenção hoje", icon: CalendarClock },
       { key: "/operacao-filas", to: "/operacao-filas", label: "Operação · Filas", hint: "Envios, falhas e renovações manuais", icon: ListChecks },
-      { key: "/renovacoes-paineis", to: "/renovacoes-paineis", label: "Renovações de painéis", hint: "Fila de renovações IPTV", icon: ownerMoreNav.find((i) => i.to === "/renovacoes-paineis")!.icon },
+      { key: "/renovacoes-paineis", to: "/renovacoes-paineis", label: "Renovações de painéis", hint: "Fila de renovações IPTV", icon: RefreshCcw },
       { key: "/testes?action=create", to: "/testes", search: { action: "create" }, label: "Cadastrar teste", hint: "Novo teste para cliente interessado", icon: Beaker },
     ],
   },
   {
     title: "Negócio",
     items: [
-      { key: "/configuracoes-revenda", to: "/configuracoes-revenda", label: "Minha revenda", hint: "Dados e regras da sua revenda", icon: ownerMoreNav.find((i) => i.to === "/configuracoes-revenda")!.icon },
-      { key: "/apps-portal", to: "/apps-portal", label: "Aplicativos pagos", hint: "Apps que seus clientes usam", icon: ownerMoreNav.find((i) => i.to === "/apps-portal")!.icon },
-      { key: "/ia-config", to: "/ia-config", label: "Configurar IA", hint: "Preços e instruções da IA", icon: ownerMoreNav.find((i) => i.to === "/ia-config")!.icon },
-      { key: "/configuracoes", to: "/configuracoes", label: "Configurações", hint: "Ajustes do ambiente", icon: ownerMoreNav.find((i) => i.to === "/configuracoes")!.icon },
+      { key: "/configuracoes-revenda", to: "/configuracoes-revenda", label: "Minha revenda", hint: "Dados e regras da sua revenda", icon: Store },
+      { key: "/apps-portal", to: "/apps-portal", label: "Aplicativos pagos", hint: "Apps que seus clientes usam", icon: Smartphone },
+      { key: "/ia-config", to: "/ia-config", label: "Configurar IA", hint: "Preços e instruções da IA", icon: Bot },
+      { key: "/configuracoes", to: "/configuracoes", label: "Configurações", hint: "Ajustes do ambiente", icon: Settings },
     ],
   },
 ];
