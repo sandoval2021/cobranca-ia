@@ -212,7 +212,7 @@ export function MobileBottomNav() {
                   )}
                 >
                   <Icon className={cn("h-5 w-5", active && "scale-110")} />
-                  <span className="truncate font-medium">{item.label}</span>
+                  <span className="font-medium leading-tight text-center">{item.label}</span>
                 </Link>
               </li>
             );
